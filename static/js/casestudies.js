@@ -246,6 +246,8 @@ function getCaseStudyVersionFromUrl() {
 }
 
 function loadCaseStudyContent() {
+  initWorkflowHeaderClicks(); 
+  updateWorkflowHeader(1);
   const caseStudy = getCaseStudyNameFromUrl();
   const caseStudyBranch = getCaseStudyVersionFromUrl();
   var data_url = `https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/${caseStudyBranch}/${caseStudy}_content.json`;
@@ -263,6 +265,7 @@ function loadCaseStudyContent() {
       currentStep1Value = "Q1";
       updateStep1Content();
       updateBreadcrumb(1);
+      updateWorkflowHeader(1);
       updateStep2Content();
       updateStep3Content();
       updateStep4Content();
@@ -412,12 +415,41 @@ function goToStep(step) {
   }
   requestAnimationFrame(animateScroll);
   updateBreadcrumb(step);
+  updateWorkflowHeader(step);
   if (step === 1) updateStep1Content();
   if (step === 2) updateStep2Content();
   if (step === 3) updateStep3Content();
   if (step === 4) updateStep4Content();
   if (step === 5) updateStep5Content();
   if (step === 6) updateStep6Content();
+}
+
+// Function to make the workflowheader interactive
+function updateWorkflowHeader(activeStepNumber) {
+  const steps = document.querySelectorAll(".step-item");
+
+  steps.forEach(step => {
+    step.classList.remove("active", "completed");
+    const stepNum = parseInt(step.getAttribute("data-step"));
+
+    if (stepNum < activeStepNumber) {
+      step.classList.add("completed");
+    } else if (stepNum === activeStepNumber) {
+      step.classList.add("active");
+    }
+  });
+}
+
+// Function to be able to click on the step-icons in the workflow header
+function initWorkflowHeaderClicks() {
+  const steps = document.querySelectorAll(".step-item");
+
+  steps.forEach(step => {
+    step.addEventListener("click", () => {
+      const stepNum = parseInt(step.getAttribute("data-step"));
+      goToStep(stepNum);
+    });
+  });
 }
 
 // --- Load content from JSON and initialize ---
