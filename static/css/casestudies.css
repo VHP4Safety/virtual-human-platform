@@ -15,7 +15,7 @@ nav.navbar {
 
 /* Breadcrumb Items */
 .breadcrumb {
-    padding: 0.55rem 1rem;
+    padding: 0.55rem 0.80rem;
     margin: 0;
 }
 
@@ -41,7 +41,7 @@ nav.navbar {
   padding: 5px 0;
 }
 
-/* === New casestudy progress bar === */
+/*--- Workflow state styling section ---*/
 .workflow-header {
     top: 0px;
     background-color: #f8f9fa;
@@ -59,10 +59,11 @@ nav.navbar {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
+    overflow: visible; 
     gap: 12px;
     max-width: 900px;
     margin: 0 auto;
-    padding: 0 10px;
+    padding: 10px 10px;
 }
 
 .step-item {
@@ -81,7 +82,6 @@ nav.navbar {
     border-radius: 50%;
     background: #ffffff;
     border: 2px solid #cfd4db;
-    color: #ffffff;
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -90,10 +90,6 @@ nav.navbar {
     font-size: 0.9rem;
     line-height: 1;
     transition: all 0.3s;
-}
-
-.step-item.completed .step-icon {
-    color: #000000;
 }
 
 .step-text {
@@ -114,7 +110,7 @@ nav.navbar {
     transition: background 0.3s;
 }
 
-/* Coloring of the steps of the workflow diagram */
+/* Coloring of the steps of the workflowheader */
 .step-item[data-step="1"] .step-icon { background-color: var(--bs-vhppink_distinct); border-color: var(--bs-vhppink_distinct); }
 .step-item[data-step="2"] .step-icon { background-color: var(--bs-vhpdarkpurple);  border-color: var(--bs-vhpdarkpurple);}
 .step-item[data-step="3"] .step-icon { background-color: var(--bs-vhpdarkteal); border-color: var(--bs-vhpdarkteal); }
@@ -135,6 +131,25 @@ nav.navbar {
 .case-section.active {
     background-color: #f0f8ff;
     border-left: 4px solid #007bff;
+}
+
+/* Non-active or non-completed steps are greyed out */
+.step-item:not(.completed):not(.active) .step-icon {
+  background: #ffffff ;
+  border-color: #cfd4db ;
+  color: #cfd4db;
+}
+
+/* Active & completed steps keep their step color */
+.step-item.active .step-icon,
+.step-item.completed .step-icon {
+  color: #ffffff;
+  opacity: 1;
+  border-width: 2px;
+  box-shadow:
+    0 0 0 4px rgba(0, 0, 0, 0.12),
+    0 0 12px rgba(0, 0, 0, 0.25);
+  transform: scale(1.08);
 }
 
 /* === Buttons in Case study sections === */
@@ -179,7 +194,7 @@ nav.navbar {
   transition: border-top-color 0.3s;
 }
 
-/* Settings for mobile screens ≤ 375px */
+/* General settings for mobile screens ≤ 375px */
 @media (max-width: 408px) {
 
 nav.navbar {
@@ -194,7 +209,6 @@ nav.navbar {
     padding-right: 8px;
     box-sizing: border-box;
 }
-
 
 .scroll-down-arrow {
   position: fixed; 
@@ -221,7 +235,6 @@ nav.navbar {
     margin-bottom: 1rem;
 }
 
-
 /* Tools dropdown with scrollable long items */
 .dropdown-menu.dropdown-scroll {
   max-height: 300px;      
@@ -237,9 +250,12 @@ nav.navbar {
     margin-top: 0;  
     padding-top: 5px; 
     padding-bottom: 5px; 
+  
 }
 
-/* Mobile step tracker adjustments with horizontal scroll */
+}
+
+/* Specific mobile step tracker adjustments for horizontal scroll */
 @media (max-width: 576px) {
   .step-tracker {
     display: flex;
@@ -294,9 +310,10 @@ nav.navbar {
 
 }
 
-@media (max-width: 376px) {
-  body.casestudy-page .workflow-header {
-    top: 120px;
-  }
+/* Completed steps: colored but calm */
+.step-item.completed .step-icon {
+  opacity: 0.85;
 }
-}
+
+
+
