@@ -1,5 +1,5 @@
 
-Version 0.6-14 (2026-01-27)
+Version 0.6-15 (2026-01-30)
 --------------------------------------------------------------------------------
 - Adding Wikipedia and Surf RSD links to tools when the information is available.
 - Updating the partner logos.
@@ -9,6 +9,7 @@ Version 0.6-14 (2026-01-27)
 - Improvements in the search bar. 
 - Updating the color scheme in case study pages. 
 - Page optimizations for different formats such as mobile phones and tablets.
+- Testing interactive functionality to the workflow bar in case study pages. 
 
 
 Version 0.6-7 (2025-12-11)
