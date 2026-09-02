@@ -1,0 +1,156 @@
+name: Publish Docker image
+
+# Builds the platform image and pushes it to Docker Hub as
+# vhp4safety/virtual-human-platform. Runs when a GitHub Release is published,
+# or manually via workflow_dispatch for a one-off tag.
+#
+# Requires two repository secrets:
+#   DOCKERHUB_USERNAME - Docker Hub account with write access to the repository
+#   DOCKERHUB_TOKEN    - Docker Hub access token (Read & Write), not the password
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to publish (e.g. 1.0-5)"
+        required: true
+      latest:
+        description: "Also update the :latest tag"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: vhp4safety/virtual-human-platform
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: docker-publish-${{ github.event.release.tag_name || inputs.tag }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Resolve image tags
+        id: tags
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          IS_PRERELEASE: ${{ github.event.release.prerelease }}
+          INPUT_LATEST: ${{ inputs.latest }}
+        run: |
+          set -euo pipefail
+
+          # The project tags releases as e.g. 1.0-4, which is not semver, so the
+          # tag name is used verbatim rather than parsed.
+          version="${RELEASE_TAG:-$INPUT_TAG}"
+          if [ -z "$version" ]; then
+            echo "No tag to publish: neither a release tag nor a manual tag input." >&2
+            exit 1
+          fi
+
+          if [ "$GITHUB_EVENT_NAME" = "release" ]; then
+            [ "$IS_PRERELEASE" = "true" ] && latest=false || latest=true
+          else
+            latest="$INPUT_LATEST"
+          fi
+
+          tags="$IMAGE:$version"
+          if [ "$latest" = "true" ]; then
+            tags="$tags"$'\n'"$IMAGE:latest"
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          {
+            echo "list<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Publishing:"
+          echo "$tags"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build image for testing
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          push: false
+          provenance: false
+          tags: ${{ env.IMAGE }}:ci-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test the image
+        run: |
+          set -euo pipefail
+          docker run -d --name vhp_publish_test -p 5050:5050 "$IMAGE:ci-test"
+
+          # Wait for Flask to report that it is listening.
+          for _ in $(seq 1 30); do
+            if docker logs vhp_publish_test 2>&1 | grep -q "Running on http://"; then
+              break
+            fi
+            sleep 2
+          done
+
+          docker logs vhp_publish_test
+
+          if [ "$(docker inspect -f '{{.State.Running}}' vhp_publish_test)" != "true" ]; then
+            echo "Container exited during startup." >&2
+            exit 1
+          fi
+
+          if ! docker logs vhp_publish_test 2>&1 | grep -q "Running on http://"; then
+            echo "Flask never reported that it was listening." >&2
+            exit 1
+          fi
+
+          # The home page calls out to GitHub and cloud.vhp4safety.nl, so an
+          # outage there should not block a release. Reported, never fatal.
+          status=$(curl -s -o /dev/null -w '%{http_code}' -m 30 http://localhost:5050/ || echo "no response")
+          echo "GET / returned: $status"
+
+      - name: Stop test container
+        if: always()
+        run: docker rm -f vhp_publish_test || true
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push image to Docker Hub
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          tags: ${{ steps.tags.outputs.list }}
+          cache-from: type=gha
+
+      - name: Summary
+        env:
+          VERSION: ${{ steps.tags.outputs.version }}
+        run: |
+          {
+            echo "### Published to Docker Hub"
+            echo
+            echo '```'
+            echo "docker pull $IMAGE:$VERSION"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

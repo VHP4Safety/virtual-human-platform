@@ -17,6 +17,7 @@ Central HTML-based web application for the VHP4Safety project, providing access 
   - [Deployment](#deployment)
     - [Deployment with Python](#deployment-with-python)
     - [Deployment with Docker](#deployment-with-docker)
+    - [Published images](#published-images)
   - [Techniques](#techniques)
     - [Dynamic Page Filling: `tool.html` and `casestudy.html`](#dynamic-page-filling-toolhtml-and-casestudyhtml)
     - [Caching](#caching)
@@ -142,6 +143,22 @@ docker run -d -p 5000:5050 vhp4safety_ui
 ```
 
 The application will be available at [http://localhost:5000/](http://localhost:5000/).
+
+### Published images
+
+Every published GitHub Release builds the image and pushes it to Docker Hub as
+[`vhp4safety/virtual-human-platform`](https://hub.docker.com/r/vhp4safety/virtual-human-platform),
+tagged with the release version (and `latest` for non-prereleases). To run a released version
+without building it yourself:
+
+```
+docker pull vhp4safety/virtual-human-platform:<version>
+docker run -d -p 5000:5050 vhp4safety/virtual-human-platform:<version>
+```
+
+The workflow is `.github/workflows/docker-publish.yml`. It needs the repository secrets
+`DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (a Docker Hub access token with Read & Write scope).
+It can also be run manually from the Actions tab to publish a specific tag.
 
 ---
 
