@@ -70,16 +70,16 @@ $theme-colors-text-dark: map-merge($theme-colors-text-dark, $custom-text-emphasi
 $theme-colors-bg-subtle-dark: map-merge($theme-colors-bg-subtle-dark, $custom-bg-subtle-dark);
 $theme-colors-border-subtle-dark: map-merge($theme-colors-border-subtle-dark, $custom-border-subtle-dark);
 
-// Cap .container max-width at 900px from the lg breakpoint up. Below lg, keep
+// Cap .container max-width at 1140px (960px at lg) from lg up. Below lg, keep
 // Bootstrap's defaults so the container still fits smaller viewports. Replaces
 // the `.container { max-width: 900px !important }` rule that used to live in
 // static/css/base.css -- now driven by the SCSS map, no !important hack.
 $container-max-widths: (
   sm: 540px,
   md: 720px,
-  lg: 900px,
-  xl: 900px,
-  xxl: 900px,
+  lg: 960px,
+  xl: 1140px,
+  xxl: 1140px,
 );
 
 // 4️⃣ Override Bootstrap link defaults BEFORE importing Bootstrap

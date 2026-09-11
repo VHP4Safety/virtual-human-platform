@@ -55,7 +55,7 @@ nav.navbar[aria-label="breadcrumb"] {
     justify-content: space-between;
     overflow: visible; 
     gap: 12px;
-    max-width: 900px;
+    max-width: 1140px;
     margin: 0 auto;
     padding: 10px 10px;
 }
@@ -91,7 +91,7 @@ nav.navbar[aria-label="breadcrumb"] {
     font-weight: 600;
     color: #000000;
     line-height: 1.2;
-    max-width: 90px;
+    max-width: 130px;
 }
 
 .step-line {
