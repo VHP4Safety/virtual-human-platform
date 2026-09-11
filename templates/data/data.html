@@ -105,9 +105,15 @@
                         <span class="result-accession">{{ study.accession or study.accno }}</span>
                         <span class="badge bg-vhplight-blue text-secondary rounded-pill align-content-center">{{ study.type or 'unknown' }}</span>
                     </div>
-                    <div class="card-header bg-white">
-                        <div class="position-relative">
-                            <div class="d-flex flex-nowrap overflow-x-auto gap-1 scrollbar-none pill-scroll">
+                    <div class="card-body">
+                        <h5 class="card-title fw-semibold" style="word-break: break-word;">
+                            {{ study.title or 'Untitled Study' }}
+                        </h5>
+                        <div class="card-text">
+                            <span class="small text-muted">Released: {{ study.release_date or study.rdate or 'N/A' }}</span>
+                        </div>
+                        <div class="position-relative mt-2">
+                            <div class="d-flex flex-wrap gap-1 pill-scroll">
                                 {% set cs0 = study.metadata.case_study[0] if study.metadata.case_study else '' %}
                                 {% set rq0 = reg_q_labels.get(study.metadata.regulatory_question[0], study.metadata.regulatory_question[0]) if study.metadata.regulatory_question else '' %}
                                 {% for cs in study.metadata.case_study %}<a role="button" href="{{url_for('casestudy', case=cs|lower)}}" style="font-size:0.75em;" class="flex-shrink-0 lh-1 p-1 btn btn-outline-vhppink-distinct rounded-pill border border-vhppink-distinct d-inline-flex align-items-center text-nowrap">{{cs|capitalize }}</a>{% endfor %}
@@ -119,18 +125,10 @@
                             </button>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <h5 class="card-title" style="word-break: break-word;">
-                            {{ study.title or 'Untitled Study' }}
-                        </h5>
-                        <div class="card-text">
-                            <span class="small text-muted fst-italic">Released: {{ study.release_date or study.rdate or 'N/A' }}</span>
-                        </div>
-                    </div>
-                    <div class="card-footer btn-group bg-white border-0 py-3" role="group">
-                            <a href="{{ url_for('data_detail', dataid=study.accession) }}" style="min-width:70px" class="btn btn-vhpblue" role="button" data-bs-toggle="tooltip" data-bs-title="View details"><i class="bi bi-info-circle"></i></a>
+                    <div class="card-footer btn-group bg-white border-0 py-3 text-nowrap" role="group">
+                            <a href="{{ url_for('data_detail', dataid=study.accession) }}" class="btn btn-vhpblue" role="button" data-bs-toggle="tooltip" data-bs-title="View details"><i class="bi bi-info-circle"></i></a>
                             {% if study.url%}
-                            <a href="{{ study.url}}" class="btn btn-outline-vhpblue d-inline" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right pe-1"></i> View in BioStudies</a>
+                            <a href="{{ study.url}}" class="btn btn-outline-vhpblue d-inline" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right pe-1"></i> BioStudies</a>
                             {% endif%}
 
                             {% if study.metadata.rocrate_url %}
@@ -162,17 +160,17 @@
                         <span class="badge bg-vhplight-blue text-secondary rounded-pill align-content-center">{{ dataset.metadata.resource_type.type or 'unknown' }}</span>
                     </div>
                     <div class="card-body">
-                        <h5 class="card-title" style="word-break: break-word;">
+                        <h5 class="card-title fw-semibold" style="word-break: break-word;">
                             {{ dataset.title or 'Untitled Dataset' }}
                         </h5>
                         <div class="card-text">
-                            <span class="small text-muted fst-italic">Released: {{ dataset.metadata.publication_date or study.created or 'N/A' }}</span>
+                            <span class="small text-muted">Released: {{ dataset.metadata.publication_date or study.created or 'N/A' }}</span>
                         </div>
                     </div>
-                    <div class="card-footer btn-group bg-white border-0 py-3" role="group">
-                            <a href="{{ url_for('data_detail', dataid=dataset.id) }}" style="min-width:70px" class="btn btn-vhpblue" role="button" data-bs-toggle="tooltip" data-bs-title="View details"><i class="bi bi-info-circle"></i></a>
+                    <div class="card-footer btn-group bg-white border-0 py-3 text-nowrap" role="group">
+                            <a href="{{ url_for('data_detail', dataid=dataset.id) }}" class="btn btn-vhpblue" role="button" data-bs-toggle="tooltip" data-bs-title="View details"><i class="bi bi-info-circle"></i></a>
                             {% if dataset.doi_url%}
-                            <a href="{{ dataset.doi_url}}" class="btn btn-outline-vhpblue d-inline" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right pe-1"></i> View on Zenodo</a>
+                            <a href="{{ dataset.doi_url}}" class="btn btn-outline-vhpblue d-inline" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right pe-1"></i> Zenodo</a>
                             {% endif%}
                             {% if dataset.links.archive%}
                             <a href="{{ dataset.links.archive}}" class="btn btn-outline-secondary d-inline view-details-btn"><i class="bi bi-box-fill pe-1"></i>{%if dataset.parsed_metadata.is_rocrate %}RO-Crate{% else %}Archive{% endif %}</a>
