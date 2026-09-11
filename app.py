@@ -833,7 +833,7 @@ def robots():
 def data():
     # Get query parameters for pagination and search
     page = request.args.get("page", 1, type=int)
-    page_size = request.args.get("page_size", 6, type=int)
+    page_size = request.args.get("page_size", 12, type=int)
     search_query = request.args.get("search", "", type=str)
 
     # Get filter parameters (multi-select via repeated query params). Param
@@ -1181,7 +1181,7 @@ def tools():
 
         # Pagination
         page = request.args.get("page", 1, type=int)
-        page_size = request.args.get("page_size", 6, type=int)
+        page_size = request.args.get("page_size", 12, type=int)
         total = len(tools)
         start = (page - 1) * page_size
         end = start + page_size
@@ -1387,7 +1387,7 @@ def methods():
 
         # Pagination
         page = request.args.get("page", 1, type=int)
-        page_size = request.args.get("page_size", 6, type=int)
+        page_size = request.args.get("page_size", 12, type=int)
         total = len(methods_filtered)
         start = (page - 1) * page_size
         end = start + page_size
