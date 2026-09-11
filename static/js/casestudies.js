@@ -320,6 +320,7 @@ function updateBreadcrumb(step) {
 
   // Helper to create items
   function addCrumb(label, onclick, isActive = false) {
+    label = label.replace(/([a-z])([A-Z])/g, "$1 $2"); // "ExposureScenario" -> "Exposure Scenario"
     const li = document.createElement("li");
     li.classList.add("breadcrumb-item");
 

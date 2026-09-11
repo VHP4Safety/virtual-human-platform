@@ -135,3 +135,8 @@ html {
   line-height: 1.2;
   padding: 6px 12px;
 }
+
+/* Case study step buttons: rows with 6+ buttons wrap at 3 per row; shorter rows (e.g. the workflow steps) stay on one line */
+#stepsWrapper .row:has(> .col-md:nth-child(6)) > .col-md {
+  min-width: 33.333%;
+}
