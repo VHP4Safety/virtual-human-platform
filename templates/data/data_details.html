@@ -1097,11 +1097,10 @@
      {% if record.type=="study"%}
     <div class="card-footer">
      
-        {% set cs0 = data.metadata.case_study[0] if data.metadata.case_study else '' %}
-        {% set rq0 = reg_q_labels.get(data.metadata.regulatory_question[0], data.metadata.regulatory_question[0]) if data.metadata.regulatory_question else '' %}
+        {% set rq0 = data.metadata.regulatory_question[0] if data.metadata.regulatory_question else '' %}
         {% for cs in data.metadata.case_study %}<a role="button" href="{{url_for('casestudy', case=cs|lower)}}" style="font-size:0.75em;" class="lh-1 p-1 btn btn-outline-vhppink-distinct rounded-pill border border-vhppink-distinct d-inline-flex align-items-center text-wrap">{{cs|capitalize }}</a> {% endfor %}
-        {% for rq in data.metadata.regulatory_question %}<a role="button" href="{{url_for('casestudy', case=cs0|lower, question=reg_q_labels.get(rq, rq) )}}" style="font-size:0.75em;" class="lh-1 p-1 btn btn-outline-vhppink-distinct rounded-pill border border-vhppink-distinct d-inline-flex align-items-center text-wrap">{{ reg_q_labels.get(rq, rq) }}</a> {% endfor %}
-        {% for fs in data.metadata.flow_step %}<a role="button" href="{{url_for('casestudy', case=cs0|lower, question=rq0, step=fs )}}" style="font-size:0.75em;" class="lh-1 p-1 btn btn-outline-vhppurple rounded-pill border border-vhppurple d-inline-flex align-items-center text-wrap">{{fs}}</a> {% endfor %}
+        {% for rq in data.metadata.regulatory_question %}<a{% if rq in reg_q_urls %} role="button" href="{{ reg_q_urls[rq] }}"{% endif %} style="font-size:0.75em;" class="lh-1 p-1 btn btn-outline-vhppink-distinct rounded-pill border border-vhppink-distinct d-inline-flex align-items-center text-wrap">{{ reg_q_labels.get(rq, rq) }}</a> {% endfor %}
+        {% for fs in data.metadata.flow_step %}<a role="button" href="{% if fs|lower in reg_q_steps.get(rq0, []) %}{{ reg_q_urls[rq0] }}/{{ fs|replace(' ', '_')|urlencode }}{% else %}{{ url_for('SafetyAssessmentWorkflow') }}#definition-{{ fs|lower|replace(' ', '-') }}{% endif %}" style="font-size:0.75em;" class="lh-1 p-1 btn btn-outline-vhppurple rounded-pill border border-vhppurple d-inline-flex align-items-center text-wrap">{{fs}}</a> {% endfor %}
 
     </div>
       {% endif %}

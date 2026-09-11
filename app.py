@@ -273,10 +273,21 @@ def get_reg_questions() -> dict:
             key = _REG_QUESTION_KEYS.get((slug, i))
             if not key:
                 continue
+            value = q.get("value") or f"Q{i + 1}"
+            steps = ((content.get("step2Contents") or {}).get(value) or {}).get("steps") or []
             result[key] = {
                 "label": q.get("label") or f"{slug.title()} Q{i + 1}",
                 "explanation": q.get("description", ""),
                 "case": slug,
+                # the case-study page keys questions by value ("Q2"), not label
+                "url": f"/casestudies/{slug}/{value}",
+                # process-flow steps (lowercased) whose button is enabled there;
+                # data-tab pills for any other step link to the glossary term
+                "enabled_steps": [
+                    (s.get("value") or "").lower()
+                    for s in steps
+                    if s.get("state") != "disabled"
+                ],
             }
     return result
 
@@ -848,7 +859,9 @@ def data():
     # become OR within that field downstream in _apply_filters.
     # The reg-question dropdown sends the question label; records store the
     # canonical reg_q_Xy key, so convert label -> key (same map methods uses).
-    reg_q_label_to_key = {v["label"]: k for k, v in get_reg_questions().items()}
+    # fetched once so every reg-question map below comes from the same result
+    reg_qs = get_reg_questions()
+    reg_q_label_to_key = {v["label"]: k for k, v in reg_qs.items()}
     filters = []
     for v in filter_case_study:
         filters.append(("case_study", v))
@@ -926,9 +939,11 @@ def data():
         page_size_met=page_size_met,
         stage_explanations=get_stage_explanations(),
         reg_question_explanations=get_reg_question_explanations(),
-        reg_question_cases={v["label"]: v.get("case", "") for v in get_reg_questions().values()},
-        reg_questions={v["label"]: k for k, v in get_reg_questions().items()},
-        reg_q_labels={k: v["label"] for k, v in get_reg_questions().items()},
+        reg_question_cases={v["label"]: v.get("case", "") for v in reg_qs.values()},
+        reg_questions=reg_q_label_to_key,
+        reg_q_labels={k: v["label"] for k, v in reg_qs.items()},
+        reg_q_urls={k: v["url"] for k, v in reg_qs.items()},
+        reg_q_steps={k: v["enabled_steps"] for k, v in reg_qs.items()},
         process_flow_steps=get_process_flow_steps(),
         case_studies=list(get_casestudies()),
     )
@@ -985,7 +1000,10 @@ def data_detail(dataid):
             return abort(404)
     # reg-question records store the canonical reg_q_Xy key; map key -> label so
     # the badges show the human-readable question.
-    reg_q_labels = {k: v["label"] for k, v in get_reg_questions().items()}
+    reg_qs = get_reg_questions()
+    reg_q_labels = {k: v["label"] for k, v in reg_qs.items()}
+    reg_q_urls = {k: v["url"] for k, v in reg_qs.items()}
+    reg_q_steps = {k: v["enabled_steps"] for k, v in reg_qs.items()}
     record = studies[0] if studies else (datasets[0] if datasets else None)
     if record is None:
         return abort(404)
@@ -995,6 +1013,8 @@ def data_detail(dataid):
         "data/data_details.html",
         data=record,
         reg_q_labels=reg_q_labels,
+        reg_q_urls=reg_q_urls,
+        reg_q_steps=reg_q_steps,
         page_title=f"{rec_title} — VHP4Safety data",
         meta_description=clip(rec_desc)
         or f"{rec_title}: a dataset in the VHP4Safety data collection.",
@@ -1631,7 +1651,7 @@ def workflows():
 
 
 # Individual case study page, dynamically filled based on URL
-@app.route("/casestudies/<case>", defaults={"step": ""})
+@app.route("/casestudies/<case>")
 @app.route("/casestudies/<case>/<question>")
 @app.route("/casestudies/<case>/<question>/<step>")
 @app.route("/casestudies/<case>/<question>/<step>/<step2>")

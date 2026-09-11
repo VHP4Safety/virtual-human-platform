@@ -292,8 +292,7 @@ function loadCaseStudyContent() {
       step6Contents = content.step6Contents;
       contentLoaded = true;
       updateStep1Content();
-      updateBreadcrumb(step);
-      updateWorkflowHeader(step);
+      step = applyStateFromUrl(); // re-read now the config keys are known
       updateStep2Content();
       updateStep3Content();
       updateStep4Content();
@@ -529,15 +528,40 @@ const crumbs = parts;
 console.log(crumbs)
 console.log(crumbs.length)
 
-currentStep1Value = (crumbs[2] || "").replace(/_/g, " ");
-currentStep2Value = (crumbs[3] || "").replace(/_/g, " ");
-currentStep3Value = (crumbs[4] || "").replace(/_/g, " ");
-currentStep4Value = (crumbs[5] || "").replace(/_/g, " ");
-currentStep5Value = (crumbs[6] || "").replace(/_/g, " ");
+// Links from elsewhere (e.g. the data page) arrive percent-encoded and may use
+// the question label ("Question 2: ...") instead of its key ("Q2").
+const seg = (i) => {
+  const s = (crumbs[i] || "").replace(/_/g, " ");
+  try { return decodeURIComponent(s); } catch (e) { return s; }
+};
+currentStep1Value = seg(2);
+currentStep2Value = seg(3);
+currentStep3Value = seg(4);
+currentStep4Value = seg(5);
+currentStep5Value = seg(6);
+if (contentLoaded) resolveUrlState();
 
 const step = getCurrentStepNumber();
 goToStep(step);
 return step;
+}
+
+// Snap URL values onto the config keys: questions match by key or label,
+// steps case-insensitively. The first value that doesn't resolve (and all
+// after it) is dropped, so the page stops at the deepest valid step instead
+// of rendering blank.
+function resolveUrlState() {
+  const same = (a, b) => (a || "").toLowerCase() === (b || "").toLowerCase();
+  const q = (step1Contents.questions || []).find(
+    (q) => same(q.value, currentStep1Value) || same(q.label, currentStep1Value)
+  );
+  const vals = [q ? q.value : "", currentStep2Value, currentStep3Value, currentStep4Value, currentStep5Value];
+  [step3Contents, step4Contents, step5Contents, step6Contents].forEach((level, i) => {
+    let node = level;
+    for (let j = 0; j <= i && node; j++) node = node[vals[j]];
+    vals[i + 1] = (node && Object.keys(node).find((k) => same(k, vals[i + 1]))) || "";
+  });
+  [currentStep1Value, currentStep2Value, currentStep3Value, currentStep4Value, currentStep5Value] = vals;
 }
 
 
