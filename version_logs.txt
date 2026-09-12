@@ -1,4 +1,4 @@
-Version 1.0-5 (2026-09-12)
+Version 1.0-6 (2026-09-12)
 --------------------------------------------------------------------------------
 - Add sitewide Organization JSON-LD
 - Add per-page SEO metadata and sitemap fix
@@ -6,6 +6,8 @@ Version 1.0-5 (2026-09-12)
 - Widen pages and make case-study step buttons fit
 - Publish Docker image to Docker Hub on release
 - Create CITATION.cff
+- Update regulatory question links and improve button styling in data cards
+- Link case-study pills to  enabled case-study steps
 
 Version 1.0-3 (2026-08-30)
 --------------------------------------------------------------------------------
