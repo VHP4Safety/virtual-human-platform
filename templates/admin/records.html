@@ -67,26 +67,33 @@
         <div class="card-body px-4">
           <div class="alert alert-danger d-none" id="form-problem" role="alert"></div>
 
-          {% for field in fields if field.entry != "fixed" %}
-          {% if not field.required and (loop.first or loop.previtem.required) %}
-          <h3 class="h6 text-secondary fw-semibold border-top pt-4 mt-2 mb-3">Optional</h3>
-          {% endif %}
+          {% for section in fields|rejectattr("entry", "equalto", "fixed")|groupby("section_order") %}
+          {% set first_section = loop.first %}
+          <h3 class="h6 text-vhppurple fw-semibold border-bottom pb-2 mb-3{% if not loop.first %} mt-5{% endif %}">{{ section.list[0].section }}</h3>
+          {% for field in section.list %}
+          {% set marks %}{% if field.required %} <span class="text-danger" title="Required">*</span>{% elif field.recommended %} <span class="small text-secondary fw-normal">recommended</span>{% endif %}{% if not field.required %}<span class="badge rounded-pill text-bg-light border fw-normal ms-1 d-none" data-missing="{{ field.name }}">Not filled in</span>{% endif %}{% endset %}
           <div class="mb-4" data-field-box="{{ field.name }}">
-            {% if field.entry == "links" %}
+            {% if field.entry in ("links", "choice") %}
             <fieldset>
-              <legend class="form-label fw-semibold fs-6 mb-1">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}{% if not field.required %}<span class="badge rounded-pill text-bg-light border fw-normal ms-1 d-none" data-missing="{{ field.name }}">Not filled in</span>{% endif %}</legend>
+              <legend class="form-label fw-semibold fs-6 mb-1">{{ field.label }}{{ marks }}</legend>
               <div class="form-text mt-0 mb-2">{{ field.help }}</div>
               <div class="row g-3" data-choices="{{ field.name }}"></div>
             </fieldset>
 
+            {% elif field.entry == "details" %}
+            <div class="form-label fw-semibold">{{ field.label }}{{ marks }}</div>
+            <div class="form-text mt-0 mb-2">{{ field.help }}</div>
+            <div class="d-flex flex-column gap-2" data-details="{{ field.name }}"></div>
+            <button type="button" class="btn btn-sm btn-outline-vhpblue mt-2" data-add-detail="{{ field.name }}"><i class="bi bi-plus-lg"></i> Add a page</button>
+
             {% elif field.entry == "addresses" %}
-            <div class="form-label fw-semibold">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}{% if not field.required %}<span class="badge rounded-pill text-bg-light border fw-normal ms-1 d-none" data-missing="{{ field.name }}">Not filled in</span>{% endif %}</div>
+            <div class="form-label fw-semibold">{{ field.label }}{{ marks }}</div>
             <div class="d-flex flex-column gap-2" data-addresses="{{ field.name }}"></div>
             <button type="button" class="btn btn-sm btn-outline-vhpblue mt-2" data-add-address="{{ field.name }}"><i class="bi bi-plus-lg"></i> Add an address</button>
             <div class="form-text">{{ field.help }}</div>
 
             {% elif field.entry == "image" %}
-            <div class="form-label fw-semibold">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}{% if not field.required %}<span class="badge rounded-pill text-bg-light border fw-normal ms-1 d-none" data-missing="{{ field.name }}">Not filled in</span>{% endif %}</div>
+            <div class="form-label fw-semibold">{{ field.label }}{{ marks }}</div>
             <div class="d-flex flex-wrap align-items-center gap-3">
               <div class="image-box rounded border d-flex align-items-center justify-content-center">
                 <img class="image-preview d-none" data-preview="{{ field.name }}" alt="">
@@ -102,14 +109,19 @@
             </div>
 
             {% else %}
-            <label class="form-label fw-semibold" for="field-{{ field.name }}">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}{% if not field.required %}<span class="badge rounded-pill text-bg-light border fw-normal ms-1 d-none" data-missing="{{ field.name }}">Not filled in</span>{% endif %}</label>
+            <label class="form-label fw-semibold" for="field-{{ field.name }}">{{ field.label }}{{ marks }}</label>
             {% if field.entry == "long text" %}
-            <textarea class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}" rows="4" {% if field.required %}required{% endif %} data-message="{{ field.message }}"></textarea>
+            <textarea class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}" rows="4"></textarea>
+            {% elif field.entry == "select" %}
+            <select class="form-select" id="field-{{ field.name }}" data-field="{{ field.name }}">
+              <option value="">Not given</option>
+              {% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
+            </select>
             {% elif field.entry == "address" %}
-            <input class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}" type="url" inputmode="url" placeholder="{{ 'https://doi.org/10.' if field.pattern.startswith('^https://doi') else 'https://' }}" {% if field.required %}required{% endif %} data-message="{{ field.message }}">
+            <input class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}" type="url" inputmode="url" placeholder="{{ 'https://doi.org/10.' if field.pattern.startswith('^https://doi') else 'https://' }}">
             <div class="form-text d-none" data-lookup="{{ field.name }}" aria-live="polite"></div>
             {% else %}
-            <input class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}" {% if field.required %}required{% endif %} data-message="{{ field.message }}">
+            <input class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}">
             {% endif %}
             <div class="form-text">{{ field.help }}</div>
             {% endif %}
@@ -117,7 +129,7 @@
             <div class="invalid-feedback d-block d-none" data-problem="{{ field.name }}"></div>
           </div>
 
-          {% if loop.first %}
+          {% if first_section and loop.first %}
           <div class="mb-4" data-field-box="identifier">
             <label class="form-label fw-semibold" for="identifier">Page address</label>
             <div class="input-group">
@@ -125,10 +137,11 @@
               <input class="form-control" id="identifier" pattern="[a-z0-9][a-z0-9-]*" maxlength="80" autocomplete="off">
               <button type="button" class="btn btn-outline-secondary d-none" id="identifier-change"><i class="bi bi-pencil"></i> Change address</button>
             </div>
-            <div class="form-text" id="identifier-help">Made from the name; you can shorten it. Lowercase letters, digits and hyphens. It cannot be changed once the {{ one }} is saved.</div>
+            <div class="form-text" id="identifier-help">Made from the name; you can shorten it. Lowercase letters, digits and hyphens.</div>
             <div class="invalid-feedback d-block d-none" data-problem="identifier"></div>
           </div>
           {% endif %}
+          {% endfor %}
           {% endfor %}
 
           {% for field in fields if field.entry == "fixed" %}

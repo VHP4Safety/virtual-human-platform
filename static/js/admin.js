@@ -13,6 +13,7 @@
   const one = data.kind.endsWith("s") ? data.kind.slice(0, -1) : data.kind;
   const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
   let previewTimer = null;
+  let previewRequest = null;
   let selected = null;
   let identifierTouched = false;
   let unsaved = false;
@@ -289,18 +290,45 @@
     if (others.length) {
       groups.push({ title: "Other links", options: others.map(function (value) { return { iri: value, name: value, description: "" }; }) });
     }
+    const single = field.entry === "choice";
+    if (single) {
+      groups.push({ title: "", options: [{ iri: "", name: "Not given", description: "" }] });
+    }
+    let total = 0;
     for (const group of groups) {
-      const column = make("div", "col-md-6");
-      column.append(make("div", "small fw-semibold text-secondary mb-1", group.title));
+      total += group.options.length;
+    }
+    // A long list gets a box that narrows it down by name.
+    if (total > 12) {
+      const finder = make("input", "form-control form-control-sm");
+      finder.type = "search";
+      finder.placeholder = "Find in this list";
+      finder.setAttribute("aria-label", "Find in the list of " + field.label);
+      finder.addEventListener("input", function () {
+        const text = finder.value.trim().toLowerCase();
+        for (const check of box.querySelectorAll(".form-check")) {
+          check.classList.toggle("d-none", Boolean(text) && !check.textContent.toLowerCase().includes(text));
+        }
+      });
+      const holder = make("div", "col-12");
+      holder.append(finder);
+      box.append(holder);
+    }
+    for (const group of groups) {
+      const column = make("div", single ? "col-12" : "col-md-6");
+      if (group.title) {
+        column.append(make("div", "small fw-semibold text-secondary mb-1", group.title));
+      }
       for (const option of group.options) {
         count += 1;
         const id = "choice-" + field.name + "-" + count;
-        const check = make("div", "form-check mb-1");
+        const check = make("div", single ? "form-check form-check-inline mb-1" : "form-check mb-1");
         const input = make("input", "form-check-input");
-        input.type = "checkbox";
+        input.type = single ? "radio" : "checkbox";
+        input.name = "choice-" + field.name;
         input.id = id;
         input.value = option.iri;
-        input.checked = values.includes(option.iri);
+        input.checked = option.iri ? values.includes(option.iri) : (single && values.length === 0);
         input.disabled = disabled;
         input.dataset.choiceOf = field.name;
         const label = make("label", "form-check-label", option.name);
@@ -320,11 +348,65 @@
   function chosen(name) {
     const values = [];
     for (const input of form.querySelectorAll('[data-choice-of="' + name + '"]')) {
-      if (input.checked) {
+      if (input.checked && input.value) {
         values.push(input.value);
       }
     }
     return values;
+  }
+
+  // The fields that take pages with their titles
+
+  function addDetail(name, address, title, disabled) {
+    const box = form.querySelector('[data-details="' + name + '"]');
+    const row = make("div", "input-group");
+    const titleInput = make("input", "form-control");
+    titleInput.placeholder = "Title";
+    titleInput.value = title || "";
+    titleInput.disabled = disabled;
+    titleInput.dataset.titleOf = name;
+    titleInput.setAttribute("aria-label", "Title");
+    const addressInput = make("input", "form-control");
+    addressInput.type = "url";
+    addressInput.placeholder = "https://";
+    addressInput.value = address || "";
+    addressInput.disabled = disabled;
+    addressInput.dataset.detailOf = name;
+    addressInput.setAttribute("aria-label", "Address");
+    const remove = make("button", "btn btn-outline-secondary");
+    remove.type = "button";
+    remove.disabled = disabled;
+    remove.setAttribute("aria-label", "Remove this page");
+    remove.append(make("i", "bi bi-x-lg"));
+    remove.addEventListener("click", function () {
+      row.remove();
+      setUnsaved(true);
+      renderCompleteness();
+      schedulePreview();
+    });
+    row.append(titleInput, addressInput, remove);
+    box.append(row);
+    return titleInput;
+  }
+
+  function renderDetails(field, values, disabled) {
+    form.querySelector('[data-details="' + field.name + '"]').replaceChildren();
+    for (const address of values) {
+      addDetail(field.name, address, data.names[address] || "", disabled);
+    }
+    form.querySelector('[data-add-detail="' + field.name + '"]').disabled = disabled;
+  }
+
+  function details(name) {
+    const found = [];
+    for (const input of form.querySelectorAll('[data-detail-of="' + name + '"]')) {
+      const address = input.value.trim();
+      if (address) {
+        const title = input.parentElement.querySelector('[data-title-of="' + name + '"]').value.trim();
+        found.push(title ? { "@id": address, name: title } : { "@id": address });
+      }
+    }
+    return found;
   }
 
   // A DOI is looked up at doi.org, so that the editor sees which publication it names.
@@ -452,6 +534,7 @@
       return;
     }
     selected = record;
+    clearPreview("Building the linked data…");
     identifierTouched = false;
     start.classList.add("d-none");
     form.classList.remove("d-none");
@@ -475,8 +558,10 @@
     document.getElementById("identifier-help").classList.toggle("d-none", Boolean(record));
     for (const field of data.fields) {
       const value = record ? record.values[field.name] : null;
-      if (field.entry === "links") {
-        renderChoices(field, Array.isArray(value) ? value : [], removed);
+      if (field.entry === "links" || field.entry === "choice") {
+        renderChoices(field, Array.isArray(value) ? value : (value ? [value] : []), removed);
+      } else if (field.entry === "details") {
+        renderDetails(field, Array.isArray(value) ? value : [], removed);
       } else if (field.entry === "addresses") {
         renderAddresses(field, Array.isArray(value) ? value : [], removed);
       } else if (field.entry === "image") {
@@ -529,10 +614,17 @@
       if (field.entry === "fixed") {
         continue;
       }
-      if (field.entry === "links") {
+      if (field.entry === "links" || field.entry === "choice") {
         const links = chosen(field.name);
         if (links.length) {
-          body[field.name] = links;
+          body[field.name] = field.entry === "choice" ? links[0] : links;
+        }
+        continue;
+      }
+      if (field.entry === "details") {
+        const pages = details(field.name);
+        if (pages.length) {
+          body[field.name] = pages;
         }
         continue;
       }
@@ -588,6 +680,14 @@
       data.records.unshift(record);
     }
     record.values = body;
+    for (const field of data.fields) {
+      if (field.entry === "details" && Array.isArray(body[field.name])) {
+        record.values[field.name] = body[field.name].map(function (page) {
+          data.names[page["@id"]] = page.name || data.names[page["@id"]] || "";
+          return page["@id"];
+        });
+      }
+    }
     record.edited = true;
     record.removed = false;
     record.version = result.answer.version;
@@ -662,27 +762,47 @@
 
   // The preview asks the platform what saving would publish: it builds the record with rdfsolve and
   // checks it against the application profile, without saving anything.
+  function clearPreview(text) {
+    document.getElementById("rdf-caption").textContent = text;
+    document.getElementById("rdf-graph").replaceChildren();
+    document.getElementById("rdf-problems").parentElement.classList.add("d-none");
+    document.getElementById("rdf-warnings").parentElement.classList.add("d-none");
+  }
+
   async function renderPreview() {
     if (!showRdf.checked || form.classList.contains("d-none")) {
       return;
     }
-    const caption = document.getElementById("rdf-caption");
+    // Only the latest request is drawn: an earlier one is stopped, so that its answer never shows the
+    // linked data of another record.
+    if (previewRequest) {
+      previewRequest.abort();
+    }
+    const request = new AbortController();
+    previewRequest = request;
     const address = identifier.value.trim() || (selected ? selected.identifier : "");
     if (!address) {
-      caption.textContent = "Fill in the name to see the linked data.";
-      document.getElementById("rdf-graph").replaceChildren();
+      clearPreview("Fill in the name to see the linked data.");
       return;
     }
-    if (!caption.textContent) {
-      caption.textContent = "Building the linked data…";
+    let result;
+    try {
+      const response = await fetch("/api/" + data.kind + "/" + encodeURIComponent(address) + "?preview=true", {
+        method: "PUT",
+        credentials: "same-origin",
+        signal: request.signal,
+        headers: { "X-Form-Token": form.dataset.formToken, "Content-Type": "application/json" },
+        body: JSON.stringify(values()),
+      });
+      result = { ok: response.ok, answer: await response.json().catch(function () { return {}; }) };
+    } catch (error) {
+      return;
     }
-    const sent = JSON.stringify(values());
-    const result = await api("PUT", "/api/" + data.kind + "/" + encodeURIComponent(address) + "?preview=true", values());
-    if (JSON.stringify(values()) !== sent) {
+    if (previewRequest !== request) {
       return;
     }
     if (!result.ok) {
-      caption.textContent = result.answer.error || "The preview is not available.";
+      clearPreview(result.answer.error || "The linked data could not be built.");
       return;
     }
     const graph = result.answer;
@@ -704,7 +824,7 @@
     warnings.replaceChildren();
     for (const field of data.fields) {
       for (const message of (graph.warnings || {})[field.name] || []) {
-        warnings.append(make("li", "", "Another " + one + " with the same " + field.label.toLowerCase() + ": " + message));
+        warnings.append(make("li", "", field.label + ": " + message));
       }
     }
     warnings.parentElement.classList.toggle("d-none", !warnings.children.length);
@@ -773,6 +893,11 @@
     }
   }
   for (const field of data.fields) {
+    if (field.entry === "details") {
+      form.querySelector('[data-add-detail="' + field.name + '"]').addEventListener("click", function () {
+        addDetail(field.name, "", "", false).focus();
+      });
+    }
     if (field.entry === "addresses") {
       form.querySelector('[data-add-address="' + field.name + '"]').addEventListener("click", function () {
         addAddress(field.name, "", false).focus();

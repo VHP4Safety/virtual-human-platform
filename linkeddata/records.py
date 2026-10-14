@@ -7,6 +7,8 @@ imports leave it as it is. Every change made on the platform is kept as a revisi
 import json
 from datetime import datetime, timezone
 
+from rdflib.collection import Collection
+from rdflib.namespace import SH
 from sqlalchemy import delete, func, insert, select
 
 from linkeddata import database, rdf
@@ -58,23 +60,40 @@ def names(iris: list[str]) -> dict[str, str]:
 
 
 def used_values(kind: str, field: str) -> list[str]:
-    """The values that the records of a class have in a field with several values, most used first."""
+    """The values that the records of a class have in a field, most used first."""
     counts = {}
     with database.session() as db:
         for values in db.scalars(select(getattr(Record, field)).where(Record.type == kind, Record.removed_at.is_(None))):
-            for value in values or []:
+            for value in values if isinstance(values, list) else [values] if values else []:
                 counts[value] = counts.get(value, 0) + 1
     return sorted(counts, key=lambda value: (-counts[value], value))
 
 
+def linked_classes(kind: str, field: str) -> list[str]:
+    """The classes that the application profile says a field links to: its sh:class, or those in its sh:or."""
+    path = rdf.fields(kind).loc[field, "property"]
+    found = []
+    for node in property_shapes(profile(), kind).get(path, []):
+        for value in profile().objects(node, SH["class"]):
+            found.append(str(value))
+        for listed in profile().objects(node, SH["or"]):
+            for alternative in Collection(profile(), listed):
+                for value in profile().objects(alternative, SH["class"]):
+                    found.append(str(value))
+    return found
+
+
 def choices(kind: str, field: str) -> list[Record]:
-    """The records that a field with several values can link to: all records of the classes that the
-    records of *kind* link to in it, such as the steps of the glossary for "about"."""
-    used = used_values(kind, field)
+    """The records that a field can link to: those of the classes that the application profile names
+    for it, or else those that the records of *kind* already link to in it."""
+    classes = linked_classes(kind, field)
     with database.session() as db:
-        classes = set(db.scalars(select(Record.type).where(Record.iri.in_(used))))
-        statement = select(Record).where(Record.type.in_(classes), Record.removed_at.is_(None))
-        return list(db.scalars(statement.order_by(Record.source, Record.iri)))
+        if classes:
+            statement = select(Record).where(Record.type.in_(classes))
+        else:
+            statement = select(Record).where(Record.iri.in_(used_values(kind, field)))
+        statement = statement.where(Record.removed_at.is_(None))
+        return list(db.scalars(statement.order_by(Record.source, func.lower(Record.name))))
 
 
 def duplicates(row: dict) -> dict[str, list[str]]:
@@ -97,8 +116,22 @@ def duplicates(row: dict) -> dict[str, list[str]]:
                 other = db.scalars(statement).first()
             if other is not None:
                 path_of_other = "/" + other.iri.removeprefix(settings()["base"])
-                found.setdefault(field, []).append(f"{other.name or other.iri} ({path_of_other}) has the same value.")
+                found.setdefault(field, []).append(f"{other.name or other.iri} ({path_of_other}) has the same value; check that this is not a duplicate.")
     return found
+
+
+def name_things(found: list[tuple[str, str, str]]) -> None:
+    """The things a record links to with their titles, such as its guides: (class, address, name).
+    A thing the platform does not know yet is added; a known one takes the new name."""
+    with database.session() as db, db.begin():
+        for kind, iri, name in found:
+            thing = db.get(Record, iri)
+            if thing is None:
+                db.add(Record(iri=iri, type=kind, source=PLATFORM, name=name))
+            elif thing.name != name:
+                thing.name = name
+                thing.source = PLATFORM
+                thing.updated_at = version()
 
 
 def document_of(iri: str) -> str | None:

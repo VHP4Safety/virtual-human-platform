@@ -1,13 +1,15 @@
 """The editor's form for a class, read from the model. Its fields are the columns of the records table
-that the class has. The application profile gives their order, name, explanation, and required or
-fixed values; the shapes made from the vocabularies explain the fields that the profile leaves out.
-What an editor enters in a field follows from the values the model allows in it."""
+that the class has. The application profile gives their section (sh:group), order, name, explanation,
+and required, recommended or fixed values, and the editor of each (dash:editor); the shapes made from
+the vocabularies explain the fields that the profile leaves out. Otherwise, what an editor enters in a
+field follows from the values the model allows in it."""
 
 import re
 from functools import cache
 
 from rdflib import Graph, URIRef
-from rdflib.namespace import SH
+from rdflib.collection import Collection
+from rdflib.namespace import RDFS, SH
 
 from linkeddata import rdf
 from linkeddata.model import DASH, curie, profile, property_shapes, shapes
@@ -15,12 +17,19 @@ from linkeddata.model import DASH, curie, profile, property_shapes, shapes
 IMAGE = "https://schema.org/ImageObject"
 
 
-def first(graph: Graph, nodes: list, predicate: URIRef):
+def term(graph: Graph, nodes: list, predicate: URIRef):
+    """The first value of a predicate in some shapes, as an RDF term."""
     for node in nodes:
         found = graph.value(node, predicate)
         if found is not None:
-            return found.toPython()
+            return found
     return None
+
+
+def first(graph: Graph, nodes: list, predicate: URIRef):
+    """The first value of a predicate in some shapes, as a Python value."""
+    found = term(graph, nodes, predicate)
+    return found.toPython() if found is not None else None
 
 
 def readable(label: str) -> str:
@@ -34,14 +43,21 @@ def plain(text: str) -> str:
     return re.sub(r"\[\[([^\]]+)\]\]", r"\1", text)
 
 
-def entry(known, fixed: list, single_line: bool, address: bool, editor: str | None, several: bool) -> str:
-    """What the editor enters: a text, a longer text, a web address, a list of web addresses, links to
-    things, an image, or nothing, when the value is fixed. *address* is True when the profile only takes
-    a web address, and *editor* is the DASH editor that the profile names."""
+def entry(known, fixed: list, single_line: bool, address: bool, editor: str | None, several: bool, options: list) -> str:
+    """What the editor enters: a text, a longer text, a web address, a list of web addresses, one or
+    several of the records a field links to, pages with their titles, one of a list of values, an
+    image, or nothing, when the value is fixed. *address* is True when the profile only takes a web
+    address, and *editor* is the DASH editor that the profile names."""
     if fixed:
         return "fixed"
     if IMAGE in known["targets"]:
         return "image"
+    if options:
+        return "select"
+    if editor == str(DASH.DetailsEditor):
+        return "details"
+    if editor == str(DASH.InstancesSelectEditor):
+        return "links" if several else "choice"
     if editor == str(DASH.URIEditor):
         return "addresses" if several else "address"
     if address:
@@ -73,14 +89,22 @@ def form(kind: str) -> list[dict]:
         description = first(profile(), mine, SH.description) or first(every, in_every.get(iri, []), SH.description)
         required = first(profile(), mine, SH.minCount)
         order = first(profile(), mine, SH.order)
+        group = term(profile(), mine, SH.group)
+        listed = term(profile(), mine, SH["in"])
+        options = [str(value) for value in Collection(profile(), listed)] if listed is not None else []
         found = {
             "name": field,
             "property": curie(iri),
             "label": first(profile(), mine, SH.name) or readable(known.loc[field, "label"]),
             "help": plain(description or ""),
-            "required": bool(required),
+            "required": bool(required) and first(profile(), mine, SH.severity) != str(SH.Warning),
+            "recommended": bool(required) and first(profile(), mine, SH.severity) == str(SH.Warning),
             "message": first(profile(), mine, SH.message) or "",
             "pattern": first(profile(), mine, SH.pattern) or "",
+            "options": options,
+            "class": str(first(profile(), mine, SH["class"]) or ""),
+            "section": str(profile().value(group, RDFS.label) or "More") if group is not None else "More",
+            "section_order": int(profile().value(group, SH.order) or 99) if group is not None else 99,
             "several": rdf.several(field),
             "fixed": fixed,
             "entry": entry(
@@ -90,12 +114,13 @@ def form(kind: str) -> list[dict]:
                 str(first(profile(), mine, SH.nodeKind)) == str(SH.IRI),
                 str(first(profile(), mine, DASH.editor) or ""),
                 rdf.several(field),
+                options,
             ),
         }
         if order is None:
             others.append(found)
         else:
-            ordered.append((order, found))
+            ordered.append(((found["section_order"], order), found))
     ordered.sort(key=lambda pair: pair[0])
     others.sort(key=lambda found: found["label"])
     fields = []

@@ -64,7 +64,8 @@ def values(kind: str, body: dict) -> dict[str, list]:
             continue
         items = []
         for item in value if isinstance(value, list) else [value]:
-            if isinstance(item, dict) and list(item) == ["@id"]:
+            # A link is {"@id": ...}, with a "name" when it is a page that the record gives with its title.
+            if isinstance(item, dict) and "@id" in item and set(item) <= {"@id", "name"}:
                 items.append(item["@id"])
             else:
                 items.append(item)
@@ -72,6 +73,19 @@ def values(kind: str, body: dict) -> dict[str, list]:
     for field in forms.form(kind):
         if field["fixed"]:
             found[field["name"]] = field["fixed"]
+    return found
+
+
+def titled(kind: str, body: dict) -> list[tuple[str, str, str]]:
+    """The pages that a request's body gives with their titles, in the fields the profile edits as
+    details (dash:DetailsEditor): (class, address, title)."""
+    found = []
+    for field in forms.form(kind):
+        if field["entry"] != "details":
+            continue
+        for item in body.get(field["name"]) or []:
+            if isinstance(item, dict) and isinstance(item.get("@id"), str) and isinstance(item.get("name"), str) and item["name"].strip():
+                found.append((field["class"], item["@id"], item["name"].strip()))
     return found
 
 
@@ -133,25 +147,36 @@ def store(kind: str, identifier: str, replace: bool = True):
         return conflict
     try:
         row = rdf.row(address, writable[kind], PLATFORM, values(writable[kind], body))
-        document = rdf.document(rdf.check(row))
-    except rdf.NotFitting as problem:
-        return jsonify({"error": str(problem), "fields": problem.problems}), 422
+        found, problems, warnings = rdf.checked(row)
     except ValueError as problem:
         return error(str(problem), 422)
-    revision = records.save(row, document, token.name, token.orcid, replace)
-    return done(address, revision, 201 if revision.action == "Added" else 200, records.duplicates(row))
+    if problems:
+        refused = rdf.NotFitting(problems)
+        return jsonify({"error": str(refused), "fields": problems}), 422
+    revision = records.save(row, rdf.document(found), token.name, token.orcid, replace)
+    records.name_things(titled(writable[kind], body))
+    return done(address, revision, 201 if revision.action == "Added" else 200, together(warnings, records.duplicates(row)))
+
+
+def together(*found: dict[str, list[str]]) -> dict[str, list[str]]:
+    """The messages of several checks, by field."""
+    joined = {}
+    for messages in found:
+        for field, listed in messages.items():
+            joined.setdefault(field, []).extend(listed)
+    return joined
 
 
 def preview(address: str, kind: str, body: dict):
     """The statements a write would publish, compared with the record as it is, and what is wrong with each field."""
     try:
         row = rdf.row(address, kind, PLATFORM, values(kind, body))
-        found, problems = rdf.checked(row)
+        found, problems, warnings = rdf.checked(row)
     except ValueError as problem:
         return error(str(problem), 422)
     before = changes.statements(records.document_of(address))
     edges = changes.edges(before, found if found is not None else Graph(), URIRef(address))
-    return jsonify({**edges, "fields": problems, "warnings": records.duplicates(row)})
+    return jsonify({**edges, "fields": problems, "warnings": together(warnings, records.duplicates(row))})
 
 
 @blueprint.put("/api/<kind>/<identifier>")

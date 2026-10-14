@@ -52,8 +52,12 @@ def edit(kind: str):
     for spec in specs():
         titles[spec["name"]] = spec.get("title", spec["name"])
     choices = {}
+    titled = []
     for field in fields:
-        if field["entry"] == "links":
+        if field["entry"] == "details":
+            for record in found:
+                titled.extend(record["values"].get(field["name"]) or [])
+        if field["entry"] in ("links", "choice"):
             # The groups that the records use most come first.
             used = records.used_values(writable[kind], field["name"])
             groups = {}
@@ -72,6 +76,7 @@ def edit(kind: str):
         "fields": fields,
         "records": found,
         "choices": choices,
+        "names": records.names(titled),
     }
     response = make_response(render_template(
         "admin/records.html",
