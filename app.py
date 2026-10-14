@@ -1483,14 +1483,11 @@ def method_page(methodid):
     """Render a single method page using templates/methods/method.html
     Method details are taken from methods_index.json (keyed by method id).
     """
-    try:
-        methods = get_json_dict(METHODS_URL)
-        # methods_index.json is a dict keyed by method id
-        if methodid not in methods:
-            abort(404)
-        method_details = methods[methodid]
-    except Exception as e:
-        return f"Error processing methods data: {e}", 500
+    methods = get_json_dict(METHODS_URL)
+    # methods_index.json is a dict keyed by method id
+    if methodid not in methods:
+        abort(404)
+    method_details = methods[methodid]
 
     # Try to load the full method JSON from the docs/methods folder (raw github)
     method_json = None
