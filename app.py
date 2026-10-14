@@ -67,6 +67,7 @@ CASESTUDIES_URL = (
 CASESTUDY_CONTENT_PREFIX = "https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/"
 # BioStudies accessions (S-VHPS21, E-MTAB-1234) and Zenodo record ids (1234567).
 DATA_ID_PATTERN = r"S-[A-Z]+\d+|E-[A-Z]+-\d+|\d+"
+MAX_PAGE_SIZE = 48
 
 # SEO defaults. Every page renders a <title>/<meta description> (see base.html);
 # routes override page_title / meta_description with page-specific values, and
@@ -83,6 +84,13 @@ def clip(text, limit=160):
     """Trim a description to a search-snippet-friendly length (~160 chars)."""
     text = " ".join((text or "").split())
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
+
+
+def page_args(default_size: int) -> tuple[int, int]:
+    """Read ?page and ?page_size from the request, kept within sensible bounds."""
+    page = max(request.args.get("page", 1, type=int), 1)
+    page_size = request.args.get("page_size", default_size, type=int)
+    return page, min(max(page_size, 1), MAX_PAGE_SIZE)
 
 ################################################################################
 class RegexConverter(BaseConverter):
@@ -855,8 +863,7 @@ def robots():
 @app.route("/data")
 def data():
     # Get query parameters for pagination and search
-    page = request.args.get("page", 1, type=int)
-    page_size = request.args.get("page_size", 12, type=int)
+    page, page_size = page_args(12)
     search_query = request.args.get("search", "", type=str)
 
     # Get filter parameters (multi-select via repeated query params). Param
@@ -1040,8 +1047,7 @@ def data_detail(dataid):
 @app.route("/models_page")
 def models():
     # Get query parameters for pagination and search
-    page = request.args.get("page", 1, type=int)
-    page_size = request.args.get("page_size", 18, type=int)
+    page, page_size = page_args(18)
     search_query = request.args.get("query", "", type=str)
 
     # Get filter parameters
@@ -1214,8 +1220,7 @@ def tools():
             ]
 
         # Pagination
-        page = request.args.get("page", 1, type=int)
-        page_size = request.args.get("page_size", 12, type=int)
+        page, page_size = page_args(12)
         total = len(tools)
         start = (page - 1) * page_size
         end = start + page_size
@@ -1420,8 +1425,7 @@ def methods():
             stages.append("Other")
 
         # Pagination
-        page = request.args.get("page", 1, type=int)
-        page_size = request.args.get("page_size", 12, type=int)
+        page, page_size = page_args(12)
         total = len(methods_filtered)
         start = (page - 1) * page_size
         end = start + page_size
