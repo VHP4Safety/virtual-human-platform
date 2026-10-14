@@ -1,0 +1,15 @@
+name: methods
+url: https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/methods_index.json
+parser: methods
+
+# How the parsed rows become the model: the arguments of rdfsolve's Rule.between, for each kind of row.
+rules:
+  Method:
+    - {predicate: a, value: "https://bioschemas.org/draft_terms/LabProtocol"}
+    - {predicate: "https://schema.org/name", object: method}
+    - {predicate: "https://schema.org/description", object: description}
+    - {predicate: "https://schema.org/citation", object: citation}
+    - {predicate: "https://schema.org/about", object: key_events}
+    - {predicate: "https://schema.org/about", object: aops}
+    - {predicate: "https://schema.org/about", object: stages}
+    - {predicate: "http://purl.org/dc/terms/conformsTo", value: "https://bioschemas.org/profiles/LabProtocol/0.9-DRAFT"}

@@ -1,0 +1,15 @@
+name: tools
+url: https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/service_index.json
+parser: tools
+
+# How the parsed rows become the model: the arguments of rdfsolve's Rule.between, for each kind of row.
+rules:
+  Tool:
+    - {predicate: a, value: "https://schema.org/SoftwareApplication"}
+    - {predicate: "https://schema.org/name", object: service}
+    - {predicate: "https://schema.org/description", object: description}
+    - {predicate: "https://schema.org/url", object: main_url}
+    - {predicate: "https://schema.org/image", object: logo}
+    - {predicate: "https://schema.org/about", object: stage}
+    - {predicate: "https://schema.org/about", object: questions}
+    - {predicate: "http://purl.org/dc/terms/conformsTo", value: "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"}
