@@ -122,7 +122,7 @@
       } else if (text && field.pattern && !new RegExp(field.pattern).test(text)) {
         problems[field.name] = [field.message || "This value does not have the expected form."];
       } else if (text && field.entry === "address" && !isWebAddress(text)) {
-        problems[field.name] = ["Write the full address, starting with https://."];
+        problems[field.name] = ["Write the full address, starting with https:// (or http://)."];
       }
     }
     if (identifier.value && !/^[a-z0-9][a-z0-9-]*$/.test(identifier.value)) {
