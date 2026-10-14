@@ -7,6 +7,8 @@ starts (columns are only ever added).
 """
 
 import os
+import sqlite3
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -152,6 +154,20 @@ def write_ahead_log(connection, _record) -> None:
     cursor = connection.cursor()
     cursor.execute("PRAGMA journal_mode=WAL")
     cursor.close()
+
+
+def backup(keep: int = 14) -> Path:
+    """A copy of the database, made while it is in use with SQLite's online backup; the latest *keep*
+    copies are kept in PLATFORM_STATE/backups."""
+    engine()
+    folder = STATE_DIR / "backups"
+    folder.mkdir(parents=True, exist_ok=True)
+    target = folder / f"platform-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')}.sqlite"
+    with closing(sqlite3.connect(STATE_DIR / "platform.sqlite")) as source, closing(sqlite3.connect(target)) as copy:
+        source.backup(copy)
+    for old in sorted(folder.glob("platform-*.sqlite"))[:-keep]:
+        old.unlink()
+    return target
 
 
 def session() -> Session:

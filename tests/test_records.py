@@ -48,3 +48,13 @@ def test_a_database_made_before_a_column_was_added(monkeypatch):
     assert records.get("https://platform.vhp4safety.nl/tools/old").about == []
     with database.engine().connect() as connection:
         assert connection.execute(text("PRAGMA journal_mode")).scalar() == "wal"
+
+
+def test_backups():
+    from linkeddata import database
+
+    records.save(row(name="X"), {"name": "X"}, "Test Editor", ORCID)
+    for _ in range(3):
+        copy = database.backup(keep=2)
+    assert copy.exists()
+    assert len(list(copy.parent.glob("platform-*.sqlite"))) == 2

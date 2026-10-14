@@ -128,6 +128,8 @@ app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.config.from_mapping(cache_config)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+if not os.environ.get("SECRET_KEY"):
+    app.logger.warning("SECRET_KEY is not set: logins end when the platform restarts, and fail when more than one worker runs.")
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLASK_DEBUG") != "1"
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.register_blueprint(account_blueprint)

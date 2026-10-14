@@ -4,20 +4,21 @@
     python -m linkeddata import [--offline]     import every source (or its last download) into the database
     python -m linkeddata export                 write the records made on the platform to the records repository
     python -m linkeddata push                   send the records repository to its remote
+    python -m linkeddata backup                 copy the database to PLATFORM_STATE/backups (the latest 14 are kept)
     python -m linkeddata token ORCID NAME KIND  create a write token, for example the first one
 """
 
 import argparse
 import sys
 
-from linkeddata import export, tokens
+from linkeddata import database, export, tokens
 from linkeddata.imports import import_all
 from linkeddata.model import write_schema
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m linkeddata", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=["model", "import", "export", "push", "token"])
+    parser.add_argument("command", choices=["model", "import", "export", "push", "backup", "token"])
     parser.add_argument("arguments", nargs="*", help="token: the ORCID iD, the name, and the kinds it may write")
     parser.add_argument("--offline", action="store_true", help="import the sources downloaded by the last import")
     parser.add_argument("--days", type=int, default=tokens.DEFAULT_DAYS, help="how long a new token is valid")
@@ -34,6 +35,8 @@ def main() -> None:
         print("Exported" if export.export() else "Nothing changed")
     elif args.command == "push":
         export.push()
+    elif args.command == "backup":
+        print(f"Wrote {database.backup()}")
     else:
         if len(args.arguments) < 3:
             parser.error("token needs an ORCID iD, a name, and at least one kind")
