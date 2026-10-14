@@ -64,7 +64,7 @@
   <div class="pb-2">
     <h1><span class="text-vhpblue">{{ val(record.title, 'Dataset') }}</span></h1>
     {% if record.description %}
-      <p class="text-secondary">{{ record.description | safe }}</p>
+      <p class="text-secondary">{{ record.description | sanitize_html }}</p>
     {% endif %}
   </div>
   

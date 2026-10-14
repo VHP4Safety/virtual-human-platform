@@ -4,11 +4,13 @@ import json
 import os
 import re
 
+import nh3
 import requests
 import urllib.parse
 from flask import Flask, abort, jsonify, render_template, request, Response
 from flask_caching import Cache
 from jinja2 import TemplateNotFound
+from markupsafe import Markup
 from werkzeug.routing import BaseConverter
 
 # from wikidataintegrator import wdi_core
@@ -117,6 +119,12 @@ def handle_cache_reset():
     """
     if "reset_cache" in request.args:
         cache.clear()
+
+
+@app.template_filter("sanitize_html")
+def sanitize_html(value) -> Markup:
+    """Keep the formatting tags of upstream HTML; scripts and event handlers are removed."""
+    return Markup(nh3.clean(str(value or "")))
 
 
 @cache.memoize(timeout=CACHE_TIMEOUT)
