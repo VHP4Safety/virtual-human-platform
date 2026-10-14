@@ -19,3 +19,6 @@ prefixes:
   bioschemas_draft: https://bioschemas.org/draft_terms/
   dct: http://purl.org/dc/terms/
 
+# The kinds of records that are written through the platform's API, by the path of their pages.
+writable:
+  tools: https://schema.org/SoftwareApplication

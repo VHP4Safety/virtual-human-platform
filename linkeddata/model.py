@@ -6,6 +6,7 @@ from pathlib import Path
 import requests
 import yaml
 from rdflib import Graph
+from rdfsolve.api import Client
 from rdfsolve.schema_models import MinedSchema
 
 MODEL_DIR = Path(__file__).parent / "model" / "v1"
@@ -50,3 +51,8 @@ def ontology() -> Graph:
     for path in vocabularies(settings()):
         graph.parse(path, format="json-ld" if path.suffix == ".jsonld" else "turtle")
     return graph
+
+
+def contract_client() -> Client:
+    """A client that checks every record it creates against the approved schema."""
+    return Client.open(MODEL_DIR / "schema.json", Graph(), contract=True)

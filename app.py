@@ -18,6 +18,7 @@ from werkzeug.routing import BaseConverter
 from data.biostudies.search import BioStudiesExtractor
 from data.zenodo.search import ZenodoExtractor
 from data.mapping import normalize_all, scrub_draft
+from linkeddata.api import blueprint as api_blueprint
 
 ################################################################################
 CACHE_TIMEOUT = 60 * 60 * 24 * 5  # 5 days
@@ -114,6 +115,7 @@ cache_config = {
 }
 app = Flask(__name__)
 app.config.from_mapping(cache_config)
+app.register_blueprint(api_blueprint)
 # Google Search Console verification token (rendered as a <meta> tag in
 # base.html when set). Kept out of the repo -- set it in the service env.
 app.config["GOOGLE_SITE_VERIFICATION"] = os.environ.get("GOOGLE_SITE_VERIFICATION", "")
