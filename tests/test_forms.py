@@ -12,10 +12,11 @@ def test_the_form_of_tools():
         ("url", "Website", "address", True),
         ("image", "Logo or screenshot", "image", False),
         ("about", "Assessment steps and case-study questions", "links", False),
-        ("citation", "How to cite", "text", False),
+        ("citation", "Publication to cite", "address", False),
         ("conforms_to", "Bioschemas profile", "fixed", False),
     ]
     assert fields[0]["message"] == "Give the tool a name."
+    assert fields[5]["pattern"].startswith("^https://doi")
     assert fields[6]["fixed"] == ["https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"]
     for field in fields:
         assert field["help"], field["name"]

@@ -110,6 +110,8 @@
       const text = input.value.trim();
       if (field.required && !text) {
         problems[field.name] = [field.message || "This field is required."];
+      } else if (text && field.pattern && !new RegExp(field.pattern).test(text)) {
+        problems[field.name] = [field.message || "This value does not have the expected form."];
       } else if (text && field.entry === "address" && !isWebAddress(text)) {
         problems[field.name] = ["Write the full address, starting with https://."];
       }
@@ -238,6 +240,41 @@
     return values;
   }
 
+  // A DOI is looked up at doi.org, so that the editor sees which publication it names.
+
+  async function lookUp(name) {
+    const box = form.querySelector('[data-lookup="' + name + '"]');
+    if (!box) {
+      return;
+    }
+    const address = fieldInput(name).value.trim();
+    box.classList.add("d-none");
+    if (!/^https:\/\/doi\.org\/10\.\S+$/.test(address)) {
+      return;
+    }
+    box.className = "form-text";
+    box.textContent = "Looking up the DOI…";
+    try {
+      const response = await fetch(address, { headers: { Accept: "application/vnd.citationstyles.csl+json" } });
+      if (fieldInput(name).value.trim() !== address) {
+        return;
+      }
+      if (!response.ok) {
+        box.className = "form-text text-danger";
+        box.textContent = "No publication was found with this DOI. Check it before saving.";
+        return;
+      }
+      const found = await response.json();
+      const year = found.issued && found.issued["date-parts"] ? found.issued["date-parts"][0][0] : "";
+      const parts = [found["container-title"], year].filter(function (part) { return part; });
+      box.className = "form-text text-success";
+      box.replaceChildren(make("i", "bi bi-check-circle"), " " + (found.title || "Publication found") + (parts.length ? " · " + parts.join(", ") : ""));
+    } catch (error) {
+      box.className = "form-text";
+      box.textContent = "The DOI could not be looked up now; it is checked for its form when saving.";
+    }
+  }
+
   // The fields that take an image
 
   function setImage(name, address) {
@@ -315,6 +352,7 @@
       } else if (field.entry !== "fixed") {
         fieldInput(field.name).value = Array.isArray(value) ? value.join(" ") : (value || "");
         fieldInput(field.name).disabled = removed;
+        lookUp(field.name);
       }
     }
     document.getElementById("save").disabled = removed;
@@ -481,6 +519,9 @@
     }
   });
   for (const field of data.fields) {
+    if (field.entry === "address") {
+      fieldInput(field.name).addEventListener("change", function () { lookUp(field.name); });
+    }
     if (field.entry === "image") {
       const chooser = form.querySelector('[data-upload="' + field.name + '"]');
       form.querySelector('[data-choose="' + field.name + '"]').addEventListener("click", function () { chooser.click(); });

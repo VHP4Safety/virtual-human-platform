@@ -17,7 +17,7 @@ from sqlalchemy import JSON, select
 from linkeddata import database
 from linkeddata.database import Record
 from linkeddata.document import compact
-from linkeddata.model import contract_client, profile, settings
+from linkeddata.model import contract_client, profile, property_shapes, settings
 
 
 class NotFitting(ValueError):
@@ -43,6 +43,34 @@ def fields(kind: str) -> pd.DataFrame:
     "values" lists the datatypes of their texts, and "links" tells whether they take addresses."""
     known = client().fields(client().model(kind)).set_index("field")
     return known.loc[known.index.intersection(Record.__table__.columns.keys())]
+
+
+@cache
+def addresses(kind: str) -> set[str]:
+    """The fields of *kind* that the application profile fills with web addresses only (sh:nodeKind sh:IRI).
+    Their values are given to rdfsolve as addresses, which a field such as citation (a text or a work)
+    would otherwise not tell from texts."""
+    known = fields(kind)
+    found = set()
+    for path, nodes in property_shapes(profile(), kind).items():
+        for node in nodes:
+            if profile().value(node, SH.nodeKind) == SH.IRI:
+                for field in known.index:
+                    if known.loc[field, "property"] == path:
+                        found.add(field)
+    return found
+
+
+def as_address(value):
+    """A web address as an address; other values stay texts, which the profile then refuses."""
+    if isinstance(value, list):
+        found = []
+        for item in value:
+            found.append(as_address(item))
+        return found
+    if isinstance(value, str) and value.startswith(("https://", "http://")):
+        return URIRef(value)
+    return value
 
 
 def several(field: str) -> bool:
@@ -102,10 +130,13 @@ def linked(table: pd.DataFrame) -> Graph:
     """The rows of a table as linked data; rdfsolve raises ValueError for a row that does not fit."""
     graph = Graph()
     for kind, rows_of_kind in table.groupby("type"):
+        rows_of_kind = rows_of_kind.copy()
         taken = {}
         for field in fields(kind).index:
             if field in rows_of_kind.columns:
                 taken[field] = field
+                if field in addresses(kind):
+                    rows_of_kind[field] = rows_of_kind[field].map(as_address)
         graph += client().to_graph(client().from_table(kind, rows_of_kind, id_column="iri", **taken))
     for prefix, namespace in settings()["prefixes"].items():
         graph.bind(prefix, namespace)
@@ -133,22 +164,24 @@ def check(new: dict) -> Graph:
             try:
                 linked(pd.DataFrame([{"iri": new["iri"], "type": new["type"], field: new[field]}]))
             except ValueError as problem:
-                reason = str(problem.__cause__ or problem).removeprefix(field + ": ")
+                reason = str(problem.__cause__ or problem).removeprefix(field + ": ").splitlines()[0]
                 problems[field] = [f"This value does not fit the field ({reason})."]
         raise NotFitting(problems)
     problems = {}
-    # Only web addresses are kept, so that a link on a page never runs a script (javascript:) or opens a file.
-    for _, predicate, value in found:
-        if isinstance(value, URIRef) and predicate != RDF.type and not str(value).startswith(("https://", "http://")):
-            field = field_of_property(new["type"], str(predicate))
-            problems.setdefault(field, []).append("A web address starts with https:// or http://.")
-    if problems:
-        raise NotFitting(problems)
     conforms, results, _ = pyshacl.validate(found, shacl_graph=profile())
     if not conforms:
         for result in results.subjects(RDF.type, SH.ValidationResult):
             field = field_of_property(new["type"], str(results.value(result, SH.resultPath)))
-            problems.setdefault(field, []).append(str(results.value(result, SH.resultMessage)))
+            message = str(results.value(result, SH.resultMessage))
+            if message not in problems.setdefault(field, []):
+                problems[field].append(message)
+    # Only web addresses are kept, so that a link on a page never runs a script (javascript:) or opens a file.
+    for _, predicate, value in found:
+        if isinstance(value, URIRef) and predicate != RDF.type and not str(value).startswith(("https://", "http://")):
+            field = field_of_property(new["type"], str(predicate))
+            if field not in problems:
+                problems[field] = ["A web address starts with https:// or http://."]
+    if problems:
         raise NotFitting(problems)
     return found
 

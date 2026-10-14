@@ -52,8 +52,22 @@ def test_linked_data_as_rows():
 def test_the_application_profile():
     with pytest.raises(rdf.NotFitting) as problem:
         rdf.check(rdf.row(BASE + "tools/u", TOOL, "platform", {"name": ["U"], "url": ["javascript:alert(1)"]}))
-    assert problem.value.problems == {"url": ["A web address starts with https:// or http://."]}
+    assert problem.value.problems["url"] == ["A web address starts with https:// or http://."]
     with pytest.raises(rdf.NotFitting) as problem:
         rdf.check(rdf.row(BASE + "tools/u", TOOL, "platform", {"name": ["U"]}))
     assert problem.value.problems["description"] == ["Describe the tool in a few sentences."]
     assert "conforms_to" in problem.value.problems
+
+
+def test_the_publication_to_cite_is_a_doi():
+    fitting = {
+        "name": ["U"],
+        "description": ["Does U."],
+        "url": ["https://u.org/"],
+        "conforms_to": ["https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"],
+    }
+    for citation in ["a text about a paper", "https://example.org/paper"]:
+        with pytest.raises(rdf.NotFitting) as problem:
+            rdf.check(rdf.row(BASE + "tools/u", TOOL, "platform", {**fitting, "citation": [citation]}))
+        assert problem.value.problems == {"citation": ["Give the publication's DOI as a web address, starting with https://doi.org/10."]}
+    rdf.check(rdf.row(BASE + "tools/u", TOOL, "platform", {**fitting, "citation": ["https://doi.org/10.5281/zenodo.1234567"]}))

@@ -6,7 +6,8 @@ from pathlib import Path
 
 import requests
 import yaml
-from rdflib import Graph
+from rdflib import Graph, URIRef
+from rdflib.namespace import SH
 from rdfsolve.api import Client
 from rdfsolve.schema_models import MinedSchema
 
@@ -44,6 +45,15 @@ def write_schema() -> Path:
 def profile() -> Graph:
     """The application profile: required, fixed and single values, and the guidance of the editor's form."""
     return Graph().parse(MODEL_DIR / "profile.ttl", format="turtle")
+
+
+def property_shapes(graph: Graph, kind: str) -> dict[str, list]:
+    """The property shapes of the node shapes that target a class, by the address of their path."""
+    found = {}
+    for shape in graph.subjects(SH.targetClass, URIRef(kind)):
+        for prop in graph.objects(shape, SH.property):
+            found.setdefault(str(graph.value(prop, SH.path)), []).append(prop)
+    return found
 
 
 def shapes() -> Graph:

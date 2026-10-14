@@ -1,8 +1,9 @@
 # The application profile of the platform: what the platform adds to schema.org and Bioschemas.
 #
 # Its property shapes also guide the editor's form: sh:order and sh:name place and name each field,
-# sh:description explains it, sh:minCount marks a required field, sh:hasValue a fixed value, and
-# dash:singleLine false a longer text. sh:message is what an editor reads when a value is missing.
+# sh:description explains it, sh:minCount marks a required field, sh:hasValue a fixed value,
+# sh:nodeKind sh:IRI and sh:pattern a web address of a given form, and dash:singleLine false a longer
+# text. sh:message is what an editor reads when a value is missing or does not fit.
 # The required fields of tools are the minimum of Bioschemas' ComputationalTool profile.
 
 @prefix schema: <https://schema.org/> .
@@ -35,8 +36,10 @@
         sh:path schema:about ; sh:order 5 ; sh:name "Assessment steps and case-study questions" ;
         sh:description "The steps of the safety assessment that the tool supports, and the case-study questions it helps to answer. The tool catalogue filters tools by them." ] ;
     sh:property [
-        sh:path schema:citation ; sh:order 6 ; sh:name "How to cite" ; sh:maxCount 1 ;
-        sh:description "The publication to cite when the tool is used: its authors, year, title and journal, or its DOI." ] ;
+        sh:path schema:citation ; sh:order 6 ; sh:name "Publication to cite" ; sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ; sh:pattern "^https://doi\\.org/10\\.[0-9]{4,9}/\\S+$" ;
+        sh:description "The DOI of the publication to cite when the tool is used, such as the article that describes it." ;
+        sh:message "Give the publication's DOI as a web address, starting with https://doi.org/10." ] ;
     sh:property [
         sh:path dct:conformsTo ; sh:order 7 ; sh:name "Bioschemas profile" ; sh:nodeKind sh:IRI ;
         sh:hasValue <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE> ;

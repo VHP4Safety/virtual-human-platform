@@ -10,19 +10,10 @@ from rdflib import Graph, Namespace, URIRef
 from rdflib.namespace import SH
 
 from linkeddata import rdf
-from linkeddata.model import profile, shapes
+from linkeddata.model import profile, property_shapes, shapes
 
 DASH = Namespace("http://datashapes.org/dash#")
 IMAGE = "https://schema.org/ImageObject"
-
-
-def property_shapes(graph: Graph, kind: str) -> dict[str, list]:
-    """The property shapes of the node shapes that target a class, by the address of their path."""
-    found = {}
-    for shape in graph.subjects(SH.targetClass, URIRef(kind)):
-        for prop in graph.objects(shape, SH.property):
-            found.setdefault(str(graph.value(prop, SH.path)), []).append(prop)
-    return found
 
 
 def first(graph: Graph, nodes: list, predicate: URIRef):
@@ -44,13 +35,15 @@ def plain(text: str) -> str:
     return re.sub(r"\[\[([^\]]+)\]\]", r"\1", text)
 
 
-def entry(known, fixed: list, single_line: bool) -> str:
+def entry(known, fixed: list, single_line: bool, address: bool) -> str:
     """What the editor enters: a text, a longer text, a web address, links to things, an image, or
-    nothing, when the value is fixed."""
+    nothing, when the value is fixed. *address* is True when the profile only takes a web address."""
     if fixed:
         return "fixed"
     if IMAGE in known["targets"]:
         return "image"
+    if address:
+        return "address"
     if any(value != "IRI" for value in known["values"]):
         return "text" if single_line else "long text"
     if known["targets"]:
@@ -84,9 +77,15 @@ def form(kind: str) -> list[dict]:
             "help": plain(description or ""),
             "required": bool(required),
             "message": first(profile(), mine, SH.message) or "",
+            "pattern": first(profile(), mine, SH.pattern) or "",
             "several": rdf.several(field),
             "fixed": fixed,
-            "entry": entry(known.loc[field], fixed, first(profile(), mine, DASH.singleLine) is not False),
+            "entry": entry(
+                known.loc[field],
+                fixed,
+                first(profile(), mine, DASH.singleLine) is not False,
+                str(first(profile(), mine, SH.nodeKind)) == str(SH.IRI),
+            ),
         }
         if order is None:
             others.append(found)

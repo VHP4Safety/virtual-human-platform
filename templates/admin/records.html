@@ -95,7 +95,8 @@
             {% if field.entry == "long text" %}
             <textarea class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}" rows="4" {% if field.required %}required{% endif %} data-message="{{ field.message }}"></textarea>
             {% elif field.entry == "address" %}
-            <input class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}" type="url" inputmode="url" placeholder="https://" {% if field.required %}required{% endif %} data-message="{{ field.message }}">
+            <input class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}" type="url" inputmode="url" placeholder="{{ 'https://doi.org/10.' if field.pattern.startswith('^https://doi') else 'https://' }}" {% if field.required %}required{% endif %} data-message="{{ field.message }}">
+            <div class="form-text d-none" data-lookup="{{ field.name }}" aria-live="polite"></div>
             {% else %}
             <input class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}" {% if field.required %}required{% endif %} data-message="{{ field.message }}">
             {% endif %}
