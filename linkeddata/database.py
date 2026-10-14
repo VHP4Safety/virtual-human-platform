@@ -2,14 +2,15 @@
 
 The records table has one row per record and one column per field of the model, named as rdfsolve
 names the field (conforms_to for dct:conformsTo). A field with several values is a JSON column. To
-keep a new field, a column of that name is added here (and to an existing database with ALTER TABLE).
+keep a new field, a column of that name is added here; an existing database gets it when the platform
+starts (columns are only ever added).
 """
 
 import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from sqlalchemy import JSON, Engine, create_engine
+from sqlalchemy import JSON, Engine, create_engine, event, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
 STATE_DIR = Path(os.environ.get("PLATFORM_STATE", "instance"))
@@ -114,14 +115,38 @@ class Note(Base):
     component: Mapped[str | None]
 
 
+def add_missing_columns(made: Engine) -> None:
+    """The columns that the tables have gained since the database was made are added to it."""
+    found = inspect(made)
+    with made.begin() as connection:
+        for table in Base.metadata.sorted_tables:
+            present = {column["name"] for column in found.get_columns(table.name)}
+            for column in table.columns:
+                if column.name in present:
+                    continue
+                kind = column.type.compile(made.dialect)
+                default = " DEFAULT '[]'" if isinstance(column.type, JSON) else ""
+                connection.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {kind}{default}'))
+
+
 def engine() -> Engine:
-    """The engine of the database; the file and its tables are made on first use."""
+    """The engine of the database; the file and its tables are made, or completed, on first use."""
     path = STATE_DIR / "platform.sqlite"
     if path not in _engines:
         STATE_DIR.mkdir(parents=True, exist_ok=True)
-        _engines[path] = create_engine(f"sqlite:///{path}", connect_args={"timeout": 30})
-        Base.metadata.create_all(_engines[path])
+        made = create_engine(f"sqlite:///{path}", connect_args={"timeout": 30})
+        event.listen(made, "connect", write_ahead_log)
+        Base.metadata.create_all(made)
+        add_missing_columns(made)
+        _engines[path] = made
     return _engines[path]
+
+
+def write_ahead_log(connection, _record) -> None:
+    """With SQLite's write-ahead log, pages are read while a record is written."""
+    cursor = connection.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.close()
 
 
 def session() -> Session:
