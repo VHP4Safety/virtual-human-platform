@@ -65,6 +65,8 @@ CASESTUDIES_URL = (
 )
 # Case-study content is only fetched from the config repository.
 CASESTUDY_CONTENT_PREFIX = "https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/"
+# BioStudies accessions (S-VHPS21, E-MTAB-1234) and Zenodo record ids (1234567).
+DATA_ID_PATTERN = r"S-[A-Z]+\d+|E-[A-Z]+-\d+|\d+"
 
 # SEO defaults. Every page renders a <title>/<meta description> (see base.html);
 # routes override page_title / meta_description with page-specific values, and
@@ -985,6 +987,8 @@ def split_text_int(value: None | str) -> tuple[str, None | int]:
 
 @app.route("/data/<dataid>")
 def data_detail(dataid):
+    if not re.fullmatch(DATA_ID_PATTERN, dataid):
+        abort(404)
     bs_results, zen_results = get_repository_data(dataid)
 
     studies = bs_results.get("hits", [])
@@ -1559,6 +1563,8 @@ def tool_page(toolname):
 
 @app.route("/model/<modelid>")
 def model_page(modelid):
+    if not re.fullmatch(DATA_ID_PATTERN, modelid):
+        abort(404)
     zen_results = get_repository_model(modelid)
 
     # Extract datasets and metadata from Zenodo
