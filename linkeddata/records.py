@@ -5,12 +5,18 @@ imports leave it as it is. Every change made on the platform is kept as a revisi
 """
 
 import json
+from datetime import datetime, timezone
 
 from sqlalchemy import delete, insert, select
 
 from linkeddata import database, rdf
 from linkeddata.database import PLATFORM, Record, Revision, now
 from linkeddata.model import settings
+
+
+def version() -> str:
+    """The version of a record: when it was last written, to the microsecond, so that two writes differ."""
+    return datetime.now(timezone.utc).isoformat()
 
 
 def address(path: str) -> str:
@@ -79,7 +85,7 @@ def save(row: dict, document: dict, name: str, orcid: str, replace: bool = True)
         created = db.get(Record, row["iri"]) is None
         if replace:
             db.execute(delete(Record).where(Record.iri == row["iri"]))
-        db.execute(insert(Record), [{**row, "source": PLATFORM, "updated_at": now()}])
+        db.execute(insert(Record), [{**row, "source": PLATFORM, "updated_at": version()}])
         revision = Revision(
             record_iri=row["iri"],
             action="Added" if created else "Changed",
@@ -99,7 +105,21 @@ def retire(iri: str, name: str, orcid: str) -> Revision:
         record = db.get(Record, iri)
         record.removed_at = now()
         record.source = PLATFORM
+        record.updated_at = version()
         revision = Revision(record_iri=iri, action="Removed", previous=previous, name=name, orcid=orcid)
+        db.add(revision)
+    return revision
+
+
+def restore(iri: str, name: str, orcid: str) -> Revision:
+    """A removed record is put back as it was when it was removed."""
+    with database.session() as db, db.begin():
+        record = db.get(Record, iri)
+        record.removed_at = None
+        record.updated_at = version()
+    document = document_of(iri)
+    with database.session() as db, db.begin():
+        revision = Revision(record_iri=iri, action="Restored", document=document, name=name, orcid=orcid)
         db.add(revision)
     return revision
 

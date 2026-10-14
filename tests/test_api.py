@@ -132,3 +132,24 @@ def test_uploads_are_limited(client, monkeypatch):
     monkeypatch.setattr(images, "MAX_BYTES", 100)
     response = client.post("/api/images", data={"image": (io.BytesIO(png()), "logo.png")}, headers=bearer("tools"))
     assert response.status_code == 413
+
+
+def test_a_record_changed_since_it_was_read_is_not_replaced(client):
+    headers = bearer("tools")
+    read = client.put("/api/tools/x", json=TOOL, headers=headers).json["version"]
+    assert client.put("/api/tools/x", json={**TOOL, "name": "B"}, headers={**headers, "If-Match": f'"{read}"'}).status_code == 200
+    stale = client.put("/api/tools/x", json={**TOOL, "name": "C"}, headers={**headers, "If-Match": f'"{read}"'})
+    assert stale.status_code == 412
+    assert records.get(BASE + "tools/x").name == "B"
+    assert client.delete("/api/tools/x", headers={**headers, "If-Match": f'"{read}"'}).status_code == 412
+
+
+def test_restoring_a_removed_record(client):
+    headers = bearer("tools")
+    client.put("/api/tools/x", json=TOOL, headers=headers)
+    client.delete("/api/tools/x", headers=headers)
+    assert client.post("/api/tools/x/restore", headers=headers).status_code == 200
+    record = records.get(BASE + "tools/x")
+    assert record.removed_at is None and record.name == TOOL["name"]
+    assert records.history(1)[0].action == "Restored"
+    assert client.post("/api/tools/x/restore", headers=headers).status_code == 404

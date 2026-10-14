@@ -35,9 +35,19 @@ def edit(kind: str):
         values = {}
         for field in fields:
             values[field["name"]] = getattr(record, field["name"])
-        found.append({"identifier": record.iri.rsplit("/", 1)[-1], "edited": record.source == PLATFORM, "removed": False, "values": values})
+        found.append({
+            "identifier": record.iri.rsplit("/", 1)[-1],
+            "edited": record.source == PLATFORM,
+            "removed": False,
+            "version": record.updated_at,
+            "values": values,
+        })
     for identifier in sorted(records.removed(kind)):
-        found.append({"identifier": identifier, "edited": True, "removed": True, "values": {}})
+        removed = records.get(records.address(f"{kind}/{identifier}"))
+        values = {}
+        for field in fields:
+            values[field["name"]] = getattr(removed, field["name"])
+        found.append({"identifier": identifier, "edited": True, "removed": True, "version": removed.updated_at, "values": values})
     titles = {}
     for spec in specs():
         titles[spec["name"]] = spec.get("title", spec["name"])

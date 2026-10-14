@@ -6,6 +6,7 @@ revision are saved in the database, so its page shows it at once.
     POST   /api/<kind>                       create a record; its identifier is made from its name
     DELETE /api/<kind>/<id>                  remove the record; its address stays gone
     DELETE /api/<kind>/<id>?permanent=true   remove the record and its address
+    POST   /api/<kind>/<id>/restore          put a removed record back
     POST   /api/images                       upload an image (the form field "image"); gives its address
 
 With ?preview=true, PUT and POST save nothing: they answer with the statements the record would have,
@@ -15,6 +16,8 @@ The body of PUT and POST is a JSON object of the record's fields, named as in th
 "description", "url", "about", ...). A link is written as {"@id": "https://..."}, and a field
 with several values as a list. A record that does not fit the model is refused with what is wrong
 with each field. A request is made with a write token, or by the editor page with an editor's login.
+Every answer gives the record's version; a request that sends it back (If-Match) is refused when the
+record has changed since, so that one editor's change never silently replaces another's.
 """
 
 import re
@@ -91,7 +94,21 @@ def authorized(kind: str):
 
 
 def done(address: str, revision, status: int):
-    return jsonify({"@id": address, "change": url_for("changes.change", number=revision.id)}), status
+    record = records.get(address)
+    return jsonify({
+        "@id": address,
+        "change": url_for("changes.change", number=revision.id),
+        "version": record.updated_at if record is not None else None,
+    }), status
+
+
+def changed_since_read(address: str):
+    """A refusal when the request names the version it read (If-Match) and the record has changed since."""
+    expected = request.headers.get("If-Match", "").strip('" ')
+    record = records.get(address)
+    if not expected or record is None or record.updated_at == expected:
+        return None
+    return error("Someone else changed this record since you opened it. Open it again to see their change, then make yours.", 412)
 
 
 def store(kind: str, identifier: str, replace: bool = True):
@@ -109,6 +126,9 @@ def store(kind: str, identifier: str, replace: bool = True):
     address = records.address(f"{kind}/{identifier}")
     if request.args.get("preview") == "true":
         return preview(address, writable[kind], body)
+    conflict = changed_since_read(address)
+    if conflict:
+        return conflict
     try:
         row = rdf.row(address, writable[kind], PLATFORM, values(writable[kind], body))
         document = rdf.document(rdf.check(row))
@@ -169,11 +189,27 @@ def delete(kind: str, identifier: str):
     permanent = request.args.get("permanent") == "true"
     if record is None or (record.removed_at and not permanent):
         return error("There is no record at this address.", 404)
+    conflict = changed_since_read(record.iri)
+    if conflict:
+        return conflict
     if permanent:
         revision = records.remove(record.iri, token.name, token.orcid)
     else:
         revision = records.retire(record.iri, token.name, token.orcid)
     return done(record.iri, revision, 200)
+
+
+@blueprint.post("/api/<kind>/<identifier>/restore")
+def restore(kind: str, identifier: str):
+    if kind not in settings().get("writable", {}):
+        return error(f"Records of kind {kind!r} are not written through the API.", 404)
+    token = authorized(kind)
+    if token is None:
+        return error("A valid write token for this kind of record is needed.", 401)
+    record = records.get(records.address(f"{kind}/{identifier}"))
+    if record is None or not record.removed_at:
+        return error("There is no removed record at this address.", 404)
+    return done(record.iri, records.restore(record.iri, token.name, token.orcid), 200)
 
 
 @blueprint.post("/api/images")

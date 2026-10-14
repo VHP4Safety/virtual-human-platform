@@ -131,8 +131,11 @@
     return problems;
   }
 
-  async function api(method, address, body) {
+  async function api(method, address, body, version) {
     const options = { method: method, credentials: "same-origin", headers: { "X-Form-Token": form.dataset.formToken } };
+    if (version) {
+      options.headers["If-Match"] = '"' + version + '"';
+    }
     if (body instanceof FormData) {
       options.body = body;
     } else if (body) {
@@ -442,6 +445,7 @@
     document.getElementById("save").disabled = removed;
     document.getElementById("remove").classList.toggle("d-none", !record);
     document.getElementById("remove").disabled = false;
+    document.getElementById("restore").classList.toggle("d-none", !removed);
     document.getElementById("removal-keep").disabled = removed;
     document.getElementById("removal-keep").checked = !removed;
     document.getElementById("removal-free").checked = removed;
@@ -504,11 +508,13 @@
     const save = document.getElementById("save");
     save.disabled = true;
     const result = address
-      ? await api("PUT", "/api/" + data.kind + "/" + encodeURIComponent(address), body)
+      ? await api("PUT", "/api/" + data.kind + "/" + encodeURIComponent(address), body, selected ? selected.version : null)
       : await api("POST", "/api/" + data.kind, body);
     save.disabled = false;
     if (!result.ok) {
-      if (result.status === 409) {
+      if (result.status === 412) {
+        showProblems({}, result.answer.error);
+      } else if (result.status === 409) {
         showProblems({ identifier: ["This address belonged to a removed " + one + ". Choose another one."] });
       } else {
         showProblems(result.answer.fields || {}, result.answer.error || "The " + one + " could not be saved.");
@@ -529,6 +535,7 @@
     record.values = body;
     record.edited = true;
     record.removed = false;
+    record.version = result.answer.version;
     setUnsaved(false);
     open(record);
     toast("Saved. The " + one + "'s page shows it now.", true, { text: "See the change", href: result.answer.change });
@@ -538,7 +545,7 @@
     const permanently = document.getElementById("removal-free").checked;
     const record = selected;
     const name = record.values.name || record.identifier;
-    const result = await api("DELETE", "/api/" + data.kind + "/" + encodeURIComponent(record.identifier) + (permanently ? "?permanent=true" : ""));
+    const result = await api("DELETE", "/api/" + data.kind + "/" + encodeURIComponent(record.identifier) + (permanently ? "?permanent=true" : ""), null, record.version);
     bootstrap.Modal.getOrCreateInstance(document.getElementById("remove-dialog")).hide();
     if (!result.ok) {
       toast(result.answer.error || "The " + one + " could not be removed.", false);
@@ -551,7 +558,7 @@
     } else {
       record.removed = true;
       record.edited = true;
-      record.values = {};
+      record.version = result.answer.version;
       open(record);
     }
     toast("Removed " + name + ".", true, { text: "See the change", href: result.answer.change });
@@ -714,6 +721,18 @@
     bootstrap.Modal.getOrCreateInstance(document.getElementById("remove-dialog")).show();
   });
   document.getElementById("remove-confirm").addEventListener("click", remove);
+  document.getElementById("restore").addEventListener("click", async function () {
+    const record = selected;
+    const result = await api("POST", "/api/" + data.kind + "/" + encodeURIComponent(record.identifier) + "/restore");
+    if (!result.ok) {
+      toast(result.answer.error || "The " + one + " could not be restored.", false);
+      return;
+    }
+    record.removed = false;
+    record.version = result.answer.version;
+    open(record);
+    toast("Restored " + (record.values.name || record.identifier) + ".", true, { text: "See the change", href: result.answer.change });
+  });
   document.getElementById("filter").addEventListener("input", renderList);
   for (const choice of document.querySelectorAll('input[name="show"]')) {
     choice.addEventListener("change", renderList);
