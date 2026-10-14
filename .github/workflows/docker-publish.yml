@@ -98,9 +98,9 @@ jobs:
           set -euo pipefail
           docker run -d --name vhp_publish_test -p 5050:5050 "$IMAGE:ci-test"
 
-          # Wait for Flask to report that it is listening.
+          # Wait for gunicorn to report that it is listening.
           for _ in $(seq 1 30); do
-            if docker logs vhp_publish_test 2>&1 | grep -q "Running on http://"; then
+            if docker logs vhp_publish_test 2>&1 | grep -q "Listening at: http://"; then
               break
             fi
             sleep 2
@@ -113,8 +113,8 @@ jobs:
             exit 1
           fi
 
-          if ! docker logs vhp_publish_test 2>&1 | grep -q "Running on http://"; then
-            echo "Flask never reported that it was listening." >&2
+          if ! docker logs vhp_publish_test 2>&1 | grep -q "Listening at: http://"; then
+            echo "gunicorn never reported that it was listening." >&2
             exit 1
           fi
 
