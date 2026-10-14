@@ -1,0 +1,45 @@
+# ToxTemp documents describe methods (Krebs et al., ALTEX 36(4), 2019). They are written in
+# ToxTempAssistant and sent to the platform, not fetched; the layout is ToxTempAssistant's AssayDetail
+# (format_version 2, see its openapi/preview.yaml). The document's root is a ToxTemp, and its address
+# is given when it is received.
+name: toxtemp
+
+# The kind of the objects under each key of a ToxTemp document.
+kinds:
+  metadata: Metadata
+  authors: Author
+  assay: Assay
+  sections: Section
+  subsections: Subsection
+  questions: Question
+  answer: Answer
+
+# How a ToxTemp becomes the model: the arguments of rdfsolve's Rule.between, for each kind.
+rules:
+  ToxTemp:
+    - {predicate: a, value: "https://bioschemas.org/draft_terms/LabProtocol"}
+    - {predicate: "https://schema.org/name", object: "assay/title"}
+    - {predicate: "https://schema.org/description", object: "assay/description"}
+    - {predicate: "https://schema.org/version", object: "assay/version"}
+    - {predicate: "https://schema.org/author", object: "metadata/authors"}
+    - {predicate: "https://schema.org/hasPart", object: sections}
+    - {predicate: "http://purl.org/dc/terms/conformsTo", value: "https://bioschemas.org/profiles/LabProtocol/0.9-DRAFT"}
+  Author:
+    - {predicate: a, value: "https://schema.org/Person"}
+    - {predicate: "https://schema.org/name", object: name}
+    - {predicate: "https://schema.org/identifier", object: orcid_id}
+  Section:
+    - {predicate: a, value: "https://schema.org/CreativeWork"}
+    - {predicate: "https://schema.org/name", object: title}
+    - {predicate: "https://schema.org/hasPart", object: subsections}
+  Subsection:
+    - {predicate: a, value: "https://schema.org/CreativeWork"}
+    - {predicate: "https://schema.org/name", object: title}
+    - {predicate: "https://schema.org/hasPart", object: questions}
+  Question:
+    - {predicate: a, value: "https://schema.org/Question"}
+    - {predicate: "https://schema.org/name", object: question_text}
+    - {predicate: "https://schema.org/suggestedAnswer", object: answer}
+  Answer:
+    - {predicate: a, value: "https://schema.org/Answer"}
+    - {predicate: "https://schema.org/text", object: text}

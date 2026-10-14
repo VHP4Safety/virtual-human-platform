@@ -97,7 +97,7 @@ def test_glossary_parser():
 
 def test_conversion():
     spec = yaml.safe_load((SOURCES / "tools.yaml").read_text(encoding="utf-8"))
-    data, queries = convert(spec, json.dumps(TOOLS).encode(), BASE)
+    data, queries = convert(spec, tools.parse(json.dumps(TOOLS).encode()), BASE)
     assert objects(data, BASE + "tools/aop-builder", SCHEMA + "about") == {
         ox.NamedNode(GLOSSARY + "VHP0000156"),
         ox.NamedNode(BASE + "casestudies/parkinson/Q1"),
@@ -133,3 +133,66 @@ def test_documents_and_database(tmp_path):
         document = db.execute("SELECT document FROM documents").fetchone()[0]
     nodes = {node["@id"]: node for node in json.loads(document)["@graph"]}
     assert nodes[GLOSSARY + "VHP0000156"]["name"] == "Toxicodynamics"
+
+
+TOXTEMP = {
+    "@id": "methods/alamar-blue",
+    "@type": "ToxTemp",
+    "format_version": 2,
+    "metadata": {
+        "creation_date": "2026-10-01T10:00:00+02:00",
+        "authors": [
+            {"credited": True, "name": "Julia Meerman", "organization": "RIVM", "orcid_id": "0000-0001-6487-1655", "email": None}
+        ],
+    },
+    "investigation": {"id": 1, "title": "Parkinson", "description": "", "submission_date": "2026-01-01"},
+    "study": {"id": 2, "title": "Cell models", "description": "", "submission_date": "2026-01-01"},
+    "assay": {"id": 3, "title": "Alamar blue assay", "description": "Mitochondrial activity.", "version": "1.2"},
+    "history": [],
+    "sections": [
+        {
+            "id": 5,
+            "title": "5. Test method exposure scheme and endpoints",
+            "subsections": [
+                {
+                    "id": 56,
+                    "title": "5.6 Positive controls",
+                    "questions": [
+                        {
+                            "id": 560,
+                            "question_text": "Which positive controls are used?",
+                            "answer": {"text": "Rotenone", "accepted": True, "llm_abstained": False, "source_documents": []},
+                        }
+                    ],
+                }
+            ],
+        }
+    ],
+}
+
+
+def only(data: ox.Dataset, subject, predicate: str):
+    """The one object of a subject (an address or a blank node) for a predicate."""
+    found = []
+    for quad in data.quads_for_subject(subject):
+        if quad.predicate == ox.NamedNode(predicate):
+            found.append(quad.object)
+    assert len(found) == 1, found
+    return found[0]
+
+
+def test_toxtemp():
+    spec = yaml.safe_load((SOURCES / "toxtemp.yaml").read_text(encoding="utf-8"))
+    data, _ = convert(spec, TOXTEMP, BASE)
+    method = ox.NamedNode(BASE + "methods/alamar-blue")
+    assert only(data, method, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type").value == "https://bioschemas.org/draft_terms/LabProtocol"
+    assert only(data, method, SCHEMA + "name").value == "Alamar blue assay"
+    section = only(data, method, SCHEMA + "hasPart")
+    subsection = only(data, section, SCHEMA + "hasPart")
+    assert only(data, subsection, SCHEMA + "name").value == "5.6 Positive controls"
+    question = only(data, subsection, SCHEMA + "hasPart")
+    assert only(data, question, SCHEMA + "name").value == "Which positive controls are used?"
+    answer = only(data, question, SCHEMA + "suggestedAnswer")
+    assert only(data, answer, SCHEMA + "text").value == "Rotenone"
+    author = only(data, method, SCHEMA + "author")
+    assert only(data, author, SCHEMA + "identifier").value == "0000-0001-6487-1655"

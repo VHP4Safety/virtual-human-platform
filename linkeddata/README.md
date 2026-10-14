@@ -38,7 +38,9 @@ python -m pytest tests          # checks parsers, rules and output on small inpu
   until rdfsolve reads JSON with a context itself.
 - **`sources/<name>.yaml`**: where a source comes from, its parser, and its rules: how its rows
   become the model. The rules are the arguments of rdfsolve's `Rule.between`, one list per kind of
-  row; rdfsolve finds the fields by name and writes the CONSTRUCT queries.
+  row; rdfsolve finds the fields by name and writes the CONSTRUCT queries. A source that is sent to
+  the platform instead of fetched (`toxtemp.yaml`) has no `url` and no parser; its `kinds` name the
+  kind of the objects under each key of its documents.
 - **`model/v1/`**: the model. `model.yaml` gives the base address of identifiers, the vocabularies
   (schema.org and the Bioschemas types, pinned and kept in `vocabularies/`), the classes and the
   prefixes; `profile.ttl` is what the platform adds to them; `schema.json` is the approved model,
