@@ -146,7 +146,7 @@
                             class="btn btn-sm btn-outline-vhpblue"
                             data-bs-toggle="tooltip"
                             data-bs-title="View metadata (.md)"
-                            onclick="showMetadata('{{ study.meta_data }}', '{{ study.title }}')">
+                            onclick='showMetadata({{ (study.meta_data or "") | tojson }}, {{ (study.title or "") | tojson }})'>
                         <i class="bi bi-list-ul"></i>
                             Metadata
                         </button>
@@ -185,9 +185,9 @@
             filterTypes: ['case-study', 'reg-question', 'flow-step'],
             multiSelect: false, // Single selection per category
             initialFilters: {
-                'case-study': '{{ filter_case_study or "" }}',
-                'flow-step': '{{ filter_flow_step or "" }}',
-                'reg-question': '{{ filter_regulatory_question or "" }}'
+                'case-study': {{ (filter_case_study or "") | tojson }},
+                'flow-step': {{ (filter_flow_step or "") | tojson }},
+                'reg-question': {{ (filter_regulatory_question or "") | tojson }}
             },
             filterFieldMap: {
                 'case-study': 'filter_case_study',

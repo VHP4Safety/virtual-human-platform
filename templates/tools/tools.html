@@ -146,7 +146,7 @@
                             {% endif %}
 
                             <!-- Meta-Data -->
-                            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="tooltip" data-bs-title="View metadata (.md)" onclick="showMetadata('{{ item.meta_data }}', '{{ item.service }}')"><i class="bi bi-list-ul"></i></button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="tooltip" data-bs-title="View metadata (.md)" onclick='showMetadata({{ (item.meta_data or "") | tojson }}, {{ (item.service or "") | tojson }})'><i class="bi bi-list-ul"></i></button>
                         </div>
                     </div>
                 </div>
@@ -173,9 +173,9 @@
             multiSelect: true, // Multiple selections per category
             multipleInputs: true, // Create separate hidden input for each value
             initialFilters: {
-                'case-study': [{% for c in selected_case_studies %}'{{ c }}'{% if not loop.last %}, {% endif %}{% endfor %}],
-                'flow-step': [{% for stage in selected_stages %}'{{ stage }}'{% if not loop.last %}, {% endif %}{% endfor %}],
-                'reg-question': [{% for question in selected_questions %}'{{ question }}'{% if not loop.last %}, {% endif %}{% endfor %}]
+                'case-study': {{ selected_case_studies | tojson }},
+                'flow-step': {{ selected_stages | tojson }},
+                'reg-question': {{ selected_questions | tojson }}
             },
             filterFieldMap: {
                 'case-study': 'case_study',

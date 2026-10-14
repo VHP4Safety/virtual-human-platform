@@ -142,7 +142,7 @@
               <!-- Metadata / MD file -->
               {% set md = method_json.get('meta_data') or method_details.get('meta_data') or '' %}
               {% if md %}
-                <button type="button" class="btn btn-outline-vhpblue w-100" onclick="showMetadata('{{ md }}', '{{ title | e }}')">View metadata</button>
+                <button type="button" class="btn btn-outline-vhpblue w-100" onclick='showMetadata({{ (md or "") | tojson }}, {{ (title or "") | tojson }})'>View metadata</button>
               {% endif %}
             </div>
 
