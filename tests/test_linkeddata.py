@@ -128,7 +128,7 @@ def test_documents_and_database(tmp_path):
     """))
     rows = documents(store, settings())
     assert [iri for iri, _, _ in rows] == [BASE + "tools/t"]
-    write(tmp_path / "platform.sqlite", rows, [], [])
+    write(tmp_path / "platform.sqlite", rows, [], [], [])
     with closing(sqlite3.connect(tmp_path / "platform.sqlite")) as db:
         document = db.execute("SELECT document FROM documents").fetchone()[0]
     nodes = {node["@id"]: node for node in json.loads(document)["@graph"]}

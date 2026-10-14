@@ -1,12 +1,15 @@
 """The build: each source is fetched and cleaned by its parser, converted to the model with rdfsolve,
-checked with rdfsolve against the model, and written to an Oxigraph store (one named graph per
-source) and, as one JSON-LD document per page, to SQLite."""
+joined with the platform's own records, checked with rdfsolve against the model, and written to an
+Oxigraph store (one named graph per source) and, as one JSON-LD document per page, to SQLite."""
 
+import fcntl
 import hashlib
 import importlib
 import json
 import shutil
 import sqlite3
+import subprocess
+import sys
 from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,11 +17,12 @@ from pathlib import Path
 import pyoxigraph as ox
 import requests
 import yaml
-from pyld import jsonld
 from rdfsolve import SchemaMiner
 from rdfsolve.api import Client
 from rdfsolve.conversion import Profile, Rule, write_query
 
+from linkeddata import records
+from linkeddata.document import compact
 from linkeddata.lift import lift
 from linkeddata.model import ontology, settings, shapes
 
@@ -82,15 +86,6 @@ def check(data: ox.Dataset, classes: list[str]) -> list[dict]:
     return notes
 
 
-def context(config: dict) -> dict:
-    """The JSON-LD context: schema.org terms without a prefix, other vocabularies with theirs."""
-    terms = {"@vocab": config["prefixes"]["schema"]}
-    for prefix, namespace in config["prefixes"].items():
-        if prefix != "schema":
-            terms[prefix] = namespace
-    return terms
-
-
 def documents(store: ox.Store, config: dict) -> list[tuple[str, str, str]]:
     """One JSON-LD document for each record under the base."""
     rows = []
@@ -100,12 +95,11 @@ def documents(store: ox.Store, config: dict) -> list[tuple[str, str, str]]:
             continue
         page = list(store.query(PAGE, substitutions={ox.Variable("record"): record}, use_default_graph_as_union=True))
         statements = ox.serialize(page, format=ox.RdfFormat.N_TRIPLES).decode()
-        document = jsonld.compact(jsonld.from_rdf(statements, {"format": "application/n-quads"}), context(config))
-        rows.append((record.value, solution["type"].value, json.dumps(document, indent=2)))
+        rows.append((record.value, solution["type"].value, json.dumps(compact(statements, config), indent=2)))
     return rows
 
 
-def write(path: Path, documents: list[tuple[str, str, str]], sources: list[dict], notes: list[dict]) -> None:
+def write(path: Path, documents: list, sources: list[dict], notes: list[dict], gone: list) -> None:
     """The database is written next to the old one and then put in its place, so a reader never sees half a build."""
     temporary = path.with_name(path.name + ".tmp")
     temporary.unlink(missing_ok=True)
@@ -113,36 +107,66 @@ def write(path: Path, documents: list[tuple[str, str, str]], sources: list[dict]
         db.execute("CREATE TABLE documents (iri TEXT PRIMARY KEY, type TEXT NOT NULL, document TEXT NOT NULL)")
         db.execute("CREATE TABLE sources (name TEXT PRIMARY KEY, url TEXT, fetched TEXT, sha256 TEXT, queries TEXT)")
         db.execute("CREATE TABLE notes (iri TEXT, field TEXT, value TEXT, reason TEXT)")
+        db.execute("CREATE TABLE gone (iri TEXT PRIMARY KEY, removed TEXT)")
         db.executemany("INSERT INTO documents VALUES (?, ?, ?)", documents)
         db.executemany("INSERT INTO sources VALUES (:name, :url, :fetched, :sha256, :queries)", sources)
         db.executemany("INSERT INTO notes VALUES (:iri, :field, :value, :reason)", notes)
+        db.executemany("INSERT INTO gone VALUES (?, ?)", gone)
         db.commit()
     temporary.replace(path)
 
 
-def build(out: Path) -> Path:
+def own_records(base: str) -> tuple[ox.Dataset, list]:
+    """The platform's own records, and the addresses of the removed ones."""
+    data = ox.Dataset()
+    for path in records.files(".jsonld"):
+        for quad in ox.parse(path=path, format=ox.RdfFormat.JSON_LD):
+            data.add(quad)
+    gone = []
+    for path in records.files(".gone"):
+        address = base + str(path.relative_to(records.RECORDS_DIR).with_suffix(""))
+        gone.append((address, json.loads(path.read_text(encoding="utf-8"))["removed"]))
+    return data, gone
+
+
+def build_once(out: Path, offline: bool) -> Path:
     config = settings()
-    out.mkdir(parents=True, exist_ok=True)
+    data, gone = own_records(config["base"])
+    written = set()
+    for quad in data:
+        written.add(quad.subject)
     new_store = out / "rdf.tmp"
     shutil.rmtree(new_store, ignore_errors=True)
     store = ox.Store(str(new_store))
     everything = ox.Dataset()
+    for quad in data:
+        store.add(ox.Quad(quad.subject, quad.predicate, quad.object, ox.NamedNode(config["base"] + "records")))
+        everything.add(quad)
     sources = []
     for path in sorted(SOURCES_DIR.glob("*.yaml")):
         spec = yaml.safe_load(path.read_text(encoding="utf-8"))
         if "url" not in spec:
             continue
-        content = fetch(spec["url"])
+        downloaded = out / "downloads" / spec["name"]
+        if offline:
+            content = downloaded.read_bytes()
+        else:
+            content = fetch(spec["url"])
+            downloaded.parent.mkdir(parents=True, exist_ok=True)
+            downloaded.write_bytes(content)
         parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
         converted, queries = convert(spec, parser.parse(content), config["base"])
         graph = ox.NamedNode(config["base"] + "sources/" + spec["name"])
         for quad in converted:
+            # A record written through the platform replaces what a source gives for the same address.
+            if quad.subject in written:
+                continue
             store.add(ox.Quad(quad.subject, quad.predicate, quad.object, graph))
             everything.add(quad)
         sources.append({
             "name": spec["name"],
             "url": spec["url"],
-            "fetched": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "fetched": datetime.fromtimestamp(downloaded.stat().st_mtime, timezone.utc).isoformat(timespec="seconds"),
             "sha256": hashlib.sha256(content).hexdigest(),
             "queries": "\n\n".join(queries),
         })
@@ -150,9 +174,32 @@ def build(out: Path) -> Path:
     notes = check(everything, config["classes"])
     print(f"{len(notes)} notes")
     database = out / "platform.sqlite"
-    write(database, documents(store, config), sources, notes)
+    write(database, documents(store, config), sources, notes, gone)
     store.flush()
     del store
     shutil.rmtree(out / "rdf", ignore_errors=True)
     new_store.rename(out / "rdf")
     return database
+
+
+def build(out: Path, offline: bool = False) -> Path | None:
+    """One build at a time: a build asked for while another runs is done by the running one when it ends."""
+    out.mkdir(parents=True, exist_ok=True)
+    pending = out / "pending"
+    with open(out / "build.lock", "w") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return None
+        while True:
+            pending.unlink(missing_ok=True)
+            database = build_once(out, offline)
+            if not pending.exists():
+                return database
+
+
+def request_build(out: Path) -> None:
+    """A build with the sources downloaded by the last build is started in the background."""
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "pending").touch()
+    subprocess.Popen([sys.executable, "-m", "linkeddata", "build", "--offline", "--out", str(out)], start_new_session=True)
