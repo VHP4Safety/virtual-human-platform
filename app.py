@@ -1749,6 +1749,8 @@ def run_sparql(endpoint: str, query: str) -> dict:
 
 @app.route("/compound/<cwid>")
 def show_compound(cwid):
+    if not is_valid_qid(cwid):
+        abort(404)
     try:
         return render_template("compound.html", cwid=cwid)
     except TemplateNotFound:
