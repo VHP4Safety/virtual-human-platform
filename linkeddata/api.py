@@ -6,6 +6,7 @@ revision are saved in the database, so its page shows it at once.
     POST   /api/<kind>                       create a record; its identifier is made from its name
     DELETE /api/<kind>/<id>                  remove the record; its address stays gone
     DELETE /api/<kind>/<id>?permanent=true   remove the record and its address
+    POST   /api/images                       upload an image (the form field "image"); gives its address
 
 The body of PUT and POST is a JSON object of the record's fields, named as in the model ("name",
 "description", "url", "about", ...). A link is written as {"@id": "https://..."}, and a field
@@ -18,8 +19,9 @@ import time
 
 from flask import Blueprint, jsonify, request, url_for
 from sqlalchemy.exc import IntegrityError
+from werkzeug.exceptions import RequestEntityTooLarge
 
-from linkeddata import forms, rdf, records, tokens
+from linkeddata import forms, images, rdf, records, tokens
 from linkeddata.database import PLATFORM
 from linkeddata.model import settings
 
@@ -157,3 +159,23 @@ def delete(kind: str, identifier: str):
         revision = records.retire(record.iri, token.name, token.orcid)
     return done(record.iri, revision, 200)
 
+
+@blueprint.post("/api/images")
+def upload_image():
+    uploader = None
+    for kind in settings().get("writable", {}):
+        uploader = uploader or authorized(kind)
+    if uploader is None:
+        return error("A valid write token is needed.", 401)
+    request.max_content_length = images.MAX_BYTES
+    try:
+        upload = request.files.get("image")
+    except RequestEntityTooLarge:
+        return error("The image is larger than 5 MB.", 413)
+    if upload is None:
+        return error('The image is sent as the form field "image".', 400)
+    try:
+        address = images.store(upload.stream, uploader.name, uploader.orcid)
+    except ValueError as problem:
+        return error(str(problem), 422)
+    return jsonify({"@id": address}), 201

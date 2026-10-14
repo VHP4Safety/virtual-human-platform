@@ -76,6 +76,19 @@ class Token(Base):
     revoked_at: Mapped[str | None]
 
 
+class Image(Base):
+    """An image uploaded to the platform, kept as a file named after the SHA-256 of its content."""
+
+    __tablename__ = "images"
+    sha256: Mapped[str] = mapped_column(primary_key=True)
+    width: Mapped[int]
+    height: Mapped[int]
+    size: Mapped[int]
+    name: Mapped[str]
+    orcid: Mapped[str]
+    created_at: Mapped[str] = mapped_column(default=now)
+
+
 class Source(Base):
     """A source of records as its last import fetched it, with the rdfsolve queries that convert it."""
 

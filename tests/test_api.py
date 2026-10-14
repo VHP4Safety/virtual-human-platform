@@ -1,9 +1,12 @@
 """The write API."""
 
+import io
+
 import pytest
 from flask import Flask
+from PIL import Image as Picture
 
-from linkeddata import api, changes, records, tokens
+from linkeddata import api, changes, images, records, tokens
 
 ORCID = "0000-0002-1825-0097"
 BASE = "https://platform.vhp4safety.nl/"
@@ -25,11 +28,18 @@ def client():
     app.config["SECRET_KEY"] = "test"
     app.register_blueprint(api.blueprint)
     app.register_blueprint(changes.blueprint)
+    app.register_blueprint(images.blueprint)
     return app.test_client()
 
 
 def bearer(*kinds: str) -> dict:
     return {"Authorization": "Bearer " + tokens.create(ORCID, "Test Editor", list(kinds))}
+
+
+def png(width: int = 30, height: int = 20) -> bytes:
+    output = io.BytesIO()
+    Picture.new("RGB", (width, height), (230, 0, 126)).save(output, format="PNG")
+    return output.getvalue()
 
 
 def test_writing_a_record(client):
@@ -86,3 +96,25 @@ def test_removing_a_record(client):
 def test_kinds_that_are_not_written_through_the_api(client):
     assert client.put("/api/methods/x", json={"name": "X"}, headers=bearer("methods")).status_code == 404
 
+
+def test_uploading_an_image(client):
+    assert client.post("/api/images", data={"image": (io.BytesIO(png()), "logo.png")}).status_code == 401
+    headers = bearer("tools")
+    response = client.post("/api/images", data={"image": (io.BytesIO(png()), "logo.png")}, headers=headers)
+    assert response.status_code == 201
+    address = response.json["@id"]
+    assert address.startswith(BASE + "images/") and address.endswith(".webp")
+    served = client.get("/" + address.removeprefix(BASE))
+    assert served.mimetype == "image/webp"
+    assert served.headers["Content-Security-Policy"] == "default-src 'none'"
+    assert client.put("/api/tools/x", json={**TOOL, "image": address}, headers=headers).status_code == 201
+    refused = client.post("/api/images", data={"image": (io.BytesIO(b"<svg onload='alert(1)'/>"), "logo.svg")}, headers=headers)
+    assert refused.status_code == 422
+    assert client.post("/api/images", data={}, headers=headers).status_code == 400
+    assert client.get("/images/../platform.sqlite").status_code == 404
+
+
+def test_uploads_are_limited(client, monkeypatch):
+    monkeypatch.setattr(images, "MAX_BYTES", 100)
+    response = client.post("/api/images", data={"image": (io.BytesIO(png()), "logo.png")}, headers=bearer("tools"))
+    assert response.status_code == 413

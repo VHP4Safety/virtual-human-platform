@@ -25,7 +25,9 @@ from linkeddata.accounts import blueprint as account_blueprint
 from linkeddata.api import blueprint as api_blueprint
 from linkeddata.changes import blueprint as changes_blueprint
 from linkeddata.dashboards import blueprint as dashboards_blueprint
+from linkeddata.images import blueprint as images_blueprint
 from linkeddata.pages import blueprint as pages_blueprint
+from linkeddata.pages import page_link
 
 ################################################################################
 CACHE_TIMEOUT = 60 * 60 * 24 * 5  # 5 days
@@ -132,6 +134,7 @@ app.register_blueprint(api_blueprint)
 app.register_blueprint(pages_blueprint)
 app.register_blueprint(dashboards_blueprint)
 app.register_blueprint(changes_blueprint)
+app.register_blueprint(images_blueprint)
 # Google Search Console verification token (rendered as a <meta> tag in
 # base.html when set). Kept out of the repo -- set it in the service env.
 app.config["GOOGLE_SITE_VERIFICATION"] = os.environ.get("GOOGLE_SITE_VERIFICATION", "")
@@ -451,7 +454,7 @@ def linked_tools(catalogue: dict) -> dict:
         tool["service"] = record.name or tool_id
         tool["description"] = record.description or ""
         tool["main_url"] = record.url or "no_url"
-        tool["png_file_name"] = record.image
+        tool["png_file_name"] = page_link(record.image) if record.image else None
         for iri in record.about:
             if iri in stage_mapping:
                 tool["stage"] = iri
@@ -1312,7 +1315,7 @@ def tools():
             else:
                 tool["png"] = (
                     f"https://raw.githubusercontent.com/VHP4Safety/cloud/main/docs/service/{png_name}"
-                    if not png_name.startswith("http")
+                    if not png_name.startswith(("http", "/"))
                     else png_name
                 )
 

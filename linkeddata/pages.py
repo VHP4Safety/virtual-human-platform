@@ -46,7 +46,7 @@ def data(record: Record, media: str) -> Response:
 @blueprint.before_app_request
 def negotiate():
     """The data of a record is sent when it is asked for; otherwise its page is made as usual."""
-    if request.endpoint == "static" or request.path.startswith("/api/"):
+    if request.endpoint in ("static", "images.image") or request.path.startswith("/api/"):
         return None
     path = request.path.strip("/")
     media = None
