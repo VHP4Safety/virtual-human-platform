@@ -8,6 +8,7 @@ from pathlib import Path
 import pyoxigraph as ox
 import yaml
 
+from linkeddata import build, records
 from linkeddata.build import check, convert, documents, write
 from linkeddata.model import settings
 from linkeddata.parsers import glossary, methods, tools
@@ -133,6 +134,21 @@ def test_documents_and_database(tmp_path):
         document = db.execute("SELECT document FROM documents").fetchone()[0]
     nodes = {node["@id"]: node for node in json.loads(document)["@graph"]}
     assert nodes[GLOSSARY + "VHP0000156"]["name"] == "Toxicodynamics"
+
+
+def test_a_removed_record_hides_what_a_source_gives(tmp_path, monkeypatch):
+    monkeypatch.setattr(build, "SOURCES_DIR", tmp_path / "sources")
+    monkeypatch.setattr(records, "RECORDS_DIR", tmp_path / "records")
+    (tmp_path / "sources").mkdir()
+    (tmp_path / "sources" / "tools.yaml").write_text((SOURCES / "tools.yaml").read_text())
+    (tmp_path / "build" / "downloads").mkdir(parents=True)
+    (tmp_path / "build" / "downloads" / "tools").write_text(json.dumps(TOOLS))
+    (tmp_path / "records" / "tools").mkdir(parents=True)
+    (tmp_path / "records" / "tools" / "x.gone").write_text('{"removed": "2026-10-14T12:00:00+00:00"}')
+    database = build.build_once(tmp_path / "build", offline=True)
+    with closing(sqlite3.connect(database)) as db:
+        assert db.execute("SELECT iri FROM documents").fetchall() == [(BASE + "tools/aop-builder",)]
+        assert db.execute("SELECT iri FROM gone").fetchall() == [(BASE + "tools/x",)]
 
 
 TOXTEMP = {

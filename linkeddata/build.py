@@ -135,6 +135,8 @@ def build_once(out: Path, offline: bool) -> Path:
     written = set()
     for quad in data:
         written.add(quad.subject)
+    for address, _ in gone:
+        written.add(ox.NamedNode(address))
     new_store = out / "rdf.tmp"
     shutil.rmtree(new_store, ignore_errors=True)
     store = ox.Store(str(new_store))
@@ -158,7 +160,7 @@ def build_once(out: Path, offline: bool) -> Path:
         converted, queries = convert(spec, parser.parse(content), config["base"])
         graph = ox.NamedNode(config["base"] + "sources/" + spec["name"])
         for quad in converted:
-            # A record written through the platform replaces what a source gives for the same address.
+            # A record written or removed through the platform replaces what a source gives for the same address.
             if quad.subject in written:
                 continue
             store.add(ox.Quad(quad.subject, quad.predicate, quad.object, graph))
