@@ -2,10 +2,8 @@ flask>=3.1.3
 flask-caching==2.3.1
 requests>=2.33.0
 #wikidataintegrator==0.9.30
-setuptools==78.1.1 # Provides pkg_resources module, required for wikidataintegrator
 werkzeug>=3.0.6
 #pyBiodatafuse @ git+https://github.com/BioDataFuse/pyBiodatafuse.git
-wikibaseintegrator>=0.12.14
 gunicorn>=23.0.0
 nh3>=0.3.0
 

@@ -14,9 +14,6 @@ from jinja2 import TemplateNotFound
 from markupsafe import Markup
 from werkzeug.routing import BaseConverter
 
-# from wikidataintegrator import wdi_core
-from wikibaseintegrator import wbi_helpers
-
 # Import BioStudies extractor
 from data.biostudies.search import BioStudiesExtractor
 from data.zenodo.search import ZenodoExtractor
@@ -1738,6 +1735,18 @@ def is_valid_qid(qid):
     return re.fullmatch(r"Q\d+", qid) is not None
 
 
+def run_sparql(endpoint: str, query: str) -> dict:
+    """Run a SPARQL query with a time limit and return the JSON results."""
+    response = requests.post(
+        endpoint,
+        data={"query": query},
+        headers={"Accept": "application/sparql-results+json", "User-Agent": "VHP4Safety platform"},
+        timeout=10,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
 @app.route("/compound/<cwid>")
 def show_compound(cwid):
     try:
@@ -1768,9 +1777,7 @@ def show_compounds_properties_as_json(cwid):
         "}"
     )
     try:
-        compound_dat = wbi_helpers.execute_sparql_query(
-            sparqlquery, endpoint=compoundwikiEP
-        )
+        compound_dat = run_sparql(compoundwikiEP, sparqlquery)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     if not bool(compound_dat):
@@ -1814,9 +1821,7 @@ def show_compounds_identifiers_as_json(cwid):
         "}"
     )
     try:
-        compound_dat = wbi_helpers.execute_sparql_query(
-            sparqlquery, endpoint=compoundwikiEP
-        )
+        compound_dat = run_sparql(compoundwikiEP, sparqlquery)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     if len(compound_dat["results"]["bindings"]) == 0:
@@ -1863,9 +1868,7 @@ def show_compounds_toxicology_as_json(cwid):
         "}"
     )
     try:
-        compound_dat = wbi_helpers.execute_sparql_query(
-            sparqlquery, endpoint=compoundwikiEP
-        )
+        compound_dat = run_sparql(compoundwikiEP, sparqlquery)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     if len(compound_dat["results"]["bindings"]) == 0:
@@ -1908,9 +1911,7 @@ def show_compounds_expdata_as_json(cwid):
         "}"
     )
     try:
-        compound_dat = wbi_helpers.execute_sparql_query(
-            sparqlquery, endpoint=compoundwikiEP
-        )
+        compound_dat = run_sparql(compoundwikiEP, sparqlquery)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     if not bool(compound_dat):
@@ -1947,7 +1948,7 @@ def show_compounds_expdata_as_json(cwid):
             + urllib.parse.quote_plus(sparqlquery)
         )
         # return sparqlqueryURL
-        compound_dat = requests.get(sparqlqueryURL)
+        compound_dat = requests.get(sparqlqueryURL, timeout=10)
         # return json.loads(compound_dat.content)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
