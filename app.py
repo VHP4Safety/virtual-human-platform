@@ -140,6 +140,14 @@ def handle_cache_reset():
         cache.clear()
 
 
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Content-Security-Policy", "object-src 'none'; base-uri 'self'")
+    return response
+
+
 @app.template_filter("sanitize_html")
 def sanitize_html(value) -> Markup:
     """Keep the formatting tags of upstream HTML; scripts and event handlers are removed."""
