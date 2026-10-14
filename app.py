@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import time
 
 import nh3
 import requests
@@ -68,6 +69,7 @@ CASESTUDY_CONTENT_PREFIX = "https://raw.githubusercontent.com/VHP4Safety/ui-case
 # BioStudies accessions (S-VHPS21, E-MTAB-1234) and Zenodo record ids (1234567).
 DATA_ID_PATTERN = r"S-[A-Z]+\d+|E-[A-Z]+-\d+|\d+"
 MAX_PAGE_SIZE = 48
+CACHE_RESET_INTERVAL = 5 * 60  # seconds
 
 # SEO defaults. Every page renders a <title>/<meta description> (see base.html);
 # routes override page_title / meta_description with page-specific values, and
@@ -121,15 +123,20 @@ app.config["GOOGLE_SITE_VERIFICATION"] = os.environ.get("GOOGLE_SITE_VERIFICATIO
 cache = Cache(app)
 
 
+_last_cache_reset = 0.0
+
+
 @app.before_request
 def handle_cache_reset():
     """Clear the entire server-side cache when ?reset_cache is in the URL.
 
-    Unprotected by design: a stranger forcing a refetch is low-impact (just
-    repopulates the cache from the upstream indexes), and keeping it open
-    removes a config knob (no CACHE_RESET_TOKEN env var needed).
+    Open to anyone, so no token is needed, but the cache is cleared at most
+    once every CACHE_RESET_INTERVAL seconds: each reset refetches every
+    upstream source, so repeated resets would flood them.
     """
-    if "reset_cache" in request.args:
+    global _last_cache_reset
+    if "reset_cache" in request.args and time.time() - _last_cache_reset > CACHE_RESET_INTERVAL:
+        _last_cache_reset = time.time()
         cache.clear()
 
 
