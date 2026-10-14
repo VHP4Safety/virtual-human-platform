@@ -8,8 +8,9 @@ revision are saved in the database, so its page shows it at once.
     DELETE /api/<kind>/<id>?permanent=true   remove the record and its address
 
 The body of PUT and POST is a JSON object of the record's fields, named as in the model ("name",
-"description", "about", "conformsTo", ...). A link is written as {"@id": "https://..."}, and a field
-with several values as a list.
+"description", "url", "about", ...). A link is written as {"@id": "https://..."}, and a field
+with several values as a list. A record that does not fit the model is refused with what is wrong
+with each field.
 """
 
 import re
@@ -18,7 +19,7 @@ import time
 from flask import Blueprint, jsonify, request
 from sqlalchemy.exc import IntegrityError
 
-from linkeddata import rdf, records, tokens
+from linkeddata import forms, rdf, records, tokens
 from linkeddata.database import PLATFORM
 from linkeddata.model import settings
 
@@ -45,7 +46,8 @@ def rate_limited() -> bool:
 
 
 def values(kind: str, body: dict) -> dict[str, list]:
-    """The fields of a request's body, named as in the database, each with a list of values."""
+    """The fields of a request's body, named as in the database, each with a list of values. The
+    values that the application profile fixes are set by the platform."""
     found = {}
     for name, value in body.items():
         if name.startswith("@"):
@@ -57,6 +59,9 @@ def values(kind: str, body: dict) -> dict[str, list]:
             else:
                 items.append(item)
         found[rdf.field_of(kind, name)] = items
+    for field in forms.form(kind):
+        if field["fixed"]:
+            found[field["name"]] = field["fixed"]
     return found
 
 
@@ -95,6 +100,8 @@ def store(kind: str, identifier: str, replace: bool = True):
     try:
         row = rdf.row(address, writable[kind], PLATFORM, values(writable[kind], body))
         document = rdf.document(rdf.check(row))
+    except rdf.NotFitting as problem:
+        return jsonify({"error": str(problem), "fields": problem.problems}), 422
     except ValueError as problem:
         return error(str(problem), 422)
     created = records.save(row, document, token.name, token.orcid, replace)
@@ -145,3 +152,4 @@ def delete(kind: str, identifier: str):
     else:
         records.retire(record.iri, token.name, token.orcid)
     return "", 204
+

@@ -1,5 +1,6 @@
 rdfsolve[validation] @ git+https://github.com/jmillanacosta/rdfsolve@02990d18425e0b61cefd730b3dfc66e87f53fc38
 pandas>=2.2
+pyshacl>=0.30
 pyyaml>=6.0
 sqlalchemy>=2.0
 requests>=2.33.0

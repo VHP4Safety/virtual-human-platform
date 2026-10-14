@@ -9,13 +9,27 @@ the columns of the records table that rdfsolve finds in the model for the record
 from functools import cache
 
 import pandas as pd
-from rdflib import Graph, Literal, URIRef
+import pyshacl
+from rdflib import RDF, Graph, Literal, URIRef
+from rdflib.namespace import SH
 from sqlalchemy import JSON, select
 
 from linkeddata import database
 from linkeddata.database import Record
 from linkeddata.document import compact
-from linkeddata.model import contract_client, settings
+from linkeddata.model import contract_client, profile, settings
+
+
+class NotFitting(ValueError):
+    """A record that does not fit the model, with what is wrong with each of its fields."""
+
+    def __init__(self, problems: dict[str, list[str]]):
+        self.problems = problems
+        messages = []
+        for field, found in problems.items():
+            for message in found:
+                messages.append(f"{field}: {message}")
+        super().__init__(" ".join(messages))
 
 
 @cache
@@ -98,9 +112,45 @@ def linked(table: pd.DataFrame) -> Graph:
     return graph
 
 
+def field_of_property(kind: str, iri: str) -> str:
+    known = fields(kind)
+    for field in known.index:
+        if known.loc[field, "property"] == iri:
+            return field
+    return iri
+
+
 def check(new: dict) -> Graph:
-    """A new row as linked data, checked against the approved schema."""
-    return linked(pd.DataFrame([new]))
+    """A new row as linked data. rdfsolve checks the type of each value against the approved schema,
+    and pyshacl checks the record against the application profile (required, single and fixed values)."""
+    try:
+        found = linked(pd.DataFrame([new]))
+    except ValueError:
+        problems = {}
+        for field in fields(new["type"]).index:
+            if not new.get(field):
+                continue
+            try:
+                linked(pd.DataFrame([{"iri": new["iri"], "type": new["type"], field: new[field]}]))
+            except ValueError as problem:
+                reason = str(problem.__cause__ or problem).removeprefix(field + ": ")
+                problems[field] = [f"This value does not fit the field ({reason})."]
+        raise NotFitting(problems)
+    problems = {}
+    # Only web addresses are kept, so that a link on a page never runs a script (javascript:) or opens a file.
+    for _, predicate, value in found:
+        if isinstance(value, URIRef) and predicate != RDF.type and not str(value).startswith(("https://", "http://")):
+            field = field_of_property(new["type"], str(predicate))
+            problems.setdefault(field, []).append("A web address starts with https:// or http://.")
+    if problems:
+        raise NotFitting(problems)
+    conforms, results, _ = pyshacl.validate(found, shacl_graph=profile())
+    if not conforms:
+        for result in results.subjects(RDF.type, SH.ValidationResult):
+            field = field_of_property(new["type"], str(results.value(result, SH.resultPath)))
+            problems.setdefault(field, []).append(str(results.value(result, SH.resultMessage)))
+        raise NotFitting(problems)
+    return found
 
 
 def graph(iris: list[str]) -> Graph:

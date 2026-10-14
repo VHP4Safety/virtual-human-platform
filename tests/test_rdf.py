@@ -47,3 +47,13 @@ def test_linked_data_as_rows():
     [row] = records_of(data, [TOOL], "tools")
     assert row["iri"] == BASE + "tools/t"
     assert (row["name"], row["url"], row["about"], row["source"]) == ("T", "https://t.org/", [STEP], "tools")
+
+
+def test_the_application_profile():
+    with pytest.raises(rdf.NotFitting) as problem:
+        rdf.check(rdf.row(BASE + "tools/u", TOOL, "platform", {"name": ["U"], "url": ["javascript:alert(1)"]}))
+    assert problem.value.problems == {"url": ["A web address starts with https:// or http://."]}
+    with pytest.raises(rdf.NotFitting) as problem:
+        rdf.check(rdf.row(BASE + "tools/u", TOOL, "platform", {"name": ["U"]}))
+    assert problem.value.problems["description"] == ["Describe the tool in a few sentences."]
+    assert "conforms_to" in problem.value.problems

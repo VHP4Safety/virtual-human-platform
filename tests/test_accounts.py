@@ -6,7 +6,7 @@ import pytest
 
 from linkeddata import accounts, tokens
 
-ORCID = "0000-0001-6487-1655"
+ORCID = "0000-0002-1825-0097"
 
 
 @pytest.fixture
@@ -26,7 +26,7 @@ def log_in(site, monkeypatch) -> None:
         status_code = 200
 
         def json(self):
-            return {"orcid": ORCID, "name": "Julia Meerman"}
+            return {"orcid": ORCID, "name": "Test Editor"}
 
     monkeypatch.setattr(accounts.requests, "post", lambda *a, **k: Answer())
     location = site.get("/login/orcid/").headers["Location"]
