@@ -10,7 +10,7 @@ from sqlalchemy import select
 from linkeddata import database, imports, records
 from linkeddata.database import Note, Record, Source
 from linkeddata.imports import check, convert
-from linkeddata.parsers import glossary, methods, tools
+from linkeddata.parsers import casestudies, glossary, methods, tools
 
 SOURCES = Path(__file__).parent.parent / "linkeddata" / "sources"
 BASE = "https://platform.vhp4safety.nl/"
@@ -96,6 +96,16 @@ def test_glossary_parser():
     ]
 
 
+def test_casestudies_parser():
+    content = {"step1Contents": {"questions": [
+        {"label": "Question 1: A dose", "description": "What is a safe dose?", "value": "Q1", "type": "regulatory-question"},
+        {"label": "Something else", "value": "X", "type": "other"},
+    ]}}
+    assert casestudies.parse({"kidney": json.dumps(content).encode()}) == [
+        {"@id": "casestudies/kidney/Q1", "@type": "Question", "label": "Kidney, Question 1: A dose", "text": "What is a safe dose?"}
+    ]
+
+
 def test_conversion():
     spec = yaml.safe_load((SOURCES / "tools.yaml").read_text(encoding="utf-8"))
     data, queries = convert(spec, tools.parse(json.dumps(TOOLS).encode()), BASE)
@@ -127,8 +137,8 @@ def test_import(tmp_path, monkeypatch):
     monkeypatch.setattr(imports, "SOURCES_DIR", tmp_path / "sources")
     (tmp_path / "sources").mkdir()
     (tmp_path / "sources" / "tools.yaml").write_text((SOURCES / "tools.yaml").read_text())
-    (database.STATE_DIR / "downloads").mkdir(parents=True)
-    (database.STATE_DIR / "downloads" / "tools").write_text(json.dumps(TOOLS))
+    (database.STATE_DIR / "downloads" / "tools").mkdir(parents=True)
+    (database.STATE_DIR / "downloads" / "tools" / "tools").write_text(json.dumps(TOOLS))
     with database.session() as db, db.begin():
         db.add(Record(iri=BASE + "tools/old", type=SCHEMA + "SoftwareApplication", source="tools", name="Old"))
         db.add(Record(iri=BASE + "tools/x", type=SCHEMA + "SoftwareApplication", source="platform", name="X on the platform"))

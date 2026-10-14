@@ -118,33 +118,61 @@ def store(source: Source, rows: list[dict], notes: list[dict]) -> None:
         db.merge(source)
 
 
+def files_of(spec: dict) -> dict[str, str]:
+    """The files of a source by name: the one at its url, or those listed under its files."""
+    if "files" in spec:
+        return dict(spec["files"])
+    return {spec["name"]: spec["url"]}
+
+
+def download(spec: dict, offline: bool) -> dict[str, bytes]:
+    """The files of a source by name, fetched, or as the last import fetched them when *offline*."""
+    folder = database.STATE_DIR / "downloads" / spec["name"]
+    contents = {}
+    for name, url in files_of(spec).items():
+        path = folder / name
+        if not offline:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(fetch(url))
+        contents[name] = path.read_bytes()
+    return contents
+
+
 def import_source(spec: dict, offline: bool) -> None:
     config = settings()
-    downloaded = database.STATE_DIR / "downloads" / spec["name"]
-    if offline:
-        content = downloaded.read_bytes()
-    else:
-        content = fetch(spec["url"])
-        downloaded.parent.mkdir(parents=True, exist_ok=True)
-        downloaded.write_bytes(content)
+    contents = download(spec, offline)
     parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
-    data, queries = convert(spec, parser.parse(content), config["base"])
+    # A source of one file gives its parser the file; a source of several gives them by name.
+    parsed = parser.parse(contents if "files" in spec else contents[spec["name"]])
+    data, queries = convert(spec, parsed, config["base"])
     notes = check(ox.Dataset([*data, *known_types(spec["name"])]), config["classes"])
     rows = records_of(data, config["classes"], spec["name"])
+    checksum = hashlib.sha256()
+    for name in sorted(contents):
+        checksum.update(contents[name])
+    folder = database.STATE_DIR / "downloads" / spec["name"]
     source = Source(
         name=spec["name"],
-        url=spec["url"],
-        fetched_at=datetime.fromtimestamp(downloaded.stat().st_mtime, timezone.utc).isoformat(timespec="seconds"),
-        sha256=hashlib.sha256(content).hexdigest(),
+        url=" ".join(files_of(spec).values()),
+        fetched_at=datetime.fromtimestamp(folder.stat().st_mtime, timezone.utc).isoformat(timespec="seconds"),
+        sha256=checksum.hexdigest(),
         queries="\n\n".join(queries),
     )
     store(source, rows, notes)
     print(f"{spec['name']}: {len(rows)} records, {len(notes)} notes")
 
 
-def import_all(offline: bool = False) -> None:
-    """Every source that is fetched (it has a url) is imported; with *offline*, from its last download."""
+def specs() -> list[dict]:
+    """The sources that are fetched (they have a url or files), as their files in sources/ describe them."""
+    found = []
     for path in sorted(SOURCES_DIR.glob("*.yaml")):
         spec = yaml.safe_load(path.read_text(encoding="utf-8"))
-        if "url" in spec:
-            import_source(spec, offline)
+        if "url" in spec or "files" in spec:
+            found.append(spec)
+    return found
+
+
+def import_all(offline: bool = False) -> None:
+    """Every source that is fetched is imported; with *offline*, from its last download."""
+    for spec in specs():
+        import_source(spec, offline)

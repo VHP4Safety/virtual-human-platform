@@ -1,0 +1,15 @@
+name: casestudies
+title: Case-study questions
+parser: casestudies
+# The content file of each case study, by the case study's identifier.
+files:
+  kidney: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/kidney_content.json
+  parkinson: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/parkinson_content.json
+  thyroid: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/thyroid_content.json
+
+# How the parsed rows become the model: the arguments of rdfsolve's Rule.between, for each kind of row.
+rules:
+  Question:
+    - {predicate: a, value: "https://schema.org/Question"}
+    - {predicate: "https://schema.org/name", object: label}
+    - {predicate: "https://schema.org/description", object: text}

@@ -1,4 +1,5 @@
 name: tools
+title: Tool catalogue
 url: https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/service_index.json
 parser: tools
 
