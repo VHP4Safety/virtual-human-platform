@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 # Set environment variables to prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
@@ -19,14 +19,17 @@ WORKDIR /usr/src/app
 COPY . .
 
 # Install any needed packages specified in requirements.txt
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt -r linkeddata/requirements.txt
 
 # Copy entrypoint script
 COPY entrypoint.sh /usr/src/app/entrypoint.sh
 RUN chmod +x /usr/src/app/entrypoint.sh
 
+# The records repository, the write tokens and the built pages are kept in /data (a volume)
+ENV PLATFORM_RECORDS=/data/records PLATFORM_STATE=/data/state PLATFORM_BUILD=/data/build
+
 # Run as an unprivileged user
-RUN useradd --create-home app
+RUN useradd --create-home app && mkdir -p /data && chown app /data
 USER app
 
 # Define the entrypoint script
