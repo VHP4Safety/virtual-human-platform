@@ -16,7 +16,7 @@ from sqlalchemy import select
 
 from linkeddata import accounts, database, forms, rdf, records, tokens
 from linkeddata.database import Revision
-from linkeddata.model import settings
+from linkeddata.model import curie
 
 blueprint = Blueprint("changes", __name__)
 LISTED = 100
@@ -49,14 +49,6 @@ def statements(document: str | None) -> Graph:
     return graph
 
 
-def curie(iri: str) -> str:
-    """An address written with the model's prefixes: https://schema.org/name is schema:name."""
-    for prefix, namespace in settings()["prefixes"].items():
-        if iri.startswith(namespace):
-            return prefix + ":" + iri.removeprefix(namespace)
-    return iri
-
-
 def edges(before: Graph, after: Graph, record: URIRef) -> dict:
     """The statements about a record before and after a change, as edges from the record to each value:
     added, removed, or kept. Each edge is named by the field of the record's form."""
@@ -69,19 +61,24 @@ def edges(before: Graph, after: Graph, record: URIRef) -> dict:
         labels[field["name"]] = field["label"]
         entries[field["name"]] = field["entry"]
         order[field["name"]] = position
+    # A value is compared as a link or a text, so that "X" and "X"^^xsd:string are the same value.
+    old = set()
+    for predicate, value in before.predicate_objects(record):
+        old.add((predicate, isinstance(value, URIRef), str(value)))
+    new = set()
+    for predicate, value in after.predicate_objects(record):
+        new.add((predicate, isinstance(value, URIRef), str(value)))
     found = []
-    for predicate, value in set(before.predicate_objects(record)) | set(after.predicate_objects(record)):
+    for predicate, link, value in old | new:
         if predicate == RDF.type:
             continue
-        kept_before = (record, predicate, value) in before
-        kept_after = (record, predicate, value) in after
-        status = "kept" if kept_before and kept_after else ("added" if kept_after else "removed")
+        status = "kept" if (predicate, link, value) in old and (predicate, link, value) in new else ("added" if (predicate, link, value) in new else "removed")
         field = rdf.field_of_property(str(kind), str(predicate)) if kind is not None else str(predicate)
         found.append({
             "label": labels.get(field, curie(str(predicate))),
             "property": curie(str(predicate)),
-            "value": str(value),
-            "link": isinstance(value, URIRef),
+            "value": value,
+            "link": link,
             "entry": entries.get(field, "text"),
             "status": status,
             "order": order.get(field, len(form)),

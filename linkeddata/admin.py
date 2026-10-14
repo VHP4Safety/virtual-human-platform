@@ -8,7 +8,7 @@ from flask import Blueprint, abort, make_response, redirect, render_template, re
 from linkeddata import accounts, forms, records
 from linkeddata.database import PLATFORM
 from linkeddata.imports import specs
-from linkeddata.model import settings
+from linkeddata.model import curie, settings
 
 blueprint = Blueprint("admin", __name__)
 
@@ -57,6 +57,7 @@ def edit(kind: str):
             choices[field["name"]] = [{"title": title, "options": groups[title]} for title in ordered]
     data = {
         "kind": kind,
+        "type": curie(writable[kind]),
         "base": settings()["base"],
         "fields": fields,
         "records": found,

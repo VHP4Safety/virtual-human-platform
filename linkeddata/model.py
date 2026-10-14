@@ -47,6 +47,14 @@ def profile() -> Graph:
     return Graph().parse(MODEL_DIR / "profile.ttl", format="turtle")
 
 
+def curie(iri: str) -> str:
+    """An address written with the model's prefixes: https://schema.org/name is schema:name."""
+    for prefix, namespace in settings()["prefixes"].items():
+        if iri.startswith(namespace):
+            return prefix + ":" + iri.removeprefix(namespace)
+    return iri
+
+
 def property_shapes(graph: Graph, kind: str) -> dict[str, list]:
     """The property shapes of the node shapes that target a class, by the address of their path."""
     found = {}

@@ -95,7 +95,8 @@ def test_the_changes_are_shown_to_editors(site):
         form_token = session["form_token"]
     answer = site.put("/api/tools/t", json={**TOOL, "about": []}, headers={"X-Form-Token": form_token}).json
     page = site.get(answer["change"]).data.decode()
-    assert "What changed" in page and "graph-removed" in page and "Toxicodynamics" in page
+    assert "Changed: " in page and "Assessment steps and case-study questions" in page
+    assert "graph-removed" in page and "Toxicodynamics" in page
     change = site.get(answer["change"] + ".json").json
     removed = [edge for edge in change["edges"] if edge["status"] == "removed"]
     assert [(edge["label"], edge["name"]) for edge in removed] == [("Assessment steps and case-study questions", "Toxicodynamics")]

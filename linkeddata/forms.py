@@ -10,7 +10,7 @@ from rdflib import Graph, Namespace, URIRef
 from rdflib.namespace import SH
 
 from linkeddata import rdf
-from linkeddata.model import profile, property_shapes, shapes
+from linkeddata.model import curie, profile, property_shapes, shapes
 
 DASH = Namespace("http://datashapes.org/dash#")
 IMAGE = "https://schema.org/ImageObject"
@@ -73,6 +73,7 @@ def form(kind: str) -> list[dict]:
         order = first(profile(), mine, SH.order)
         found = {
             "name": field,
+            "property": curie(iri),
             "label": first(profile(), mine, SH.name) or readable(known.loc[field, "label"]),
             "help": plain(description or ""),
             "required": bool(required),

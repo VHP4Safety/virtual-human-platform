@@ -15,6 +15,10 @@
     </ul>
     {% endif %}
     <span class="flex-grow-1"></span>
+    <div class="form-check form-switch mb-0 me-2" title="Shows the statements that saving will publish, next to the form">
+      <input class="form-check-input" type="checkbox" role="switch" id="show-rdf">
+      <label class="form-check-label small" for="show-rdf">Linked data</label>
+    </div>
     <button type="button" class="btn btn-vhpblue" data-new><i class="bi bi-plus-lg"></i> Add a {{ one }}</button>
   </div>
 
@@ -37,7 +41,7 @@
       </div>
     </aside>
 
-    <div class="col-lg-8 col-xl-9">
+    <div class="col-lg-8 col-xl-9" id="main-column">
       <div class="card" id="start">
         <div class="card-body p-5 text-center">
           <i class="bi bi-pencil-square display-5 text-vhppurple"></i>
@@ -57,6 +61,7 @@
             <a class="btn btn-sm btn-outline-secondary d-none" id="history" target="_blank" rel="noopener"><i class="bi bi-clock-history"></i> History</a>
           </div>
           <div class="small text-secondary mt-1" id="form-note"></div>
+          <div class="small mt-2" id="completeness"></div>
         </div>
 
         <div class="card-body px-4">
@@ -69,13 +74,13 @@
           <div class="mb-4" data-field-box="{{ field.name }}">
             {% if field.entry == "links" %}
             <fieldset>
-              <legend class="form-label fw-semibold fs-6 mb-1">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}</legend>
+              <legend class="form-label fw-semibold fs-6 mb-1">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}{% if not field.required %}<span class="badge rounded-pill text-bg-light border fw-normal ms-1 d-none" data-missing="{{ field.name }}">Not filled in</span>{% endif %}</legend>
               <div class="form-text mt-0 mb-2">{{ field.help }}</div>
               <div class="row g-3" data-choices="{{ field.name }}"></div>
             </fieldset>
 
             {% elif field.entry == "image" %}
-            <div class="form-label fw-semibold">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}</div>
+            <div class="form-label fw-semibold">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}{% if not field.required %}<span class="badge rounded-pill text-bg-light border fw-normal ms-1 d-none" data-missing="{{ field.name }}">Not filled in</span>{% endif %}</div>
             <div class="d-flex flex-wrap align-items-center gap-3">
               <div class="image-box rounded border d-flex align-items-center justify-content-center">
                 <img class="image-preview d-none" data-preview="{{ field.name }}" alt="">
@@ -91,7 +96,7 @@
             </div>
 
             {% else %}
-            <label class="form-label fw-semibold" for="field-{{ field.name }}">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}</label>
+            <label class="form-label fw-semibold" for="field-{{ field.name }}">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}{% if not field.required %}<span class="badge rounded-pill text-bg-light border fw-normal ms-1 d-none" data-missing="{{ field.name }}">Not filled in</span>{% endif %}</label>
             {% if field.entry == "long text" %}
             <textarea class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}" rows="4" {% if field.required %}required{% endif %} data-message="{{ field.message }}"></textarea>
             {% elif field.entry == "address" %}
@@ -134,23 +139,22 @@
         </div>
       </form>
 
-      <div class="form-check form-switch mt-3 small">
-        <input class="form-check-input" type="checkbox" role="switch" id="show-rdf">
-        <label class="form-check-label text-secondary" for="show-rdf">Show the linked data (RDF) of each change, for developers</label>
-      </div>
-      <div class="card mt-2 d-none" id="rdf-panel">
-        <div class="card-header bg-white d-flex flex-wrap align-items-center gap-2">
-          <span class="fw-semibold">Linked data</span>
-          <span class="small text-secondary" id="rdf-caption"></span>
-          <span class="flex-grow-1"></span>
-          <a class="small link-secondary" id="rdf-raw" target="_blank" rel="noopener"></a>
+    </div>
+
+    <aside class="col-xl-4 d-none" id="rdf-column">
+      <div class="card rdf-preview">
+        <div class="card-header bg-white">
+          <div class="fw-semibold">Linked data</div>
+          <div class="small text-secondary" id="rdf-caption"></div>
         </div>
         <div class="card-body">
-          <p class="small text-secondary">Each arrow is a statement about the record: from one of its fields to a value. Statements a change added are green, those it removed are red.</p>
+          <div class="alert alert-warning small py-2 d-none"><div class="fw-semibold mb-1">Not ready to save</div><ul class="mb-0 ps-3" id="rdf-problems"></ul></div>
           <div id="rdf-graph"></div>
+          <p class="small text-secondary mb-0 mt-3">Each arrow is a statement that the platform publishes about this {{ one }}. Green ones are added when you save, red ones removed.
+            <a class="link-secondary d-none" id="rdf-raw" target="_blank" rel="noopener">The published data (Turtle)</a></p>
         </div>
       </div>
-    </div>
+    </aside>
   </div>
 </div>
 

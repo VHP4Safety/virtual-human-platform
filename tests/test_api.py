@@ -77,6 +77,18 @@ def test_a_record_that_does_not_fit_the_model(client):
     assert records.get(BASE + "tools/x") is None
 
 
+def test_a_preview_saves_nothing(client):
+    headers = bearer("tools")
+    client.put("/api/tools/x", json=TOOL, headers=headers)
+    response = client.put("/api/tools/x?preview=true", json={"name": TOOL["name"], "url": TOOL["url"], "citation": "a text"}, headers=headers)
+    assert response.status_code == 200
+    statuses = {(edge["label"], edge["status"]) for edge in response.json["edges"]}
+    assert ("Description", "removed") in statuses and ("Name", "kept") in statuses
+    assert set(response.json["fields"]) == {"description", "citation"}
+    assert records.get(BASE + "tools/x").description == TOOL["description"]
+    assert [revision.action for revision in records.history(5)] == ["Added"]
+
+
 def test_new_identifiers(client):
     headers = bearer("tools")
     assert client.post("/api/tools", json=TOOL, headers=headers).json["@id"].endswith("/tools/aop-builder")

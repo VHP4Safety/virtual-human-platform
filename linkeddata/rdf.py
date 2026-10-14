@@ -151,9 +151,10 @@ def field_of_property(kind: str, iri: str) -> str:
     return iri
 
 
-def check(new: dict) -> Graph:
-    """A new row as linked data. rdfsolve checks the type of each value against the approved schema,
-    and pyshacl checks the record against the application profile (required, single and fixed values)."""
+def checked(new: dict) -> tuple[Graph | None, dict[str, list[str]]]:
+    """A new row as linked data, and what is wrong with each of its fields. rdfsolve checks the type of
+    each value against the approved schema (when a value does not fit, there is no linked data), and
+    pyshacl checks the record against the application profile (required, single and fixed values)."""
     try:
         found = linked(pd.DataFrame([new]))
     except ValueError:
@@ -166,7 +167,7 @@ def check(new: dict) -> Graph:
             except ValueError as problem:
                 reason = str(problem.__cause__ or problem).removeprefix(field + ": ").splitlines()[0]
                 problems[field] = [f"This value does not fit the field ({reason})."]
-        raise NotFitting(problems)
+        return None, problems
     problems = {}
     conforms, results, _ = pyshacl.validate(found, shacl_graph=profile())
     if not conforms:
@@ -181,6 +182,12 @@ def check(new: dict) -> Graph:
             field = field_of_property(new["type"], str(predicate))
             if field not in problems:
                 problems[field] = ["A web address starts with https:// or http://."]
+    return found, problems
+
+
+def check(new: dict) -> Graph:
+    """A new row as linked data; NotFitting tells what is wrong with each field when it does not fit."""
+    found, problems = checked(new)
     if problems:
         raise NotFitting(problems)
     return found

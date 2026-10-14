@@ -12,6 +12,7 @@
   const showRdf = document.getElementById("show-rdf");
   const one = data.kind.endsWith("s") ? data.kind.slice(0, -1) : data.kind;
   const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+  let previewTimer = null;
   let selected = null;
   let identifierTouched = false;
   let unsaved = false;
@@ -44,10 +45,18 @@
     return text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
   }
 
-  function toast(text, ok) {
+  function toast(text, ok, link) {
     const box = document.getElementById("toast");
     box.className = "toast align-items-center border-0 " + (ok ? "text-bg-success" : "text-bg-danger");
-    document.getElementById("toast-text").textContent = text;
+    const body = document.getElementById("toast-text");
+    body.textContent = text;
+    if (link) {
+      const anchor = make("a", "link-light fw-semibold ms-1", link.text);
+      anchor.href = link.href;
+      anchor.target = "_blank";
+      anchor.rel = "noopener";
+      body.append(anchor);
+    }
     bootstrap.Toast.getOrCreateInstance(box).show();
   }
 
@@ -135,6 +144,74 @@
     return { ok: response.ok, status: response.status, answer: answer };
   }
 
+  // How complete a record is: the fields that have a value, of those an editor fills in
+
+  function editable() {
+    return data.fields.filter(function (field) { return field.entry !== "fixed"; });
+  }
+
+  function isFilled(value) {
+    return Array.isArray(value) ? value.length > 0 : Boolean(value);
+  }
+
+  function renderCompleteness() {
+    const box = document.getElementById("completeness");
+    const body = values();
+    const missing = [];
+    for (const field of editable()) {
+      const filled = isFilled(body[field.name]);
+      const mark = form.querySelector('[data-missing="' + field.name + '"]');
+      if (mark) {
+        mark.classList.toggle("d-none", filled);
+      }
+      if (!filled) {
+        missing.push(field);
+      }
+    }
+    box.replaceChildren();
+    const total = editable().length;
+    const done = total - missing.length;
+    const bar = make("div", "progress mb-1");
+    bar.style.height = "6px";
+    bar.setAttribute("role", "progressbar");
+    bar.setAttribute("aria-label", "Fields filled in");
+    bar.setAttribute("aria-valuenow", String(done));
+    bar.setAttribute("aria-valuemin", "0");
+    bar.setAttribute("aria-valuemax", String(total));
+    const fill = make("div", "progress-bar " + (missing.length ? "bg-vhporange" : "bg-success"));
+    fill.style.width = Math.round(100 * done / total) + "%";
+    bar.append(fill);
+    const line = make("div", "text-secondary", done + " of " + total + " fields filled in");
+    if (missing.length) {
+      line.append(". Missing: ");
+      missing.forEach(function (field, position) {
+        const jump = make("a", "link-vhpblue", field.label);
+        jump.href = "#";
+        jump.addEventListener("click", function (event) {
+          event.preventDefault();
+          const target = form.querySelector('[data-field-box="' + field.name + '"]');
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+          const entry = target.querySelector("input:not([type=hidden]):not([type=file]), textarea, button");
+          if (entry) {
+            entry.focus({ preventScroll: true });
+          }
+        });
+        line.append(jump, position < missing.length - 1 ? ", " : "");
+      });
+    }
+    box.append(bar, line);
+  }
+
+  function completenessOf(record) {
+    let done = 0;
+    for (const field of editable()) {
+      if (isFilled(record.values[field.name])) {
+        done += 1;
+      }
+    }
+    return done;
+  }
+
   // The list of records
 
   function renderCounts() {
@@ -174,8 +251,15 @@
       item.append(label);
       if (record.removed) {
         item.append(make("span", "badge text-bg-secondary", "removed"));
-      } else if (record.edited) {
-        item.append(make("span", "badge text-bg-vhplight-blue", "edited"));
+      } else {
+        if (record.edited) {
+          item.append(make("span", "badge text-bg-vhplight-blue", "edited"));
+        }
+        const done = completenessOf(record);
+        const total = editable().length;
+        const count = make("span", "small " + (done === total ? "text-success" : "text-secondary"), done === total ? "\u2713" : done + "/" + total);
+        count.title = done + " of " + total + " fields filled in";
+        item.append(count);
       }
       item.addEventListener("click", function () { open(record); });
       list.append(item);
@@ -369,7 +453,8 @@
     history.href = record ? "/changes?record=" + encodeURIComponent(data.base + data.kind + "/" + record.identifier) : "#";
     setUnsaved(false);
     renderList();
-    showRdfOf(null);
+    renderCompleteness();
+    loadSaved();
     if (!record) {
       fieldInput(data.fields[0].name).focus();
     }
@@ -384,7 +469,6 @@
     form.classList.add("d-none");
     start.classList.remove("d-none");
     renderList();
-    showRdfOf(null);
   }
 
   function values() {
@@ -447,8 +531,7 @@
     record.removed = false;
     setUnsaved(false);
     open(record);
-    toast("Saved. The " + one + "'s page shows it now.", true);
-    showRdfOf(result.answer.change);
+    toast("Saved. The " + one + "'s page shows it now.", true, { text: "See the change", href: result.answer.change });
   });
 
   async function remove() {
@@ -471,8 +554,7 @@
       record.values = {};
       open(record);
     }
-    toast("Removed " + name + ".", true);
-    showRdfOf(result.answer.change);
+    toast("Removed " + name + ".", true, { text: "See the change", href: result.answer.change });
   }
 
   // The linked data of each change, for developers: a diagram of the record's statements
@@ -513,41 +595,76 @@
     box.append(node, edges);
   }
 
-  async function showRdfOf(change) {
-    const panel = document.getElementById("rdf-panel");
-    const shown = showRdf.checked && (change || (selected && !selected.removed));
-    panel.classList.toggle("d-none", !shown);
-    if (!shown) {
+  // The preview asks the platform what saving would publish: it builds the record with rdfsolve and
+  // checks it against the application profile, without saving anything.
+  async function renderPreview() {
+    if (!showRdf.checked || form.classList.contains("d-none")) {
       return;
     }
     const caption = document.getElementById("rdf-caption");
-    const raw = document.getElementById("rdf-raw");
-    let address;
-    if (change) {
-      address = change + ".json";
-      raw.href = change + ".nt";
-      raw.textContent = "Download as N-Triples";
-    } else {
-      address = "/changes/record.json?record=" + encodeURIComponent(data.base + data.kind + "/" + selected.identifier);
-      raw.href = "/" + data.kind + "/" + encodeURIComponent(selected.identifier) + ".ttl";
-      raw.textContent = "Download as Turtle";
-    }
-    const response = await fetch(address, { credentials: "same-origin" });
-    if (!response.ok) {
-      caption.textContent = "(not available)";
+    const address = identifier.value.trim() || (selected ? selected.identifier : "");
+    if (!address) {
+      caption.textContent = "Fill in the name to see the linked data.";
+      document.getElementById("rdf-graph").replaceChildren();
       return;
     }
-    const graph = await response.json();
-    caption.textContent = change
-      ? "What the last change did: " + graph.added.length + " statements added, " + graph.removed.length + " removed"
-      : "The record as published";
+    const sent = JSON.stringify(values());
+    const result = await api("PUT", "/api/" + data.kind + "/" + encodeURIComponent(address) + "?preview=true", values());
+    if (JSON.stringify(values()) !== sent) {
+      return;
+    }
+    if (!result.ok) {
+      caption.textContent = result.answer.error || "The preview is not available.";
+      return;
+    }
+    const graph = result.answer;
+    const added = graph.edges.filter(function (edge) { return edge.status === "added"; }).length;
+    const removed = graph.edges.filter(function (edge) { return edge.status === "removed"; }).length;
+    caption.textContent = added || removed
+      ? "When you save: " + added + " added, " + removed + " removed"
+      : (selected ? "As published; nothing to save" : "Nothing to publish yet");
     renderGraph(document.getElementById("rdf-graph"), graph);
+    const problems = document.getElementById("rdf-problems");
+    problems.replaceChildren();
+    for (const field of data.fields) {
+      for (const message of (graph.fields || {})[field.name] || []) {
+        problems.append(make("li", "", field.label + ": " + message));
+      }
+    }
+    problems.parentElement.classList.toggle("d-none", !problems.children.length);
+  }
+
+  function schedulePreview() {
+    window.clearTimeout(previewTimer);
+    previewTimer = window.setTimeout(renderPreview, 500);
+  }
+
+  function loadSaved() {
+    const raw = document.getElementById("rdf-raw");
+    raw.classList.toggle("d-none", !selected || selected.removed);
+    if (selected && !selected.removed) {
+      raw.href = "/" + data.kind + "/" + encodeURIComponent(selected.identifier) + ".ttl";
+    }
+    renderPreview();
+  }
+
+  function showPreview() {
+    const shown = showRdf.checked;
+    document.getElementById("rdf-column").classList.toggle("d-none", !shown);
+    const main = document.getElementById("main-column");
+    main.classList.toggle("col-xl-9", !shown);
+    main.classList.toggle("col-xl-5", shown);
+    if (shown) {
+      loadSaved();
+    }
   }
 
   // Wiring
 
   form.addEventListener("input", function (event) {
     setUnsaved(true);
+    renderCompleteness();
+    schedulePreview();
     if (event.target === identifier) {
       identifierTouched = true;
     }
@@ -559,6 +676,8 @@
     if (event.target.dataset.choiceOf) {
       setUnsaved(true);
     }
+    renderCompleteness();
+    schedulePreview();
   });
   for (const field of data.fields) {
     if (field.entry === "address") {
@@ -603,13 +722,14 @@
   } catch (error) {
     showRdf.checked = false;
   }
+  showPreview();
   showRdf.addEventListener("change", function () {
     try {
       window.localStorage.setItem("editor-show-rdf", showRdf.checked ? "yes" : "no");
     } catch (error) {
       // Without storage, the choice lasts until the page is left.
     }
-    showRdfOf(null);
+    showPreview();
   });
   window.addEventListener("beforeunload", function (event) {
     if (unsaved) {

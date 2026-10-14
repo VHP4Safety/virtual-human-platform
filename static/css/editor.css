@@ -120,6 +120,14 @@ body.editor {
   color: var(--bs-secondary-color);
 }
 
+/* The linked data beside the form stays in view while the form scrolls */
+.rdf-preview {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
 pre.rdf {
   max-height: 320px;
   overflow: auto;

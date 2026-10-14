@@ -8,6 +8,9 @@ revision are saved in the database, so its page shows it at once.
     DELETE /api/<kind>/<id>?permanent=true   remove the record and its address
     POST   /api/images                       upload an image (the form field "image"); gives its address
 
+With ?preview=true, PUT and POST save nothing: they answer with the statements the record would have,
+compared with those it has, and with what is wrong with each field.
+
 The body of PUT and POST is a JSON object of the record's fields, named as in the model ("name",
 "description", "url", "about", ...). A link is written as {"@id": "https://..."}, and a field
 with several values as a list. A record that does not fit the model is refused with what is wrong
@@ -18,10 +21,11 @@ import re
 import time
 
 from flask import Blueprint, jsonify, request, url_for
+from rdflib import Graph, URIRef
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import RequestEntityTooLarge
 
-from linkeddata import accounts, forms, images, rdf, records, tokens
+from linkeddata import accounts, changes, forms, images, rdf, records, tokens
 from linkeddata.database import PLATFORM
 from linkeddata.model import settings
 
@@ -103,6 +107,8 @@ def store(kind: str, identifier: str, replace: bool = True):
     if not isinstance(body, dict):
         return error("The body is a JSON object of the record's fields.", 400)
     address = records.address(f"{kind}/{identifier}")
+    if request.args.get("preview") == "true":
+        return preview(address, writable[kind], body)
     try:
         row = rdf.row(address, writable[kind], PLATFORM, values(writable[kind], body))
         document = rdf.document(rdf.check(row))
@@ -112,6 +118,16 @@ def store(kind: str, identifier: str, replace: bool = True):
         return error(str(problem), 422)
     revision = records.save(row, document, token.name, token.orcid, replace)
     return done(address, revision, 201 if revision.action == "Added" else 200)
+
+
+def preview(address: str, kind: str, body: dict):
+    """The statements a write would publish, compared with the record as it is, and what is wrong with each field."""
+    try:
+        found, problems = rdf.checked(rdf.row(address, kind, PLATFORM, values(kind, body)))
+    except ValueError as problem:
+        return error(str(problem), 422)
+    before = changes.statements(records.document_of(address))
+    return jsonify({**changes.edges(before, found if found is not None else Graph(), URIRef(address)), "fields": problems})
 
 
 @blueprint.put("/api/<kind>/<identifier>")
