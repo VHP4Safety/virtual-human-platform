@@ -25,5 +25,9 @@ RUN pip install -r requirements.txt
 COPY entrypoint.sh /usr/src/app/entrypoint.sh
 RUN chmod +x /usr/src/app/entrypoint.sh
 
+# Run as an unprivileged user
+RUN useradd --create-home app
+USER app
+
 # Define the entrypoint script
 ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
