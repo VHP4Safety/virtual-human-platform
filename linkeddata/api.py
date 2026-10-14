@@ -7,6 +7,7 @@ revision are saved in the database, so its page shows it at once.
     DELETE /api/<kind>/<id>                  remove the record; its address stays gone
     DELETE /api/<kind>/<id>?permanent=true   remove the record and its address
     POST   /api/<kind>/<id>/restore          put a removed record back
+    POST   /api/<kind>/<id>/move             move the record to a new address ({"to": "<id>"}); the old one forwards
     POST   /api/images                       upload an image (the form field "image"); gives its address
 
 With ?preview=true, PUT and POST save nothing: they answer with the statements the record would have,
@@ -155,6 +156,8 @@ def put(kind: str, identifier: str):
     if not IDENTIFIER.fullmatch(identifier):
         return error("An identifier has lowercase letters, digits and hyphens.", 400)
     record = records.get(records.address(f"{kind}/{identifier}"))
+    if record is not None and record.moved_to:
+        return error(f"This record moved to {record.moved_to}; write it there.", 409)
     if record is not None and record.removed_at:
         return error("This address belonged to a removed record and is not given again.", 409)
     return store(kind, identifier)
@@ -197,6 +200,30 @@ def delete(kind: str, identifier: str):
     else:
         revision = records.retire(record.iri, token.name, token.orcid)
     return done(record.iri, revision, 200)
+
+
+@blueprint.post("/api/<kind>/<identifier>/move")
+def move(kind: str, identifier: str):
+    if kind not in settings().get("writable", {}):
+        return error(f"Records of kind {kind!r} are not written through the API.", 404)
+    token = authorized(kind)
+    if token is None:
+        return error("A valid write token for this kind of record is needed.", 401)
+    record = records.get(records.address(f"{kind}/{identifier}"))
+    if record is None or record.removed_at:
+        return error("There is no record at this address.", 404)
+    body = request.get_json(silent=True)
+    to = body.get("to") if isinstance(body, dict) else None
+    if not isinstance(to, str) or not IDENTIFIER.fullmatch(to):
+        return error('The new address is given as {"to": "<identifier>"}, with lowercase letters, digits and hyphens.', 400)
+    target = records.get(records.address(f"{kind}/{to}"))
+    if target is not None and target.moved_to != record.iri:
+        return error("This address is taken by another record, or was one.", 409)
+    conflict = changed_since_read(record.iri)
+    if conflict:
+        return conflict
+    address = records.address(f"{kind}/{to}")
+    return done(address, records.move(record.iri, address, token.name, token.orcid), 200)
 
 
 @blueprint.post("/api/<kind>/<identifier>/restore")

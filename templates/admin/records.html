@@ -79,6 +79,12 @@
               <div class="row g-3" data-choices="{{ field.name }}"></div>
             </fieldset>
 
+            {% elif field.entry == "addresses" %}
+            <div class="form-label fw-semibold">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}{% if not field.required %}<span class="badge rounded-pill text-bg-light border fw-normal ms-1 d-none" data-missing="{{ field.name }}">Not filled in</span>{% endif %}</div>
+            <div class="d-flex flex-column gap-2" data-addresses="{{ field.name }}"></div>
+            <button type="button" class="btn btn-sm btn-outline-vhpblue mt-2" data-add-address="{{ field.name }}"><i class="bi bi-plus-lg"></i> Add an address</button>
+            <div class="form-text">{{ field.help }}</div>
+
             {% elif field.entry == "image" %}
             <div class="form-label fw-semibold">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}{% if not field.required %}<span class="badge rounded-pill text-bg-light border fw-normal ms-1 d-none" data-missing="{{ field.name }}">Not filled in</span>{% endif %}</div>
             <div class="d-flex flex-wrap align-items-center gap-3">
@@ -117,7 +123,7 @@
             <div class="input-group">
               <span class="input-group-text text-secondary">{{ request.host }}/{{ kind }}/</span>
               <input class="form-control" id="identifier" pattern="[a-z0-9][a-z0-9-]*" maxlength="80" autocomplete="off">
-              <span class="input-group-text d-none" id="identifier-lock" title="The address of a saved {{ one }} does not change"><i class="bi bi-lock"></i></span>
+              <button type="button" class="btn btn-outline-secondary d-none" id="identifier-change"><i class="bi bi-pencil"></i> Change address</button>
             </div>
             <div class="form-text" id="identifier-help">Made from the name; you can shorten it. Lowercase letters, digits and hyphens. It cannot be changed once the {{ one }} is saved.</div>
             <div class="invalid-feedback d-block d-none" data-problem="identifier"></div>
@@ -179,6 +185,30 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep it</button>
         <button type="button" class="btn btn-danger" id="remove-confirm">Remove</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="move-dialog" tabindex="-1" aria-labelledby="move-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title h5" id="move-title">Change the address</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label" for="move-to">New address</label>
+        <div class="input-group">
+          <span class="input-group-text text-secondary">{{ request.host }}/{{ kind }}/</span>
+          <input class="form-control" id="move-to" pattern="[a-z0-9][a-z0-9-]*" maxlength="80" autocomplete="off">
+        </div>
+        <div class="invalid-feedback d-block d-none" id="move-problem"></div>
+        <p class="small text-secondary mt-3 mb-0">The current address keeps working: it forwards visitors and programs to the new one, and the {{ one }} keeps it among its other addresses. The nightly import treats it as the same {{ one }}.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-vhpblue" id="move-confirm">Change the address</button>
       </div>
     </div>
   </div>

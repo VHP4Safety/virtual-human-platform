@@ -37,6 +37,8 @@ class Record(Base):
     source: Mapped[str] = mapped_column(index=True)
     updated_at: Mapped[str] = mapped_column(default=now)
     removed_at: Mapped[str | None]
+    # The address the record moved to, when this address is an earlier one; it forwards there.
+    moved_to: Mapped[str | None]
     name: Mapped[str | None]
     description: Mapped[str | None]
     citation: Mapped[str | None]
@@ -44,6 +46,7 @@ class Record(Base):
     image: Mapped[str | None]
     about: Mapped[list[str]] = mapped_column(JSON, default=list)
     conforms_to: Mapped[list[str]] = mapped_column(JSON, default=list)
+    same_as: Mapped[list[str]] = mapped_column(JSON, default=list)
 
 
 class Revision(Base):

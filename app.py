@@ -442,9 +442,9 @@ def get_stage_mapping() -> dict:
 
 def linked_tools(catalogue: dict) -> dict:
     """The tools of the cloud catalogue with the values of their records. Tools
-    removed on the platform are left out, and tools added on it are put in.
+    removed or moved on the platform are left out, and tools added on it are put in.
     """
-    removed = records.removed("tools")
+    removed = records.removed("tools") | records.moved("tools")
     tools = {}
     for tool_id, tool in catalogue.items():
         if tool_id not in removed:

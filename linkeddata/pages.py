@@ -2,13 +2,14 @@
 
 The address of a record answers with its data when JSON-LD, Turtle or N-Triples is asked for, with
 the Accept header or with a .jsonld, .ttl or .nt ending (/tools/pathvisio.ttl), and its page links
-to that data. The address of a removed record answers 410 Gone. A record with no page of its own is
-shown on a general record page.
+to that data. The address of a removed record answers 410 Gone, and an earlier address of a record
+that moved forwards to its address (301). A record with no page of its own is shown on a general
+record page.
 """
 
 import json
 
-from flask import Blueprint, Response, current_app, g, render_template, request
+from flask import Blueprint, Response, current_app, g, redirect, render_template, request
 from rdflib import Graph
 
 from linkeddata import forms, rdf, records
@@ -59,6 +60,12 @@ def negotiate():
     record = records.get(records.address(path))
     if record is None:
         return None
+    if record.moved_to:
+        ending = request.path.removeprefix("/" + path) if request.path.startswith("/" + path) else ""
+        target = page_link(record.moved_to) + ending
+        if request.query_string:
+            target += "?" + request.query_string.decode()
+        return redirect(target, code=301)
     if record.removed_at:
         return render_template("records/gone.html", record=record, page_title="Removed — VHP4Safety"), 410
     if media != "text/html":

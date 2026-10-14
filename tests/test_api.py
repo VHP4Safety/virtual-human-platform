@@ -153,3 +153,23 @@ def test_restoring_a_removed_record(client):
     assert record.removed_at is None and record.name == TOOL["name"]
     assert records.history(1)[0].action == "Restored"
     assert client.post("/api/tools/x/restore", headers=headers).status_code == 404
+
+
+def test_moving_a_record(client):
+    headers = bearer("tools")
+    client.put("/api/tools/old-name", json=TOOL, headers=headers)
+    response = client.post("/api/tools/old-name/move", json={"to": "new-name"}, headers=headers)
+    assert response.status_code == 200 and response.json["@id"] == BASE + "tools/new-name"
+    moved = records.get(BASE + "tools/new-name")
+    assert (moved.name, moved.same_as) == (TOOL["name"], [BASE + "tools/old-name"])
+    assert records.get(BASE + "tools/old-name").moved_to == BASE + "tools/new-name"
+    assert client.put("/api/tools/old-name", json=TOOL, headers=headers).status_code == 409
+    client.post("/api/tools/new-name/move", json={"to": "newest-name"}, headers=headers)
+    assert records.get(BASE + "tools/old-name").moved_to == BASE + "tools/newest-name"
+    assert set(records.get(BASE + "tools/newest-name").same_as) == {BASE + "tools/old-name", BASE + "tools/new-name"}
+    back = client.post("/api/tools/newest-name/move", json={"to": "old-name"}, headers=headers)
+    assert back.status_code == 200
+    assert records.get(BASE + "tools/old-name").moved_to is None
+    assert records.get(BASE + "tools/newest-name").moved_to == BASE + "tools/old-name"
+    client.put("/api/tools/other", json=TOOL, headers=headers)
+    assert client.post("/api/tools/other/move", json={"to": "old-name"}, headers=headers).status_code == 409

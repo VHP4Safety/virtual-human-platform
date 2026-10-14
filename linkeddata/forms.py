@@ -35,13 +35,16 @@ def plain(text: str) -> str:
     return re.sub(r"\[\[([^\]]+)\]\]", r"\1", text)
 
 
-def entry(known, fixed: list, single_line: bool, address: bool) -> str:
-    """What the editor enters: a text, a longer text, a web address, links to things, an image, or
-    nothing, when the value is fixed. *address* is True when the profile only takes a web address."""
+def entry(known, fixed: list, single_line: bool, address: bool, editor: str | None, several: bool) -> str:
+    """What the editor enters: a text, a longer text, a web address, a list of web addresses, links to
+    things, an image, or nothing, when the value is fixed. *address* is True when the profile only takes
+    a web address, and *editor* is the DASH editor that the profile names."""
     if fixed:
         return "fixed"
     if IMAGE in known["targets"]:
         return "image"
+    if editor == str(DASH.URIEditor):
+        return "addresses" if several else "address"
     if address:
         return "address"
     if any(value != "IRI" for value in known["values"]):
@@ -86,6 +89,8 @@ def form(kind: str) -> list[dict]:
                 fixed,
                 first(profile(), mine, DASH.singleLine) is not False,
                 str(first(profile(), mine, SH.nodeKind)) == str(SH.IRI),
+                str(first(profile(), mine, DASH.editor) or ""),
+                rdf.several(field),
             ),
         }
         if order is None:

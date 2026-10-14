@@ -15,7 +15,7 @@ STEP = "https://vhp4safety.github.io/glossary#VHP0000156"
 
 
 def test_fields_are_the_columns_that_the_model_has():
-    assert set(rdf.fields(TOOL).index) == {"name", "description", "citation", "url", "image", "about", "conforms_to"}
+    assert set(rdf.fields(TOOL).index) == {"name", "description", "citation", "url", "image", "about", "conforms_to", "same_as"}
     assert "citation" not in rdf.fields(TERM).index
     assert rdf.field_of(TOOL, "dct:conformsTo") == "conforms_to"
     with pytest.raises(ValueError):

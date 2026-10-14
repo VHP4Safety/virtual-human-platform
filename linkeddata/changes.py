@@ -148,7 +148,7 @@ def changes():
     statement = select(Revision).order_by(Revision.id.desc()).limit(LISTED)
     record = request.args.get("record")
     if record:
-        statement = statement.where(Revision.record_iri == record)
+        statement = statement.where(Revision.record_iri.in_([record, *records.earlier_addresses(record)]))
     with database.session() as db:
         found = [compare(revision) for revision in db.scalars(statement)]
     return render_template(

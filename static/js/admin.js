@@ -362,6 +362,52 @@
     }
   }
 
+  // The fields that take a list of web addresses
+
+  function addAddress(name, value, disabled) {
+    const box = form.querySelector('[data-addresses="' + name + '"]');
+    const row = make("div", "input-group");
+    const input = make("input", "form-control");
+    input.type = "url";
+    input.inputMode = "url";
+    input.placeholder = "https://";
+    input.value = value || "";
+    input.disabled = disabled;
+    input.dataset.addressOf = name;
+    const remove = make("button", "btn btn-outline-secondary");
+    remove.type = "button";
+    remove.disabled = disabled;
+    remove.setAttribute("aria-label", "Remove this address");
+    remove.append(make("i", "bi bi-x-lg"));
+    remove.addEventListener("click", function () {
+      row.remove();
+      setUnsaved(true);
+      renderCompleteness();
+      schedulePreview();
+    });
+    row.append(input, remove);
+    box.append(row);
+    return input;
+  }
+
+  function renderAddresses(field, values, disabled) {
+    form.querySelector('[data-addresses="' + field.name + '"]').replaceChildren();
+    for (const value of values) {
+      addAddress(field.name, value, disabled);
+    }
+    form.querySelector('[data-add-address="' + field.name + '"]').disabled = disabled;
+  }
+
+  function addresses(name) {
+    const found = [];
+    for (const input of form.querySelectorAll('[data-address-of="' + name + '"]')) {
+      if (input.value.trim()) {
+        found.push(input.value.trim());
+      }
+    }
+    return found;
+  }
+
   // The fields that take an image
 
   function setImage(name, address) {
@@ -425,12 +471,14 @@
     document.getElementById("form-note").textContent = note;
     identifier.value = record ? record.identifier : "";
     identifier.readOnly = Boolean(record);
-    document.getElementById("identifier-lock").classList.toggle("d-none", !record);
+    document.getElementById("identifier-change").classList.toggle("d-none", !record || removed);
     document.getElementById("identifier-help").classList.toggle("d-none", Boolean(record));
     for (const field of data.fields) {
       const value = record ? record.values[field.name] : null;
       if (field.entry === "links") {
         renderChoices(field, Array.isArray(value) ? value : [], removed);
+      } else if (field.entry === "addresses") {
+        renderAddresses(field, Array.isArray(value) ? value : [], removed);
       } else if (field.entry === "image") {
         setImage(field.name, value || "");
         for (const button of form.querySelectorAll('[data-choose="' + field.name + '"], [data-clear="' + field.name + '"]')) {
@@ -485,6 +533,13 @@
         const links = chosen(field.name);
         if (links.length) {
           body[field.name] = links;
+        }
+        continue;
+      }
+      if (field.entry === "addresses") {
+        const found = addresses(field.name);
+        if (found.length) {
+          body[field.name] = found;
         }
         continue;
       }
@@ -706,6 +761,49 @@
       });
     }
   }
+  for (const field of data.fields) {
+    if (field.entry === "addresses") {
+      form.querySelector('[data-add-address="' + field.name + '"]').addEventListener("click", function () {
+        addAddress(field.name, "", false).focus();
+      });
+    }
+  }
+
+  // Changing a record's address: the old one forwards to the new one.
+  document.getElementById("identifier-change").addEventListener("click", function () {
+    document.getElementById("move-to").value = selected.identifier;
+    document.getElementById("move-problem").classList.add("d-none");
+    bootstrap.Modal.getOrCreateInstance(document.getElementById("move-dialog")).show();
+  });
+  document.getElementById("move-confirm").addEventListener("click", async function () {
+    const to = document.getElementById("move-to").value.trim();
+    const problem = document.getElementById("move-problem");
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(to) || to === selected.identifier) {
+      problem.textContent = "Give a new address with lowercase letters, digits and hyphens.";
+      problem.classList.remove("d-none");
+      return;
+    }
+    const record = selected;
+    const old = data.base + data.kind + "/" + record.identifier;
+    const result = await api("POST", "/api/" + data.kind + "/" + encodeURIComponent(record.identifier) + "/move", { to: to }, record.version);
+    if (!result.ok) {
+      problem.textContent = result.answer.error || "The address could not be changed.";
+      problem.classList.remove("d-none");
+      return;
+    }
+    bootstrap.Modal.getOrCreateInstance(document.getElementById("move-dialog")).hide();
+    record.identifier = to;
+    record.version = result.answer.version;
+    const others = (record.values.same_as || []).filter(function (value) { return value !== result.answer["@id"]; });
+    if (!others.includes(old)) {
+      others.push(old);
+    }
+    record.values.same_as = others;
+    setUnsaved(false);
+    open(record);
+    toast("The address changed; the old one forwards here.", true, { text: "See the change", href: result.answer.change });
+  });
+
   for (const button of document.querySelectorAll("[data-new]")) {
     button.addEventListener("click", function () { open(null); });
   }

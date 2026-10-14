@@ -2,8 +2,9 @@
 #
 # Its property shapes also guide the editor's form: sh:order and sh:name place and name each field,
 # sh:description explains it, sh:minCount marks a required field, sh:hasValue a fixed value,
-# sh:nodeKind sh:IRI and sh:pattern a web address of a given form, and dash:singleLine false a longer
-# text. sh:message is what an editor reads when a value is missing or does not fit.
+# sh:nodeKind sh:IRI and sh:pattern a web address of a given form, dash:singleLine false a longer
+# text, and dash:editor dash:URIEditor a list of web addresses. sh:message is what an editor reads when
+# a value is missing or does not fit.
 # The required fields of tools are the minimum of Bioschemas' ComputationalTool profile.
 
 @prefix schema: <https://schema.org/> .
@@ -41,7 +42,11 @@
         sh:description "The DOI of the publication to cite when the tool is used, such as the article that describes it." ;
         sh:message "Give the publication's DOI as a web address, starting with https://doi.org/10." ] ;
     sh:property [
-        sh:path dct:conformsTo ; sh:order 7 ; sh:name "Bioschemas profile" ; sh:nodeKind sh:IRI ;
+        sh:path schema:sameAs ; sh:order 7 ; sh:name "Other addresses" ; sh:nodeKind sh:IRI ;
+        dash:editor dash:URIEditor ;
+        sh:description "Other web addresses of the tool, such as its pages on bio.tools or Wikipedia. Its earlier addresses on the platform are kept here too, so that links to them still find it." ] ;
+    sh:property [
+        sh:path dct:conformsTo ; sh:order 8 ; sh:name "Bioschemas profile" ; sh:nodeKind sh:IRI ;
         sh:hasValue <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE> ;
         sh:description "Records of tools follow the ComputationalTool profile of Bioschemas, version 1.0, so that search engines and registries can read them." ;
         sh:message "A tool follows the ComputationalTool profile of Bioschemas, version 1.0-RELEASE." ] .

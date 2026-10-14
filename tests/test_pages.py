@@ -86,3 +86,14 @@ def test_sitemap_leaves_out_the_pages_for_editors(site):
     assert "/data-quality<" in sitemap
     assert "/login/orcid" not in sitemap
     assert "/account/tokens" not in sitemap
+
+
+def test_an_earlier_address_forwards_to_the_record(site):
+    revision = records.move(BASE + "tools/t", BASE + "tools/renamed", "Test Editor", ORCID)
+    assert revision.action == "Moved"
+    response = site.get("/tools/t")
+    assert (response.status_code, response.headers["Location"]) == (301, "/tools/renamed")
+    assert site.get("/tools/t.jsonld").headers["Location"] == "/tools/renamed.jsonld"
+    assert site.get("/tools/renamed").status_code == 200
+    assert "Does T." in site.get("/tools").data.decode()
+    assert site.get("/tools").data.decode().count("Does T.") == 1
