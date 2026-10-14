@@ -91,6 +91,16 @@ def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[dict]:
     return rows
 
 
+def known_types(source: str) -> list[ox.Quad]:
+    """The classes of the records of the other sources, so that links to them are checked against their class."""
+    with database.session() as db:
+        found = db.execute(select(Record.iri, Record.type).where(Record.source != source)).all()
+    quads = []
+    for iri, kind in found:
+        quads.append(ox.Quad(ox.NamedNode(iri), TYPE, ox.NamedNode(kind)))
+    return quads
+
+
 def store(source: Source, rows: list[dict], notes: list[dict]) -> None:
     """The records of a source replace those it gave before, except the records written on the platform."""
     with database.session() as db, db.begin():
@@ -119,7 +129,7 @@ def import_source(spec: dict, offline: bool) -> None:
         downloaded.write_bytes(content)
     parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
     data, queries = convert(spec, parser.parse(content), config["base"])
-    notes = check(data, config["classes"])
+    notes = check(ox.Dataset([*data, *known_types(spec["name"])]), config["classes"])
     rows = records_of(data, config["classes"], spec["name"])
     source = Source(
         name=spec["name"],

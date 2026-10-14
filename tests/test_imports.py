@@ -128,6 +128,7 @@ def test_import(tmp_path, monkeypatch):
     with database.session() as db, db.begin():
         db.add(Record(iri=BASE + "tools/old", type=SCHEMA + "SoftwareApplication", source="tools", name="Old"))
         db.add(Record(iri=BASE + "tools/x", type=SCHEMA + "SoftwareApplication", source="platform", name="X on the platform"))
+        db.add(Record(iri=GLOSSARY + "VHP0000156", type=SCHEMA + "DefinedTerm", source="glossary", name="Toxicodynamics"))
     imports.import_all(offline=True)
     tool = records.get(BASE + "tools/aop-builder")
     assert (tool.name, tool.source) == ("AOP-Builder", "tools")
@@ -139,6 +140,7 @@ def test_import(tmp_path, monkeypatch):
         assert db.get(Source, "tools").queries.startswith("# title: tools: Tool")
         notes = list(db.scalars(select(Note)))
     assert (BASE + "tools/x", "Other") in [(note.iri, note.value) for note in notes]
+    assert GLOSSARY + "VHP0000156" not in [note.value for note in notes]
 
 
 TOXTEMP = {
