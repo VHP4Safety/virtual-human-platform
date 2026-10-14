@@ -604,7 +604,7 @@ def _get_repository_model_cached(
     # catches and returns the same tuple to the caller (contract preserved),
     # but the next request will retry instead of getting the cached failure.
     if zen_result.get("error"):
-        raise _RepositoryFetchAllFailed((bs_results, zen_result))
+        raise _RepositoryFetchAllFailed(zen_result)
 
     return zen_result
 
