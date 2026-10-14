@@ -738,8 +738,9 @@ def home():
             SERVICES_URL
         )  # Geting the service_list.json in the dictionary format.
         tools = list(tools.values())  # Converting the dictionary to a list object.
-    except Exception as e:
-        return f"Error processing service data: {e}", 500
+    except Exception:
+        app.logger.exception("Home page failed")
+        return "Error processing service data", 500
     num_tools = len(tools)
     num_case_studies = len(get_casestudies())
     try:
@@ -1315,8 +1316,9 @@ def tools():
             search_query=search_query,
         )
 
-    except Exception as e:
-        return f"Error processing service data: {e}", 500
+    except Exception:
+        app.logger.exception("Tools page failed")
+        return "Error processing service data", 500
 
 
 ### New route to list methods (similar to the tools page)
@@ -1471,8 +1473,9 @@ def methods():
             search_query=search_query,
         )
 
-    except Exception as e:
-        return f"Error processing methods data: {e}", 500
+    except Exception:
+        app.logger.exception("Methods page failed")
+        return "Error processing methods data", 500
 
 
 @app.route("/methods/<methodid>")
@@ -1542,8 +1545,9 @@ def tool_page(toolname):
         tools = dict(tools)
         # Geting the service_list.json in the dictionary format.
         # Converting the dictionary to a list object.
-    except Exception as e:
-        return f"Error processing service data: {e}", 500
+    except Exception:
+        app.logger.exception("Tool page failed")
+        return "Error processing service data", 500
 
     # Map toolname to the correct JSON file in the new tool folder
     if toolname not in tools:
@@ -1780,8 +1784,9 @@ def show_compounds_properties_as_json(cwid):
     )
     try:
         compound_dat = run_sparql(compoundwikiEP, sparqlquery)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Compound query failed")
+        return jsonify({"error": "Upstream query failed"}), 500
     if not bool(compound_dat):
         return jsonify({"error": "No data found"}), 404
     compound_dat = compound_dat["results"]["bindings"][0]
@@ -1824,8 +1829,9 @@ def show_compounds_identifiers_as_json(cwid):
     )
     try:
         compound_dat = run_sparql(compoundwikiEP, sparqlquery)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Compound query failed")
+        return jsonify({"error": "Upstream query failed"}), 500
     if len(compound_dat["results"]["bindings"]) == 0:
         return jsonify({"error": "No data found"}), 404
     compound_dat = compound_dat["results"]["bindings"]
@@ -1871,8 +1877,9 @@ def show_compounds_toxicology_as_json(cwid):
     )
     try:
         compound_dat = run_sparql(compoundwikiEP, sparqlquery)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Compound query failed")
+        return jsonify({"error": "Upstream query failed"}), 500
     if len(compound_dat["results"]["bindings"]) == 0:
         return jsonify({"error": "No data found"}), 404
     compound_dat = compound_dat["results"]["bindings"]
@@ -1914,8 +1921,9 @@ def show_compounds_expdata_as_json(cwid):
     )
     try:
         compound_dat = run_sparql(compoundwikiEP, sparqlquery)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Compound query failed")
+        return jsonify({"error": "Upstream query failed"}), 500
     if not bool(compound_dat):
         return jsonify({"error": "No data found"}), 404
     if len(compound_dat["results"]["bindings"]) == 0:
@@ -1954,8 +1962,9 @@ def show_compounds_expdata_as_json(cwid):
         # return sparqlqueryURL
         compound_dat = requests.get(sparqlqueryURL, timeout=10)
         # return json.loads(compound_dat.content)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Compound query failed")
+        return jsonify({"error": "Upstream query failed"}), 500
     if not bool(compound_dat):
         return jsonify({"error": "No data found"}), 404
     compound_dat = json.loads(compound_dat.content)["results"]["bindings"]
