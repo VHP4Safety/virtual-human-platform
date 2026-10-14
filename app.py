@@ -63,6 +63,8 @@ CASESTUDIES_URL = (
     "https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/"
     "refs/heads/main/ro-crate-metadata.json"
 )
+# Case-study content is only fetched from the config repository.
+CASESTUDY_CONTENT_PREFIX = "https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/"
 
 # SEO defaults. Every page renders a <title>/<meta description> (see base.html);
 # routes override page_title / meta_description with page-specific values, and
@@ -258,7 +260,7 @@ def get_casestudy_content(slug: str) -> dict:
     the fetch entirely (returning {} without going through the cache).
     """
     url = get_casestudies().get(slug, {}).get("content_url")
-    if not url:
+    if not url or not url.startswith(CASESTUDY_CONTENT_PREFIX):
         return {}
     try:
         return _get_casestudy_content_cached(url)
