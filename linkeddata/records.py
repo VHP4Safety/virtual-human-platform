@@ -1,83 +1,82 @@
-"""The platform's own records: one JSON-LD file per record in a git repository, which is their
-source of truth. A record's file is at the path of its page (tools/aop-builder.jsonld), every
-change is one commit, and `python -m linkeddata push` sends the repository to its remote."""
+"""The records, as the pages read them and as editors write them on the platform.
+
+A record written on the platform replaces what a source gives for the same address, and the
+imports leave it as it is. Every change made on the platform is kept as a revision, with who made it.
+"""
 
 import json
-import os
-import subprocess
-from datetime import datetime, timezone
-from pathlib import Path
 
-RECORDS_DIR = Path(os.environ.get("PLATFORM_RECORDS", "records"))
-COMMITTER = ["-c", "user.name=VHP4Safety platform", "-c", "user.email=platform@vhp4safety.nl"]
+from sqlalchemy import delete, insert, select
 
-
-def git(*args: str) -> str:
-    result = subprocess.run(["git", "-C", str(RECORDS_DIR), *args], check=True, capture_output=True, text=True)
-    return result.stdout
+from linkeddata import database
+from linkeddata.database import PLATFORM, Record, Revision, now
+from linkeddata.model import settings
 
 
-def repository() -> None:
-    """The records folder is made a git repository when it is not one yet."""
-    if not (RECORDS_DIR / ".git").exists():
-        RECORDS_DIR.mkdir(parents=True, exist_ok=True)
-        git("init", "-q", "-b", "main")
+def address(path: str) -> str:
+    return settings()["base"] + path.strip("/")
 
 
-def record_path(route: str, identifier: str) -> Path:
-    return RECORDS_DIR / route / f"{identifier}.jsonld"
+def get(iri: str) -> Record | None:
+    with database.session() as db:
+        return db.get(Record, iri)
 
 
-def gone_path(route: str, identifier: str) -> Path:
-    return RECORDS_DIR / route / f"{identifier}.gone"
+def of_kind(kind: str) -> list[Record]:
+    """The records that have a page under /<kind>/ and are not removed."""
+    statement = select(Record).where(Record.iri.startswith(address(kind) + "/"), Record.removed_at.is_(None))
+    with database.session() as db:
+        return list(db.scalars(statement.order_by(Record.iri)))
 
 
-def commit(message: str, name: str, orcid: str) -> None:
-    """The changes are committed; a write that changes nothing makes no commit."""
-    git("add", "--all")
-    if not git("status", "--porcelain"):
-        return
-    git(*COMMITTER, "commit", "-q", "-m", message, "-m", f"Changed-by: {name} https://orcid.org/{orcid}")
+def removed(kind: str) -> set[str]:
+    """The identifiers of the removed records of a kind."""
+    prefix = address(kind) + "/"
+    statement = select(Record.iri).where(Record.iri.startswith(prefix), Record.removed_at.is_not(None))
+    with database.session() as db:
+        return {iri.removeprefix(prefix) for iri in db.scalars(statement)}
 
 
-def save(route: str, identifier: str, document: dict, name: str, orcid: str) -> None:
-    repository()
-    path = record_path(route, identifier)
-    action = "Changed" if path.exists() else "Added"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
-    gone_path(route, identifier).unlink(missing_ok=True)
-    commit(f"{action} {route}/{identifier}", name, orcid)
+def names(iris: list[str]) -> dict[str, str]:
+    """The names of the records at these addresses."""
+    with database.session() as db:
+        return dict(db.execute(select(Record.iri, Record.name).where(Record.iri.in_(iris))).all())
 
 
-def retire(route: str, identifier: str, name: str, orcid: str) -> None:
-    """The record is removed and its address is kept as gone, so it is never given to another record."""
-    record_path(route, identifier).unlink()
-    gone = {"removed": datetime.now(timezone.utc).isoformat(timespec="seconds")}
-    gone_path(route, identifier).write_text(json.dumps(gone) + "\n", encoding="utf-8")
-    commit(f"Removed {route}/{identifier}", name, orcid)
+def save(row: dict, document: dict, name: str, orcid: str, replace: bool = True) -> bool:
+    """The record of a row, checked with rdf.check, is written on the platform with its revision.
+    It replaces the record at its address, unless *replace* is False; it returns True when it is new."""
+    with database.session() as db, db.begin():
+        created = db.get(Record, row["iri"]) is None
+        if replace:
+            db.execute(delete(Record).where(Record.iri == row["iri"]))
+        db.execute(insert(Record), [{**row, "source": PLATFORM, "updated_at": now()}])
+        db.add(Revision(
+            record_iri=row["iri"],
+            action="Added" if created else "Changed",
+            document=json.dumps(document, indent=2),
+            name=name,
+            orcid=orcid,
+        ))
+    return created
 
 
-def remove(route: str, identifier: str, name: str, orcid: str) -> None:
-    """The record is removed with no trace in the current files; the git history still has it."""
-    record_path(route, identifier).unlink(missing_ok=True)
-    gone_path(route, identifier).unlink(missing_ok=True)
-    commit(f"Removed {route}/{identifier} permanently", name, orcid)
+def retire(iri: str, name: str, orcid: str) -> None:
+    """The record is removed and its address is kept, so that it is never given to another record."""
+    with database.session() as db, db.begin():
+        record = db.get(Record, iri)
+        record.removed_at = now()
+        record.source = PLATFORM
+        db.add(Revision(record_iri=iri, action="Removed", name=name, orcid=orcid))
 
 
-def taken(route: str, identifier: str) -> bool:
-    return record_path(route, identifier).exists() or gone_path(route, identifier).exists()
+def remove(iri: str, name: str, orcid: str) -> None:
+    """The record and its address are removed; its revisions are kept."""
+    with database.session() as db, db.begin():
+        db.execute(delete(Record).where(Record.iri == iri))
+        db.add(Revision(record_iri=iri, action="Removed permanently", name=name, orcid=orcid))
 
 
-def files(suffix: str) -> list[Path]:
-    """The record files (".jsonld") or the marks of removed records (".gone"), outside .git."""
-    found = []
-    if RECORDS_DIR.exists():
-        for path in sorted(RECORDS_DIR.rglob("*" + suffix)):
-            if ".git" not in path.parts:
-                found.append(path)
-    return found
-
-
-def push() -> None:
-    git("push", "-q", "origin", "main")
+def history(limit: int) -> list[Revision]:
+    with database.session() as db:
+        return list(db.scalars(select(Revision).order_by(Revision.id.desc()).limit(limit)))

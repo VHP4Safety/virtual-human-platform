@@ -9,11 +9,6 @@ from linkeddata import accounts, tokens
 ORCID = "0000-0001-6487-1655"
 
 
-@pytest.fixture(autouse=True)
-def folder(tmp_path, monkeypatch):
-    monkeypatch.setattr(tokens, "STATE_DIR", tmp_path / "state")
-
-
 @pytest.fixture
 def site(monkeypatch):
     import app as platform
@@ -62,4 +57,4 @@ def test_token_page(site, monkeypatch):
         form_token = session["form_token"]
     page = site.post("/account/tokens/", data={"kinds": "tools", "days": "30", "form_token": form_token})
     assert b"vhp_" in page.data
-    assert tokens.tokens_of(ORCID)[0]["kinds"] == "tools"
+    assert tokens.tokens_of(ORCID)[0].kinds == "tools"

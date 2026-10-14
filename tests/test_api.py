@@ -1,6 +1,4 @@
-"""The write API, with records and tokens in temporary folders and no build."""
-
-import json
+"""The write API."""
 
 import pytest
 from flask import Flask
@@ -12,10 +10,7 @@ TOOL = {"name": "AOP Builder", "url": {"@id": "https://github.com/VHP4Safety/aop
 
 
 @pytest.fixture(autouse=True)
-def folders(tmp_path, monkeypatch):
-    monkeypatch.setattr(records, "RECORDS_DIR", tmp_path / "records")
-    monkeypatch.setattr(tokens, "STATE_DIR", tmp_path / "state")
-    monkeypatch.setattr(api, "request_build", lambda out: None)
+def limits():
     api._requests.clear()
 
 
@@ -37,17 +32,19 @@ def test_writing_a_record(client):
     response = client.put("/api/tools/aop-builder", json=TOOL, headers=headers)
     assert response.status_code == 201
     assert response.json == {"@id": "https://platform.vhp4safety.nl/tools/aop-builder"}
-    document = json.loads(records.record_path("tools", "aop-builder").read_text())
-    assert document["name"] == "AOP Builder"
-    assert document["url"] == {"@id": "https://github.com/VHP4Safety/aop-builder"}
+    record = records.get("https://platform.vhp4safety.nl/tools/aop-builder")
+    assert (record.name, record.url, record.source) == ("AOP Builder", "https://github.com/VHP4Safety/aop-builder", "platform")
     assert client.put("/api/tools/aop-builder", json=TOOL, headers=headers).status_code == 200
+    assert [revision.action for revision in records.history(5)] == ["Changed", "Added"]
 
 
 def test_a_record_that_does_not_fit_the_model(client):
     response = client.put("/api/tools/x", json={"name": "X", "url": "not a link"}, headers=bearer("tools"))
     assert response.status_code == 422
     assert "url" in response.json["error"]
-    assert not records.record_path("tools", "x").exists()
+    assert records.get("https://platform.vhp4safety.nl/tools/x") is None
+    response = client.put("/api/tools/x", json={"name": "X", "softwareVersion": "1"}, headers=bearer("tools"))
+    assert response.status_code == 422
 
 
 def test_new_identifiers(client):

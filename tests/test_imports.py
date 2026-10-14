@@ -1,16 +1,15 @@
-"""The parsers, the rdfsolve conversion and checks, and the SQLite file, on small inputs without network access."""
+"""The parsers, the rdfsolve conversion and checks, and the import into the database, on small inputs without network access."""
 
 import json
-import sqlite3
-from contextlib import closing
 from pathlib import Path
 
 import pyoxigraph as ox
 import yaml
+from sqlalchemy import select
 
-from linkeddata import build, records
-from linkeddata.build import check, convert, documents, write
-from linkeddata.model import settings
+from linkeddata import database, imports, records
+from linkeddata.database import Note, Record, Source
+from linkeddata.imports import check, convert
 from linkeddata.parsers import glossary, methods, tools
 
 SOURCES = Path(__file__).parent.parent / "linkeddata" / "sources"
@@ -120,35 +119,26 @@ def test_checks_report_values_that_do_not_fit():
     ]
 
 
-def test_documents_and_database(tmp_path):
-    store = ox.Store()
-    store.extend(turtle(f"""
-        @prefix schema: <https://schema.org/> .
-        <{BASE}tools/t> a schema:SoftwareApplication ; schema:name "T" ; schema:about <{GLOSSARY}VHP0000156> .
-        <{GLOSSARY}VHP0000156> schema:name "Toxicodynamics" .
-    """))
-    rows = documents(store, settings())
-    assert [iri for iri, _, _ in rows] == [BASE + "tools/t"]
-    write(tmp_path / "platform.sqlite", rows, [], [], [])
-    with closing(sqlite3.connect(tmp_path / "platform.sqlite")) as db:
-        document = db.execute("SELECT document FROM documents").fetchone()[0]
-    nodes = {node["@id"]: node for node in json.loads(document)["@graph"]}
-    assert nodes[GLOSSARY + "VHP0000156"]["name"] == "Toxicodynamics"
-
-
-def test_a_removed_record_hides_what_a_source_gives(tmp_path, monkeypatch):
-    monkeypatch.setattr(build, "SOURCES_DIR", tmp_path / "sources")
-    monkeypatch.setattr(records, "RECORDS_DIR", tmp_path / "records")
+def test_import(tmp_path, monkeypatch):
+    monkeypatch.setattr(imports, "SOURCES_DIR", tmp_path / "sources")
     (tmp_path / "sources").mkdir()
     (tmp_path / "sources" / "tools.yaml").write_text((SOURCES / "tools.yaml").read_text())
-    (tmp_path / "build" / "downloads").mkdir(parents=True)
-    (tmp_path / "build" / "downloads" / "tools").write_text(json.dumps(TOOLS))
-    (tmp_path / "records" / "tools").mkdir(parents=True)
-    (tmp_path / "records" / "tools" / "x.gone").write_text('{"removed": "2026-10-14T12:00:00+00:00"}')
-    database = build.build_once(tmp_path / "build", offline=True)
-    with closing(sqlite3.connect(database)) as db:
-        assert db.execute("SELECT iri FROM documents").fetchall() == [(BASE + "tools/aop-builder",)]
-        assert db.execute("SELECT iri FROM gone").fetchall() == [(BASE + "tools/x",)]
+    (database.STATE_DIR / "downloads").mkdir(parents=True)
+    (database.STATE_DIR / "downloads" / "tools").write_text(json.dumps(TOOLS))
+    with database.session() as db, db.begin():
+        db.add(Record(iri=BASE + "tools/old", type=SCHEMA + "SoftwareApplication", source="tools", name="Old"))
+        db.add(Record(iri=BASE + "tools/x", type=SCHEMA + "SoftwareApplication", source="platform", name="X on the platform"))
+    imports.import_all(offline=True)
+    tool = records.get(BASE + "tools/aop-builder")
+    assert (tool.name, tool.source) == ("AOP-Builder", "tools")
+    assert tool.about == [GLOSSARY + "VHP0000156", BASE + "casestudies/parkinson/Q1"]
+    assert tool.conforms_to == ["https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"]
+    assert records.get(BASE + "tools/old") is None
+    assert records.get(BASE + "tools/x").name == "X on the platform"
+    with database.session() as db:
+        assert db.get(Source, "tools").queries.startswith("# title: tools: Tool")
+        notes = list(db.scalars(select(Note)))
+    assert (BASE + "tools/x", "Other") in [(note.iri, note.value) for note in notes]
 
 
 TOXTEMP = {

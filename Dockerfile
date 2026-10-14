@@ -25,8 +25,8 @@ RUN pip install -r requirements.txt -r linkeddata/requirements.txt
 COPY entrypoint.sh /usr/src/app/entrypoint.sh
 RUN chmod +x /usr/src/app/entrypoint.sh
 
-# The records repository, the write tokens and the built pages are kept in /data (a volume)
-ENV PLATFORM_RECORDS=/data/records PLATFORM_STATE=/data/state PLATFORM_BUILD=/data/build
+# The database and the records repository are kept in /data (a volume)
+ENV PLATFORM_STATE=/data/state PLATFORM_RECORDS=/data/records
 
 # Run as an unprivileged user
 RUN useradd --create-home app && mkdir -p /data && chown app /data
