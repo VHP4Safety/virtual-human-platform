@@ -151,10 +151,11 @@ def field_of_property(kind: str, iri: str) -> str:
     return iri
 
 
-def checked(new: dict) -> tuple[Graph | None, dict[str, list[str]]]:
-    """A new row as linked data, and what is wrong with each of its fields. rdfsolve checks the type of
-    each value against the approved schema (when a value does not fit, there is no linked data), and
-    pyshacl checks the record against the application profile (required, single and fixed values)."""
+def checked(new: dict) -> tuple[Graph | None, dict[str, list[str]], dict[str, list[str]]]:
+    """A new row as linked data, what is wrong with each of its fields, and what is only recommended.
+    rdfsolve checks the type of each value against the approved schema (when a value does not fit,
+    there is no linked data), and pyshacl checks the record against the application profile (required,
+    single and fixed values); results of sh:Warning severity are recommendations."""
     try:
         found = linked(pd.DataFrame([new]))
     except ValueError:
@@ -167,27 +168,39 @@ def checked(new: dict) -> tuple[Graph | None, dict[str, list[str]]]:
             except ValueError as problem:
                 reason = str(problem.__cause__ or problem).removeprefix(field + ": ").splitlines()[0]
                 problems[field] = [f"This value does not fit the field ({reason})."]
-        return None, problems
+        return None, problems, {}
     problems = {}
-    conforms, results, _ = pyshacl.validate(found, shacl_graph=profile())
-    if not conforms:
-        for result in results.subjects(RDF.type, SH.ValidationResult):
-            field = field_of_property(new["type"], str(results.value(result, SH.resultPath)))
-            message = str(results.value(result, SH.resultMessage))
-            if message not in problems.setdefault(field, []):
-                problems[field].append(message)
+    warnings = {}
+    # The class of each record that a value links to is known to the platform, and the profile checks it.
+    targets = []
+    for value in found.objects():
+        if isinstance(value, URIRef):
+            targets.append(str(value))
+    validated = Graph() + found
+    with database.session() as db:
+        for iri, kind in db.execute(select(Record.iri, Record.type).where(Record.iri.in_(targets))):
+            validated.add((URIRef(iri), RDF.type, URIRef(kind)))
+    _, results, _ = pyshacl.validate(validated, shacl_graph=profile())
+    for result in results.subjects(RDF.type, SH.ValidationResult):
+        if results.value(result, SH.focusNode) != URIRef(new["iri"]):
+            continue
+        field = field_of_property(new["type"], str(results.value(result, SH.resultPath)))
+        message = str(results.value(result, SH.resultMessage))
+        found_in = problems if results.value(result, SH.resultSeverity) == SH.Violation else warnings
+        if message not in found_in.setdefault(field, []):
+            found_in[field].append(message)
     # Only web addresses are kept, so that a link on a page never runs a script (javascript:) or opens a file.
     for _, predicate, value in found:
         if isinstance(value, URIRef) and predicate != RDF.type and not str(value).startswith(("https://", "http://")):
             field = field_of_property(new["type"], str(predicate))
             if field not in problems:
                 problems[field] = ["A web address starts with https:// or http://."]
-    return found, problems
+    return found, problems, warnings
 
 
 def check(new: dict) -> Graph:
     """A new row as linked data; NotFitting tells what is wrong with each field when it does not fit."""
-    found, problems = checked(new)
+    found, problems, _ = checked(new)
     if problems:
         raise NotFitting(problems)
     return found

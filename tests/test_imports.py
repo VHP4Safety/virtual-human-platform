@@ -37,6 +37,13 @@ TOOLS = {
         "stage": "Other",
     },
 }
+# The detail file of a tool in the catalogue.
+DETAIL = {
+    "substage": GLOSSARY + "VHP0000023",
+    "instance": {"license": "MIT License", "TRL": "4"},
+    "provider": {"name": "Example Institute", "contact": {"name": "Test Author", "email": "author@example.org"}},
+}
+CATALOGUE = {"tools": json.dumps(TOOLS).encode(), "aop-builder": json.dumps(DETAIL).encode()}
 
 
 def turtle(text: str) -> ox.Dataset:
@@ -52,7 +59,7 @@ def objects(data: ox.Dataset, subject: str, predicate: str) -> set:
 
 
 def test_tools_parser():
-    rows = tools.parse(json.dumps(TOOLS).encode())
+    rows = tools.parse(CATALOGUE)
     assert rows[0] == {
         "@id": "tools/aop-builder",
         "@type": "Tool",
@@ -60,10 +67,17 @@ def test_tools_parser():
         "description": "Builds AOPs.",
         "main_url": {"@id": "https://github.com/VHP4Safety/aop-builder"},
         "logo": {"@id": "https://raw.githubusercontent.com/VHP4Safety/cloud/main/docs/service/aopbuilder.png"},
-        "stage": {"@id": GLOSSARY + "VHP0000156"},
+        "stage": [{"@id": GLOSSARY + "VHP0000156"}, {"@id": GLOSSARY + "VHP0000023"}],
         "questions": [{"@id": "casestudies/parkinson/Q1"}],
+        "license": {"@id": "https://spdx.org/licenses/MIT"},
+        "trl": "TRL 4",
+        "provider": [{"@id": "organizations/example-institute"}],
+        "maintainer": [{"@id": "people/test-author"}],
     }
-    assert rows[1] == {"@id": "tools/x", "@type": "Tool", "service": "X", "stage": "Other"}
+    assert rows[1] == {"@id": "tools/x", "@type": "Tool", "service": "X", "stage": ["Other"]}
+    others = {row["@id"]: row for row in rows[2:]}
+    assert others["people/test-author"] == {"@id": "people/test-author", "@type": "Person", "name": "Test Author", "email": "author@example.org"}
+    assert others["https://spdx.org/licenses/MIT"]["name"] == "MIT"
 
 
 def test_methods_parser():
@@ -108,11 +122,13 @@ def test_casestudies_parser():
 
 def test_conversion():
     spec = yaml.safe_load((SOURCES / "tools.yaml").read_text(encoding="utf-8"))
-    data, queries = convert(spec, tools.parse(json.dumps(TOOLS).encode()), BASE)
+    data, queries = convert(spec, tools.parse(CATALOGUE), BASE)
     assert objects(data, BASE + "tools/aop-builder", SCHEMA + "about") == {
         ox.NamedNode(GLOSSARY + "VHP0000156"),
+        ox.NamedNode(GLOSSARY + "VHP0000023"),
         ox.NamedNode(BASE + "casestudies/parkinson/Q1"),
     }
+    assert objects(data, BASE + "tools/aop-builder", SCHEMA + "maintainer") == {ox.NamedNode(BASE + "people/test-author")}
     assert objects(data, BASE + "tools/aop-builder", SCHEMA + "name") == {ox.Literal("AOP-Builder")}
     assert objects(data, BASE + "tools/x", SCHEMA + "about") == {ox.Literal("Other")}
     assert queries[0].startswith("# title: tools: Tool")
@@ -128,9 +144,9 @@ def test_checks_report_values_that_do_not_fit():
             schema:url "not a link" ; dct:conformsTo <{PROFILE}> .
     """)
     notes = check(data, ["https://schema.org/SoftwareApplication"])
-    assert [(note["iri"], note["field"], note["value"]) for note in notes] == [
+    assert {(note["iri"], note["field"], note["value"]) for note in notes} == {
         (BASE + "tools/b", SCHEMA + "url", "not a link")
-    ]
+    }
 
 
 def test_import(tmp_path, monkeypatch):
@@ -167,10 +183,10 @@ def test_an_import_that_would_remove_most_records_is_refused(tmp_path, monkeypat
         for number in range(12):
             db.add(Record(iri=BASE + f"tools/kept-{number}", type=SCHEMA + "SoftwareApplication", source="tools", name="Kept"))
     problems = imports.import_all(offline=True)
-    assert len(problems) == 1 and "gave 2 records where it gave 12 before" in problems[0]
+    assert len(problems) == 1 and "gave 3 records where it gave 12 before" in problems[0]
     assert records.get(BASE + "tools/kept-0").name == "Kept"
     with database.session() as db:
-        assert "gave 2 records" in db.get(Source, "tools").problem
+        assert "gave 3 records" in db.get(Source, "tools").problem
 
 
 def test_records_written_on_the_platform_are_checked_again(tmp_path, monkeypatch):

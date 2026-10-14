@@ -1,6 +1,8 @@
 name: tools
 title: Tool catalogue
 url: https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/service_index.json
+# The detail file of each tool, by the tool's key in the index.
+entries: https://cloud.vhp4safety.nl/service/{key}.json
 parser: tools
 
 # How the parsed rows become the model: the arguments of rdfsolve's Rule.between, for each kind of row.
@@ -10,7 +12,42 @@ rules:
     - {predicate: "https://schema.org/name", object: service}
     - {predicate: "https://schema.org/description", object: description}
     - {predicate: "https://schema.org/url", object: main_url}
+    - {predicate: "https://schema.org/installUrl", object: instance_url}
     - {predicate: "https://schema.org/image", object: logo}
     - {predicate: "https://schema.org/about", object: stage}
     - {predicate: "https://schema.org/about", object: questions}
+    - {predicate: "https://schema.org/provider", object: provider}
+    - {predicate: "https://schema.org/creator", object: creator}
+    - {predicate: "https://schema.org/maintainer", object: maintainer}
+    - {predicate: "https://schema.org/softwareHelp", object: help}
+    - {predicate: "https://schema.org/subjectOf", object: workflows}
+    - {predicate: "https://schema.org/video", object: videos}
+    - {predicate: "https://schema.org/citation", object: doi}
+    - {predicate: "https://schema.org/keywords", object: tess}
+    - {predicate: "https://schema.org/softwareVersion", object: version}
+    - {predicate: "https://schema.org/license", object: license}
+    - {predicate: "https://schema.org/isBasedOn", object: source}
+    - {predicate: "https://schema.org/downloadUrl", object: downloads}
+    - {predicate: "https://schema.org/creativeWorkStatus", object: trl}
+    - {predicate: "https://schema.org/releaseNotes", object: release_notes}
+    - {predicate: "https://schema.org/sameAs", object: same_as}
     - {predicate: "http://purl.org/dc/terms/conformsTo", value: "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"}
+  Organization:
+    - {predicate: a, value: "https://schema.org/Organization"}
+    - {predicate: "https://schema.org/name", object: name}
+    - {predicate: "https://schema.org/url", object: url}
+  Person:
+    - {predicate: a, value: "https://schema.org/Person"}
+    - {predicate: "https://schema.org/name", object: name}
+    - {predicate: "https://schema.org/email", object: email}
+  Page:
+    - {predicate: a, value: "https://schema.org/CreativeWork"}
+    - {predicate: "https://schema.org/name", object: title}
+  Video:
+    - {predicate: a, value: "https://schema.org/VideoObject"}
+    - {predicate: "https://schema.org/name", object: title}
+  License:
+    - {predicate: a, value: "https://schema.org/CreativeWork"}
+    - {predicate: "https://schema.org/name", object: name}
+  Publication:
+    - {predicate: a, value: "https://schema.org/CreativeWork"}

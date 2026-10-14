@@ -5,6 +5,8 @@ example every night."""
 
 import hashlib
 import importlib
+import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -38,14 +40,25 @@ def fetch(url: str) -> bytes:
 def convert(spec: dict, data, base: str) -> tuple[ox.Dataset, list[str]]:
     """The statements of one source's data (parsed rows, or a received document) in the model,
     and the CONSTRUCT queries that made them."""
-    rows = lift(data, base + "sources/" + spec["name"] + "#", base, spec.get("kinds"))
+    vocabulary = base + "sources/" + spec["name"] + "#"
+    rows = lift(data, vocabulary, base, spec.get("kinds"))
     with SchemaMiner.from_graph(rows, delay=0) as miner:
         source = Client(miner.mine(dataset_name=spec["name"]), rows)
+    # The fields that each kind of row has, so that rules for a field or kind the source does not give are left out.
+    given = {}
+    for quad in rows.quads_for_predicate(TYPE):
+        kind = quad.object.value.removeprefix(vocabulary)
+        for statement in rows.quads_for_subject(quad.subject):
+            given.setdefault(kind, set()).add(statement.predicate.value.removeprefix(vocabulary))
     statements = ox.Dataset()
     queries = []
     for kind, arguments in spec["rules"].items():
+        if kind not in given:
+            continue
         rules = []
         for argument in arguments:
+            if "object" in argument and argument["object"].split("/")[0] not in given[kind]:
+                continue
             rules.append(Rule.between(client=source, focus=kind, **argument))
         queries.append(write_query(rules, title=f"{spec['name']}: {kind}", source=source, target=TARGET))
         for quad in Profile(spec["name"], rules).run(source):
@@ -54,7 +67,9 @@ def convert(spec: dict, data, base: str) -> tuple[ox.Dataset, list[str]]:
 
 
 def check(data: ox.Dataset, classes: list[str]) -> list[dict]:
-    """The records of each class of the model, extracted with rdfsolve and checked against the model."""
+    """The records of each class of the model, extracted with rdfsolve and checked against the model.
+    The extraction of a class also holds the records its records link to, with their class only, so
+    each check reports on the records of its own class."""
     with SchemaMiner.from_graph(data, delay=0) as miner:
         mined = miner.mine(dataset_name="platform")
     client = Client(mined, data)
@@ -62,6 +77,10 @@ def check(data: ox.Dataset, classes: list[str]) -> list[dict]:
     vocabulary = ontology()
     notes = []
     for kind in classes:
+        own = set()
+        for quad in data.quads_for_predicate(TYPE):
+            if quad.object == ox.NamedNode(kind):
+                own.add(quad.subject.value)
         fields = []
         for pattern in mined.patterns:
             if pattern.subject_class == kind and (kind, pattern.property_uri) not in fields:
@@ -70,6 +89,8 @@ def check(data: ox.Dataset, classes: list[str]) -> list[dict]:
             continue
         extraction = client.extract(mined.select(fields=fields), root_class=kind)
         for violation in extraction.assess(model_shapes, ontology=vocabulary, inference="rdfs").violations:
+            if violation.focus is None or violation.focus.value not in own:
+                continue
             notes.append({
                 "iri": violation.focus.value if violation.focus else "",
                 "field": violation.path.value if violation.path else "",
@@ -137,8 +158,12 @@ def files_of(spec: dict) -> dict[str, str]:
     return {spec["name"]: spec["url"]}
 
 
+ENTRY = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+
+
 def download(spec: dict, offline: bool) -> dict[str, bytes]:
-    """The files of a source by name, fetched, or as the last import fetched them when *offline*."""
+    """The files of a source by name, fetched, or as the last import fetched them when *offline*. A source
+    with entries also has, by its key, the file of each entry of its index (a JSON object)."""
     folder = database.STATE_DIR / "downloads" / spec["name"]
     contents = {}
     for name, url in files_of(spec).items():
@@ -147,6 +172,19 @@ def download(spec: dict, offline: bool) -> dict[str, bytes]:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(fetch(url))
         contents[name] = path.read_bytes()
+    if "entries" in spec:
+        for key in json.loads(contents[spec["name"]]):
+            # The keys come from upstream and name files here, so only plain names are taken.
+            if not ENTRY.fullmatch(key) or key == spec["name"]:
+                continue
+            path = folder / key
+            if not offline:
+                try:
+                    path.write_bytes(fetch(spec["entries"].format(key=key)))
+                except requests.RequestException as problem:
+                    print(f"{spec['name']}: {key} not fetched ({problem})")
+            if path.exists():
+                contents[key] = path.read_bytes()
     return contents
 
 
@@ -155,7 +193,7 @@ def import_source(spec: dict, offline: bool) -> None:
     contents = download(spec, offline)
     parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
     # A source of one file gives its parser the file; a source of several gives them by name.
-    parsed = parser.parse(contents if "files" in spec else contents[spec["name"]])
+    parsed = parser.parse(contents if "files" in spec or "entries" in spec else contents[spec["name"]])
     data, queries = convert(spec, parsed, config["base"])
     notes = check(ox.Dataset([*data, *known_types(spec["name"])]), config["classes"])
     rows = records_of(data, config["classes"], spec["name"])

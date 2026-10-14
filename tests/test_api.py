@@ -67,13 +67,10 @@ def test_a_record_that_does_not_fit_the_model(client):
     assert response.status_code == 422
     assert set(response.json["fields"]) == {"url"}
     response = client.put("/api/tools/x", json={"name": "X"}, headers=headers)
-    assert response.json["fields"] == {
-        "description": ["Describe the tool in a few sentences."],
-        "url": ["Add the address of the tool's website."],
-    }
+    assert response.json["fields"] == {"description": ["Describe the tool in a few sentences."]}
     response = client.put("/api/tools/x", json={**TOOL, "url": "javascript:alert(1)"}, headers=headers)
     assert response.json["fields"] == {"url": ["A web address starts with https:// or http://."]}
-    assert client.put("/api/tools/x", json={**TOOL, "softwareVersion": "1"}, headers=headers).status_code == 422
+    assert client.put("/api/tools/x", json={**TOOL, "applicationCategory": "1"}, headers=headers).status_code == 422
     assert records.get(BASE + "tools/x") is None
 
 

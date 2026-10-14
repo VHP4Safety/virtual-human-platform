@@ -13,6 +13,10 @@ classes:
   - https://bioschemas.org/draft_terms/LabProtocol
   - https://schema.org/DefinedTerm
   - https://schema.org/Question
+  - https://schema.org/Organization
+  - https://schema.org/Person
+  - https://schema.org/CreativeWork
+  - https://schema.org/VideoObject
 
 # Used for short names in the YAML mappings and in the JSON-LD documents.
 prefixes:

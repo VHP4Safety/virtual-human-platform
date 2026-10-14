@@ -49,6 +49,21 @@ class Record(Base):
     about: Mapped[list[str]] = mapped_column(JSON, default=list)
     conforms_to: Mapped[list[str]] = mapped_column(JSON, default=list)
     same_as: Mapped[list[str]] = mapped_column(JSON, default=list)
+    install_url: Mapped[str | None]
+    software_version: Mapped[str | None]
+    license: Mapped[str | None]
+    creative_work_status: Mapped[str | None]
+    keywords: Mapped[str | None]
+    release_notes: Mapped[str | None]
+    email: Mapped[str | None]
+    provider: Mapped[list[str]] = mapped_column(JSON, default=list)
+    creator: Mapped[list[str]] = mapped_column(JSON, default=list)
+    maintainer: Mapped[list[str]] = mapped_column(JSON, default=list)
+    software_help: Mapped[list[str]] = mapped_column(JSON, default=list)
+    subject_of: Mapped[list[str]] = mapped_column(JSON, default=list)
+    video: Mapped[list[str]] = mapped_column(JSON, default=list)
+    is_based_on: Mapped[list[str]] = mapped_column(JSON, default=list)
+    download_url: Mapped[list[str]] = mapped_column(JSON, default=list)
 
 
 class Revision(Base):

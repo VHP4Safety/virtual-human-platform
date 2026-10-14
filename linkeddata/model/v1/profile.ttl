@@ -1,11 +1,15 @@
 # The application profile of the platform: what the platform adds to schema.org and Bioschemas.
 #
 # Its property shapes also guide the editor's form: sh:order and sh:name place and name each field,
-# sh:description explains it, sh:minCount marks a required field, sh:hasValue a fixed value,
+# sh:description explains it, sh:minCount marks a required field (a recommended one with sh:severity
+# sh:Warning: missing it is pointed out, but does not stop a save), sh:hasValue a fixed value,
 # sh:nodeKind sh:IRI and sh:pattern a web address of a given form, dash:singleLine false a longer
 # text, and dash:editor dash:URIEditor a list of web addresses. sh:message is what an editor reads when
 # a value is missing or does not fit. dash:uniqueValueForClass asks for a value that no other record of
 # the class has; the platform warns about it rather than refusing, as two tools can share a website.
+# dash:InstancesSelectEditor offers the records a field can link to: those of the classes it names with
+# sh:class (or sh:or), or else those that records already link to in it. dash:DetailsEditor takes pages
+# with their titles, sh:in lists the values a field takes, and sh:group puts fields in the form's sections.
 # The required fields of tools are the minimum of Bioschemas' ComputationalTool profile.
 
 @prefix schema: <https://schema.org/> .
@@ -14,45 +18,119 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix dct: <http://purl.org/dc/terms/> .
 @prefix dash: <http://datashapes.org/dash#> .
+@prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
+
+form:about a sh:PropertyGroup ; sh:order 1 ; rdfs:label "About the tool" .
+form:people a sh:PropertyGroup ; sh:order 2 ; rdfs:label "Who is behind it" .
+form:documentation a sh:PropertyGroup ; sh:order 3 ; rdfs:label "Documentation and training" .
+form:technical a sh:PropertyGroup ; sh:order 4 ; rdfs:label "Technical details" .
+form:elsewhere a sh:PropertyGroup ; sh:order 5 ; rdfs:label "Elsewhere on the web" .
 
 [] a sh:NodeShape ;
     sh:targetClass schema:SoftwareApplication ;
     rdfs:comment "Tools state the Bioschemas profile they follow (ComputationalTool)." ;
     sh:property [
-        sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:path schema:name ; sh:group form:about ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ;
         dash:uniqueValueForClass schema:SoftwareApplication ;
         sh:description "The tool's name as its developers write it." ;
         sh:message "Give the tool a name." ] ;
     sh:property [
-        sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:path schema:description ; sh:group form:about ; sh:order 2 ; sh:name "Description" ; sh:minCount 1 ; sh:maxCount 1 ;
         dash:singleLine false ;
         sh:description "What the tool does and what it is used for, in two or three sentences. It is shown in the tool catalogue and on the tool's page." ;
         sh:message "Describe the tool in a few sentences." ] ;
     sh:property [
-        sh:path schema:url ; sh:order 3 ; sh:name "Website" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:path schema:url ; sh:group form:about ; sh:order 3 ; sh:name "Website" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:severity sh:Warning ;
         dash:uniqueValueForClass schema:SoftwareApplication ;
         sh:description "The tool's website or documentation." ;
-        sh:message "Add the address of the tool's website." ] ;
+        sh:message "A website helps people find the tool; add it when the tool has one." ] ;
     sh:property [
-        sh:path schema:image ; sh:order 4 ; sh:name "Logo or screenshot" ; sh:maxCount 1 ;
+        sh:path schema:installUrl ; sh:group form:about ; sh:order 4 ; sh:name "Where to use it" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+        sh:description "The address where the tool runs and can be used, when that is not its website. The tool's page links to it as \"Run the tool\"." ] ;
+    sh:property [
+        sh:path schema:image ; sh:group form:about ; sh:order 5 ; sh:name "Logo or screenshot" ; sh:maxCount 1 ;
         sh:description "Shown on the tool's card in the catalogue." ] ;
     sh:property [
-        sh:path schema:about ; sh:order 5 ; sh:name "Assessment steps and case-study questions" ;
+        sh:path schema:about ; sh:group form:about ; sh:order 6 ; sh:name "Assessment steps and case-study questions" ;
+        dash:editor dash:InstancesSelectEditor ; sh:severity sh:Warning ;
+        sh:or ( [ sh:class schema:DefinedTerm ] [ sh:class schema:Question ] ) ;
+        sh:message "Choose the steps and questions from the lists; other links are kept but not shown in the catalogue's filters." ;
         sh:description "The steps of the safety assessment that the tool supports, and the case-study questions it helps to answer. The tool catalogue filters tools by them." ] ;
     sh:property [
-        sh:path schema:citation ; sh:order 6 ; sh:name "Publication to cite" ; sh:maxCount 1 ;
+        sh:path schema:provider ; sh:group form:people ; sh:order 1 ; sh:name "Provided by" ;
+        dash:editor dash:InstancesSelectEditor ; sh:class schema:Organization ;
+        sh:description "The organisations that offer the tool. VHP4Safety is one of them when the tool runs on the platform's own servers; its page then says that VHP4Safety hosts it." ] ;
+    sh:property [
+        sh:path schema:creator ; sh:group form:people ; sh:order 2 ; sh:name "Developed by" ;
+        dash:editor dash:InstancesSelectEditor ; sh:class schema:Organization ;
+        sh:description "The organisations that developed the tool. Choose VHP4Safety when the project developed it." ] ;
+    sh:property [
+        sh:path schema:maintainer ; sh:group form:people ; sh:order 3 ; sh:name "Contact people" ;
+        dash:editor dash:InstancesSelectEditor ; sh:class schema:Person ;
+        sh:description "The people to contact about the tool. Their names and email addresses are shown on the tool's support tab." ] ;
+    sh:property [
+        sh:path schema:softwareHelp ; sh:group form:documentation ; sh:order 1 ; sh:name "Guides and demos" ;
+        dash:editor dash:DetailsEditor ; sh:class schema:CreativeWork ;
+        sh:description "Pages that explain the tool or show it at work: introductions, tutorials, demos and deployment guides, each with its title." ] ;
+    sh:property [
+        sh:path schema:subjectOf ; sh:group form:documentation ; sh:order 2 ; sh:name "Used in workflows" ;
+        dash:editor dash:DetailsEditor ; sh:class schema:CreativeWork ;
+        sh:description "The VHP4Safety workflows and tutorials that use the tool, each with its title." ] ;
+    sh:property [
+        sh:path schema:video ; sh:group form:documentation ; sh:order 3 ; sh:name "Videos" ;
+        dash:editor dash:DetailsEditor ; sh:class schema:VideoObject ;
+        sh:description "Videos about the tool that can be embedded on its page, such as PeerTube videos, each with its title." ] ;
+    sh:property [
+        sh:path schema:citation ; sh:group form:documentation ; sh:order 4 ; sh:name "Publication to cite" ; sh:maxCount 1 ;
         sh:nodeKind sh:IRI ; sh:pattern "^https://doi\\.org/10\\.[0-9]{4,9}/\\S+$" ;
         sh:description "The DOI of the publication to cite when the tool is used, such as the article that describes it." ;
         sh:message "Give the publication's DOI as a web address, starting with https://doi.org/10." ] ;
     sh:property [
-        sh:path schema:sameAs ; sh:order 7 ; sh:name "Other addresses" ; sh:nodeKind sh:IRI ;
-        dash:editor dash:URIEditor ;
-        sh:description "Other web addresses of the tool, such as its pages on bio.tools or Wikipedia. Its earlier addresses on the platform are kept here too, so that links to them still find it." ] ;
+        sh:path schema:keywords ; sh:group form:documentation ; sh:order 5 ; sh:name "Training search term" ; sh:maxCount 1 ;
+        sh:description "The words that find training material about the tool on ELIXIR TeSS and Taxila. The tool's page shows what they find." ] ;
     sh:property [
-        sh:path dct:conformsTo ; sh:order 8 ; sh:name "Bioschemas profile" ; sh:nodeKind sh:IRI ;
+        sh:path schema:softwareVersion ; sh:group form:technical ; sh:order 1 ; sh:name "Version" ; sh:maxCount 1 ;
+        sh:description "The version of the tool that the platform describes, as its developers number it." ] ;
+    sh:property [
+        sh:path schema:license ; sh:group form:technical ; sh:order 2 ; sh:name "License" ; sh:maxCount 1 ;
+        dash:editor dash:InstancesSelectEditor ;
+        sh:description "The license under which the tool is shared." ] ;
+    sh:property [
+        sh:path schema:isBasedOn ; sh:group form:technical ; sh:order 3 ; sh:name "Source code" ; sh:nodeKind sh:IRI ;
+        dash:editor dash:URIEditor ;
+        sh:description "Where the tool's source code is kept, such as its GitHub repository." ] ;
+    sh:property [
+        sh:path schema:downloadUrl ; sh:group form:technical ; sh:order 4 ; sh:name "Downloads" ; sh:nodeKind sh:IRI ;
+        dash:editor dash:URIEditor ;
+        sh:description "Where the tool can be downloaded: its container image or its software packages." ] ;
+    sh:property [
+        sh:path schema:creativeWorkStatus ; sh:group form:technical ; sh:order 5 ; sh:name "Technology readiness" ; sh:maxCount 1 ;
+        sh:in ( "TRL 1" "TRL 2" "TRL 3" "TRL 4" "TRL 5" "TRL 6" "TRL 7" "TRL 8" "TRL 9" ) ;
+        sh:description "How mature the tool is, as a technology readiness level: from TRL 1 (basic principles observed) to TRL 9 (proven in its operational environment)." ;
+        sh:message "Choose a technology readiness level from TRL 1 to TRL 9." ] ;
+    sh:property [
+        sh:path schema:releaseNotes ; sh:group form:technical ; sh:order 6 ; sh:name "Release notes" ; sh:maxCount 1 ;
+        sh:description "The address of the tool's release notes, or a short note about its latest release." ] ;
+    sh:property [
+        sh:path schema:sameAs ; sh:group form:elsewhere ; sh:order 1 ; sh:name "Other addresses" ; sh:nodeKind sh:IRI ;
+        dash:editor dash:URIEditor ;
+        sh:description "Other web addresses of the tool, such as its pages on bio.tools, FAIRsharing, Wikipedia or the Research Software Directory. Its earlier addresses on the platform are kept here too, so that links to them still find it." ] ;
+    sh:property [
+        sh:path dct:conformsTo ; sh:group form:elsewhere ; sh:order 2 ; sh:name "Bioschemas profile" ; sh:nodeKind sh:IRI ;
         sh:hasValue <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE> ;
         sh:description "Records of tools follow the ComputationalTool profile of Bioschemas, version 1.0, so that search engines and registries can read them." ;
         sh:message "A tool follows the ComputationalTool profile of Bioschemas, version 1.0-RELEASE." ] .
+
+[] a sh:NodeShape ;
+    sh:targetClass schema:Organization ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "An organisation needs a name." ] ;
+    sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Website" ; sh:maxCount 1 ] .
+
+[] a sh:NodeShape ;
+    sh:targetClass schema:Person ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "A person needs a name." ] ;
+    sh:property [ sh:path schema:email ; sh:order 2 ; sh:name "Email address" ; sh:maxCount 1 ] .
 
 [] a sh:NodeShape ;
     sh:targetClass bioschemas_draft:LabProtocol ;
