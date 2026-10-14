@@ -4,57 +4,49 @@
   <div class="pb-2">
     <h1><span class="text-vhpblue">Sources</span></h1>
     <p class="text-secondary fs-5">Where the records of the platform come from.</p>
-    <p>Each source is imported every night: it is fetched, converted to the platform's model with <a class="link-vhpblue" href="https://github.com/jmillanacosta/rdfsolve">rdfsolve</a>, and checked. The queries below are the conversions, so every value can be traced back to its source. A record written on the platform replaces what a source gives for the same address. See also the <a class="link-vhpblue" href="{{ url_for('dashboards.data_quality') }}">quality of the data</a>.</p>
+    <p>Most records are imported every night from the sources below: each source is read, its fields are put into the platform's model, and the result is checked (see the <a class="link-vhpblue" href="{{ url_for('dashboards.data_quality') }}">quality of the data</a>). Editors also write records on the platform: {{ written }} records come from them, and every change they make is listed on the <a class="link-vhpblue" href="{{ url_for('changes.changes') }}">changes page</a>. A record written on the platform replaces what a source gives for the same address.</p>
   </div>
 
-  <div class="table-responsive">
-    <table class="table">
-      <thead><tr><th>Source</th><th>Class</th><th class="text-end">Records</th></tr></thead>
-      <tbody>
-        {% for source, type, count in counts %}
-        <tr><td>{{ source }}</td><td>{{ type|short_iri }}</td><td class="text-end">{{ count }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <h2 class="h4 mt-3">Imported sources</h2>
   {% for source in sources %}
-  <div class="card mb-3" id="{{ source.name }}">
+  <div class="card mb-4" id="{{ source.name }}">
+    <div class="card-header bg-white d-flex flex-wrap align-items-center gap-2 py-3">
+      <h2 class="h5 mb-0 text-vhpblue">{{ source.title }}</h2>
+      <span class="badge text-bg-vhplight-blue">{{ source.records }} records</span>
+      {% if source.notes %}<a class="badge text-bg-vhporange text-decoration-none" href="{{ url_for('dashboards.data_quality') }}">{{ source.notes }} values that do not fit</a>{% endif %}
+    </div>
     <div class="card-body">
-      <h3 class="h5 card-title text-vhpblue">{{ source.name|capitalize }}</h3>
-      <p class="card-text mb-1"><a class="link-vhpblue text-break" href="{{ source.url }}">{{ source.url }}</a></p>
-      <p class="card-text small text-secondary">Fetched {{ source.fetched_at[:16]|replace("T", " ") }} UTC · SHA-256 <code>{{ source.sha256[:12] }}</code></p>
+      <dl class="row small mb-3">
+        <dt class="col-sm-3">Read from</dt>
+        <dd class="col-sm-9">{% for url in source.files.values() %}<a class="link-vhpblue text-break" href="{{ url }}">{{ url }}</a>{% if not loop.last %}<br>{% endif %}{% endfor %}</dd>
+        <dt class="col-sm-3">Last imported</dt>
+        <dd class="col-sm-9">{% if source.fetched %}{{ source.fetched.fetched_at[:16]|replace("T", " ") }} UTC · SHA-256 <code>{{ source.fetched.sha256[:12] }}</code>{% else %}not yet{% endif %}</dd>
+      </dl>
+
+      <h3 class="h6">How its fields become the platform's fields</h3>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead><tr><th style="width: 35%">In the source</th><th style="width: 30%">On the platform</th><th>Value</th></tr></thead>
+          <tbody>
+            {% for row in source.mapping %}
+            <tr>
+              <td>{% if row.source %}<code>{{ row.source }}</code>{% else %}<span class="text-secondary">always</span>{% endif %}</td>
+              <td>{{ row.platform }}</td>
+              <td class="text-break">{% if row.value %}<a class="link-vhpblue" href="{{ row.value }}">{{ row.value|short_iri }}</a>{% else %}<span class="text-secondary">the source's value</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if source.fetched %}
       <details>
-        <summary class="link-vhpblue">Conversion queries</summary>
-        <pre class="small bg-body-tertiary p-2 mt-2 rounded"><code>{{ source.queries }}</code></pre>
+        <summary class="link-vhpblue small">For developers: the conversion as a SPARQL query</summary>
+        <p class="small text-secondary mt-2">The source's file is first cleaned by <code>linkeddata/parsers/{{ source.parser }}.py</code> and read as RDF, with its own field names under the <code>{{ source.name }}:</code> prefix. rdfsolve wrote this CONSTRUCT query from the table above; it turns those fields into the platform's model.</p>
+        <pre class="small bg-body-tertiary p-2 rounded"><code>{{ source.fetched.queries }}</code></pre>
       </details>
+      {% endif %}
     </div>
   </div>
-  {% else %}
-  <p>No source has been imported yet.</p>
   {% endfor %}
-
-  <h2 class="h4 mt-3" id="changes">Changes made on the platform</h2>
-  {% if changes %}
-  <div class="table-responsive">
-    <table class="table">
-      <thead><tr><th>Date</th><th>Change</th><th>Record</th><th>By</th></tr></thead>
-      <tbody>
-        {% for change in changes %}
-        <tr>
-          <td class="text-nowrap">{{ change.created_at[:16]|replace("T", " ") }}</td>
-          <td>{{ change.action }}</td>
-          <td><a class="link-vhpblue text-break" href="{{ change.record_iri|page_link }}">{{ change.record_iri|page_link }}</a></td>
-          <td>{{ change.name }} (<a class="link-vhpblue" href="https://orcid.org/{{ change.orcid }}">{{ change.orcid }}</a>)</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <p>No records have been written on the platform yet.</p>
-  {% endif %}
-  <p class="small text-secondary">Editors write records through the platform's API with a write token, made after logging in with ORCID on the <a class="link-vhpblue" href="{{ url_for('account.account_tokens') }}">editor page</a>.</p>
 </section>
 {% endblock %}

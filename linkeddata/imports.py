@@ -72,6 +72,7 @@ def check(data: ox.Dataset, classes: list[str]) -> list[dict]:
                 "field": violation.path.value if violation.path else "",
                 "value": violation.value.value if violation.value else "",
                 "reason": " ".join(violation.messages),
+                "component": violation.component,
             })
     return notes
 

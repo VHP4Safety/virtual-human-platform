@@ -81,6 +81,7 @@ def test_dashboards(site):
     assert "Test Editor" in page
     assert ORCID in page
     assert "Removed" in page
+    assert "How its fields become the platform" in site.get("/sources").data.decode()
 
 
 def test_sitemap_leaves_out_the_pages_for_editors(site):

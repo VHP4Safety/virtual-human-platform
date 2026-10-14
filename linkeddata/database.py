@@ -110,6 +110,8 @@ class Note(Base):
     field: Mapped[str]
     value: Mapped[str]
     reason: Mapped[str]
+    # The SHACL constraint the value breaks, such as sh:NodeKindConstraintComponent.
+    component: Mapped[str | None]
 
 
 def engine() -> Engine:
