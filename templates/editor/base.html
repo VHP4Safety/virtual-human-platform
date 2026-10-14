@@ -13,7 +13,7 @@
   </head>
   <body class="editor d-flex flex-column min-vh-100">
     <header class="bg-white border-bottom">
-      <div class="container-xxl d-flex flex-wrap align-items-center gap-3 py-2">
+      <div class="container-fluid px-lg-4 d-flex flex-wrap align-items-center gap-3 py-2">
         <a href="{{ url_for('admin.admin') }}" class="d-flex align-items-center gap-2 text-decoration-none">
           <img src="/static/images/logos/logo/PNG/300ppi/VHP_Logo_Long_02_300.png" alt="VHP4Safety" height="40">
           <span class="badge text-bg-vhppurple fs-6 fw-semibold">Editor</span>
@@ -30,7 +30,7 @@
       </div>
     </header>
     <nav class="bg-vhppurple" aria-label="Editor">
-      <div class="container-xxl">
+      <div class="container-fluid px-lg-4">
         <ul class="nav editor-nav">
           {% for endpoint, label, icon in [("admin.admin", "Records", "pencil-square"), ("changes.changes", "Changes", "clock-history"), ("account.account_tokens", "Write tokens", "key")] %}
           <li class="nav-item">
@@ -48,7 +48,7 @@
       {% block content %}{% endblock %}
     </main>
     <footer class="bg-white border-top py-3">
-      <div class="container-xxl d-flex flex-wrap gap-3 small text-secondary">
+      <div class="container-fluid px-lg-4 d-flex flex-wrap gap-3 small text-secondary">
         <span>VHP4Safety platform · pages for editors</span>
         <span class="flex-grow-1"></span>
         <a class="link-secondary" href="https://github.com/VHP4Safety/virtual-human-platform/blob/main/linkeddata/README.md">How records are written</a>

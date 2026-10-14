@@ -1,6 +1,6 @@
 {% extends "editor/base.html" %}
 {% block content %}
-<div class="container-xxl py-4">
+<div class="container-fluid px-lg-4 py-4">
   <h1 class="h3 text-vhppurple mb-1">Changes</h1>
   {% if record %}
   <p class="text-secondary">The changes made to <a class="link-vhpblue" href="{{ record|page_link }}">{{ names.get(record) or record|page_link }}</a>. <a class="link-vhpblue" href="{{ url_for('changes.changes') }}">All changes</a></p>

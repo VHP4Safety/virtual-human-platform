@@ -1,7 +1,7 @@
 {% extends "editor/base.html" %}
 {% set one = kind[:-1] if kind.endswith("s") else kind %}
 {% block content %}
-<div class="container-xxl py-4">
+<div class="container-fluid px-lg-4 py-4">
   <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
     <div>
       <h1 class="h3 text-vhppurple mb-0">{{ kind|capitalize }}</h1>
@@ -22,8 +22,8 @@
     <button type="button" class="btn btn-vhpblue" data-new><i class="bi bi-plus-lg"></i> Add a {{ one }}</button>
   </div>
 
-  <div class="row g-4">
-    <aside class="col-lg-4 col-xl-3" id="list-column">
+  <div class="editor-layout" id="layout">
+    <aside id="list-column">
       <div class="card">
         <div class="card-body p-2">
           <label class="visually-hidden" for="filter">Find a {{ one }}</label>
@@ -41,7 +41,7 @@
       </div>
     </aside>
 
-    <div class="col-lg-8 col-xl-9" id="main-column">
+    <div id="main-column">
       <div class="card" id="start">
         <div class="card-body p-5 text-center">
           <i class="bi bi-pencil-square display-5 text-vhppurple"></i>
@@ -141,7 +141,7 @@
 
     </div>
 
-    <aside class="col-xl-4 d-none" id="rdf-column">
+    <aside class="d-none" id="rdf-column">
       <div class="card rdf-preview">
         <div class="card-header bg-white">
           <div class="fw-semibold">Linked data</div>
