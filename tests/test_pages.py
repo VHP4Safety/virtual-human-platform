@@ -77,10 +77,7 @@ def test_dashboards(site):
     page = site.get("/data-quality").data.decode()
     assert "SoftwareApplication" in page
     assert "1 of 1" in page
-    page = site.get("/changes").data.decode()
-    assert "Test Editor" in page
-    assert ORCID in page
-    assert "Removed" in page
+    assert site.get("/changes").headers["Location"].startswith("/login/")
     assert "How its fields become the platform" in site.get("/sources").data.decode()
 
 

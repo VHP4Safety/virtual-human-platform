@@ -1,0 +1,22 @@
+{# The statements about a record as a diagram: the record, and an arrow from each field to its value. #}
+<div class="graph">
+  <div class="graph-node">
+    <i class="bi bi-box text-vhppurple"></i>
+    <a class="fw-semibold link-vhppurple" href="{{ graph.record|page_link }}">{{ graph.record_name }}</a>
+    <span class="small text-secondary">{{ graph.type }} · {{ graph.record|page_link }}</span>
+  </div>
+  <ul class="graph-edges">
+    {% for edge in graph.edges %}
+    <li class="graph-edge graph-{{ edge.status }}">
+      <span class="graph-property">{{ edge.label }} <code class="small">{{ edge.property }}</code></span>
+      <i class="bi bi-arrow-right text-secondary"></i>
+      {% if edge.link and (edge.value.startswith("https://") or edge.value.startswith("http://")) %}
+      <span class="graph-value"><a class="link-vhpblue" href="{{ edge.value|page_link }}" title="{{ edge.value }}">{{ edge.name or edge.value }}</a>{% if edge.name %} <span class="small text-secondary text-break">{{ edge.value }}</span>{% endif %}</span>
+      {% else %}
+      <span class="graph-value graph-text">“{{ edge.value }}”</span>
+      {% endif %}
+      {% if edge.status == "added" %}<span class="badge text-bg-success">added</span>{% elif edge.status == "removed" %}<span class="badge text-bg-danger">removed</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</div>

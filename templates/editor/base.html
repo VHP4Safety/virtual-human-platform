@@ -32,13 +32,13 @@
     <nav class="bg-vhppurple" aria-label="Editor">
       <div class="container-xxl">
         <ul class="nav editor-nav">
-          {% for endpoint, label, icon in [("admin.admin", "Records", "pencil-square"), ("account.account_tokens", "Write tokens", "key")] %}
+          {% for endpoint, label, icon in [("admin.admin", "Records", "pencil-square"), ("changes.changes", "Changes", "clock-history"), ("account.account_tokens", "Write tokens", "key")] %}
           <li class="nav-item">
-            <a class="nav-link{% if request.endpoint == endpoint or (endpoint == 'admin.admin' and request.endpoint == 'admin.edit') %} active{% endif %}" href="{{ url_for(endpoint) }}"><i class="bi bi-{{ icon }}"></i> {{ label }}</a>
+            <a class="nav-link{% if request.endpoint == endpoint or request.blueprint == endpoint.split('.')[0] and endpoint != 'account.account_tokens' %} active{% endif %}" href="{{ url_for(endpoint) }}"><i class="bi bi-{{ icon }}"></i> {{ label }}</a>
           </li>
           {% endfor %}
           <li class="nav-item ms-auto d-flex align-items-center small text-white-50 px-2">Public pages:</li>
-          {% for endpoint, label in [("changes.changes", "Changes"), ("dashboards.data_quality", "Data quality"), ("dashboards.sources", "Sources")] %}
+          {% for endpoint, label in [("dashboards.data_quality", "Data quality"), ("dashboards.sources", "Sources")] %}
           <li class="nav-item"><a class="nav-link" href="{{ url_for(endpoint) }}">{{ label }} <i class="bi bi-box-arrow-up-right small"></i></a></li>
           {% endfor %}
         </ul>

@@ -475,31 +475,73 @@
     showRdfOf(result.answer.change);
   }
 
-  // The linked data of each change, for developers
+  // The linked data of each change, for developers: a diagram of the record's statements
+
+  function renderGraph(box, graph) {
+    box.replaceChildren();
+    const node = make("div", "graph-node");
+    const record = make("a", "fw-semibold link-vhppurple", graph.record_name);
+    record.href = pageLink(graph.record);
+    record.target = "_blank";
+    record.rel = "noopener";
+    node.append(make("i", "bi bi-box text-vhppurple"), record, make("span", "small text-secondary", graph.type + " · " + pageLink(graph.record)));
+    const edges = make("ul", "graph-edges");
+    for (const edge of graph.edges) {
+      const item = make("li", "graph-edge graph-" + edge.status);
+      const property = make("span", "graph-property", edge.label + " ");
+      property.append(make("code", "small", edge.property));
+      const value = make("span", "graph-value");
+      if (edge.link && isWebAddress(edge.value)) {
+        const link = make("a", "link-vhpblue", edge.name || edge.value);
+        link.href = pageLink(edge.value);
+        link.title = edge.value;
+        link.target = "_blank";
+        link.rel = "noopener";
+        value.append(link);
+        if (edge.name) {
+          value.append(" ", make("span", "small text-secondary text-break", edge.value));
+        }
+      } else {
+        value.textContent = "\u201c" + edge.value + "\u201d";
+      }
+      item.append(property, make("i", "bi bi-arrow-right text-secondary"), value);
+      if (edge.status !== "kept") {
+        item.append(make("span", "badge " + (edge.status === "added" ? "text-bg-success" : "text-bg-danger"), edge.status));
+      }
+      edges.append(item);
+    }
+    box.append(node, edges);
+  }
 
   async function showRdfOf(change) {
     const panel = document.getElementById("rdf-panel");
-    panel.classList.toggle("d-none", !showRdf.checked || (!selected && !change));
-    if (!showRdf.checked || (!selected && !change)) {
+    const shown = showRdf.checked && (change || (selected && !selected.removed));
+    panel.classList.toggle("d-none", !shown);
+    if (!shown) {
       return;
     }
-    const changeLink = document.getElementById("rdf-change");
-    document.getElementById("rdf-diff").classList.toggle("d-none", !change);
-    changeLink.classList.toggle("d-none", !change);
-    document.getElementById("rdf-caption").textContent = change ? "of the change just made" : "of this " + one;
+    const caption = document.getElementById("rdf-caption");
+    const raw = document.getElementById("rdf-raw");
+    let address;
     if (change) {
-      changeLink.href = change;
-      const found = await (await fetch(change + ".json", { credentials: "same-origin" })).json();
-      document.getElementById("rdf-added").textContent = found.added.join("\n") || "(none)";
-      document.getElementById("rdf-removed").textContent = found.removed.join("\n") || "(none)";
+      address = change + ".json";
+      raw.href = change + ".nt";
+      raw.textContent = "Download as N-Triples";
+    } else {
+      address = "/changes/record.json?record=" + encodeURIComponent(data.base + data.kind + "/" + selected.identifier);
+      raw.href = "/" + data.kind + "/" + encodeURIComponent(selected.identifier) + ".ttl";
+      raw.textContent = "Download as Turtle";
     }
-    const record = document.getElementById("rdf-record");
-    if (!selected || selected.removed) {
-      record.textContent = "(not published)";
+    const response = await fetch(address, { credentials: "same-origin" });
+    if (!response.ok) {
+      caption.textContent = "(not available)";
       return;
     }
-    const response = await fetch("/" + data.kind + "/" + encodeURIComponent(selected.identifier) + ".ttl", { credentials: "same-origin" });
-    record.textContent = response.ok ? await response.text() : "(not available)";
+    const graph = await response.json();
+    caption.textContent = change
+      ? "What the last change did: " + graph.added.length + " statements added, " + graph.removed.length + " removed"
+      : "The record as published";
+    renderGraph(document.getElementById("rdf-graph"), graph);
   }
 
   // Wiring

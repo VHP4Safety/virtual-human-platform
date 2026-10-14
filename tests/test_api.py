@@ -18,8 +18,9 @@ TOOL = {
 
 
 @pytest.fixture(autouse=True)
-def limits():
+def limits(monkeypatch):
     api._requests.clear()
+    monkeypatch.setenv("PLATFORM_EDITORS", ORCID)
 
 
 @pytest.fixture
@@ -54,7 +55,8 @@ def test_writing_a_record(client):
     assert record.conforms_to == ["https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"]
     response = client.put("/api/tools/aop-builder", json={**TOOL, "name": "AOP-Builder"}, headers=headers)
     assert response.status_code == 200
-    change = client.get(response.json["change"] + ".json").json
+    assert client.get(response.json["change"] + ".json").status_code == 401
+    change = client.get(response.json["change"] + ".json", headers=headers).json
     assert [(field["field"], field["before"], field["after"]) for field in change["fields"]] == [("Name", ["AOP Builder"], ["AOP-Builder"])]
     assert any('"AOP-Builder"' in line for line in change["added"])
 
@@ -87,7 +89,7 @@ def test_removing_a_record(client):
     client.put("/api/tools/x", json=TOOL, headers=headers)
     response = client.delete("/api/tools/x", headers=headers)
     assert response.status_code == 200
-    assert client.get(response.json["change"] + ".json").json["action"] == "Removed"
+    assert client.get(response.json["change"] + ".json", headers=headers).json["action"] == "Removed"
     assert client.put("/api/tools/x", json=TOOL, headers=headers).status_code == 409
     assert client.delete("/api/tools/x?permanent=true", headers=headers).status_code == 200
     assert client.put("/api/tools/x", json=TOOL, headers=headers).status_code == 201

@@ -139,19 +139,15 @@
         <label class="form-check-label text-secondary" for="show-rdf">Show the linked data (RDF) of each change, for developers</label>
       </div>
       <div class="card mt-2 d-none" id="rdf-panel">
-        <div class="card-header bg-white d-flex align-items-center gap-2">
+        <div class="card-header bg-white d-flex flex-wrap align-items-center gap-2">
           <span class="fw-semibold">Linked data</span>
           <span class="small text-secondary" id="rdf-caption"></span>
           <span class="flex-grow-1"></span>
-          <a class="small link-vhpblue d-none" id="rdf-change" target="_blank" rel="noopener">The change</a>
+          <a class="small link-secondary" id="rdf-raw" target="_blank" rel="noopener"></a>
         </div>
         <div class="card-body">
-          <div class="row g-3 d-none" id="rdf-diff">
-            <div class="col-lg-6"><h3 class="h6 text-success">Statements added</h3><pre class="rdf small bg-success-subtle p-2 rounded" id="rdf-added"></pre></div>
-            <div class="col-lg-6"><h3 class="h6 text-danger">Statements removed</h3><pre class="rdf small bg-danger-subtle p-2 rounded" id="rdf-removed"></pre></div>
-          </div>
-          <h3 class="h6 mt-2">The record as published (Turtle)</h3>
-          <pre class="rdf small bg-body-tertiary p-2 rounded mb-0" id="rdf-record"></pre>
+          <p class="small text-secondary">Each arrow is a statement about the record: from one of its fields to a value. Statements a change added are green, those it removed are red.</p>
+          <div id="rdf-graph"></div>
         </div>
       </div>
     </div>

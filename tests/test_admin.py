@@ -85,3 +85,21 @@ def test_the_editor_writes_with_the_login(site):
 def test_a_token_login_does_not_make_tokens(site):
     log_in(site, tokens.create(ORCID, "Test Editor", ["tools"]))
     assert b"logged in with a write token" in site.get("/account/tokens/").data
+
+
+def test_the_changes_are_shown_to_editors(site):
+    assert site.get("/changes").headers["Location"].startswith("/login/")
+    log_in(site, tokens.create(ORCID, "Test Editor", ["tools"]))
+    site.get("/admin/tools/")
+    with site.session_transaction() as session:
+        form_token = session["form_token"]
+    answer = site.put("/api/tools/t", json={**TOOL, "about": []}, headers={"X-Form-Token": form_token}).json
+    page = site.get(answer["change"]).data.decode()
+    assert "What changed" in page and "graph-removed" in page and "Toxicodynamics" in page
+    change = site.get(answer["change"] + ".json").json
+    removed = [edge for edge in change["edges"] if edge["status"] == "removed"]
+    assert [(edge["label"], edge["name"]) for edge in removed] == [("Assessment steps and case-study questions", "Toxicodynamics")]
+    assert site.get(answer["change"] + ".nt").mimetype == "application/n-triples"
+    now = site.get("/changes/record.json", query_string={"record": BASE + "tools/t"}).json
+    assert {edge["status"] for edge in now["edges"]} == {"kept"}
+    assert "Test Editor" in site.get("/changes").data.decode()

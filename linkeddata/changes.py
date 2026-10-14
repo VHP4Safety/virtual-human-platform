@@ -1,17 +1,45 @@
-"""The changes made on the platform. Each revision keeps the record as it was before and after the
-change; a change is shown field by field, and, for developers, as the statements (triples) it added
-and removed. /changes lists them, /changes/<number> shows one, and /changes/<number>.json gives it
-to the editor page."""
+"""The changes made on the platform, for editors. Each revision keeps the record as it was before and
+after the change. A change is shown field by field, and as linked data: a diagram of the statements
+about the record, with those the change added and removed.
 
-from flask import Blueprint, abort, jsonify, render_template, request
+    /changes                      the latest changes, or those of one record (?record=<address>)
+    /changes/<number>             one change
+    /changes/<number>.json        one change, for the record editor and programs
+    /changes/<number>.nt          the statements it added and removed, in N-Triples
+    /changes/record.json?record=  the statements about a record as it is now, for the record editor
+"""
+
+from flask import Blueprint, Response, abort, jsonify, redirect, render_template, request, url_for
 from rdflib import RDF, Graph, URIRef
+from rdflib.namespace import SDO
 from sqlalchemy import select
 
-from linkeddata import database, forms, rdf, records
+from linkeddata import accounts, database, forms, rdf, records, tokens
 from linkeddata.database import Revision
+from linkeddata.model import settings
 
 blueprint = Blueprint("changes", __name__)
 LISTED = 100
+
+
+def allowed() -> bool:
+    """Editors see the changes, logged in or with a write token."""
+    if accounts.current_editor() is not None:
+        return True
+    header = request.headers.get("Authorization", "")
+    if header.startswith("Bearer "):
+        token = tokens.find(header.removeprefix("Bearer ").strip())
+        return token is not None and token.orcid in accounts.editors()
+    return False
+
+
+@blueprint.before_request
+def editors_only():
+    if allowed():
+        return None
+    if request.path.endswith((".json", ".nt")):
+        return jsonify({"error": "The changes are shown to editors of the platform."}), 401
+    return redirect(url_for("account.login", next=request.full_path.rstrip("?")))
 
 
 def statements(document: str | None) -> Graph:
@@ -19,6 +47,57 @@ def statements(document: str | None) -> Graph:
     if document:
         graph.parse(data=document, format="json-ld")
     return graph
+
+
+def curie(iri: str) -> str:
+    """An address written with the model's prefixes: https://schema.org/name is schema:name."""
+    for prefix, namespace in settings()["prefixes"].items():
+        if iri.startswith(namespace):
+            return prefix + ":" + iri.removeprefix(namespace)
+    return iri
+
+
+def edges(before: Graph, after: Graph, record: URIRef) -> dict:
+    """The statements about a record before and after a change, as edges from the record to each value:
+    added, removed, or kept. Each edge is named by the field of the record's form."""
+    kind = after.value(record, RDF.type) or before.value(record, RDF.type)
+    form = forms.form(str(kind)) if kind is not None else []
+    labels = {}
+    entries = {}
+    order = {}
+    for position, field in enumerate(form):
+        labels[field["name"]] = field["label"]
+        entries[field["name"]] = field["entry"]
+        order[field["name"]] = position
+    found = []
+    for predicate, value in set(before.predicate_objects(record)) | set(after.predicate_objects(record)):
+        if predicate == RDF.type:
+            continue
+        kept_before = (record, predicate, value) in before
+        kept_after = (record, predicate, value) in after
+        status = "kept" if kept_before and kept_after else ("added" if kept_after else "removed")
+        field = rdf.field_of_property(str(kind), str(predicate)) if kind is not None else str(predicate)
+        found.append({
+            "label": labels.get(field, curie(str(predicate))),
+            "property": curie(str(predicate)),
+            "value": str(value),
+            "link": isinstance(value, URIRef),
+            "entry": entries.get(field, "text"),
+            "status": status,
+            "order": order.get(field, len(form)),
+        })
+    found.sort(key=lambda edge: (edge["order"], edge["status"] != "removed", edge["value"]))
+    values = [edge["value"] for edge in found if edge["link"]]
+    names = records.names(values + [str(record)])
+    for edge in found:
+        edge["name"] = names.get(edge["value"]) if edge["link"] else None
+    name = after.value(record, SDO.name) or before.value(record, SDO.name) or names.get(str(record))
+    return {
+        "record": str(record),
+        "record_name": str(name or record),
+        "type": curie(str(kind)) if kind is not None else "",
+        "edges": found,
+    }
 
 
 def triples(graph: Graph) -> list[str]:
@@ -30,37 +109,31 @@ def triples(graph: Graph) -> list[str]:
 
 
 def compare(revision: Revision) -> dict:
-    """What a revision changed: the values of each field before and after, and the triples it added and removed."""
+    """What a revision changed: the values of each field before and after, and the statements it added and removed."""
     before = statements(revision.previous)
     after = statements(revision.document)
     record = URIRef(revision.record_iri)
-    kind = after.value(record, RDF.type) or before.value(record, RDF.type)
-    form = forms.form(str(kind)) if kind is not None else []
-    fields = []
-    for predicate in set(before.predicates(record)) | set(after.predicates(record)):
-        if predicate == RDF.type:
+    graph = edges(before, after, record)
+    fields = {}
+    for edge in graph["edges"]:
+        if edge["status"] == "kept":
             continue
-        old = sorted(str(value) for value in before.objects(record, predicate))
-        new = sorted(str(value) for value in after.objects(record, predicate))
-        if old == new:
-            continue
-        name = rdf.field_of_property(str(kind), str(predicate)) if kind is not None else str(predicate)
-        found = {"field": str(predicate), "entry": "text", "order": len(form), "before": old, "after": new}
-        for position, field in enumerate(form):
-            if field["name"] == name:
-                found.update({"field": field["label"], "entry": field["entry"], "order": position})
-        fields.append(found)
-    fields.sort(key=lambda found: found["order"])
+        field = fields.setdefault(edge["label"], {"field": edge["label"], "order": edge["order"], "entry": edge["entry"], "before": [], "after": []})
+        field["before" if edge["status"] == "removed" else "after"].append(edge["value"])
+    for edge in graph["edges"]:
+        if edge["status"] == "kept" and edge["label"] in fields:
+            fields[edge["label"]]["before"].append(edge["value"])
+            fields[edge["label"]]["after"].append(edge["value"])
     return {
         "number": revision.id,
-        "record": revision.record_iri,
         "action": revision.action,
         "name": revision.name,
         "orcid": revision.orcid,
         "date": revision.created_at,
-        "fields": fields,
+        "fields": sorted(fields.values(), key=lambda field: field["order"]),
         "added": triples(after - before),
         "removed": triples(before - after),
+        **graph,
     }
 
 
@@ -86,8 +159,7 @@ def changes():
         changes=found,
         record=record,
         names=link_names(found),
-        page_title="Changes — VHP4Safety",
-        meta_description="The changes made to the records of the VHP4Safety platform, by whom and when.",
+        page_title="Changes — VHP4Safety editor",
     )
 
 
@@ -106,11 +178,27 @@ def change(number: int):
         "changes/change.html",
         change=found,
         names=link_names([found]),
-        page_title=f"Change {number} — VHP4Safety",
-        meta_description=f"{found['action']} {found['record']} by {found['name']}.",
+        page_title=f"Change {number} — VHP4Safety editor",
     )
 
 
 @blueprint.get("/changes/<int:number>.json")
 def change_data(number: int):
     return jsonify(compare(revision_or_404(number)))
+
+
+@blueprint.get("/changes/<int:number>.nt")
+def change_statements(number: int):
+    found = compare(revision_or_404(number))
+    lines = ["# Added"] + found["added"] + ["", "# Removed"] + found["removed"]
+    return Response("\n".join(lines) + "\n", mimetype="application/n-triples")
+
+
+@blueprint.get("/changes/record.json")
+def record_data():
+    """The statements about a record as it is now, all kept, in the form of a change."""
+    document = records.document_of(request.args.get("record", ""))
+    if document is None:
+        abort(404)
+    now = statements(document)
+    return jsonify(edges(now, now, URIRef(request.args["record"])))

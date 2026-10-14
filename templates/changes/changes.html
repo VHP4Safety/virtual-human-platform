@@ -1,37 +1,35 @@
-{% extends "base.html" %}
+{% extends "editor/base.html" %}
 {% block content %}
-<section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
-  <div class="pb-2">
-    <h1><span class="text-vhpblue">Changes</span></h1>
-    {% if record %}
-    <p class="text-secondary fs-5">The changes made to <a class="link-vhpblue" href="{{ record|page_link }}">{{ names.get(record) or record|page_link }}</a>.</p>
-    <p><a class="link-vhpblue" href="{{ url_for('changes.changes') }}">All changes</a></p>
+<div class="container-xxl py-4">
+  <h1 class="h3 text-vhppurple mb-1">Changes</h1>
+  {% if record %}
+  <p class="text-secondary">The changes made to <a class="link-vhpblue" href="{{ record|page_link }}">{{ names.get(record) or record|page_link }}</a>. <a class="link-vhpblue" href="{{ url_for('changes.changes') }}">All changes</a></p>
+  {% else %}
+  <p class="text-secondary">What editors changed in the records of the platform, newest first. Records that come from the nightly import are listed on the <a class="link-vhpblue" href="{{ url_for('dashboards.sources') }}">sources page</a>.</p>
+  {% endif %}
+
+  <div class="card">
+    {% if changes %}
+    <div class="table-responsive">
+      <table class="table mb-0 align-middle">
+        <thead><tr><th>Date (UTC)</th><th>Record</th><th>Change</th><th>Fields</th><th>Editor</th><th></th></tr></thead>
+        <tbody>
+          {% for change in changes %}
+          <tr>
+            <td class="text-nowrap small">{{ change.date[:16]|replace("T", " ") }}</td>
+            <td><a class="link-vhpblue" href="{{ change.record|page_link }}">{{ change.record_name }}</a></td>
+            <td>{% with action=change.action %}{% include "changes/_action.html" %}{% endwith %}</td>
+            <td class="small">{% for field in change.fields %}{{ field.field }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+            <td class="small">{{ change.name }}<br><a class="link-secondary" href="https://orcid.org/{{ change.orcid }}">{{ change.orcid }}</a></td>
+            <td class="text-end"><a class="btn btn-sm btn-outline-vhpblue" href="{{ url_for('changes.change', number=change.number) }}">Details</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
     {% else %}
-    <p class="text-secondary fs-5">What editors changed in the records of the platform, and when.</p>
-    <p>Every record written on the platform keeps its history: each change shows the fields it changed, with their values before and after. The records that the sources give are listed on the <a class="link-vhpblue" href="{{ url_for('dashboards.sources') }}">sources page</a>.</p>
+    <div class="card-body text-secondary">No records have been changed on the platform yet.</div>
     {% endif %}
   </div>
-
-  {% if changes %}
-  <div class="table-responsive">
-    <table class="table align-middle">
-      <thead><tr><th>Date</th><th>Record</th><th>Change</th><th>Fields</th><th>By</th><th></th></tr></thead>
-      <tbody>
-        {% for change in changes %}
-        <tr>
-          <td class="text-nowrap small">{{ change.date[:16]|replace("T", " ") }}</td>
-          <td><a class="link-vhpblue" href="{{ change.record|page_link }}">{{ names.get(change.record) or change.record|page_link }}</a></td>
-          <td>{% with action=change.action %}{% include "changes/_action.html" %}{% endwith %}</td>
-          <td class="small">{% for field in change.fields %}{{ field.field }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
-          <td class="small">{{ change.name }}<br><a class="link-vhpblue" href="https://orcid.org/{{ change.orcid }}">{{ change.orcid }}</a></td>
-          <td><a class="btn btn-sm btn-outline-vhpblue" href="{{ url_for('changes.change', number=change.number) }}">Details</a></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <p>No records have been changed on the platform yet.</p>
-  {% endif %}
-</section>
+</div>
 {% endblock %}

@@ -839,8 +839,8 @@ def sitemap():
     # are picked up automatically. Machine endpoints are excluded. Routes with
     # <params> are skipped and handled below.
     EXCLUDED_ENDPOINTS = {"sitemap", "robots", "static"}
-    # The pages for editors (login, tokens, editing) are left out.
-    EXCLUDED_BLUEPRINTS = {"account", "admin"}
+    # The pages for editors (login, tokens, editing, changes) are left out.
+    EXCLUDED_BLUEPRINTS = {"account", "admin", "changes"}
     paths = sorted(
         rule.rule.rstrip("/") or "/"
         for rule in app.url_map.iter_rules()
