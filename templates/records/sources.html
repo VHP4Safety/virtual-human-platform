@@ -15,6 +15,9 @@
       {% if source.notes %}<a class="badge text-bg-vhporange text-decoration-none" href="{{ url_for('dashboards.data_quality') }}">{{ source.notes }} values that do not fit</a>{% endif %}
     </div>
     <div class="card-body">
+      {% if source.fetched and source.fetched.problem %}
+      <div class="alert alert-warning small"><strong>The last import was not stored</strong>, and the records it gave before were kept: {{ source.fetched.problem }}.</div>
+      {% endif %}
       <dl class="row small mb-3">
         <dt class="col-sm-3">Read from</dt>
         <dd class="col-sm-9">{% for url in source.files.values() %}<a class="link-vhpblue text-break" href="{{ url }}">{{ url }}</a>{% if not loop.last %}<br>{% endif %}{% endfor %}</dd>

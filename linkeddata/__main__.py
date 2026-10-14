@@ -8,6 +8,7 @@
 """
 
 import argparse
+import sys
 
 from linkeddata import export, tokens
 from linkeddata.imports import import_all
@@ -24,7 +25,11 @@ def main() -> None:
     if args.command == "model":
         print(f"Wrote {write_schema()}")
     elif args.command == "import":
-        import_all(args.offline)
+        problems = import_all(args.offline)
+        for problem in problems:
+            print(f"Not imported: {problem}", file=sys.stderr)
+        if problems:
+            sys.exit(1)
     elif args.command == "export":
         print("Exported" if export.export() else "Nothing changed")
     elif args.command == "push":

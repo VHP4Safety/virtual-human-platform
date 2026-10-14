@@ -157,6 +157,22 @@ def test_import(tmp_path, monkeypatch):
     assert GLOSSARY + "VHP0000156" not in [note.value for note in notes]
 
 
+def test_an_import_that_would_remove_most_records_is_refused(tmp_path, monkeypatch):
+    monkeypatch.setattr(imports, "SOURCES_DIR", tmp_path / "sources")
+    (tmp_path / "sources").mkdir()
+    (tmp_path / "sources" / "tools.yaml").write_text((SOURCES / "tools.yaml").read_text())
+    (database.STATE_DIR / "downloads" / "tools").mkdir(parents=True)
+    (database.STATE_DIR / "downloads" / "tools" / "tools").write_text(json.dumps(TOOLS))
+    with database.session() as db, db.begin():
+        for number in range(12):
+            db.add(Record(iri=BASE + f"tools/kept-{number}", type=SCHEMA + "SoftwareApplication", source="tools", name="Kept"))
+    problems = imports.import_all(offline=True)
+    assert len(problems) == 1 and "gave 2 records where it gave 12 before" in problems[0]
+    assert records.get(BASE + "tools/kept-0").name == "Kept"
+    with database.session() as db:
+        assert "gave 2 records" in db.get(Source, "tools").problem
+
+
 def test_records_written_on_the_platform_are_checked_again(tmp_path, monkeypatch):
     monkeypatch.setattr(imports, "SOURCES_DIR", tmp_path / "sources")
     (tmp_path / "sources").mkdir()

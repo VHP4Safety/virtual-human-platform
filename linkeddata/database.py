@@ -99,6 +99,8 @@ class Source(Base):
     fetched_at: Mapped[str]
     sha256: Mapped[str]
     queries: Mapped[str]
+    # Why the last import of the source was not stored, when it was not.
+    problem: Mapped[str | None]
 
 
 class Note(Base):

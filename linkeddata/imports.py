@@ -17,7 +17,7 @@ from rdfsolve.api import Client
 from rdfsolve.conversion import Profile, Rule, write_query
 from rdflib import RDF
 from rdflib.namespace import SH
-from sqlalchemy import delete, insert, select
+from sqlalchemy import delete, func, insert, select
 
 from linkeddata import database, rdf
 from linkeddata.database import PLATFORM, Note, Record, Source
@@ -105,9 +105,17 @@ def known_types(source: str) -> list[ox.Quad]:
     return quads
 
 
+class Refused(Exception):
+    """An import that would remove most of a source's records, which an upstream fault usually explains."""
+
+
 def store(source: Source, rows: list[dict], notes: list[dict]) -> None:
-    """The records of a source replace those it gave before, except the records written on the platform."""
+    """The records of a source replace those it gave before, except the records written on the platform.
+    An import that gives no records, or less than half of those it gave before, is refused."""
     with database.session() as db, db.begin():
+        before = db.scalar(select(func.count()).select_from(Record).where(Record.source == source.name))
+        if not rows or (before >= 10 and len(rows) < before / 2):
+            raise Refused(f"the source gave {len(rows)} records where it gave {before} before; the records were kept")
         written = set(db.scalars(select(Record.iri).where(Record.source == PLATFORM)))
         db.execute(delete(Record).where(Record.source == source.name))
         kept = {}
@@ -199,9 +207,26 @@ def check_written() -> None:
     print(f"{PLATFORM}: {len(iris)} records, {len(notes)} notes")
 
 
-def import_all(offline: bool = False) -> None:
+def note_problem(spec: dict, problem: Exception) -> None:
+    """A source whose import failed keeps its records; why is shown on the sources page."""
+    with database.session() as db, db.begin():
+        source = db.get(Source, spec["name"])
+        if source is None:
+            source = Source(name=spec["name"], url=" ".join(files_of(spec).values()), fetched_at="", sha256="", queries="")
+            db.add(source)
+        source.problem = str(problem)
+
+
+def import_all(offline: bool = False) -> list[str]:
     """Every source that is fetched is imported, with *offline* from its last download, and the records
-    written on the platform are checked again."""
+    written on the platform are checked again. The problems of the sources that could not be imported
+    are given back; their records are kept."""
+    problems = []
     for spec in specs():
-        import_source(spec, offline)
+        try:
+            import_source(spec, offline)
+        except (Refused, requests.RequestException, OSError, ValueError) as problem:
+            note_problem(spec, problem)
+            problems.append(f"{spec['name']}: {problem}")
     check_written()
+    return problems
