@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
+  <div class="pb-2">
+    <h1><span class="text-vhpblue">{{ record.name or record.iri }}</span></h1>
+    {% if record.description %}
+    <p class="text-secondary fs-5">{{ record.description }}</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <table class="table mb-0">
+        <tbody>
+          {% for label, values in fields if label not in ("name", "description") %}
+          <tr>
+            <th scope="row" class="text-nowrap fw-semibold">{{ label }}</th>
+            <td>
+              {% for value in values %}
+                {% if value.startswith("http://") or value.startswith("https://") %}
+                <a class="link-vhpblue text-break" href="{{ value|page_link }}">{{ names.get(value) or value }}</a>
+                {% else %}
+                {{ value }}
+                {% endif %}
+                {% if not loop.last %}<br>{% endif %}
+              {% endfor %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% include "records/_data_links.html" %}
+</section>
+{% endblock %}

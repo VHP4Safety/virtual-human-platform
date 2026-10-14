@@ -11,6 +11,9 @@
     <title>{{ page_title }}</title>
     <meta name="description" content="{{ meta_description }}" />
     <link rel="canonical" href="{{ canonical_url }}" />
+    {% for media, href in (record_formats or {}).items() %}
+    <link rel="alternate" type="{{ media }}" href="{{ href }}" />
+    {% endfor %}
 
     <!-- Open Graph / Twitter Card for link previews (and minor search signal) -->
     <meta property="og:type" content="website" />
@@ -55,6 +58,11 @@
       }
     }
     </script>
+
+    {% if record_document %}
+    <!-- The page's record, as the platform publishes it -->
+    <script type="application/ld+json">{{ record_document|tojson }}</script>
+    {% endif %}
 
     {% if config.DEBUG %}
     <!-- we are running in DEBUG mode -->

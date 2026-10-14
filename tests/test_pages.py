@@ -1,0 +1,61 @@
+"""The records on the platform's pages: their data, removed records and the general
+record page, on the platform with its network calls replaced."""
+
+import json
+
+import pytest
+from sqlalchemy import insert
+
+from linkeddata import database, rdf, records
+from linkeddata.database import Record
+
+BASE = "https://platform.vhp4safety.nl/"
+TOOL = "https://schema.org/SoftwareApplication"
+STEP = "https://vhp4safety.github.io/glossary#VHP0000156"
+ORCID = "0000-0001-6487-1655"
+
+
+@pytest.fixture
+def site(monkeypatch):
+    import app as platform
+
+    monkeypatch.setattr(platform, "get_json_dict", lambda url, timeout=5: {})
+    monkeypatch.setattr(platform, "get_service_detail", lambda tool_id, timeout=5: {})
+    monkeypatch.setattr(platform, "get_repository_data", lambda *a, **k: ({}, {}))
+    monkeypatch.setattr(platform, "get_casestudies", lambda: {})
+    steps = {STEP: {"label": "Toxicodynamics", "slug": "toxicodynamics", "description": ""}}
+    monkeypatch.setattr(platform, "get_process_flow_steps", lambda: steps)
+    with database.session() as db, db.begin():
+        db.execute(insert(Record), [
+            rdf.row(BASE + "tools/t", TOOL, "platform", {"name": ["T"], "description": ["Does T."], "url": ["https://t.org/"], "about": [STEP]}),
+            rdf.row(BASE + "tools/old", TOOL, "platform", {"name": ["Old"]}),
+            rdf.row(BASE + "methods/m", "https://bioschemas.org/draft_terms/LabProtocol", "methods", {"name": ["M"]}),
+            rdf.row(STEP, "https://schema.org/DefinedTerm", "glossary", {"name": ["Toxicodynamics"]}),
+        ])
+    records.retire(BASE + "tools/old", "Julia Meerman", ORCID)
+    return platform.app.test_client()
+
+
+def test_data_of_a_record(site):
+    response = site.get("/tools/t.jsonld")
+    assert response.mimetype == "application/ld+json"
+    nodes = {node["@id"]: node for node in json.loads(response.data)["@graph"]}
+    assert nodes[BASE + "tools/t"]["about"] == {"@id": STEP}
+    assert nodes[STEP]["name"] == "Toxicodynamics"
+    response = site.get("/tools/t", headers={"Accept": "text/turtle"})
+    assert response.mimetype == "text/turtle"
+    assert b"schema:SoftwareApplication" in response.data
+    assert site.get("/tools/t.nt").mimetype == "application/n-triples"
+
+
+def test_removed_record(site):
+    assert site.get("/tools/old").status_code == 410
+    assert site.get("/tools/old.jsonld").status_code == 410
+
+
+def test_record_with_no_page_of_its_own(site):
+    response = site.get("/methods/m")
+    assert response.status_code == 200
+    assert "<h1><span class=\"text-vhpblue\">M</span></h1>" in response.data.decode()
+    assert site.get("/methods/nothing").status_code == 404
+

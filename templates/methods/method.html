@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ts4nfdi/terminology-service-suite@3298f2d4c938b8a108ef8dd32b8baa6dfaeba33c/js-modules/latest/terminology-service-suite.min.css" integrity="sha384-CRw3xuZVsoeRqhmRBujMUtmHrdhRKj9esQLPz1mmaQOMSZyz4lVGvR5xTTbB6vfj" crossorigin="anonymous"/>
 
 <!-- Bioschemas / schema.org annotation -->
+{% if not record_document %}
 <script type="application/ld+json">
   {
     "@context": "https://schema.org/",
@@ -21,6 +22,7 @@
     "name": "{{ (method_json.get('method') or method_json.get('method_name_content') or method_details.get('method') or method_details.get('service') ) | e }}"
   }
 </script>
+{% endif %}
 
 
 <section class="container py-5">

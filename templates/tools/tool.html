@@ -4,6 +4,7 @@
 <link rel="stylesheet" property="stylesheet" href="https://elixirtess.github.io/TeSS_widgets/css/tess-widget.css"/>
 
 <!-- Bioschemas / schema.org annotation -->
+{% if not record_document %}
 <script type="application/ld+json">
   {
     "@context": "https://schema.org/",
@@ -21,6 +22,7 @@
     "name": "{{ tool_details.service }}"
   }
 </script>
+{% endif %}
 
 
 <section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
