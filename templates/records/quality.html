@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
+  <div class="pb-2">
+    <h1><span class="text-vhpblue">Data quality</span></h1>
+    <p class="text-secondary fs-5">How complete the records of the platform are, and what the checks of the model found.</p>
+    <p>The records follow the platform's model, built on <a class="link-vhpblue" href="https://schema.org">schema.org</a> and <a class="link-vhpblue" href="https://bioschemas.org">Bioschemas</a>. Every import checks its source against the model with <a class="link-vhpblue" href="https://github.com/jmillanacosta/rdfsolve">rdfsolve</a>, and every record written on the platform is checked before it is saved. See also <a class="link-vhpblue" href="{{ url_for('dashboards.sources') }}">where the records come from</a>.</p>
+  </div>
+
+  <h2 class="h4 mt-3">Completeness</h2>
+  <div class="row g-3">
+    {% for kind in classes %}
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header bg-vhplight-blue d-flex justify-content-between">
+          <strong>{{ kind.type|short_iri }}</strong><span>{{ kind.records }} records</span>
+        </div>
+        <div class="card-body">
+          {% for item in kind.fields %}
+          {% set share = (100 * item.records / kind.records)|round|int %}
+          <div class="d-flex justify-content-between small"><span>{{ item.field }}</span><span>{{ item.records }} of {{ kind.records }}</span></div>
+          <div class="progress mb-2" role="progressbar" aria-label="{{ item.field }}" aria-valuenow="{{ share }}" aria-valuemin="0" aria-valuemax="100" style="height: 6px">
+            <div class="progress-bar bg-vhpblue" style="width: {{ share }}%"></div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <p>No records have been imported yet.</p>
+    {% endfor %}
+  </div>
+
+  <h2 class="h4 mt-4">Notes of the checks <span class="badge text-bg-vhporange align-middle">{{ notes }}</span></h2>
+  <p>A note is a value of a source that does not fit the model. Such values are left out of the records until the source is corrected.</p>
+  <div class="accordion" id="notes">
+    {% for group in groups %}
+    <div class="accordion-item">
+      <h3 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#notes-{{ loop.index }}" aria-expanded="false" aria-controls="notes-{{ loop.index }}">
+          <span class="badge text-bg-vhporange me-2">{{ group.notes|length }}</span>{{ group.field|short_iri }}: {{ group.reason }}
+        </button>
+      </h3>
+      <div id="notes-{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#notes">
+        <div class="accordion-body p-0">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>Record</th><th>Value</th><th>Source</th></tr></thead>
+            <tbody>
+              {% for note in group.notes %}
+              <tr>
+                <td><a class="link-vhpblue text-break" href="{{ note.iri|page_link }}">{{ note.iri|page_link }}</a></td>
+                <td class="text-break"><code>{{ note.value }}</code></td>
+                <td><a class="link-vhpblue" href="{{ url_for('dashboards.sources') }}#{{ note.source }}">{{ note.source }}</a></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

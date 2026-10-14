@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
+  <div class="pb-2">
+    <h1><span class="text-vhpblue">Sources</span></h1>
+    <p class="text-secondary fs-5">Where the records of the platform come from.</p>
+    <p>Each source is imported every night: it is fetched, converted to the platform's model with <a class="link-vhpblue" href="https://github.com/jmillanacosta/rdfsolve">rdfsolve</a>, and checked. The queries below are the conversions, so every value can be traced back to its source. A record written on the platform replaces what a source gives for the same address. See also the <a class="link-vhpblue" href="{{ url_for('dashboards.data_quality') }}">quality of the data</a>.</p>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead><tr><th>Source</th><th>Class</th><th class="text-end">Records</th></tr></thead>
+      <tbody>
+        {% for source, type, count in counts %}
+        <tr><td>{{ source }}</td><td>{{ type|short_iri }}</td><td class="text-end">{{ count }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="h4 mt-3">Imported sources</h2>
+  {% for source in sources %}
+  <div class="card mb-3" id="{{ source.name }}">
+    <div class="card-body">
+      <h3 class="h5 card-title text-vhpblue">{{ source.name|capitalize }}</h3>
+      <p class="card-text mb-1"><a class="link-vhpblue text-break" href="{{ source.url }}">{{ source.url }}</a></p>
+      <p class="card-text small text-secondary">Fetched {{ source.fetched_at[:16]|replace("T", " ") }} UTC · SHA-256 <code>{{ source.sha256[:12] }}</code></p>
+      <details>
+        <summary class="link-vhpblue">Conversion queries</summary>
+        <pre class="small bg-body-tertiary p-2 mt-2 rounded"><code>{{ source.queries }}</code></pre>
+      </details>
+    </div>
+  </div>
+  {% else %}
+  <p>No source has been imported yet.</p>
+  {% endfor %}
+
+  <h2 class="h4 mt-3" id="changes">Changes made on the platform</h2>
+  {% if changes %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead><tr><th>Date</th><th>Change</th><th>Record</th><th>By</th></tr></thead>
+      <tbody>
+        {% for change in changes %}
+        <tr>
+          <td class="text-nowrap">{{ change.created_at[:16]|replace("T", " ") }}</td>
+          <td>{{ change.action }}</td>
+          <td><a class="link-vhpblue text-break" href="{{ change.record_iri|page_link }}">{{ change.record_iri|page_link }}</a></td>
+          <td>{{ change.name }} (<a class="link-vhpblue" href="https://orcid.org/{{ change.orcid }}">{{ change.orcid }}</a>)</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>No records have been written on the platform yet.</p>
+  {% endif %}
+  <p class="small text-secondary">Editors write records through the platform's API with a write token, made after logging in with ORCID on the <a class="link-vhpblue" href="{{ url_for('account.account_tokens') }}">editor page</a>.</p>
+</section>
+{% endblock %}

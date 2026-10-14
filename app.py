@@ -23,6 +23,7 @@ from data.mapping import normalize_all, scrub_draft
 from linkeddata import records
 from linkeddata.accounts import blueprint as account_blueprint
 from linkeddata.api import blueprint as api_blueprint
+from linkeddata.dashboards import blueprint as dashboards_blueprint
 from linkeddata.pages import blueprint as pages_blueprint
 
 ################################################################################
@@ -128,6 +129,7 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.register_blueprint(account_blueprint)
 app.register_blueprint(api_blueprint)
 app.register_blueprint(pages_blueprint)
+app.register_blueprint(dashboards_blueprint)
 # Google Search Console verification token (rendered as a <meta> tag in
 # base.html when set). Kept out of the repo -- set it in the service env.
 app.config["GOOGLE_SITE_VERIFICATION"] = os.environ.get("GOOGLE_SITE_VERIFICATION", "")

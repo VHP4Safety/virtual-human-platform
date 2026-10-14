@@ -1,5 +1,5 @@
-"""The records on the platform's pages: their data, removed records, the general record page and the
-tools pages, on the platform with its network calls replaced."""
+"""The records on the platform's pages: their data, removed records, the general record page, the
+tools pages and the dashboards, on the platform with its network calls replaced."""
 
 import json
 
@@ -72,3 +72,11 @@ def test_record_with_no_page_of_its_own(site):
     assert "<h1><span class=\"text-vhpblue\">M</span></h1>" in response.data.decode()
     assert site.get("/methods/nothing").status_code == 404
 
+
+def test_dashboards(site):
+    page = site.get("/data-quality").data.decode()
+    assert "SoftwareApplication" in page
+    assert "1 of 1" in page
+    page = site.get("/sources").data.decode()
+    assert "Julia Meerman" in page
+    assert ORCID in page
