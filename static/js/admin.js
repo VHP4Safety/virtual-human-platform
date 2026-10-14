@@ -608,6 +608,9 @@
       document.getElementById("rdf-graph").replaceChildren();
       return;
     }
+    if (!caption.textContent) {
+      caption.textContent = "Building the linked data…";
+    }
     const sent = JSON.stringify(values());
     const result = await api("PUT", "/api/" + data.kind + "/" + encodeURIComponent(address) + "?preview=true", values());
     if (JSON.stringify(values()) !== sent) {
@@ -651,9 +654,13 @@
   function showPreview() {
     const shown = showRdf.checked;
     document.getElementById("rdf-column").classList.toggle("d-none", !shown);
+    // With the linked data beside the form, the list of records gets narrower so that the form keeps its width.
     const main = document.getElementById("main-column");
     main.classList.toggle("col-xl-9", !shown);
-    main.classList.toggle("col-xl-5", shown);
+    main.classList.toggle("col-xl-6", shown);
+    const browse = document.getElementById("list-column");
+    browse.classList.toggle("col-xl-3", !shown);
+    browse.classList.toggle("col-xl-2", shown);
     if (shown) {
       loadSaved();
     }
