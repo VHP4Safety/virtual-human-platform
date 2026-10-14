@@ -7,11 +7,11 @@ imports leave it as it is. Every change made on the platform is kept as a revisi
 import json
 from datetime import datetime, timezone
 
-from sqlalchemy import delete, insert, select
+from sqlalchemy import delete, func, insert, select
 
 from linkeddata import database, rdf
 from linkeddata.database import PLATFORM, Record, Revision, now
-from linkeddata.model import settings
+from linkeddata.model import DASH, profile, property_shapes, settings
 
 
 def version() -> str:
@@ -75,6 +75,30 @@ def choices(kind: str, field: str) -> list[Record]:
         classes = set(db.scalars(select(Record.type).where(Record.iri.in_(used))))
         statement = select(Record).where(Record.type.in_(classes), Record.removed_at.is_(None))
         return list(db.scalars(statement.order_by(Record.source, Record.iri)))
+
+
+def duplicates(row: dict) -> dict[str, list[str]]:
+    """The fields whose value another record of the class already has, where the application profile
+    asks for a value that no other record has (dash:uniqueValueForClass)."""
+    found = {}
+    for path, nodes in property_shapes(profile(), row["type"]).items():
+        for node in nodes:
+            field = rdf.field_of_property(row["type"], path)
+            value = row.get(field)
+            if profile().value(node, DASH.uniqueValueForClass) is None or not isinstance(value, str) or not value:
+                continue
+            statement = select(Record).where(
+                Record.type == row["type"],
+                func.lower(getattr(Record, field)) == value.lower(),
+                Record.iri != row["iri"],
+                Record.removed_at.is_(None),
+            )
+            with database.session() as db:
+                other = db.scalars(statement).first()
+            if other is not None:
+                path_of_other = "/" + other.iri.removeprefix(settings()["base"])
+                found.setdefault(field, []).append(f"{other.name or other.iri} ({path_of_other}) has the same value.")
+    return found
 
 
 def document_of(iri: str) -> str | None:

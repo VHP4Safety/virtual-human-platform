@@ -6,13 +6,12 @@ What an editor enters in a field follows from the values the model allows in it.
 import re
 from functools import cache
 
-from rdflib import Graph, Namespace, URIRef
+from rdflib import Graph, URIRef
 from rdflib.namespace import SH
 
 from linkeddata import rdf
-from linkeddata.model import curie, profile, property_shapes, shapes
+from linkeddata.model import DASH, curie, profile, property_shapes, shapes
 
-DASH = Namespace("http://datashapes.org/dash#")
 IMAGE = "https://schema.org/ImageObject"
 
 

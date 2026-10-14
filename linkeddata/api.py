@@ -94,12 +94,13 @@ def authorized(kind: str):
     return accounts.editor_of_request(kind)
 
 
-def done(address: str, revision, status: int):
+def done(address: str, revision, status: int, warnings: dict | None = None):
     record = records.get(address)
     return jsonify({
         "@id": address,
         "change": url_for("changes.change", number=revision.id),
         "version": record.updated_at if record is not None else None,
+        "warnings": warnings or {},
     }), status
 
 
@@ -138,17 +139,19 @@ def store(kind: str, identifier: str, replace: bool = True):
     except ValueError as problem:
         return error(str(problem), 422)
     revision = records.save(row, document, token.name, token.orcid, replace)
-    return done(address, revision, 201 if revision.action == "Added" else 200)
+    return done(address, revision, 201 if revision.action == "Added" else 200, records.duplicates(row))
 
 
 def preview(address: str, kind: str, body: dict):
     """The statements a write would publish, compared with the record as it is, and what is wrong with each field."""
     try:
-        found, problems = rdf.checked(rdf.row(address, kind, PLATFORM, values(kind, body)))
+        row = rdf.row(address, kind, PLATFORM, values(kind, body))
+        found, problems = rdf.checked(row)
     except ValueError as problem:
         return error(str(problem), 422)
     before = changes.statements(records.document_of(address))
-    return jsonify({**changes.edges(before, found if found is not None else Graph(), URIRef(address)), "fields": problems})
+    edges = changes.edges(before, found if found is not None else Graph(), URIRef(address))
+    return jsonify({**edges, "fields": problems, "warnings": records.duplicates(row)})
 
 
 @blueprint.put("/api/<kind>/<identifier>")

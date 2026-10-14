@@ -593,7 +593,10 @@
     record.version = result.answer.version;
     setUnsaved(false);
     open(record);
-    toast("Saved. The " + one + "'s page shows it now.", true, { text: "See the change", href: result.answer.change });
+    const repeated = Object.keys(result.answer.warnings || {}).length > 0;
+    toast(repeated
+      ? "Saved. Another " + one + " has the same name or website; check that this is not a duplicate."
+      : "Saved. The " + one + "'s page shows it now.", true, { text: "See the change", href: result.answer.change });
   });
 
   async function remove() {
@@ -697,6 +700,14 @@
       }
     }
     problems.parentElement.classList.toggle("d-none", !problems.children.length);
+    const warnings = document.getElementById("rdf-warnings");
+    warnings.replaceChildren();
+    for (const field of data.fields) {
+      for (const message of (graph.warnings || {})[field.name] || []) {
+        warnings.append(make("li", "", "Another " + one + " with the same " + field.label.toLowerCase() + ": " + message));
+      }
+    }
+    warnings.parentElement.classList.toggle("d-none", !warnings.children.length);
   }
 
   function schedulePreview() {

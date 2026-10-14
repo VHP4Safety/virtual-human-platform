@@ -6,12 +6,14 @@ from pathlib import Path
 
 import requests
 import yaml
-from rdflib import Graph, URIRef
+from rdflib import Graph, Namespace, URIRef
 from rdflib.namespace import SH
 from rdfsolve.api import Client
 from rdfsolve.schema_models import MinedSchema
 
 MODEL_DIR = Path(__file__).parent / "model" / "v1"
+# The vocabulary of SHACL forms, which the application profile uses to guide the editor.
+DASH = Namespace("http://datashapes.org/dash#")
 
 
 def settings() -> dict:

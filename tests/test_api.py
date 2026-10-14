@@ -173,3 +173,12 @@ def test_moving_a_record(client):
     assert records.get(BASE + "tools/newest-name").moved_to == BASE + "tools/old-name"
     client.put("/api/tools/other", json=TOOL, headers=headers)
     assert client.post("/api/tools/other/move", json={"to": "old-name"}, headers=headers).status_code == 409
+
+
+def test_a_name_or_website_that_another_tool_has(client):
+    headers = bearer("tools")
+    client.put("/api/tools/first", json=TOOL, headers=headers)
+    answer = client.put("/api/tools/second", json={**TOOL, "name": "aop builder"}, headers=headers).json
+    assert set(answer["warnings"]) == {"name", "url"}
+    assert "/tools/first" in answer["warnings"]["url"][0]
+    assert records.get(BASE + "tools/second") is not None
