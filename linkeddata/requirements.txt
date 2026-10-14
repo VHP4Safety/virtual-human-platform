@@ -1,0 +1,4 @@
+rdfsolve[validation] @ git+https://github.com/jmillanacosta/rdfsolve@02990d18425e0b61cefd730b3dfc66e87f53fc38
+pyyaml>=6.0
+requests>=2.33.0
+pytest>=8

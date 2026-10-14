@@ -1,0 +1,17 @@
+# The application profile of the platform: what the platform adds to schema.org and Bioschemas.
+
+@prefix schema: <https://schema.org/> .
+@prefix bioschemas_draft: <https://bioschemas.org/draft_terms/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+
+[] a sh:NodeShape ;
+    sh:targetClass schema:SoftwareApplication ;
+    rdfs:comment "Tools state the Bioschemas profile they follow (ComputationalTool)." ;
+    sh:property [ sh:path dct:conformsTo ; sh:nodeKind sh:IRI ] .
+
+[] a sh:NodeShape ;
+    sh:targetClass bioschemas_draft:LabProtocol ;
+    rdfs:comment "Methods state the Bioschemas profile they follow (LabProtocol)." ;
+    sh:property [ sh:path dct:conformsTo ; sh:nodeKind sh:IRI ] .

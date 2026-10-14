@@ -1,0 +1,21 @@
+# Version 1 of the platform's data model.
+
+# Every record that has a page on the platform is identified by its page address.
+base: https://platform.vhp4safety.nl/
+
+# Vocabularies are pinned to exact versions.
+vocabularies:
+  schemaorg-30.1.ttl: https://schema.org/version/30.1/schemaorg-current-https.ttl
+  bioschemas-draft-types-e5c27db.jsonld: https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/e5c27dbd2b1269a79fbe8f26e0173a9dc390aff0/pages/_types/bioschemas_draft_types.jsonld
+
+classes:
+  - https://schema.org/SoftwareApplication
+  - https://bioschemas.org/draft_terms/LabProtocol
+  - https://schema.org/DefinedTerm
+
+# Used for short names in the YAML mappings and in the JSON-LD documents.
+prefixes:
+  schema: https://schema.org/
+  bioschemas_draft: https://bioschemas.org/draft_terms/
+  dct: http://purl.org/dc/terms/
+
