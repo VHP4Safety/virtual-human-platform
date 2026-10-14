@@ -38,10 +38,10 @@ def fetch(url: str) -> bytes:
     return response.content
 
 
-def convert(spec: dict, content: bytes, base: str) -> tuple[ox.Dataset, list[str]]:
-    """The statements of one source in the model, and the CONSTRUCT queries that made them."""
-    parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
-    rows = lift(parser.parse(content), base + "sources/" + spec["name"] + "#", base)
+def convert(spec: dict, data, base: str) -> tuple[ox.Dataset, list[str]]:
+    """The statements of one source's data (parsed rows, or a received document) in the model,
+    and the CONSTRUCT queries that made them."""
+    rows = lift(data, base + "sources/" + spec["name"] + "#", base, spec.get("kinds"))
     with SchemaMiner.from_graph(rows, delay=0) as miner:
         source = Client(miner.mine(dataset_name=spec["name"]), rows)
     statements = ox.Dataset()
@@ -130,8 +130,11 @@ def build(out: Path) -> Path:
     sources = []
     for path in sorted(SOURCES_DIR.glob("*.yaml")):
         spec = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if "url" not in spec:
+            continue
         content = fetch(spec["url"])
-        converted, queries = convert(spec, content, config["base"])
+        parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
+        converted, queries = convert(spec, parser.parse(content), config["base"])
         graph = ox.NamedNode(config["base"] + "sources/" + spec["name"])
         for quad in converted:
             store.add(ox.Quad(quad.subject, quad.predicate, quad.object, graph))
