@@ -1,17 +1,57 @@
 # The application profile of the platform: what the platform adds to schema.org and Bioschemas.
+#
+# Its property shapes also guide the editor's form: sh:order and sh:name place and name each field,
+# sh:description explains it, sh:minCount marks a required field, sh:hasValue a fixed value, and
+# dash:singleLine false a longer text. sh:message is what an editor reads when a value is missing.
+# The required fields of tools are the minimum of Bioschemas' ComputationalTool profile.
 
 @prefix schema: <https://schema.org/> .
 @prefix bioschemas_draft: <https://bioschemas.org/draft_terms/> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix dct: <http://purl.org/dc/terms/> .
+@prefix dash: <http://datashapes.org/dash#> .
 
 [] a sh:NodeShape ;
     sh:targetClass schema:SoftwareApplication ;
     rdfs:comment "Tools state the Bioschemas profile they follow (ComputationalTool)." ;
-    sh:property [ sh:path dct:conformsTo ; sh:nodeKind sh:IRI ] .
+    sh:property [
+        sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:description "The tool's name as its developers write it." ;
+        sh:message "Give the tool a name." ] ;
+    sh:property [
+        sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:minCount 1 ; sh:maxCount 1 ;
+        dash:singleLine false ;
+        sh:description "What the tool does and what it is used for, in two or three sentences. It is shown in the tool catalogue and on the tool's page." ;
+        sh:message "Describe the tool in a few sentences." ] ;
+    sh:property [
+        sh:path schema:url ; sh:order 3 ; sh:name "Website" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:description "The tool's website or documentation." ;
+        sh:message "Add the address of the tool's website." ] ;
+    sh:property [
+        sh:path schema:image ; sh:order 4 ; sh:name "Logo or screenshot" ; sh:maxCount 1 ;
+        sh:description "Shown on the tool's card in the catalogue." ] ;
+    sh:property [
+        sh:path schema:about ; sh:order 5 ; sh:name "Assessment steps and case-study questions" ;
+        sh:description "The steps of the safety assessment that the tool supports, and the case-study questions it helps to answer. The tool catalogue filters tools by them." ] ;
+    sh:property [
+        sh:path schema:citation ; sh:order 6 ; sh:name "How to cite" ; sh:maxCount 1 ;
+        sh:description "The publication to cite when the tool is used: its authors, year, title and journal, or its DOI." ] ;
+    sh:property [
+        sh:path dct:conformsTo ; sh:order 7 ; sh:name "Bioschemas profile" ; sh:nodeKind sh:IRI ;
+        sh:hasValue <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE> ;
+        sh:description "Records of tools follow the ComputationalTool profile of Bioschemas, version 1.0, so that search engines and registries can read them." ;
+        sh:message "A tool follows the ComputationalTool profile of Bioschemas, version 1.0-RELEASE." ] .
 
 [] a sh:NodeShape ;
     sh:targetClass bioschemas_draft:LabProtocol ;
     rdfs:comment "Methods state the Bioschemas profile they follow (LabProtocol)." ;
-    sh:property [ sh:path dct:conformsTo ; sh:nodeKind sh:IRI ] .
+    sh:property [
+        sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "A method needs a name." ] ;
+    sh:property [
+        sh:path schema:description ; sh:order 2 ; sh:name "Description" ; dash:singleLine false ] ;
+    sh:property [
+        sh:path dct:conformsTo ; sh:name "Bioschemas profile" ; sh:nodeKind sh:IRI ;
+        sh:hasValue <https://bioschemas.org/profiles/LabProtocol/0.9-DRAFT> ;
+        sh:message "A method follows the LabProtocol profile of Bioschemas, version 0.9-DRAFT." ] .

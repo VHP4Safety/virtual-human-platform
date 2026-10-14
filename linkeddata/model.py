@@ -1,6 +1,7 @@
 """The data model: the vocabularies, classes and application profile of one model version."""
 
 import json
+from functools import cache
 from pathlib import Path
 
 import requests
@@ -39,10 +40,16 @@ def write_schema() -> Path:
     return path
 
 
+@cache
+def profile() -> Graph:
+    """The application profile: required, fixed and single values, and the guidance of the editor's form."""
+    return Graph().parse(MODEL_DIR / "profile.ttl", format="turtle")
+
+
 def shapes() -> Graph:
-    """The checks of the model: the approved schema's value types, made active (the profile is part of it)."""
+    """The checks of the model: the approved schema's value types, made active, and the application profile."""
     schema = MinedSchema.from_json(MODEL_DIR / "schema.json")
-    return Graph().parse(data=schema.to_shacl(activate_observed=True), format="turtle")
+    return Graph().parse(data=schema.to_shacl(activate_observed=True), format="turtle") + profile()
 
 
 def ontology() -> Graph:

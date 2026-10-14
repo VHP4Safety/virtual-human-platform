@@ -12,11 +12,11 @@
     <div class="card-body">
       <table class="table mb-0">
         <tbody>
-          {% for label, values in fields if label not in ("name", "description") %}
+          {% for field in fields if field.name not in ("name", "description") %}
           <tr>
-            <th scope="row" class="text-nowrap fw-semibold">{{ label }}</th>
+            <th scope="row" class="text-nowrap fw-semibold">{{ field.label }}</th>
             <td>
-              {% for value in values %}
+              {% for value in field["values"] %}
                 {% if value.startswith("http://") or value.startswith("https://") %}
                 <a class="link-vhpblue text-break" href="{{ value|page_link }}">{{ names.get(value) or value }}</a>
                 {% else %}

@@ -16,6 +16,7 @@ SOURCES = Path(__file__).parent.parent / "linkeddata" / "sources"
 BASE = "https://platform.vhp4safety.nl/"
 SCHEMA = "https://schema.org/"
 GLOSSARY = "https://vhp4safety.github.io/glossary#"
+PROFILE = "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"
 
 TOOLS = {
     "aop-builder": {
@@ -110,8 +111,11 @@ def test_conversion():
 def test_checks_report_values_that_do_not_fit():
     data = turtle(f"""
         @prefix schema: <https://schema.org/> .
-        <{BASE}tools/a> a schema:SoftwareApplication ; schema:name "A" ; schema:url <https://example.org/a> .
-        <{BASE}tools/b> a schema:SoftwareApplication ; schema:name "B" ; schema:url "not a link" .
+        @prefix dct: <http://purl.org/dc/terms/> .
+        <{BASE}tools/a> a schema:SoftwareApplication ; schema:name "A" ; schema:description "Does A." ;
+            schema:url <https://example.org/a> ; dct:conformsTo <{PROFILE}> .
+        <{BASE}tools/b> a schema:SoftwareApplication ; schema:name "B" ; schema:description "Does B." ;
+            schema:url "not a link" ; dct:conformsTo <{PROFILE}> .
     """)
     notes = check(data, ["https://schema.org/SoftwareApplication"])
     assert [(note["iri"], note["field"], note["value"]) for note in notes] == [
@@ -150,7 +154,7 @@ TOXTEMP = {
     "metadata": {
         "creation_date": "2026-10-01T10:00:00+02:00",
         "authors": [
-            {"credited": True, "name": "Julia Meerman", "organization": "RIVM", "orcid_id": "0000-0001-6487-1655", "email": None}
+            {"credited": True, "name": "Test Author", "organization": "Example Institute", "orcid_id": "0000-0002-1825-0097", "email": None}
         ],
     },
     "investigation": {"id": 1, "title": "Parkinson", "description": "", "submission_date": "2026-01-01"},
@@ -203,4 +207,4 @@ def test_toxtemp():
     answer = only(data, question, SCHEMA + "suggestedAnswer")
     assert only(data, answer, SCHEMA + "text").value == "Rotenone"
     author = only(data, method, SCHEMA + "author")
-    assert only(data, author, SCHEMA + "identifier").value == "0000-0001-6487-1655"
+    assert only(data, author, SCHEMA + "identifier").value == "0000-0002-1825-0097"

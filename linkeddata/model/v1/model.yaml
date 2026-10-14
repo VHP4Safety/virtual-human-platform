@@ -12,6 +12,7 @@ classes:
   - https://schema.org/SoftwareApplication
   - https://bioschemas.org/draft_terms/LabProtocol
   - https://schema.org/DefinedTerm
+  - https://schema.org/Question
 
 # Used for short names in the YAML mappings and in the JSON-LD documents.
 prefixes:

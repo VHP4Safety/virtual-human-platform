@@ -11,7 +11,7 @@ import json
 from flask import Blueprint, Response, current_app, g, render_template, request
 from rdflib import Graph
 
-from linkeddata import rdf, records
+from linkeddata import forms, rdf, records
 from linkeddata.database import Record
 from linkeddata.model import settings
 
@@ -119,15 +119,14 @@ def record_page(error):
     if "record" not in g:
         return error
     record = g.record
-    known = rdf.fields(record.type)
     shown = []
     links = []
-    for field in known.index:
-        value = getattr(record, field)
+    for field in forms.form(record.type):
+        value = getattr(record, field["name"])
         if value:
-            shown.append((known.loc[field, "label"], value if isinstance(value, list) else [value]))
-        if rdf.several(field):
-            links.extend(value)
+            shown.append({"name": field["name"], "label": field["label"], "values": value if isinstance(value, list) else [value]})
+        if field["several"]:
+            links.extend(value or [])
     name = record.name or record.iri
     return render_template(
         "records/record.html",
