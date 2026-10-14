@@ -10,38 +10,15 @@
     <a class="link-vhpblue" href="{{ change.record|page_link }}">Record page</a> ·
     <a class="link-vhpblue" href="{{ url_for('changes.changes', record=change.record) }}">All changes to this record</a></p>
 
-  <div class="card mb-4">
-    <div class="card-header bg-white fw-semibold">What changed</div>
-    {% if change.fields %}
-    <div class="table-responsive">
-      <table class="table mb-0 align-top">
-        <thead><tr><th style="width: 20%">Field</th><th style="width: 40%">Before</th><th style="width: 40%">After</th></tr></thead>
-        <tbody>
-          {% for field in change.fields %}
-          {% set entry = field.entry %}
-          <tr>
-            <th scope="row" class="fw-semibold">{{ field.field }}</th>
-            <td class="{% if field.before %}bg-danger-subtle{% endif %}">{% for value in field.before %}{% include "changes/_value.html" %}{% if not loop.last %}<br>{% endif %}{% else %}<span class="text-secondary">—</span>{% endfor %}</td>
-            <td class="{% if field.after %}bg-success-subtle{% endif %}">{% for value in field.after %}{% include "changes/_value.html" %}{% if not loop.last %}<br>{% endif %}{% else %}<span class="text-secondary">—</span>{% endfor %}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="card-body text-secondary">No field changed: the record was saved as it was.</div>
-    {% endif %}
-  </div>
-
   <div class="card">
     <div class="card-header bg-white d-flex flex-wrap align-items-center gap-2">
-      <span class="fw-semibold">As linked data</span>
+      <span class="fw-semibold">{% if change.fields %}Changed: {% for field in change.fields %}{{ field.field }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}Saved without changes{% endif %}</span>
       <span class="small text-secondary">{{ change.added|length }} statements added, {{ change.removed|length }} removed</span>
       <span class="flex-grow-1"></span>
       <a class="small link-secondary" href="{{ url_for('changes.change_statements', number=change.number) }}">Download as N-Triples</a>
     </div>
     <div class="card-body">
-      <p class="small text-secondary">Each arrow is a statement about the record: from one of its fields to a value. Statements the change added are green, those it removed are red; the others were kept.</p>
+      <p class="small text-secondary">Each arrow is a statement the platform publishes about the record: from one of its fields to a value. Statements the change added are green, those it removed are red and struck through; the others were kept.</p>
       {% with graph=change %}{% include "changes/_graph.html" %}{% endwith %}
     </div>
   </div>
