@@ -1592,12 +1592,14 @@ def tool_page(toolname):
     if toolname not in tools:
         abort(404)
 
-    # get the tools metadata; tools added on the platform have no detail file in the cloud catalogue
-    tool_details = {}
-    if toolname in catalogue:
-        tool_details = get_service_detail(toolname)
-        if not tool_details:
-            return "Error fetching service details", 503
+    # Tools added on the platform are not in the cloud catalogue; their record page shows them
+    if toolname not in catalogue:
+        abort(404)
+
+    # get the tools metadata:
+    tool_details = get_service_detail(toolname)
+    if not tool_details:
+        return "Error fetching service details", 503
 
     tool_meta = tools[toolname]
     tool_name = tool_meta.get("service") or tool_meta.get("title") or toolname
