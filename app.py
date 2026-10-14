@@ -22,6 +22,7 @@ from data.zenodo.search import ZenodoExtractor
 from data.mapping import normalize_all, scrub_draft
 from linkeddata import records
 from linkeddata.accounts import blueprint as account_blueprint
+from linkeddata.admin import blueprint as admin_blueprint
 from linkeddata.api import blueprint as api_blueprint
 from linkeddata.changes import blueprint as changes_blueprint
 from linkeddata.dashboards import blueprint as dashboards_blueprint
@@ -130,6 +131,7 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLASK_DEBUG") != "1"
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.register_blueprint(account_blueprint)
+app.register_blueprint(admin_blueprint)
 app.register_blueprint(api_blueprint)
 app.register_blueprint(pages_blueprint)
 app.register_blueprint(dashboards_blueprint)

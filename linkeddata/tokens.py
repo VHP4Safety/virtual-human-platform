@@ -35,16 +35,32 @@ def create(orcid: str, name: str, kinds: list[str], days: int = DEFAULT_DAYS) ->
     return secret
 
 
+def usable(token: Token | None) -> Token | None:
+    if token is None or token.revoked_at or token.expires_at < now():
+        return None
+    return token
+
+
+def find(secret: str) -> Token | None:
+    """The token of the secret when it is neither revoked nor expired."""
+    with database.session() as db:
+        return usable(db.scalars(select(Token).where(Token.token_hash == hash_token(secret))).first())
+
+
+def active(token_id: int) -> Token | None:
+    """The token with this id when it is neither revoked nor expired."""
+    with database.session() as db:
+        return usable(db.get(Token, token_id))
+
+
 def check(secret: str, kind: str) -> Token | None:
     """The token of the secret when it is valid and may write records of *kind*; None otherwise."""
+    token = find(secret)
+    if token is None or kind not in token.kinds.split(","):
+        return None
     with database.session() as db, db.begin():
-        token = db.scalars(select(Token).where(Token.token_hash == hash_token(secret))).first()
-        if token is None or token.revoked_at or token.expires_at < now():
-            return None
-        if kind not in token.kinds.split(","):
-            return None
-        token.last_used_at = now()
-        return token
+        db.get(Token, token.id).last_used_at = now()
+    return token
 
 
 def tokens_of(orcid: str) -> list[Token]:

@@ -28,3 +28,4 @@ def test_records():
     assert (history[0].name, history[0].orcid) == ("Test Editor", ORCID)
     assert '"name": "Y"' in history[2].document
     assert '"name": "X"' in history[2].previous
+    assert records.used_values("https://schema.org/SoftwareApplication", "about") == []

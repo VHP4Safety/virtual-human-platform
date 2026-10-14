@@ -1,0 +1,537 @@
+/**
+ * The record editor. The server makes the form from the platform's model; this script fills it with a
+ * record, sends it to the write API with the editor's login (the session, and its form token in the
+ * X-Form-Token header), and shows the answer: the record saved, or what is wrong with each field.
+ */
+(function () {
+  const data = JSON.parse(document.getElementById("editor-data").textContent);
+  const form = document.getElementById("record-form");
+  const start = document.getElementById("start");
+  const identifier = document.getElementById("identifier");
+  const list = document.getElementById("record-list");
+  const showRdf = document.getElementById("show-rdf");
+  const one = data.kind.endsWith("s") ? data.kind.slice(0, -1) : data.kind;
+  const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+  let selected = null;
+  let identifierTouched = false;
+  let unsaved = false;
+
+  function make(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) {
+      node.className = className;
+    }
+    if (text !== undefined) {
+      node.textContent = text;
+    }
+    return node;
+  }
+
+  function isWebAddress(text) {
+    return text.startsWith("https://") || text.startsWith("http://");
+  }
+
+  // A platform address is shown from this server, so that it works on every copy of the platform.
+  function pageLink(address) {
+    return address.startsWith(data.base) ? "/" + address.slice(data.base.length) : address;
+  }
+
+  function fieldInput(name) {
+    return form.querySelector('[data-field="' + name + '"]');
+  }
+
+  function slug(text) {
+    return text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+  }
+
+  function toast(text, ok) {
+    const box = document.getElementById("toast");
+    box.className = "toast align-items-center border-0 " + (ok ? "text-bg-success" : "text-bg-danger");
+    document.getElementById("toast-text").textContent = text;
+    bootstrap.Toast.getOrCreateInstance(box).show();
+  }
+
+  function setUnsaved(value) {
+    unsaved = value;
+    document.getElementById("unsaved").classList.toggle("d-none", !value);
+  }
+
+  // Problems with the values
+
+  function clearProblems() {
+    document.getElementById("form-problem").classList.add("d-none");
+    for (const box of form.querySelectorAll("[data-problem]")) {
+      box.classList.add("d-none");
+      box.textContent = "";
+    }
+    for (const marked of form.querySelectorAll(".is-invalid")) {
+      marked.classList.remove("is-invalid");
+    }
+  }
+
+  function showProblem(name, text) {
+    const box = form.querySelector('[data-problem="' + name + '"]');
+    if (!box) {
+      return null;
+    }
+    box.textContent = text;
+    box.classList.remove("d-none");
+    const field = name === "identifier" ? identifier : fieldInput(name);
+    if (field && field.type !== "hidden") {
+      field.classList.add("is-invalid");
+    }
+    return box;
+  }
+
+  function showProblems(fields, general) {
+    clearProblems();
+    let first = null;
+    for (const name of Object.keys(fields)) {
+      first = showProblem(name, fields[name].join(" ")) || first;
+    }
+    if (first) {
+      first.closest("[data-field-box]").scrollIntoView({ behavior: "smooth", block: "center" });
+    } else if (general) {
+      const problem = document.getElementById("form-problem");
+      problem.textContent = general;
+      problem.classList.remove("d-none");
+      problem.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+
+  // The checks the browser can make before sending; the platform checks everything again.
+  function problemsBeforeSending() {
+    const problems = {};
+    for (const field of data.fields) {
+      const input = fieldInput(field.name);
+      if (!input || input.type === "hidden") {
+        continue;
+      }
+      const text = input.value.trim();
+      if (field.required && !text) {
+        problems[field.name] = [field.message || "This field is required."];
+      } else if (text && field.entry === "address" && !isWebAddress(text)) {
+        problems[field.name] = ["Write the full address, starting with https://."];
+      }
+    }
+    if (identifier.value && !/^[a-z0-9][a-z0-9-]*$/.test(identifier.value)) {
+      problems.identifier = ["Use lowercase letters, digits and hyphens only."];
+    }
+    return problems;
+  }
+
+  async function api(method, address, body) {
+    const options = { method: method, credentials: "same-origin", headers: { "X-Form-Token": form.dataset.formToken } };
+    if (body instanceof FormData) {
+      options.body = body;
+    } else if (body) {
+      options.headers["Content-Type"] = "application/json";
+      options.body = JSON.stringify(body);
+    }
+    const response = await fetch(address, options);
+    const answer = await response.json().catch(function () { return { error: response.statusText }; });
+    return { ok: response.ok, status: response.status, answer: answer };
+  }
+
+  // The list of records
+
+  function renderCounts() {
+    let listed = 0;
+    let edited = 0;
+    let removed = 0;
+    for (const record of data.records) {
+      if (record.removed) {
+        removed += 1;
+      } else {
+        listed += 1;
+        if (record.edited) {
+          edited += 1;
+        }
+      }
+    }
+    document.getElementById("counts").textContent = listed + " in the catalogue · " + edited + " edited on the platform · " + removed + " removed";
+  }
+
+  function renderList() {
+    renderCounts();
+    const filter = document.getElementById("filter").value.trim().toLowerCase();
+    const show = document.querySelector('input[name="show"]:checked').value;
+    list.replaceChildren();
+    for (const record of data.records) {
+      const name = record.values.name || record.identifier;
+      if (filter && !name.toLowerCase().includes(filter) && !record.identifier.includes(filter)) {
+        continue;
+      }
+      if ((show === "edited" && !(record.edited && !record.removed)) || (show === "removed" && !record.removed)) {
+        continue;
+      }
+      const item = make("button", "list-group-item list-group-item-action d-flex align-items-center gap-2" + (record === selected ? " active bg-vhpblue border-vhpblue" : ""));
+      item.type = "button";
+      const label = make("span", "flex-grow-1 text-truncate", name);
+      label.title = name;
+      item.append(label);
+      if (record.removed) {
+        item.append(make("span", "badge text-bg-secondary", "removed"));
+      } else if (record.edited) {
+        item.append(make("span", "badge text-bg-vhplight-blue", "edited"));
+      }
+      item.addEventListener("click", function () { open(record); });
+      list.append(item);
+    }
+    if (!list.children.length) {
+      list.append(make("div", "small text-secondary p-2", "No " + data.kind + " match."));
+    }
+  }
+
+  // The fields that link to things: one checkbox for each record they can link to
+
+  function renderChoices(field, values, disabled) {
+    const box = form.querySelector('[data-choices="' + field.name + '"]');
+    box.replaceChildren();
+    const known = new Set();
+    const groups = (data.choices[field.name] || []).slice();
+    let count = 0;
+    for (const group of groups) {
+      for (const option of group.options) {
+        known.add(option.iri);
+      }
+    }
+    const others = values.filter(function (value) { return !known.has(value); });
+    if (others.length) {
+      groups.push({ title: "Other links", options: others.map(function (value) { return { iri: value, name: value, description: "" }; }) });
+    }
+    for (const group of groups) {
+      const column = make("div", "col-md-6");
+      column.append(make("div", "small fw-semibold text-secondary mb-1", group.title));
+      for (const option of group.options) {
+        count += 1;
+        const id = "choice-" + field.name + "-" + count;
+        const check = make("div", "form-check mb-1");
+        const input = make("input", "form-check-input");
+        input.type = "checkbox";
+        input.id = id;
+        input.value = option.iri;
+        input.checked = values.includes(option.iri);
+        input.disabled = disabled;
+        input.dataset.choiceOf = field.name;
+        const label = make("label", "form-check-label", option.name);
+        label.htmlFor = id;
+        if (option.description) {
+          const description = make("span", "small text-secondary choice-description", option.description);
+          description.title = option.description;
+          label.append(description);
+        }
+        check.append(input, label);
+        column.append(check);
+      }
+      box.append(column);
+    }
+  }
+
+  function chosen(name) {
+    const values = [];
+    for (const input of form.querySelectorAll('[data-choice-of="' + name + '"]')) {
+      if (input.checked) {
+        values.push(input.value);
+      }
+    }
+    return values;
+  }
+
+  // The fields that take an image
+
+  function setImage(name, address) {
+    fieldInput(name).value = address;
+    const preview = form.querySelector('[data-preview="' + name + '"]');
+    const shown = isWebAddress(address);
+    preview.classList.toggle("d-none", !shown);
+    form.querySelector('[data-no-image="' + name + '"]').classList.toggle("d-none", shown);
+    form.querySelector('[data-clear="' + name + '"]').classList.toggle("d-none", !address);
+    form.querySelector('[data-choose="' + name + '"] span').textContent = address ? "Replace the image" : "Upload an image";
+    if (shown) {
+      preview.src = pageLink(address);
+    } else {
+      preview.removeAttribute("src");
+    }
+  }
+
+  async function upload(name, file) {
+    if (file.size > MAX_IMAGE_BYTES) {
+      showProblem(name, "The image is larger than 5 MB.");
+      return;
+    }
+    const payload = new FormData();
+    payload.append("image", file);
+    const button = form.querySelector('[data-choose="' + name + '"]');
+    button.disabled = true;
+    const result = await api("POST", "/api/images", payload);
+    button.disabled = false;
+    if (!result.ok) {
+      showProblem(name, result.answer.error || "The image could not be uploaded.");
+      return;
+    }
+    form.querySelector('[data-problem="' + name + '"]').classList.add("d-none");
+    setImage(name, result.answer["@id"]);
+    setUnsaved(true);
+  }
+
+  // The form
+
+  function open(record) {
+    if (unsaved && !window.confirm("Leave without saving your changes?")) {
+      return;
+    }
+    selected = record;
+    identifierTouched = false;
+    start.classList.add("d-none");
+    form.classList.remove("d-none");
+    clearProblems();
+    const removed = Boolean(record && record.removed);
+    document.getElementById("form-title").textContent = record ? (record.values.name || record.identifier) : "New " + one;
+    const badges = document.getElementById("form-badges");
+    badges.replaceChildren();
+    let note = "Fields marked * are required.";
+    if (removed) {
+      badges.append(make("span", "badge text-bg-secondary", "removed"));
+      note = "This " + one + " was removed. Its page says so, and its address is not used again.";
+    } else if (record && !record.edited) {
+      badges.append(make("span", "badge text-bg-light border", "from the catalogue import"));
+      note = "This " + one + " comes from the nightly import. Once you save it here, the platform's version is kept and the import no longer changes it.";
+    }
+    document.getElementById("form-note").textContent = note;
+    identifier.value = record ? record.identifier : "";
+    identifier.readOnly = Boolean(record);
+    document.getElementById("identifier-lock").classList.toggle("d-none", !record);
+    document.getElementById("identifier-help").classList.toggle("d-none", Boolean(record));
+    for (const field of data.fields) {
+      const value = record ? record.values[field.name] : null;
+      if (field.entry === "links") {
+        renderChoices(field, Array.isArray(value) ? value : [], removed);
+      } else if (field.entry === "image") {
+        setImage(field.name, value || "");
+        for (const button of form.querySelectorAll('[data-choose="' + field.name + '"], [data-clear="' + field.name + '"]')) {
+          button.disabled = removed;
+        }
+      } else if (field.entry !== "fixed") {
+        fieldInput(field.name).value = Array.isArray(value) ? value.join(" ") : (value || "");
+        fieldInput(field.name).disabled = removed;
+      }
+    }
+    document.getElementById("save").disabled = removed;
+    document.getElementById("remove").classList.toggle("d-none", !record);
+    document.getElementById("remove").disabled = false;
+    document.getElementById("removal-keep").disabled = removed;
+    document.getElementById("removal-keep").checked = !removed;
+    document.getElementById("removal-free").checked = removed;
+    const view = document.getElementById("view");
+    view.classList.toggle("d-none", !record || removed);
+    view.href = record ? "/" + data.kind + "/" + record.identifier : "#";
+    const history = document.getElementById("history");
+    history.classList.toggle("d-none", !record);
+    history.href = record ? "/changes?record=" + encodeURIComponent(data.base + data.kind + "/" + record.identifier) : "#";
+    setUnsaved(false);
+    renderList();
+    showRdfOf(null);
+    if (!record) {
+      fieldInput(data.fields[0].name).focus();
+    }
+  }
+
+  function close() {
+    if (unsaved && !window.confirm("Leave without saving your changes?")) {
+      return;
+    }
+    setUnsaved(false);
+    selected = null;
+    form.classList.add("d-none");
+    start.classList.remove("d-none");
+    renderList();
+    showRdfOf(null);
+  }
+
+  function values() {
+    const body = {};
+    for (const field of data.fields) {
+      if (field.entry === "fixed") {
+        continue;
+      }
+      if (field.entry === "links") {
+        const links = chosen(field.name);
+        if (links.length) {
+          body[field.name] = links;
+        }
+        continue;
+      }
+      const text = fieldInput(field.name).value.trim();
+      if (text) {
+        body[field.name] = text;
+      }
+    }
+    return body;
+  }
+
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const problems = problemsBeforeSending();
+    if (Object.keys(problems).length) {
+      showProblems(problems);
+      return;
+    }
+    const body = values();
+    const address = identifier.value.trim();
+    const save = document.getElementById("save");
+    save.disabled = true;
+    const result = address
+      ? await api("PUT", "/api/" + data.kind + "/" + encodeURIComponent(address), body)
+      : await api("POST", "/api/" + data.kind, body);
+    save.disabled = false;
+    if (!result.ok) {
+      if (result.status === 409) {
+        showProblems({ identifier: ["This address belonged to a removed " + one + ". Choose another one."] });
+      } else {
+        showProblems(result.answer.fields || {}, result.answer.error || "The " + one + " could not be saved.");
+      }
+      return;
+    }
+    const saved = result.answer["@id"].split("/").pop();
+    let record = null;
+    for (const known of data.records) {
+      if (known.identifier === saved) {
+        record = known;
+      }
+    }
+    if (!record) {
+      record = { identifier: saved };
+      data.records.unshift(record);
+    }
+    record.values = body;
+    record.edited = true;
+    record.removed = false;
+    setUnsaved(false);
+    open(record);
+    toast("Saved. The " + one + "'s page shows it now.", true);
+    showRdfOf(result.answer.change);
+  });
+
+  async function remove() {
+    const permanently = document.getElementById("removal-free").checked;
+    const record = selected;
+    const name = record.values.name || record.identifier;
+    const result = await api("DELETE", "/api/" + data.kind + "/" + encodeURIComponent(record.identifier) + (permanently ? "?permanent=true" : ""));
+    bootstrap.Modal.getOrCreateInstance(document.getElementById("remove-dialog")).hide();
+    if (!result.ok) {
+      toast(result.answer.error || "The " + one + " could not be removed.", false);
+      return;
+    }
+    setUnsaved(false);
+    if (permanently) {
+      data.records.splice(data.records.indexOf(record), 1);
+      close();
+    } else {
+      record.removed = true;
+      record.edited = true;
+      record.values = {};
+      open(record);
+    }
+    toast("Removed " + name + ".", true);
+    showRdfOf(result.answer.change);
+  }
+
+  // The linked data of each change, for developers
+
+  async function showRdfOf(change) {
+    const panel = document.getElementById("rdf-panel");
+    panel.classList.toggle("d-none", !showRdf.checked || (!selected && !change));
+    if (!showRdf.checked || (!selected && !change)) {
+      return;
+    }
+    const changeLink = document.getElementById("rdf-change");
+    document.getElementById("rdf-diff").classList.toggle("d-none", !change);
+    changeLink.classList.toggle("d-none", !change);
+    document.getElementById("rdf-caption").textContent = change ? "of the change just made" : "of this " + one;
+    if (change) {
+      changeLink.href = change;
+      const found = await (await fetch(change + ".json", { credentials: "same-origin" })).json();
+      document.getElementById("rdf-added").textContent = found.added.join("\n") || "(none)";
+      document.getElementById("rdf-removed").textContent = found.removed.join("\n") || "(none)";
+    }
+    const record = document.getElementById("rdf-record");
+    if (!selected || selected.removed) {
+      record.textContent = "(not published)";
+      return;
+    }
+    const response = await fetch("/" + data.kind + "/" + encodeURIComponent(selected.identifier) + ".ttl", { credentials: "same-origin" });
+    record.textContent = response.ok ? await response.text() : "(not available)";
+  }
+
+  // Wiring
+
+  form.addEventListener("input", function (event) {
+    setUnsaved(true);
+    if (event.target === identifier) {
+      identifierTouched = true;
+    }
+    if (!selected && !identifierTouched && event.target === fieldInput("name")) {
+      identifier.value = slug(event.target.value);
+    }
+  });
+  form.addEventListener("change", function (event) {
+    if (event.target.dataset.choiceOf) {
+      setUnsaved(true);
+    }
+  });
+  for (const field of data.fields) {
+    if (field.entry === "image") {
+      const chooser = form.querySelector('[data-upload="' + field.name + '"]');
+      form.querySelector('[data-choose="' + field.name + '"]').addEventListener("click", function () { chooser.click(); });
+      chooser.addEventListener("change", function () {
+        if (chooser.files.length) {
+          upload(field.name, chooser.files[0]);
+        }
+        chooser.value = "";
+      });
+      form.querySelector('[data-clear="' + field.name + '"]').addEventListener("click", function () {
+        setImage(field.name, "");
+        setUnsaved(true);
+      });
+    }
+  }
+  for (const button of document.querySelectorAll("[data-new]")) {
+    button.addEventListener("click", function () { open(null); });
+  }
+  document.getElementById("discard").addEventListener("click", function () {
+    if (selected) {
+      setUnsaved(false);
+      open(selected);
+    } else {
+      close();
+    }
+  });
+  document.getElementById("remove").addEventListener("click", function () {
+    bootstrap.Modal.getOrCreateInstance(document.getElementById("remove-dialog")).show();
+  });
+  document.getElementById("remove-confirm").addEventListener("click", remove);
+  document.getElementById("filter").addEventListener("input", renderList);
+  for (const choice of document.querySelectorAll('input[name="show"]')) {
+    choice.addEventListener("change", renderList);
+  }
+  try {
+    showRdf.checked = window.localStorage.getItem("editor-show-rdf") === "yes";
+  } catch (error) {
+    showRdf.checked = false;
+  }
+  showRdf.addEventListener("change", function () {
+    try {
+      window.localStorage.setItem("editor-show-rdf", showRdf.checked ? "yes" : "no");
+    } catch (error) {
+      // Without storage, the choice lasts until the page is left.
+    }
+    showRdfOf(null);
+  });
+  window.addEventListener("beforeunload", function (event) {
+    if (unsaved) {
+      event.preventDefault();
+    }
+  });
+  renderList();
+})();

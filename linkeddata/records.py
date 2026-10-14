@@ -43,6 +43,26 @@ def names(iris: list[str]) -> dict[str, str]:
         return dict(db.execute(select(Record.iri, Record.name).where(Record.iri.in_(iris))).all())
 
 
+def used_values(kind: str, field: str) -> list[str]:
+    """The values that the records of a class have in a field with several values, most used first."""
+    counts = {}
+    with database.session() as db:
+        for values in db.scalars(select(getattr(Record, field)).where(Record.type == kind, Record.removed_at.is_(None))):
+            for value in values or []:
+                counts[value] = counts.get(value, 0) + 1
+    return sorted(counts, key=lambda value: (-counts[value], value))
+
+
+def choices(kind: str, field: str) -> list[Record]:
+    """The records that a field with several values can link to: all records of the classes that the
+    records of *kind* link to in it, such as the steps of the glossary for "about"."""
+    used = used_values(kind, field)
+    with database.session() as db:
+        classes = set(db.scalars(select(Record.type).where(Record.iri.in_(used))))
+        statement = select(Record).where(Record.type.in_(classes), Record.removed_at.is_(None))
+        return list(db.scalars(statement.order_by(Record.source, Record.iri)))
+
+
 def document_of(iri: str) -> str | None:
     """The record at this address in JSON-LD as it is now; None when there is none."""
     found = rdf.graph([iri])

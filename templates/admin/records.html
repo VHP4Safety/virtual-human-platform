@@ -1,0 +1,196 @@
+{% extends "editor/base.html" %}
+{% set one = kind[:-1] if kind.endswith("s") else kind %}
+{% block content %}
+<div class="container-xxl py-4">
+  <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+    <div>
+      <h1 class="h3 text-vhppurple mb-0">{{ kind|capitalize }}</h1>
+      <div class="small text-secondary" id="counts"></div>
+    </div>
+    {% if kinds|length > 1 %}
+    <ul class="nav nav-pills">
+      {% for other in kinds %}
+      <li class="nav-item"><a class="nav-link{% if other == kind %} active bg-vhppurple{% else %} link-vhppurple{% endif %}" href="{{ url_for('admin.edit', kind=other) }}">{{ other|capitalize }}</a></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <span class="flex-grow-1"></span>
+    <button type="button" class="btn btn-vhpblue" data-new><i class="bi bi-plus-lg"></i> Add a {{ one }}</button>
+  </div>
+
+  <div class="row g-4">
+    <aside class="col-lg-4 col-xl-3">
+      <div class="card">
+        <div class="card-body p-2">
+          <label class="visually-hidden" for="filter">Find a {{ one }}</label>
+          <div class="input-group input-group-sm mb-2">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input class="form-control" type="search" id="filter" placeholder="Find a {{ one }}">
+          </div>
+          <div class="btn-group btn-group-sm w-100 mb-2" role="group" aria-label="Show">
+            <input type="radio" class="btn-check" name="show" id="show-all" value="all" checked><label class="btn btn-outline-secondary" for="show-all">All</label>
+            <input type="radio" class="btn-check" name="show" id="show-edited" value="edited"><label class="btn btn-outline-secondary" for="show-edited">Edited</label>
+            <input type="radio" class="btn-check" name="show" id="show-removed" value="removed"><label class="btn btn-outline-secondary" for="show-removed">Removed</label>
+          </div>
+          <div class="list-group list-group-flush record-list" id="record-list"></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="col-lg-8 col-xl-9">
+      <div class="card" id="start">
+        <div class="card-body p-5 text-center">
+          <i class="bi bi-pencil-square display-5 text-vhppurple"></i>
+          <h2 class="h4 mt-3">Edit the {{ one }} catalogue</h2>
+          <p class="text-secondary mx-auto" style="max-width: 34rem">Choose a {{ one }} in the list to change it, or add a new one. Changes are checked and published straight away, and each one is kept in the record's history with your name.</p>
+          <button type="button" class="btn btn-vhpblue" data-new><i class="bi bi-plus-lg"></i> Add a {{ one }}</button>
+        </div>
+      </div>
+
+      <form class="card d-none" id="record-form" novalidate data-form-token="{{ form_token }}">
+        <div class="card-header bg-white py-3">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <h2 class="h5 mb-0" id="form-title"></h2>
+            <span id="form-badges"></span>
+            <span class="flex-grow-1"></span>
+            <a class="btn btn-sm btn-outline-vhpblue d-none" id="view" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> View page</a>
+            <a class="btn btn-sm btn-outline-secondary d-none" id="history" target="_blank" rel="noopener"><i class="bi bi-clock-history"></i> History</a>
+          </div>
+          <div class="small text-secondary mt-1" id="form-note"></div>
+        </div>
+
+        <div class="card-body px-4">
+          <div class="alert alert-danger d-none" id="form-problem" role="alert"></div>
+
+          {% for field in fields if field.entry != "fixed" %}
+          {% if not field.required and (loop.first or loop.previtem.required) %}
+          <h3 class="h6 text-secondary fw-semibold border-top pt-4 mt-2 mb-3">Optional</h3>
+          {% endif %}
+          <div class="mb-4" data-field-box="{{ field.name }}">
+            {% if field.entry == "links" %}
+            <fieldset>
+              <legend class="form-label fw-semibold fs-6 mb-1">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}</legend>
+              <div class="form-text mt-0 mb-2">{{ field.help }}</div>
+              <div class="row g-3" data-choices="{{ field.name }}"></div>
+            </fieldset>
+
+            {% elif field.entry == "image" %}
+            <div class="form-label fw-semibold">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}</div>
+            <div class="d-flex flex-wrap align-items-center gap-3">
+              <div class="image-box rounded border d-flex align-items-center justify-content-center">
+                <img class="image-preview d-none" data-preview="{{ field.name }}" alt="">
+                <span class="text-secondary small" data-no-image="{{ field.name }}">No image</span>
+              </div>
+              <div>
+                <input class="d-none" type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-upload="{{ field.name }}" aria-label="{{ field.label }}">
+                <input type="hidden" data-field="{{ field.name }}">
+                <button type="button" class="btn btn-outline-vhpblue btn-sm" data-choose="{{ field.name }}"><i class="bi bi-upload"></i> <span>Upload an image</span></button>
+                <button type="button" class="btn btn-link btn-sm link-secondary d-none" data-clear="{{ field.name }}">Remove the image</button>
+                <div class="form-text">{{ field.help }} PNG, JPEG or WebP, up to 5 MB.</div>
+              </div>
+            </div>
+
+            {% else %}
+            <label class="form-label fw-semibold" for="field-{{ field.name }}">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}</label>
+            {% if field.entry == "long text" %}
+            <textarea class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}" rows="4" {% if field.required %}required{% endif %} data-message="{{ field.message }}"></textarea>
+            {% elif field.entry == "address" %}
+            <input class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}" type="url" inputmode="url" placeholder="https://" {% if field.required %}required{% endif %} data-message="{{ field.message }}">
+            {% else %}
+            <input class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}" {% if field.required %}required{% endif %} data-message="{{ field.message }}">
+            {% endif %}
+            <div class="form-text">{{ field.help }}</div>
+            {% endif %}
+
+            <div class="invalid-feedback d-block d-none" data-problem="{{ field.name }}"></div>
+          </div>
+
+          {% if loop.first %}
+          <div class="mb-4" data-field-box="identifier">
+            <label class="form-label fw-semibold" for="identifier">Page address</label>
+            <div class="input-group">
+              <span class="input-group-text text-secondary">{{ request.host }}/{{ kind }}/</span>
+              <input class="form-control" id="identifier" pattern="[a-z0-9][a-z0-9-]*" maxlength="80" autocomplete="off">
+              <span class="input-group-text d-none" id="identifier-lock" title="The address of a saved {{ one }} does not change"><i class="bi bi-lock"></i></span>
+            </div>
+            <div class="form-text" id="identifier-help">Made from the name; you can shorten it. Lowercase letters, digits and hyphens. It cannot be changed once the {{ one }} is saved.</div>
+            <div class="invalid-feedback d-block d-none" data-problem="identifier"></div>
+          </div>
+          {% endif %}
+          {% endfor %}
+
+          {% for field in fields if field.entry == "fixed" %}
+          <p class="small text-secondary border-top pt-3 mb-0"><i class="bi bi-info-circle"></i> {{ field.help }}</p>
+          {% endfor %}
+        </div>
+
+        <div class="card-footer bg-white form-actions d-flex flex-wrap align-items-center gap-2 py-3 px-4">
+          <button type="submit" class="btn btn-vhpblue px-4" id="save">Save</button>
+          <button type="button" class="btn btn-outline-secondary" id="discard">Cancel</button>
+          <span class="small text-secondary d-none" id="unsaved"><i class="bi bi-circle-fill text-warning small"></i> Not saved yet</span>
+          <span class="flex-grow-1"></span>
+          <button type="button" class="btn btn-outline-danger d-none" id="remove"><i class="bi bi-trash"></i> Remove</button>
+        </div>
+      </form>
+
+      <div class="form-check form-switch mt-3 small">
+        <input class="form-check-input" type="checkbox" role="switch" id="show-rdf">
+        <label class="form-check-label text-secondary" for="show-rdf">Show the linked data (RDF) of each change, for developers</label>
+      </div>
+      <div class="card mt-2 d-none" id="rdf-panel">
+        <div class="card-header bg-white d-flex align-items-center gap-2">
+          <span class="fw-semibold">Linked data</span>
+          <span class="small text-secondary" id="rdf-caption"></span>
+          <span class="flex-grow-1"></span>
+          <a class="small link-vhpblue d-none" id="rdf-change" target="_blank" rel="noopener">The change</a>
+        </div>
+        <div class="card-body">
+          <div class="row g-3 d-none" id="rdf-diff">
+            <div class="col-lg-6"><h3 class="h6 text-success">Statements added</h3><pre class="rdf small bg-success-subtle p-2 rounded" id="rdf-added"></pre></div>
+            <div class="col-lg-6"><h3 class="h6 text-danger">Statements removed</h3><pre class="rdf small bg-danger-subtle p-2 rounded" id="rdf-removed"></pre></div>
+          </div>
+          <h3 class="h6 mt-2">The record as published (Turtle)</h3>
+          <pre class="rdf small bg-body-tertiary p-2 rounded mb-0" id="rdf-record"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="remove-dialog" tabindex="-1" aria-labelledby="remove-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title h5" id="remove-title">Remove this {{ one }}?</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="radio" name="removal" id="removal-keep" value="keep" checked>
+          <label class="form-check-label" for="removal-keep"><strong>Remove</strong><br><span class="small text-secondary">The {{ one }} leaves the catalogue. Its page says that it was removed, and its address is not used again.</span></label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="removal" id="removal-free" value="free">
+          <label class="form-check-label" for="removal-free"><strong>Remove permanently</strong><br><span class="small text-secondary">Also frees its address, for example after a {{ one }} was added by mistake. Its history is kept.</span></label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep it</button>
+        <button type="button" class="btn btn-danger" id="remove-confirm">Remove</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div class="toast align-items-center border-0" id="toast" role="status" aria-live="polite" aria-atomic="true">
+    <div class="d-flex"><div class="toast-body" id="toast-text"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>
+  </div>
+</div>
+
+<script type="application/json" id="editor-data">{{ data|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "editor/base.html" %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6 col-xl-5">
+      <div class="card">
+        <div class="card-body p-4">
+          <h1 class="h3 text-vhppurple mb-1">Log in to edit records</h1>
+          <p class="text-secondary">The records of the platform are written by its editors, who log in with their ORCID iD.</p>
+
+          {% if problem %}
+          <div class="alert alert-danger" role="alert">{{ problem }}</div>
+          {% endif %}
+
+          {% if orcid_ready %}
+          <a class="btn btn-vhpblue w-100 py-2" href="{{ url_for('account.orcid_login', next=next or None) }}">
+            <i class="bi bi-person-badge"></i> Log in with ORCID
+          </a>
+          {% else %}
+          <div class="alert alert-secondary small mb-0">ORCID login is not set up on this server yet (ORCID_CLIENT_ID and ORCID_CLIENT_SECRET).</div>
+          {% endif %}
+
+          <div class="d-flex align-items-center gap-2 my-4 text-secondary small">
+            <hr class="flex-grow-1 my-0"><span>or, with a write token</span><hr class="flex-grow-1 my-0">
+          </div>
+
+          <form method="post" action="{{ url_for('account.token_login') }}">
+            <input type="hidden" name="form_token" value="{{ form_token }}">
+            <input type="hidden" name="next" value="{{ next }}">
+            <label class="form-label fw-semibold" for="token">Write token</label>
+            <input class="form-control mb-2" type="password" id="token" name="token" autocomplete="off" placeholder="vhp_..." required>
+            <div class="form-text mb-3">A token that an editor made on the token page, or that the platform's operator gave you. The login ends when the token is revoked or expires.</div>
+            <button type="submit" class="btn btn-outline-vhppurple w-100">Log in with the token</button>
+          </form>
+        </div>
+      </div>
+      <p class="small text-secondary mt-3 text-center">Programs write records through the write API with a token; see <a class="link-secondary" href="https://github.com/VHP4Safety/virtual-human-platform/blob/main/linkeddata/README.md">how records are written</a>.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
