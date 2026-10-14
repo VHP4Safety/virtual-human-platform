@@ -368,18 +368,24 @@
       tag.className = `${baseClass} d-inline-flex align-items-center text-wrap mw-100 lh-sm`;
       
       const label = this.config.filterLabels[type] || type;
-      const removeHandler = this.config.multiSelect ? 
-        `removeFilterTag('${type}', '${value.replace(/'/g, "\\'")}')` :
-        `removeFilterTag('${type}')`;
-      
+      tag.textContent = `${label}: ${value}`;
+
       // type="button" is critical: the badge sits inside the search form, and
       // <button> defaults to type="submit", which would submit the form with
       // the *old* hidden-input values (before applyFilters has written the
       // new state in), making the X click look like a no-op page reload.
-      tag.innerHTML = `
-        ${label}: ${value}
-        <button type="button" class="btn-close btn-close-white ms-2" onclick="${removeHandler}" aria-label="Remove filter"></button>
-      `;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn-close btn-close-white ms-2';
+      button.setAttribute('aria-label', 'Remove filter');
+      button.addEventListener('click', () => {
+        if (this.config.multiSelect) {
+          window.removeFilterTag(type, value);
+        } else {
+          window.removeFilterTag(type);
+        }
+      });
+      tag.appendChild(button);
       
       this.elements.filterTags.appendChild(tag);
     },
