@@ -1,5 +1,5 @@
-"""The records on the platform's pages: their data, removed records and the general
-record page, on the platform with its network calls replaced."""
+"""The records on the platform's pages: their data, removed records, the general record page and the
+tools pages, on the platform with its network calls replaced."""
 
 import json
 
@@ -46,6 +46,19 @@ def test_data_of_a_record(site):
     assert response.mimetype == "text/turtle"
     assert b"schema:SoftwareApplication" in response.data
     assert site.get("/tools/t.nt").mimetype == "application/n-triples"
+
+
+def test_tool_pages(site):
+    page = site.get("/tools").data.decode()
+    assert "Does T." in page
+    assert "Old" not in page
+    response = site.get("/tools/t")
+    page = response.data.decode()
+    assert response.status_code == 200
+    assert "Toxicodynamics" in page
+    assert f'"@id": "{BASE}tools/t"' in page.replace("\\u0026", "&")
+    assert '<link rel="alternate" type="text/turtle" href="/tools/t.ttl" />' in page
+    assert 'rel="alternate"; type="application/ld+json"' in response.headers["Link"]
 
 
 def test_removed_record(site):

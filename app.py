@@ -20,6 +20,7 @@ from werkzeug.routing import BaseConverter
 from data.biostudies.search import BioStudiesExtractor
 from data.zenodo.search import ZenodoExtractor
 from data.mapping import normalize_all, scrub_draft
+from linkeddata import records
 from linkeddata.accounts import blueprint as account_blueprint
 from linkeddata.api import blueprint as api_blueprint
 from linkeddata.pages import blueprint as pages_blueprint
@@ -430,6 +431,32 @@ def get_stage_mapping() -> dict:
     return {**glossary, **STAGE_MAPPING_LEGACY}
 
 
+def linked_tools(catalogue: dict) -> dict:
+    """The tools of the cloud catalogue with the values of their records. Tools
+    removed on the platform are left out, and tools added on it are put in.
+    """
+    removed = records.removed("tools")
+    tools = {}
+    for tool_id, tool in catalogue.items():
+        if tool_id not in removed:
+            tools[tool_id] = dict(tool)
+    stage_mapping = get_stage_mapping()
+    for record in records.of_kind("tools"):
+        tool_id = record.iri.rsplit("/", 1)[-1]
+        tool = tools.setdefault(tool_id, {"id": tool_id, "stage": "Unknown", "main_url": "no_url"})
+        tool["service"] = record.name or tool_id
+        tool["description"] = record.description or ""
+        tool["main_url"] = record.url or "no_url"
+        tool["png_file_name"] = record.image
+        for iri in record.about:
+            if iri in stage_mapping:
+                tool["stage"] = iri
+        # A record links the regulatory questions that the catalogue marks with reg_q_Xy flags.
+        for (case, number), field in _REG_QUESTION_KEYS.items():
+            tool[field] = str(records.address(f"casestudies/{case}/Q{number + 1}") in record.about).lower()
+    return tools
+
+
 # --- Partner logos ----------------------------------------------------------
 PARTNERS_DIR = os.path.join(app.static_folder, "images", "partners")
 PARTNERS_FILE = os.path.join(PARTNERS_DIR, "partners.txt")
@@ -676,7 +703,7 @@ def inject_tools_menu():
     """Fetch methods_index.json and expose a simple list of {id, title} to templates.
     Return an empty list on any error to avoid breaking pages.
     """
-    data = get_json_dict(SERVICES_URL)
+    data = linked_tools(get_json_dict(SERVICES_URL))
     if data:
         items = []
         for key, val in data.items() if isinstance(data, dict) else []:
@@ -747,9 +774,9 @@ def inject_seo_defaults():
 @app.route("/")
 def home():
     try:
-        tools = get_json_dict(
+        tools = linked_tools(get_json_dict(
             SERVICES_URL
-        )  # Geting the service_list.json in the dictionary format.
+        ))  # Geting the service_list.json in the dictionary format.
         tools = list(tools.values())  # Converting the dictionary to a list object.
     except Exception:
         app.logger.exception("Home page failed")
@@ -812,7 +839,7 @@ def sitemap():
     )
 
     # Tool detail pages
-    tools = get_json_dict(SERVICES_URL)
+    tools = linked_tools(get_json_dict(SERVICES_URL))
     if isinstance(tools, dict):
         paths += [f"/tools/{urllib.parse.quote(str(k))}" for k in tools]
 
@@ -1161,9 +1188,9 @@ def models():
 @app.route("/tools")
 def tools():
     try:
-        tools = get_json_dict(
+        tools = linked_tools(get_json_dict(
             SERVICES_URL
-        )  # Geting the service_list.json in the dictionary format.
+        ))  # Geting the service_list.json in the dictionary format.
         tools = list(tools.values())  # Converting the dictionary to a list object.
 
         # Glossary URI -> stage label: Process Flow Steps resolved from the VHP
@@ -1551,8 +1578,8 @@ def method_page(methodid):
 def tool_page(toolname):
     # get the tools metadata:
     try:
-        tools = get_json_dict(SERVICES_URL)
-        tools = dict(tools)
+        catalogue = get_json_dict(SERVICES_URL)
+        tools = linked_tools(catalogue)
         # Geting the service_list.json in the dictionary format.
         # Converting the dictionary to a list object.
     except Exception:
@@ -1563,10 +1590,12 @@ def tool_page(toolname):
     if toolname not in tools:
         abort(404)
 
-    # get the tools metadata:
-    tool_details = get_service_detail(toolname)
-    if not tool_details:
-        return "Error fetching service details", 503
+    # get the tools metadata; tools added on the platform have no detail file in the cloud catalogue
+    tool_details = {}
+    if toolname in catalogue:
+        tool_details = get_service_detail(toolname)
+        if not tool_details:
+            return "Error fetching service details", 503
 
     tool_meta = tools[toolname]
     tool_name = tool_meta.get("service") or tool_meta.get("title") or toolname
