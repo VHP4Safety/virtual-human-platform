@@ -1551,19 +1551,9 @@ def tool_page(toolname):
         abort(404)
 
     # get the tools metadata:
-    url = "https://cloud.vhp4safety.nl/service/" + toolname + ".json"
-    response = requests.get(url)
-
-    if response.status_code != 200:
-        return f"Error fetching service list: {response.status_code}", 503
-
-    try:
-        tool_details = response.json()
-        tool_details = dict(tool_details)
-        # Geting the service_list.json in the dictionary format.
-        # Converting the dictionary to a list object.
-    except Exception as e:
-        return f"Error processing service data: {e}", 500
+    tool_details = get_service_detail(toolname)
+    if not tool_details:
+        return "Error fetching service details", 503
 
     tool_meta = tools[toolname]
     tool_name = tool_meta.get("service") or tool_meta.get("title") or toolname
