@@ -64,3 +64,39 @@ rules:
 ```
 
 3. Add a test with a few rows in `tests/test_linkeddata.py`, and run the build.
+
+## Write records
+
+Tools (the kinds listed under `writable` in `model/v1/model.yaml`) are written through the API with a
+write token, as with ToxTempAssistant's workspace tokens. rdfsolve checks each record against the
+model; the record is kept as a JSON-LD file in the records repository, at the path of its page
+(`tools/aop-builder.jsonld`), and every change is one commit. A record written this way replaces
+what a source gives for the same address. After a write, the build runs again in the background
+with the sources downloaded by the last build.
+
+```
+PUT    /api/tools/aop-builder                  create or replace (the whole record)
+POST   /api/tools                              create; the identifier is made from the name
+DELETE /api/tools/aop-builder                  remove; the address stays gone
+DELETE /api/tools/aop-builder?permanent=true   remove the record and its address
+```
+
+```
+curl -X PUT https://platform.vhp4safety.nl/api/tools/aop-builder \
+     -H "Authorization: Bearer vhp_..." -H "Content-Type: application/json" \
+     -d '{"name": "AOP-Builder", "url": {"@id": "https://github.com/VHP4Safety/aop-builder"}}'
+```
+
+Editors log in with ORCID at `/login/orcid/` and make tokens at `/account/tokens/`; the first token
+can be made with `python -m linkeddata token <ORCID iD> "<name>" tools`. The settings are environment
+variables:
+
+| Variable | Meaning |
+|---|---|
+| `PLATFORM_EDITORS` | the ORCID iDs of the editors, separated by commas |
+| `ORCID_CLIENT_ID`, `ORCID_CLIENT_SECRET` | the platform's ORCID public API credentials; the redirect URI is `<platform>/orcid/callback/` |
+| `SECRET_KEY` | the key that signs login sessions |
+| `PLATFORM_RECORDS`, `PLATFORM_STATE`, `PLATFORM_BUILD` | the records repository, the tokens, and the built files |
+
+`python -m linkeddata push` sends the records repository to its remote (for example
+`VHP4Safety/platform-data`); it is meant to run every night.
