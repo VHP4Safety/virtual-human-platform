@@ -9,17 +9,20 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pyoxigraph as ox
+import pyshacl
 import requests
 import yaml
 from rdfsolve import SchemaMiner
 from rdfsolve.api import Client
 from rdfsolve.conversion import Profile, Rule, write_query
+from rdflib import RDF
+from rdflib.namespace import SH
 from sqlalchemy import delete, insert, select
 
 from linkeddata import database, rdf
 from linkeddata.database import PLATFORM, Note, Record, Source
 from linkeddata.lift import lift
-from linkeddata.model import MODEL_DIR, ontology, settings, shapes
+from linkeddata.model import MODEL_DIR, ontology, profile, settings, shapes
 
 SOURCES_DIR = Path(__file__).parent / "sources"
 TARGET = "VHP4Safety model v1"
@@ -173,7 +176,32 @@ def specs() -> list[dict]:
     return found
 
 
+def check_written() -> None:
+    """The records written on the platform are checked again against the application profile, which
+    may have changed since they were written; what no longer fits is noted for the data quality page."""
+    with database.session() as db:
+        iris = list(db.scalars(select(Record.iri).where(Record.source == PLATFORM, Record.removed_at.is_(None))))
+    notes = {}
+    conforms, results, _ = pyshacl.validate(rdf.graph(iris), shacl_graph=profile())
+    for result in results.subjects(RDF.type, SH.ValidationResult):
+        note = {
+            "iri": str(results.value(result, SH.focusNode)),
+            "field": str(results.value(result, SH.resultPath)),
+            "value": str(results.value(result, SH.value) or ""),
+            "reason": str(results.value(result, SH.resultMessage)),
+            "component": str(results.value(result, SH.sourceConstraintComponent)),
+        }
+        notes[(note["iri"], note["field"], note["value"], note["reason"])] = note
+    with database.session() as db, db.begin():
+        db.execute(delete(Note).where(Note.source == PLATFORM))
+        for note in notes.values():
+            db.add(Note(source=PLATFORM, **note))
+    print(f"{PLATFORM}: {len(iris)} records, {len(notes)} notes")
+
+
 def import_all(offline: bool = False) -> None:
-    """Every source that is fetched is imported; with *offline*, from its last download."""
+    """Every source that is fetched is imported, with *offline* from its last download, and the records
+    written on the platform are checked again."""
     for spec in specs():
         import_source(spec, offline)
+    check_written()

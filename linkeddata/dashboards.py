@@ -75,6 +75,7 @@ def data_quality():
         groups=groups,
         notes=len(notes),
         names=records.names(list(notes["iri"])),
+        written=PLATFORM,
         page_title="Data quality — VHP4Safety",
         meta_description="How complete the records of the VHP4Safety platform are, and what the checks of the model found.",
     )

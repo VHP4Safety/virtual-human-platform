@@ -33,7 +33,7 @@
   </div>
 
   <h2 class="h4 mt-4">Values that do not fit <span class="badge text-bg-vhporange align-middle">{{ notes }}</span></h2>
-  <p>Values of the sources that do not fit the platform's model are left out of the records until the source is corrected. They are grouped by field and by what is wrong.</p>
+  <p>Values of the sources that do not fit the platform's model are left out of the records until the source is corrected. Records written on the platform are checked again every night, as the model may have changed since they were written; they are corrected in the record editor. The values are grouped by field and by what is wrong.</p>
   <div class="accordion" id="notes">
     {% for group in groups %}
     <div class="accordion-item">
@@ -53,7 +53,7 @@
               <tr>
                 <td class="ps-3"><a class="link-vhpblue text-break" href="{{ note.iri|page_link }}">{{ names.get(note.iri) or note.iri|page_link }}</a></td>
                 <td class="text-break"><code>{{ note.value or "(empty)" }}</code></td>
-                <td><a class="link-vhpblue" href="{{ url_for('dashboards.sources') }}#{{ note.source }}">{{ note.source }}</a></td>
+                <td>{% if note.source == written %}<a class="link-vhpblue" href="{{ url_for('changes.changes', record=note.iri) }}">written on the platform</a>{% else %}<a class="link-vhpblue" href="{{ url_for('dashboards.sources') }}#{{ note.source }}">{{ note.source }}</a>{% endif %}</td>
               </tr>
               {% endfor %}
             </tbody>

@@ -7,7 +7,7 @@ import pyoxigraph as ox
 import yaml
 from sqlalchemy import select
 
-from linkeddata import database, imports, records
+from linkeddata import database, imports, rdf, records
 from linkeddata.database import Note, Record, Source
 from linkeddata.imports import check, convert
 from linkeddata.parsers import casestudies, glossary, methods, tools
@@ -155,6 +155,25 @@ def test_import(tmp_path, monkeypatch):
         notes = list(db.scalars(select(Note)))
     assert (BASE + "tools/x", "Other") in [(note.iri, note.value) for note in notes]
     assert GLOSSARY + "VHP0000156" not in [note.value for note in notes]
+
+
+def test_records_written_on_the_platform_are_checked_again(tmp_path, monkeypatch):
+    monkeypatch.setattr(imports, "SOURCES_DIR", tmp_path / "sources")
+    (tmp_path / "sources").mkdir()
+    with database.session() as db, db.begin():
+        db.add(Record(**rdf.row(BASE + "tools/t", SCHEMA + "SoftwareApplication", "platform", {
+            "name": ["T"],
+            "description": ["Does T."],
+            "url": ["https://t.org/"],
+            "citation": ["a text about a paper"],
+            "conforms_to": [PROFILE],
+        })))
+    imports.import_all(offline=True)
+    with database.session() as db:
+        notes = list(db.scalars(select(Note)))
+    assert {(note.source, note.iri, note.field, note.value) for note in notes} == {
+        ("platform", BASE + "tools/t", SCHEMA + "citation", "a text about a paper")
+    }
 
 
 TOXTEMP = {
