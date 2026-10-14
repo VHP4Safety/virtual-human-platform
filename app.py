@@ -1922,6 +1922,8 @@ def show_compounds_expdata_as_json(cwid):
         return jsonify({"error": "No data found"}), 404
     compound_dat = compound_dat["results"]["bindings"][0]
     qid = compound_dat["qid"]["value"]
+    if not re.fullmatch(r"http://www\.wikidata\.org/entity/Q\d+", qid):
+        return jsonify({"error": "No data found"}), 404
     # the next query may be affected by https://github.com/ad-freiburg/qlever-control/issues/187
     sparqlquery = (
         "PREFIX wd: <http://www.wikidata.org/entity/>\n"
