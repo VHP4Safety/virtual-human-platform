@@ -12,7 +12,7 @@ from linkeddata.database import Record
 BASE = "https://platform.vhp4safety.nl/"
 TOOL = "https://schema.org/SoftwareApplication"
 STEP = "https://vhp4safety.github.io/glossary#VHP0000156"
-ORCID = "0000-0001-6487-1655"
+ORCID = "0000-0002-1825-0097"
 
 
 @pytest.fixture
@@ -32,7 +32,7 @@ def site(monkeypatch):
             rdf.row(BASE + "methods/m", "https://bioschemas.org/draft_terms/LabProtocol", "methods", {"name": ["M"]}),
             rdf.row(STEP, "https://schema.org/DefinedTerm", "glossary", {"name": ["Toxicodynamics"]}),
         ])
-    records.retire(BASE + "tools/old", "Julia Meerman", ORCID)
+    records.retire(BASE + "tools/old", "Test Editor", ORCID)
     return platform.app.test_client()
 
 
@@ -77,9 +77,10 @@ def test_dashboards(site):
     page = site.get("/data-quality").data.decode()
     assert "SoftwareApplication" in page
     assert "1 of 1" in page
-    page = site.get("/sources").data.decode()
-    assert "Julia Meerman" in page
+    page = site.get("/changes").data.decode()
+    assert "Test Editor" in page
     assert ORCID in page
+    assert "Removed" in page
 
 
 def test_sitemap_leaves_out_the_pages_for_editors(site):

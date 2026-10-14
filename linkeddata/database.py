@@ -46,13 +46,14 @@ class Record(Base):
 
 
 class Revision(Base):
-    """A version of a record written on the platform, as in ToxTempAssistant: what was written
-    (the record in JSON-LD), by whom, and when."""
+    """A change to a record made on the platform, as in ToxTempAssistant: the record in JSON-LD before
+    and after the change, who made it, and when."""
 
     __tablename__ = "revisions"
     id: Mapped[int] = mapped_column(primary_key=True)
     record_iri: Mapped[str] = mapped_column(index=True)
     action: Mapped[str]
+    previous: Mapped[str | None]
     document: Mapped[str | None]
     name: Mapped[str]
     orcid: Mapped[str]

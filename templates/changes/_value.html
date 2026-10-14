@@ -1,0 +1,7 @@
+{% if entry == "image" and (value.startswith("https://") or value.startswith("http://")) %}
+<img src="{{ value|page_link }}" alt="" class="rounded border bg-white" style="max-height: 90px; max-width: 220px; object-fit: contain">
+{% elif value.startswith("http://") or value.startswith("https://") %}
+<a class="link-vhpblue text-break" href="{{ value|page_link }}">{{ names.get(value) or value }}</a>
+{% else %}
+<span class="text-break">{{ value }}</span>
+{% endif %}

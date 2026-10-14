@@ -16,7 +16,7 @@ with each field.
 import re
 import time
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, url_for
 from sqlalchemy.exc import IntegrityError
 
 from linkeddata import forms, rdf, records, tokens
@@ -84,6 +84,10 @@ def authorized(kind: str):
     return tokens.check(header.removeprefix("Bearer ").strip(), kind)
 
 
+def done(address: str, revision, status: int):
+    return jsonify({"@id": address, "change": url_for("changes.change", number=revision.id)}), status
+
+
 def store(kind: str, identifier: str, replace: bool = True):
     """The record of the request's body is checked and saved; the response says how it went."""
     config = settings()
@@ -104,8 +108,8 @@ def store(kind: str, identifier: str, replace: bool = True):
         return jsonify({"error": str(problem), "fields": problem.problems}), 422
     except ValueError as problem:
         return error(str(problem), 422)
-    created = records.save(row, document, token.name, token.orcid, replace)
-    return jsonify({"@id": address}), 201 if created else 200
+    revision = records.save(row, document, token.name, token.orcid, replace)
+    return done(address, revision, 201 if revision.action == "Added" else 200)
 
 
 @blueprint.put("/api/<kind>/<identifier>")
@@ -148,8 +152,8 @@ def delete(kind: str, identifier: str):
     if record is None or (record.removed_at and not permanent):
         return error("There is no record at this address.", 404)
     if permanent:
-        records.remove(record.iri, token.name, token.orcid)
+        revision = records.remove(record.iri, token.name, token.orcid)
     else:
-        records.retire(record.iri, token.name, token.orcid)
-    return "", 204
+        revision = records.retire(record.iri, token.name, token.orcid)
+    return done(record.iri, revision, 200)
 

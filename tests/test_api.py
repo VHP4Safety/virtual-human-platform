@@ -3,7 +3,7 @@
 import pytest
 from flask import Flask
 
-from linkeddata import api, records, tokens
+from linkeddata import api, changes, records, tokens
 
 ORCID = "0000-0002-1825-0097"
 BASE = "https://platform.vhp4safety.nl/"
@@ -24,6 +24,7 @@ def client():
     app = Flask(__name__)
     app.config["SECRET_KEY"] = "test"
     app.register_blueprint(api.blueprint)
+    app.register_blueprint(changes.blueprint)
     return app.test_client()
 
 
@@ -43,6 +44,9 @@ def test_writing_a_record(client):
     assert record.conforms_to == ["https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"]
     response = client.put("/api/tools/aop-builder", json={**TOOL, "name": "AOP-Builder"}, headers=headers)
     assert response.status_code == 200
+    change = client.get(response.json["change"] + ".json").json
+    assert [(field["field"], field["before"], field["after"]) for field in change["fields"]] == [("Name", ["AOP Builder"], ["AOP-Builder"])]
+    assert any('"AOP-Builder"' in line for line in change["added"])
 
 
 def test_a_record_that_does_not_fit_the_model(client):
@@ -71,9 +75,11 @@ def test_new_identifiers(client):
 def test_removing_a_record(client):
     headers = bearer("tools")
     client.put("/api/tools/x", json=TOOL, headers=headers)
-    assert client.delete("/api/tools/x", headers=headers).status_code == 204
+    response = client.delete("/api/tools/x", headers=headers)
+    assert response.status_code == 200
+    assert client.get(response.json["change"] + ".json").json["action"] == "Removed"
     assert client.put("/api/tools/x", json=TOOL, headers=headers).status_code == 409
-    assert client.delete("/api/tools/x?permanent=true", headers=headers).status_code == 204
+    assert client.delete("/api/tools/x?permanent=true", headers=headers).status_code == 200
     assert client.put("/api/tools/x", json=TOOL, headers=headers).status_code == 201
 
 

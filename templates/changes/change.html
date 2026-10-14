@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
+  <div class="pb-2">
+    <p class="mb-1"><a class="link-vhpblue small" href="{{ url_for('changes.changes') }}"><i class="bi bi-arrow-left"></i> All changes</a></p>
+    <h1><span class="text-vhpblue">{{ names.get(change.record) or change.record|page_link }}</span></h1>
+    <p class="text-secondary fs-5 mb-1">{% with action=change.action %}{% include "changes/_action.html" %}{% endwith %} by {{ change.name }} (<a class="link-vhpblue" href="https://orcid.org/{{ change.orcid }}">{{ change.orcid }}</a>) on {{ change.date[:16]|replace("T", " ") }} UTC</p>
+    <p class="small">
+      <a class="link-vhpblue" href="{{ change.record|page_link }}">The record's page</a> ·
+      <a class="link-vhpblue" href="{{ url_for('changes.changes', record=change.record) }}">All changes to this record</a>
+    </p>
+  </div>
+
+  <h2 class="h5 mt-2">What changed</h2>
+  {% if change.fields %}
+  <div class="table-responsive">
+    <table class="table align-top">
+      <thead><tr><th style="width: 20%">Field</th><th style="width: 40%">Before</th><th style="width: 40%">After</th></tr></thead>
+      <tbody>
+        {% for field in change.fields %}
+        <tr>
+          <th scope="row" class="fw-semibold">{{ field.field }}</th>
+          {% set entry = field.entry %}
+          <td class="{% if field.before %}bg-danger-subtle{% endif %}">{% for value in field.before %}{% include "changes/_value.html" %}{% if not loop.last %}<br>{% endif %}{% else %}<span class="text-secondary">—</span>{% endfor %}</td>
+          <td class="{% if field.after %}bg-success-subtle{% endif %}">{% for value in field.after %}{% include "changes/_value.html" %}{% if not loop.last %}<br>{% endif %}{% else %}<span class="text-secondary">—</span>{% endfor %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>No field changed: the record was saved as it was.</p>
+  {% endif %}
+
+  <details class="card mt-3">
+    <summary class="card-header bg-vhplight-blue">For developers: the change as RDF statements</summary>
+    <div class="card-body">
+      <p class="small text-secondary">The statements (triples, in N-Triples) that the change added to and removed from the record's linked data.</p>
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <h3 class="h6 text-success">Added ({{ change.added|length }})</h3>
+          <pre class="small bg-success-subtle p-2 rounded text-wrap text-break">{{ change.added|join("\n") }}</pre>
+        </div>
+        <div class="col-lg-6">
+          <h3 class="h6 text-danger">Removed ({{ change.removed|length }})</h3>
+          <pre class="small bg-danger-subtle p-2 rounded text-wrap text-break">{{ change.removed|join("\n") }}</pre>
+        </div>
+      </div>
+    </div>
+  </details>
+</section>
+{% endblock %}

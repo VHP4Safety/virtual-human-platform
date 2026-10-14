@@ -3,7 +3,7 @@
 <section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
   <h1><span class="text-vhpblue">{{ record.name or "Removed record" }}</span></h1>
   <p class="text-secondary fs-5">This record was removed from the platform.</p>
-  <p>Its address, <code>{{ record.iri }}</code>, is not given to another record. The changes made to it are listed on the <a class="link-vhpblue" href="{{ url_for('dashboards.sources') }}#changes">sources page</a>.</p>
+  <p>Its address, <code>{{ record.iri }}</code>, is not given to another record. See <a class="link-vhpblue" href="{{ url_for('changes.changes', record=record.iri) }}">the changes made to it</a>.</p>
   <p><a class="btn btn-outline-vhpblue" href="{{ url_for('home') }}">Back to the platform</a></p>
 </section>
 {% endblock %}

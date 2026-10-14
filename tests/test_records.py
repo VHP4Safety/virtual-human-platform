@@ -3,7 +3,7 @@
 from linkeddata import records
 from linkeddata.database import PLATFORM
 
-ORCID = "0000-0001-6487-1655"
+ORCID = "0000-0002-1825-0097"
 IRI = "https://platform.vhp4safety.nl/tools/x"
 
 
@@ -12,18 +12,19 @@ def row(**fields) -> dict:
 
 
 def test_records():
-    assert records.save(row(name="X", about=["https://example.org/a"]), {"name": "X"}, "Julia Meerman", ORCID)
-    assert not records.save(row(name="Y"), {"name": "Y"}, "Julia Meerman", ORCID)
+    assert records.save(row(name="X", about=["https://example.org/a"]), {"name": "X"}, "Test Editor", ORCID).action == "Added"
+    assert records.save(row(name="Y"), {"name": "Y"}, "Test Editor", ORCID).action == "Changed"
     record = records.get(IRI)
     assert (record.name, record.about) == ("Y", [])
     assert [record.iri for record in records.of_kind("tools")] == [IRI]
-    records.retire(IRI, "Julia Meerman", ORCID)
+    records.retire(IRI, "Test Editor", ORCID)
     assert records.get(IRI).removed_at
     assert records.of_kind("tools") == []
     assert records.removed("tools") == {"x"}
-    records.remove(IRI, "Julia Meerman", ORCID)
+    records.remove(IRI, "Test Editor", ORCID)
     assert records.get(IRI) is None
     history = records.history(10)
     assert [revision.action for revision in history] == ["Removed permanently", "Removed", "Changed", "Added"]
-    assert (history[0].name, history[0].orcid) == ("Julia Meerman", ORCID)
+    assert (history[0].name, history[0].orcid) == ("Test Editor", ORCID)
     assert '"name": "Y"' in history[2].document
+    assert '"name": "X"' in history[2].previous
