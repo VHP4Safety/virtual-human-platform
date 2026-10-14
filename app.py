@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import secrets
 import time
 
 import nh3
@@ -12,12 +13,14 @@ from flask import Flask, abort, jsonify, render_template, request, Response
 from flask_caching import Cache
 from jinja2 import TemplateNotFound
 from markupsafe import Markup
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BaseConverter
 
 # Import BioStudies extractor
 from data.biostudies.search import BioStudiesExtractor
 from data.zenodo.search import ZenodoExtractor
 from data.mapping import normalize_all, scrub_draft
+from linkeddata.accounts import blueprint as account_blueprint
 from linkeddata.api import blueprint as api_blueprint
 
 ################################################################################
@@ -114,7 +117,13 @@ cache_config = {
     "CACHE_DEFAULT_TIMEOUT": CACHE_TIMEOUT,  # 60 min chaching
 }
 app = Flask(__name__)
+# The reverse proxy tells the app the scheme and host it was reached at, for the ORCID login.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.config.from_mapping(cache_config)
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLASK_DEBUG") != "1"
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.register_blueprint(account_blueprint)
 app.register_blueprint(api_blueprint)
 # Google Search Console verification token (rendered as a <meta> tag in
 # base.html when set). Kept out of the repo -- set it in the service env.

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <h1 class="h3">Write tokens</h1>
+  <p>Logged in with ORCID as {{ session.name }} ({{ session.orcid }}). <a href="/logout/">Log out</a></p>
+
+  {% if not editor %}
+  <div class="alert alert-info">Your ORCID iD is not on the list of editors of the platform.</div>
+  {% else %}
+  {% if secret %}
+  <div class="alert alert-warning">
+    <p class="mb-1">Your new token. Copy it now: it is not shown again.</p>
+    <code class="user-select-all">{{ secret }}</code>
+  </div>
+  {% endif %}
+
+  <form method="post" class="card card-body mb-4">
+    <input type="hidden" name="form_token" value="{{ form_token }}">
+    <p class="mb-2">A token writes records of these kinds through the API:</p>
+    {% for kind in kinds %}
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" name="kinds" value="{{ kind }}" id="kind-{{ kind }}">
+      <label class="form-check-label" for="kind-{{ kind }}">{{ kind }}</label>
+    </div>
+    {% endfor %}
+    <label class="form-label mt-2" for="days">Valid for (days)</label>
+    <input class="form-control mb-3" type="number" min="1" max="365" name="days" id="days" value="{{ days }}">
+    <button type="submit" class="btn btn-primary">Create token</button>
+  </form>
+
+  <table class="table">
+    <thead><tr><th>Token</th><th>Kinds</th><th>Created</th><th>Expires</th><th>Last used</th><th></th></tr></thead>
+    <tbody>
+      {% for token in tokens %}
+      <tr>
+        <td><code>{{ token.prefix }}…</code></td>
+        <td>{{ token.kinds }}</td>
+        <td>{{ token.created_at[:10] }}</td>
+        <td>{{ token.expires_at[:10] }}</td>
+        <td>{{ (token.last_used_at or "")[:16] }}</td>
+        <td>
+          {% if token.revoked_at %}revoked{% else %}
+          <form method="post" action="/account/tokens/{{ token.id }}/revoke/">
+            <input type="hidden" name="form_token" value="{{ form_token }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}
