@@ -80,3 +80,10 @@ def test_dashboards(site):
     page = site.get("/sources").data.decode()
     assert "Julia Meerman" in page
     assert ORCID in page
+
+
+def test_sitemap_leaves_out_the_pages_for_editors(site):
+    sitemap = site.get("/sitemap.xml").data.decode()
+    assert "/data-quality<" in sitemap
+    assert "/login/orcid" not in sitemap
+    assert "/account/tokens" not in sitemap
