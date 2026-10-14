@@ -15,11 +15,14 @@ RUN apt-get update && apt-get install -y \
 # Set the working directory in the container
 WORKDIR /usr/src/app
 
+# Install any needed packages specified in requirements.txt; they are installed before the code is
+# copied, so that a change to the code does not install them again
+COPY requirements.txt requirements.txt
+COPY linkeddata/requirements.txt linkeddata/requirements.txt
+RUN pip install -r requirements.txt -r linkeddata/requirements.txt
+
 # Copy the current directory contents into the container at /usr/src/app
 COPY . .
-
-# Install any needed packages specified in requirements.txt
-RUN pip install -r requirements.txt -r linkeddata/requirements.txt
 
 # Copy entrypoint script
 COPY entrypoint.sh /usr/src/app/entrypoint.sh
