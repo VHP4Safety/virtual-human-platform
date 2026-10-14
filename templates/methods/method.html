@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="/static/css/tool.css" />
 <link rel="stylesheet" property="stylesheet" href="https://elixirtess.github.io/TeSS_widgets/css/tess-widget.css"/>
 <!-- Terminology Service Suite CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ts4nfdi/terminology-service-suite@gh-pages/js-modules/latest/terminology-service-suite.min.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ts4nfdi/terminology-service-suite@3298f2d4c938b8a108ef8dd32b8baa6dfaeba33c/js-modules/latest/terminology-service-suite.min.css" integrity="sha384-CRw3xuZVsoeRqhmRBujMUtmHrdhRKj9esQLPz1mmaQOMSZyz4lVGvR5xTTbB6vfj" crossorigin="anonymous"/>
 
 <!-- Bioschemas / schema.org annotation -->
 <script type="application/ld+json">
@@ -228,7 +228,7 @@
         <div id="bibliography">
           <p><a href="{{ doi_url }}" target="_blank" class="text-primary">{{ doi }}</a></p>
         </div>
-        <script src="https://cdn.jsdelivr.net/npm/citation-js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/citation-js@0.9.0" integrity="sha384-wop5NlY7ORa1+WSchJbyKhM2UGNF+nuCoelh0sH4SAaS31ho6ehlpFyULYk/Q9dC" crossorigin="anonymous"></script>
         <script>
         (function() {
           var Cite = require('citation-js');
@@ -330,7 +330,7 @@ function initTeSSWidgets() {
 <!-- Terminology Service Suite -->
 {% set ontology_iri_script = (method_json.get('ontology_term_content') or method_details.get('ontology_term_content') or '') %}
 {% if ontology_iri_script and ontology_iri_script.startswith('http') %}
-<script src="https://cdn.jsdelivr.net/gh/ts4nfdi/terminology-service-suite@gh-pages/js-modules/latest/terminology-service-suite.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/ts4nfdi/terminology-service-suite@3298f2d4c938b8a108ef8dd32b8baa6dfaeba33c/js-modules/latest/terminology-service-suite.min.js" integrity="sha384-y/NCSfOa5MId2pwU2uZSe53yVaT15IFlFEtMv8VA1SuJSSImNZGfL0PUy4Dblj3o" crossorigin="anonymous"></script>
 <script src="/static/js/ontology_widget.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
