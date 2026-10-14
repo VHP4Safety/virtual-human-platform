@@ -43,11 +43,15 @@ Each module has one concern:
 | `records.py` | reading records, and writing them on the platform with their revisions |
 | `imports.py` | the sources: fetched, converted and checked with rdfsolve, and stored as records |
 | `export.py` | the records written on the platform, exported to a git repository |
+| `forms.py` | the editor's form of a class, read from the SHACL shapes and the application profile |
 | `pages.py` | the address of each record: its data, 410 Gone once removed, a general record page |
+| `changes.py` | the `/changes` pages: each change field by field, and as RDF statements |
 | `dashboards.py` | the `/data-quality` and `/sources` pages |
 | `api.py` | the write API |
-| `tokens.py`, `accounts.py` | write tokens, and the ORCID login of editors |
-| `model.py`, `model/v1/` | the model |
+| `images.py` | uploaded images: checked, saved again as WebP, and served |
+| `admin.py` | the record editor, a form that writes and removes records through the write API |
+| `tokens.py`, `accounts.py` | write tokens, and the login of editors (ORCID, or a write token) |
+| `model.py`, `model/v1/` | the model and the application profile |
 | `parsers/`, `lift.py`, `sources/` | how each source becomes the model |
 
 ## The database
@@ -55,8 +59,9 @@ Each module has one concern:
 | Table | Holds |
 |---|---|
 | `records` | one row per record, by its address (`iri`), with its class, its source (or `platform`), and one column per field |
-| `revisions` | every change made on the platform: the record in JSON-LD, who made it (name and ORCID iD) and when |
+| `revisions` | every change made on the platform: the record in JSON-LD before and after, who made it (name and ORCID iD) and when |
 | `tokens` | the write tokens (only the hash of each secret) |
+| `images` | the images uploaded to the platform, by the SHA-256 of their file, with who uploaded them |
 | `sources` | for each source: its address, when it was fetched, its checksum, and the CONSTRUCT queries that convert it |
 | `notes` | the values of the sources that do not fit the model, found by rdfsolve's checks; they are left out of the records |
 
@@ -64,6 +69,21 @@ The columns of `records` are fields of the model, named as rdfsolve names them (
 `dct:conformsTo`); a field with several values is a JSON column. `rdf.py` asks rdfsolve which columns
 are fields of a record's class, so to keep a new field it is enough to add its column in
 `database.py` (and to an existing database with `ALTER TABLE records ADD COLUMN ...`).
+
+## The application profile
+
+`model/v1/profile.ttl` is the platform's application profile, written in SHACL. It says what the
+platform asks of its records beyond schema.org and Bioschemas: which fields are required
+(`sh:minCount`), which take one value (`sh:maxCount`), and which value the platform sets itself
+(`sh:hasValue`, such as the Bioschemas profile of tools). Each write is checked against it with
+pyshacl, after rdfsolve has checked the type of each value, and a refused write says what is wrong
+with each field, in the words of the profile's `sh:message`.
+
+The same profile leads the editor's form (`forms.py`): `sh:order`, `sh:name` and `sh:description`
+place, name and explain each field, and `dash:singleLine false` asks for a longer text. What an
+editor enters follows from the model: a text, a web address, a choice of the records that a field
+links to (as checkboxes, grouped by the source of those records), or an image to upload. A field that
+the profile does not describe is explained by the vocabulary. To change the form, change the profile.
 
 ## The parts of an import
 
@@ -73,8 +93,8 @@ are fields of a record's class, so to keep a new field it is enough to add its c
   for what a parser returns.
 - **`lift.py`**: turns clean rows into RDF in the source's own vocabulary (a JSON-LD `@vocab`),
   until rdfsolve reads JSON with a context itself.
-- **`sources/<name>.yaml`**: where a source comes from, its parser, and its rules: how its rows
-  become the model. The rules are the arguments of rdfsolve's `Rule.between`, one list per kind of
+- **`sources/<name>.yaml`**: where a source comes from (a `url`, or several named `files`), its
+  title, its parser, and its rules: how its rows become the model. The rules are the arguments of rdfsolve's `Rule.between`, one list per kind of
   row; rdfsolve finds the fields by name and writes the CONSTRUCT queries. A source that is sent to
   the platform instead of fetched (`toxtemp.yaml`) has no `url` and no parser; its `kinds` name the
   kind of the objects under each key of its documents.
@@ -107,27 +127,37 @@ rules:
 
 Tools (the kinds listed under `writable` in `model/v1/model.yaml`) are written through the API with a
 write token, as with ToxTempAssistant's workspace tokens. rdfsolve checks each record against the
-model, and the record and its revision are saved at once, so its page shows it straight away.
+model and the application profile, and the record and its revision are saved at once, so its page
+shows it straight away. Every answer gives the address of the record and of its change.
 
 ```
 PUT    /api/tools/aop-builder                  create or replace (the whole record)
 POST   /api/tools                              create; the identifier is made from the name
 DELETE /api/tools/aop-builder                  remove; the address answers 410 Gone and is not given again
 DELETE /api/tools/aop-builder?permanent=true   remove the record and its address
+POST   /api/images                             upload an image (form field "image"); gives its address
 ```
 
 ```
 curl -X PUT https://platform.vhp4safety.nl/api/tools/aop-builder \
      -H "Authorization: Bearer vhp_..." -H "Content-Type: application/json" \
-     -d '{"name": "AOP-Builder", "url": {"@id": "https://github.com/VHP4Safety/aop-builder"}}'
+     -d '{"name": "AOP-Builder", "description": "Builds AOPs from the literature.",
+          "url": {"@id": "https://github.com/VHP4Safety/aop-builder"}}'
 ```
 
-The record's data is at its address: `/tools/aop-builder.jsonld`, `.ttl` or `.nt`, or with the
-`Accept` header.
+A refused record is answered with `422` and what is wrong with each field:
+`{"error": "...", "fields": {"url": ["Add the address of the tool's website."]}}`. Only web addresses
+(`https://` or `http://`) are kept as links. An uploaded image is read in full, made at most 2000
+pixels wide, and saved again as WebP; other files are refused.
 
-Editors log in with ORCID at `/login/orcid/` and make tokens at `/account/tokens/`; the first token
-can be made with `python -m linkeddata token <ORCID iD> "<name>" tools`. The settings are environment
-variables:
+The record's data is at its address: `/tools/aop-builder.jsonld`, `.ttl` or `.nt`, or with the
+`Accept` header. Its changes are at `/changes?record=<address>`.
+
+The record editor, `/admin/`, writes with a form through the same API. Editors log in at `/login/`,
+with ORCID or with a write token; the editor's requests carry the session's form token in the
+`X-Form-Token` header, so that other sites cannot make them. Editors who logged in with ORCID make
+tokens at `/account/tokens/`; the first token can be made with
+`python -m linkeddata token <ORCID iD> "<name>" tools`. The settings are environment variables:
 
 | Variable | Meaning |
 |---|---|
