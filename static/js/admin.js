@@ -693,9 +693,9 @@
     record.version = result.answer.version;
     setUnsaved(false);
     open(record);
-    const repeated = Object.keys(result.answer.warnings || {}).length > 0;
-    toast(repeated
-      ? "Saved. Another " + one + " has the same name or website; check that this is not a duplicate."
+    const recommended = Object.keys(result.answer.warnings || {}).length > 0;
+    toast(recommended
+      ? "Saved. Some recommended fields are empty; the form shows which."
       : "Saved. The " + one + "'s page shows it now.", true, { text: "See the change", href: result.answer.change });
   });
 
