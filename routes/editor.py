@@ -42,6 +42,7 @@ def edit(kind: str):
         kinds=list(settings()["kinds"]),
         records=listed,
         selected=selected,
+        base=settings()["base"],
         record=record,
         shape=editor.root_shape(kind),
         form_token=form_token(),

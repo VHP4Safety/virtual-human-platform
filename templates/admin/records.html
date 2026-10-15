@@ -8,23 +8,34 @@
       <li class="nav-item"><a class="nav-link{% if other == kind %} active bg-vhppurple{% else %} link-vhppurple{% endif %}" href="{{ url_for('admin.edit', kind=other) }}">{{ other|capitalize }}</a></li>
       {% endfor %}
     </ul>
+    <span class="flex-grow-1"></span>
+    <div class="form-check form-switch mb-0" title="Shows the statements that saving will publish, next to the form">
+      <input class="form-check-input" type="checkbox" role="switch" id="show-rdf">
+      <label class="form-check-label small" for="show-rdf">Linked data</label>
+    </div>
   </div>
-  <div class="row g-4">
-    <aside class="col-lg-3">
-      <form class="input-group input-group-sm mb-3" method="get">
-        <span class="input-group-text">/{{ kind }}/</span>
-        <input class="form-control" name="new" required pattern="[a-z0-9][a-z0-9_\-]*" placeholder="new-record" aria-label="The address of a new record">
-        <button class="btn btn-vhpblue"><i class="bi bi-plus-lg"></i> Add</button>
-      </form>
-      <div class="list-group small">
-        {% for item in records %}
-        <a class="list-group-item list-group-item-action{% if item.iri == selected %} active{% endif %}" href="?record={{ item.iri|urlencode }}">
-          {{ item.name or item.iri }}{% if item.removed_at %} <span class="badge text-bg-secondary">removed</span>{% endif %}
-        </a>
-        {% endfor %}
+
+  <div class="editor-layout" id="layout">
+    <aside id="list-column">
+      <div class="card">
+        <div class="card-body p-2">
+          <form class="input-group input-group-sm mb-2" method="get">
+            <span class="input-group-text">/{{ kind }}/</span>
+            <input class="form-control" name="new" required pattern="[a-z0-9][a-z0-9_\-]*" placeholder="new-record" aria-label="The address of a new record">
+            <button class="btn btn-vhpblue"><i class="bi bi-plus-lg"></i> Add</button>
+          </form>
+          <div class="list-group list-group-flush record-list small">
+            {% for item in records %}
+            <a class="list-group-item list-group-item-action{% if item.iri == selected %} active{% endif %}" href="?record={{ item.iri|urlencode }}">
+              {{ item.name or item.iri }}{% if item.removed_at %} <span class="badge text-bg-secondary">removed</span>{% endif %}
+            </a>
+            {% endfor %}
+          </div>
+        </div>
       </div>
     </aside>
-    <section class="col-lg-9">
+
+    <div id="main-column">
       {% if selected %}
       <div class="d-flex flex-wrap gap-2 mb-3">
         <code class="me-auto align-self-center">{{ selected }}</code>
@@ -41,20 +52,36 @@
       </div>
       <div class="alert d-none" id="message" role="status"></div>
       {% if not record or not record.removed_at %}
-      <shacl-form data-shapes-url="{{ url_for('admin.form') }}" data-shape-subject="{{ shape }}"
-                  {% if record %}data-values-url="{{ url_for('api.read', graph=selected) }}"{% endif %}
-                  data-values-subject="{{ selected }}" data-generate-node-shape-reference="" data-collapse="open"
-                  data-submit-button="Save"></shacl-form>
-      <details class="mt-4">
-        <summary class="text-vhppurple">Linked data</summary>
-        <pre class="small bg-white border rounded p-3" id="turtle"></pre>
-      </details>
+      <div class="card"><div class="card-body">
+        <shacl-form data-shapes-url="{{ url_for('admin.form') }}" data-shape-subject="{{ shape }}"
+                    {% if record %}data-values-url="{{ url_for('api.read', graph=selected) }}"{% endif %}
+                    data-values-subject="{{ selected }}" data-generate-node-shape-reference="" data-collapse="open"
+                    data-submit-button="Save"></shacl-form>
+      </div></div>
       {% endif %}
+      {% else %}
+      <p class="text-secondary">Choose a record, or add one with its address.</p>
       {% endif %}
-    </section>
+    </div>
+
+    <aside class="d-none" id="rdf-column">
+      <div class="card rdf-preview">
+        <div class="card-header bg-white">
+          <div class="fw-semibold">Linked data</div>
+          <div class="small text-secondary" id="rdf-caption"></div>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-danger small py-2 d-none"><div class="fw-semibold mb-1">Not ready to save</div><ul class="mb-0 ps-3" id="rdf-problems"></ul></div>
+          <div class="alert alert-warning small py-2 d-none"><div class="fw-semibold mb-1">Check before saving</div><ul class="mb-0 ps-3" id="rdf-warnings"></ul></div>
+          <div id="rdf-graph"></div>
+          <p class="small text-secondary mb-0 mt-3">Each arrow is a statement that the platform publishes about this record. Green ones are added when you save, red ones removed.
+            {% if record and not record.removed_at %}<a class="link-secondary" href="{{ url_for('api.read', graph=selected) }}" target="_blank" rel="noopener">The published data</a>{% endif %}</p>
+        </div>
+      </div>
+    </aside>
   </div>
 </div>
-<script type="application/json" id="editor">{{ {"graph": selected, "version": record.updated_at if record else none, "token": form_token}|tojson }}</script>
+<script type="application/json" id="editor">{{ {"graph": selected, "base": base, "version": record.updated_at if record else none, "token": form_token}|tojson }}</script>
 <script type="module" src="https://cdn.jsdelivr.net/npm/@ulb-darmstadt/shacl-form@3.7.3/dist/bundle.js"></script>
 <script src="{{ url_for('static', filename='js/editor.js') }}"></script>
 {% endblock %}
