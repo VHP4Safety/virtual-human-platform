@@ -11,13 +11,14 @@ from functools import cache
 import pandas as pd
 import pyshacl
 from rdflib import RDF, Graph, Literal, URIRef
+from rdfsolve.client.authoring import RecordError
 from rdflib.namespace import SH
 from sqlalchemy import JSON, select
 
 from linkeddata import database
 from linkeddata.database import Record
 from linkeddata.document import compact
-from linkeddata.model import contract_client, profile, property_shapes, settings
+from linkeddata.model import contract_client, profile, settings
 
 
 class NotFitting(ValueError):
@@ -43,34 +44,6 @@ def fields(kind: str) -> pd.DataFrame:
     "values" lists the datatypes of their texts, and "links" tells whether they take addresses."""
     known = client().fields(client().model(kind)).set_index("field")
     return known.loc[known.index.intersection(Record.__table__.columns.keys())]
-
-
-@cache
-def addresses(kind: str) -> set[str]:
-    """The fields of *kind* that the application profile fills with web addresses only (sh:nodeKind sh:IRI).
-    Their values are given to rdfsolve as addresses, which a field such as citation (a text or a work)
-    would otherwise not tell from texts."""
-    known = fields(kind)
-    found = set()
-    for path, nodes in property_shapes(profile(), kind).items():
-        for node in nodes:
-            if profile().value(node, SH.nodeKind) == SH.IRI:
-                for field in known.index:
-                    if known.loc[field, "property"] == path:
-                        found.add(field)
-    return found
-
-
-def as_address(value):
-    """A web address as an address; other values stay texts, which the profile then refuses."""
-    if isinstance(value, list):
-        found = []
-        for item in value:
-            found.append(as_address(item))
-        return found
-    if isinstance(value, str) and value.startswith(("https://", "http://")):
-        return URIRef(value)
-    return value
 
 
 def several(field: str) -> bool:
@@ -127,17 +100,15 @@ def rows(results, kind: str, source: str) -> list[dict]:
 
 
 def linked(table: pd.DataFrame) -> Graph:
-    """The rows of a table as linked data; rdfsolve raises ValueError for a row that does not fit."""
+    """The rows of a table as linked data; rdfsolve raises RecordError for the values that do not fit.
+    A web address is a link in a field that takes links."""
     graph = Graph()
     for kind, rows_of_kind in table.groupby("type"):
-        rows_of_kind = rows_of_kind.copy()
         taken = {}
         for field in fields(kind).index:
             if field in rows_of_kind.columns:
                 taken[field] = field
-                if field in addresses(kind):
-                    rows_of_kind[field] = rows_of_kind[field].map(as_address)
-        graph += client().to_graph(client().from_table(kind, rows_of_kind, id_column="iri", **taken))
+        graph += client().to_graph(client().from_table(kind, rows_of_kind, id_column="iri", iri_strings=True, **taken))
     for prefix, namespace in settings()["prefixes"].items():
         graph.bind(prefix, namespace)
     return graph
@@ -158,16 +129,11 @@ def checked(new: dict) -> tuple[Graph | None, dict[str, list[str]], dict[str, li
     single and fixed values); results of sh:Warning severity are recommendations."""
     try:
         found = linked(pd.DataFrame([new]))
-    except ValueError:
+    except RecordError as error:
         problems = {}
-        for field in fields(new["type"]).index:
-            if not new.get(field):
-                continue
-            try:
-                linked(pd.DataFrame([{"iri": new["iri"], "type": new["type"], field: new[field]}]))
-            except ValueError as problem:
-                reason = str(problem.__cause__ or problem).removeprefix(field + ": ").splitlines()[0]
-                problems[field] = [f"This value does not fit the field ({reason})."]
+        for problem in error.problems:
+            reason = problem["reason"].removeprefix(f"{problem['field']}: ").splitlines()[0]
+            problems.setdefault(problem["field"] or "iri", []).append(f"This value does not fit the field ({reason}).")
         return None, problems, {}
     problems = {}
     warnings = {}
