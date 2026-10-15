@@ -5,8 +5,7 @@
 # sh:Warning: missing it is pointed out, but does not stop a save), sh:hasValue a fixed value,
 # sh:nodeKind sh:IRI and sh:pattern a web address of a given form, dash:singleLine false a longer
 # text, and dash:editor dash:URIEditor a list of web addresses. sh:message is what an editor reads when
-# a value is missing or does not fit. dash:uniqueValueForClass asks for a value that no other record of
-# the class has; the platform warns about it rather than refusing, as two tools can share a website.
+# a value is missing or does not fit.
 # dash:InstancesSelectEditor offers the records a field can link to: those of the classes it names with
 # sh:class (or sh:or) and the terms of the vocabularies it lists with sh:in, or else those that records
 # already link to in it. dash:DetailsEditor takes pages with their titles, sh:in lists the values a field
@@ -35,7 +34,6 @@ form:elsewhere a sh:PropertyGroup ; sh:order 5 ; rdfs:label "Elsewhere on the we
     rdfs:comment "Tools state the Bioschemas profile they follow (ComputationalTool)." ;
     sh:property [
         sh:path schema:name ; sh:group form:about ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ;
-        dash:uniqueValueForClass schema:SoftwareApplication ;
         sh:description "The tool's name as its developers write it." ;
         sh:message "Give the tool a name." ] ;
     sh:property [
@@ -46,7 +44,6 @@ form:elsewhere a sh:PropertyGroup ; sh:order 5 ; rdfs:label "Elsewhere on the we
     sh:property [
         sh:path schema:url ; sh:group form:about ; sh:order 3 ; sh:name "Website" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:severity sh:Warning ;
-        dash:uniqueValueForClass schema:SoftwareApplication ;
         sh:description "The tool's website or documentation." ;
         sh:message "A website helps people find the tool; add it when the tool has one." ] ;
     sh:property [

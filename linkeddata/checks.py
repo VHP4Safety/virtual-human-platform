@@ -10,8 +10,8 @@ from sqlalchemy import select
 
 import database
 from database.tables import Record
-from linkeddata import documents, storage
-from linkeddata.model import DASH, hierarchy, property_shapes, settings, shapes
+from linkeddata import documents
+from linkeddata.model import hierarchy, shapes
 
 # What breaking each SHACL constraint means for a curator, by the name of the constraint.
 CONSTRAINTS = {
@@ -121,29 +121,4 @@ def check(new: dict) -> Graph:
     found, problems, _ = checked(new)
     if problems:
         raise NotFitting(problems)
-    return found
-
-
-def duplicates(new: dict, kind: str) -> dict[str, list[str]]:
-    """The fields whose value another record of the class already has, where the model asks for a
-    value that no other record has (dash:uniqueValueForClass)."""
-    every = shapes()
-    unique = []
-    for path, nodes in property_shapes(every, kind).items():
-        for node in nodes:
-            if every.value(node, DASH.uniqueValueForClass) is not None:
-                unique.append(documents.term(path))
-    found = {}
-    with database.session() as db:
-        others = list(db.scalars(select(Record).where(Record.type == kind, Record.iri != new["@id"], Record.removed_at.is_(None))))
-    theirs = storage.read([other.iri for other in others])
-    for field in unique:
-        given = documents.values(new, field)
-        if not given or not isinstance(given[0], str):
-            continue
-        for other in others:
-            if given[0].lower() in [value.lower() for value in documents.stored_values(theirs, other.iri, field)]:
-                path_of_other = "/" + other.iri.removeprefix(settings()["base"])
-                found.setdefault(field, []).append(f"{other.name or other.iri} ({path_of_other}) has the same value; check that this is not a duplicate.")
-                break
     return found

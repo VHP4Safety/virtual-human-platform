@@ -332,7 +332,7 @@ def store(kind: str, identifier: str, replace: bool = True):
     document = documents.document(found, address)
     revision = writes.save(document, writable[kind], token.name, token.orcid, replace)
     writes.name_things(writes.titled(writable[kind], body))
-    return done(address, revision, 201 if revision.action == "Added" else 200, writes.together(warnings, checks.duplicates(document, writable[kind])))
+    return done(address, revision, 201 if revision.action == "Added" else 200, warnings)
 
 
 def preview(address: str, kind: str, body: dict):
@@ -344,7 +344,7 @@ def preview(address: str, kind: str, body: dict):
         return error(str(problem), 422)
     before = changes.statements(documents.document_of(address))
     edges = changes.edges(before, found, URIRef(address))
-    return jsonify({**edges, "fields": problems, "warnings": writes.together(warnings, checks.duplicates(new, kind))})
+    return jsonify({**edges, "fields": problems, "warnings": warnings})
 
 
 @blueprint.put("/api/<kind>/<identifier>")

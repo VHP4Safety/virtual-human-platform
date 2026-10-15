@@ -82,15 +82,6 @@ def slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:60] or "record"
 
 
-def together(*found: dict[str, list[str]]) -> dict[str, list[str]]:
-    """The messages of several checks, by field."""
-    joined = {}
-    for messages in found:
-        for field, listed in messages.items():
-            joined.setdefault(field, []).extend(listed)
-    return joined
-
-
 def name_things(found: list[tuple[str, str, str]]) -> None:
     """The things a record links to with their titles, such as its guides: (class, address, name).
     A thing the platform does not know yet is added; a known one takes the new name."""
