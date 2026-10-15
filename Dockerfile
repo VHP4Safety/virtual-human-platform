@@ -24,6 +24,9 @@ RUN pip install -r requirements.txt -r linkeddata/requirements.txt
 # Copy the current directory contents into the container at /usr/src/app
 COPY . .
 
+# The build fails when the vocabularies or the files generated from the model are not those of its release
+RUN python -m linkeddata check
+
 # Copy entrypoint script
 COPY entrypoint.sh /usr/src/app/entrypoint.sh
 RUN chmod +x /usr/src/app/entrypoint.sh

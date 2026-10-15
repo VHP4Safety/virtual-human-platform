@@ -35,10 +35,23 @@ def vocabularies(config: dict) -> list[Path]:
     return files
 
 
-def download_vocabularies() -> list[str]:
-    """The missing vocabulary files are downloaded from their pinned addresses. What does not match its
-    SHA-256 in model.yaml is given back."""
+def pinned_problems() -> list[str]:
+    """The vocabulary files that are missing, or that do not match their SHA-256 in model.yaml."""
     problems = []
+    for name, pinned in settings()["vocabularies"].items():
+        path = MODEL_DIR / "vocabularies" / name
+        if not path.exists():
+            problems.append(f"The vocabulary {path} is missing: run python -m linkeddata model.")
+            continue
+        found = hashlib.sha256(path.read_bytes()).hexdigest()
+        if found != pinned.get("sha256"):
+            problems.append(f"{path} has SHA-256 {found}, where model.yaml pins {pinned.get('sha256')}.")
+    return problems
+
+
+def download_vocabularies() -> list[str]:
+    """The missing vocabulary files are downloaded from their pinned addresses; what does not match its
+    SHA-256 in model.yaml is given back."""
     for name, pinned in settings()["vocabularies"].items():
         path = MODEL_DIR / "vocabularies" / name
         if not path.exists():
@@ -46,19 +59,31 @@ def download_vocabularies() -> list[str]:
             response.raise_for_status()
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(response.content)
-        found = hashlib.sha256(path.read_bytes()).hexdigest()
-        if found != pinned.get("sha256"):
-            problems.append(f"{path} has SHA-256 {found}, where model.yaml pins {pinned.get('sha256')}.")
-    return problems
+    return pinned_problems()
+
+
+def approved_schema() -> dict:
+    """The approved schema, as the vocabularies and the profile give it."""
+    config = settings()
+    return MinedSchema.from_vocabulary(vocabularies(config), config["classes"], profile=MODEL_DIR / "profile.ttl").to_dict()
 
 
 def write_schema() -> Path:
-    """The approved schema is generated from the vocabularies and the profile."""
-    config = settings()
-    schema = MinedSchema.from_vocabulary(vocabularies(config), config["classes"], profile=MODEL_DIR / "profile.ttl")
     path = MODEL_DIR / "schema.json"
-    path.write_text(json.dumps(schema.to_dict(), indent=1) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(approved_schema(), indent=1) + "\n", encoding="utf-8")
     return path
+
+
+def schema_problems() -> list[str]:
+    """Whether schema.json is the approved schema that the vocabularies and the profile give; the
+    identifier and the times of the run that wrote it are not compared."""
+    made = approved_schema()["schema"]
+    kept = json.loads((MODEL_DIR / "schema.json").read_text(encoding="utf-8"))["schema"]
+    made.pop("about", None)
+    kept.pop("about", None)
+    if made != kept:
+        return [f"{MODEL_DIR / 'schema.json'} is not what the vocabularies and profile.ttl give: run python -m linkeddata model, review the change and commit it."]
+    return []
 
 
 @cache

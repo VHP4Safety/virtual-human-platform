@@ -27,7 +27,7 @@ def names() -> list[str]:
     return list(layout(profile()).columns())
 
 
-def generate() -> str:
+def sql() -> str:
     """The tables of the release, as SQL: a node's address is the key of the table of its class."""
     statements = []
     with sqlite3.connect(":memory:") as connection:
@@ -38,9 +38,20 @@ def generate() -> str:
             statements.append(schema.replace("CREATE TABLE", "CREATE TABLE IF NOT EXISTS", 1) + ";")
             if several:
                 statements.append(f'CREATE INDEX IF NOT EXISTS "{name}__iri" ON "{name}" (iri);')
+    return "\n\n".join(statements) + "\n"
+
+
+def generate() -> str:
     database.TABLES.parent.mkdir(parents=True, exist_ok=True)
-    database.TABLES.write_text("\n\n".join(statements) + "\n", encoding="utf-8")
+    database.TABLES.write_text(sql(), encoding="utf-8")
     return str(database.TABLES)
+
+
+def problems() -> list[str]:
+    """Whether the release's SQL is what the profile gives."""
+    if not database.TABLES.exists() or database.TABLES.read_text(encoding="utf-8") != sql():
+        return [f"{database.TABLES} is not what profile.ttl gives: run python -m linkeddata model, review the change and commit it."]
+    return []
 
 
 def delete(db, record: str) -> None:

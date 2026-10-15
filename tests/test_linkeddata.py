@@ -9,7 +9,7 @@ import database
 from admin import writes
 from database import records
 from database.tables import Note, Source
-from linkeddata import forms, imports, rdf
+from linkeddata import forms, imports, model, rdf, tables
 from linkeddata.model import settings
 
 BASE = "https://platform.vhp4safety.nl/"
@@ -27,6 +27,7 @@ def test_rdf():
 
 
 def test_forms():
+    assert model.pinned_problems() + model.schema_problems() + tables.problems() == []
     for kind in settings()["classes"]:
         for field in forms.form(kind):
             assert field["label"] and field["entry"], (kind, field["name"])

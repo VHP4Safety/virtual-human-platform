@@ -1,6 +1,8 @@
 """The linked data of the platform.
 
     python -m linkeddata model                  generate the approved schema of the model and its tables
+    python -m linkeddata check                  check that the generated files, the vocabularies and the
+                                                database are those of the model's release
     python -m linkeddata import                 import every source into the database
     python -m linkeddata export                 write the records made on the platform to the records repository
     python -m linkeddata push                   send the records repository to its remote
@@ -16,12 +18,12 @@ from admin import tokens
 from database import export
 from linkeddata import tables
 from linkeddata.imports import import_all
-from linkeddata.model import download_vocabularies, write_schema
+from linkeddata.model import RELEASE, download_vocabularies, pinned_problems, schema_problems, write_schema
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m linkeddata", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=["model", "import", "export", "push", "backup", "token"])
+    parser.add_argument("command", choices=["model", "check", "import", "export", "push", "backup", "token"])
     parser.add_argument("arguments", nargs="*", help="token: the ORCID iD, the name, and the kinds it may write")
     parser.add_argument("--days", type=int, default=tokens.DEFAULT_DAYS, help="how long a new token is valid")
     args = parser.parse_args()
@@ -33,6 +35,17 @@ def main() -> None:
             sys.exit(1)
         print(f"Wrote {write_schema()}")
         print(f"Wrote {tables.generate()}")
+    elif args.command == "check":
+        problems = pinned_problems()
+        if not problems:
+            problems = schema_problems() + tables.problems()
+        if not problems and (database.STATE_DIR / "platform.sqlite").exists():
+            problems = database.differences(database.STATE_DIR / "platform.sqlite")
+        for problem in problems:
+            print(problem, file=sys.stderr)
+        if problems:
+            sys.exit(1)
+        print(f"The vocabularies, the generated files and the database are those of release {RELEASE}.")
     elif args.command == "import":
         problems = import_all()
         for problem in problems:

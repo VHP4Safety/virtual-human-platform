@@ -27,6 +27,12 @@ python -m linkeddata import     # fetches, converts and checks every source, and
 python -m pytest tests          # checks the parts on small inputs, offline
 ```
 
+`python -m linkeddata check` fails when a vocabulary file is not the pinned one, when `schema.json` or
+`database/v1/tables.sql` is not what the vocabularies and `profile.ttl` give (after a change to the
+profile, run `python -m linkeddata model`, review the change and commit it), or when the database's
+tables are not those of the model's release. The Docker build runs it, and so does the container
+before it starts the platform.
+
 `import`, then `export` and `push`, are meant to run every night, for example with cron on the host:
 
 ```
