@@ -2,7 +2,7 @@
 
 import io
 import json
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote, urlparse
 
 from PIL import Image as Picture
 
@@ -70,6 +70,15 @@ def test_api(site):
     picture.seek(0)
     image = site.post("/api/images", data={"image": (picture, "logo.png")}, headers=bearer).json["@id"]
     assert "immutable" in site.get(image.removeprefix(BASE[:-1])).headers["Cache-Control"]
+
+
+def test_reads(site):
+    add_records()
+    page = site.get(f"/api/tools?about={quote(STEP)}").json
+    assert [member["@id"] for member in page["hydra:member"]] == [BASE + "tools/t"]
+    assert page["hydra:member"][0]["about"] == [{"@id": STEP}]
+    assert site.get("/api/tools?nothing=1").status_code == 400
+    assert site.get("/api/openapi.json").json["paths"]["/api/tools/{identifier}"]["put"]["security"] == [{"token": []}]
 
 
 def test_pages(site):

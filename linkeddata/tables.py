@@ -10,9 +10,10 @@ from functools import cache
 import pandas as pd
 from rdflib import Graph
 from rdfsolve.client.sql_tables import from_tables, layout, tables
-from sqlalchemy import bindparam, text
+from sqlalchemy import bindparam, column, or_, select, table, text
 
 import database
+from database.tables import Record
 from linkeddata.model import MODEL_DIR
 
 
@@ -25,6 +26,24 @@ def profile() -> Graph:
 @cache
 def names() -> list[str]:
     return list(layout(profile()).columns())
+
+
+def having(kind: str, path: str, values: list[str]):
+    """The condition that a record of the class *kind* has one of *values* in the field of the property *path*,
+    wherever the tables keep it: in the column of a single field, in the values table of the class, or among
+    the statements that are not fields of a class."""
+    conditions = []
+    found = layout(profile()).classes.get(kind)
+    if found is not None and path in found.single:
+        name = found.single[path]
+        own = table(found.name, column("iri"), column(name))
+        conditions.append(Record.iri.in_(select(own.c.iri).where(own.c[name].in_(values))))
+    if found is not None and path in found.fields():
+        several = table(found.name + "__values", column("iri"), column("field"), column("value"))
+        conditions.append(Record.iri.in_(select(several.c.iri).where(several.c.field == found.fields()[path], several.c.value.in_(values))))
+    rest = table("statements", column("iri"), column("property"), column("value"))
+    conditions.append(Record.iri.in_(select(rest.c.iri).where(rest.c.property == path, rest.c.value.in_(values))))
+    return or_(*conditions)
 
 
 def sql() -> str:

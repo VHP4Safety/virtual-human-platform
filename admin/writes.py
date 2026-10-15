@@ -74,6 +74,10 @@ def titled(kind: str, body: dict) -> list[tuple[str, str, str]]:
     return found
 
 
+# The identifier of a record written on the platform, the last part of its address.
+IDENTIFIER = re.compile(r"[a-z0-9][a-z0-9-]{0,79}")
+
+
 def slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:60] or "record"
 

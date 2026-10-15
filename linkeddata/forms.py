@@ -120,6 +120,10 @@ def form(kind: str) -> list[dict]:
         listed = term(every, nodes, SH["in"])
         options = [str(value) for value in Collection(every, listed)] if listed is not None else []
         several = first(every, nodes, SH.maxCount) != 1
+        datatypes = []
+        for value in known["values"]:
+            if value != "IRI" and value not in datatypes:
+                datatypes.append(value)
         found = {
             "name": rdf.term(iri),
             "iri": iri,
@@ -135,6 +139,7 @@ def form(kind: str) -> list[dict]:
             "class": known["targets"][0] if known["targets"] else "",
             "classes": known["targets"],
             "terms": known["terms"],
+            "datatypes": datatypes,
             "links": bool(known["targets"] or known["terms"]) or "IRI" in known["values"],
             "texts": any(value != "IRI" for value in known["values"]),
             "section": str(every.value(group, RDFS.label) or "More") if group is not None else "More",
@@ -161,3 +166,12 @@ def form(kind: str) -> list[dict]:
     for _, found in ordered:
         fields.append(found)
     return fields + others
+
+
+def shaped(document: dict, kind: str) -> dict:
+    """A record's document with the values of each field that takes several as a list, also when it has one."""
+    found = dict(document)
+    for field in form(kind):
+        if field["several"] and field["name"] in found and not isinstance(found[field["name"]], list):
+            found[field["name"]] = [found[field["name"]]]
+    return found

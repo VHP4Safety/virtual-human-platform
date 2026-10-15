@@ -84,24 +84,22 @@ class Source(Base):
     """A source of records as its last import fetched it, with the rdfsolve queries that convert it."""
 
     __tablename__ = "sources"
-    name: Mapped[str] = mapped_column(primary_key=True)
-    url: Mapped[str]
-    fetched_at: Mapped[str]
-    sha256: Mapped[str]
-    queries: Mapped[str]
-    # Why the last import of the source was not stored, when it was not.
-    problem: Mapped[str | None]
+    name: Mapped[str] = mapped_column(primary_key=True, doc="The source's name.")
+    url: Mapped[str] = mapped_column(doc="The addresses of its files, separated by spaces.")
+    fetched_at: Mapped[str] = mapped_column(doc="When its last import fetched it, in UTC (ISO 8601).")
+    sha256: Mapped[str] = mapped_column(doc="The SHA-256 of the files its last import fetched.")
+    queries: Mapped[str] = mapped_column(doc="The rdfsolve CONSTRUCT queries that convert it into the model.")
+    problem: Mapped[str | None] = mapped_column(doc="Why the last import of the source was not stored, when it was not.")
 
 
 class Note(Base):
     """A value of a source that does not fit the model, found by the checks of its last import."""
 
     __tablename__ = "notes"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    source: Mapped[str] = mapped_column(index=True)
-    iri: Mapped[str]
-    field: Mapped[str]
-    value: Mapped[str]
-    reason: Mapped[str]
-    # The SHACL constraint the value breaks, such as sh:NodeKindConstraintComponent.
-    component: Mapped[str | None]
+    id: Mapped[int] = mapped_column(primary_key=True, doc="The note's number.")
+    source: Mapped[str] = mapped_column(index=True, doc='The source of the record, or "platform" for a record written on the platform.')
+    iri: Mapped[str] = mapped_column(doc="The record's address.")
+    field: Mapped[str] = mapped_column(doc="The address of the field's property.")
+    value: Mapped[str] = mapped_column(doc="The value that does not fit; empty when a value is missing.")
+    reason: Mapped[str] = mapped_column(doc="Why it does not fit, as the checks say it.")
+    component: Mapped[str | None] = mapped_column(doc="The SHACL constraint the value breaks, such as sh:NodeKindConstraintComponent.")

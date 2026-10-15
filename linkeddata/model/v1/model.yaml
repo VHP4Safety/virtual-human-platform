@@ -1,5 +1,8 @@
 # Version 1 of the platform's data model.
 
+# The name of the platform, as its API gives it.
+title: VHP4Safety Virtual Human Platform
+
 # Every record that has a page on the platform is identified by its page address.
 base: https://platform.vhp4safety.nl/
 

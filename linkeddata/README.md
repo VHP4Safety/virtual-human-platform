@@ -13,6 +13,7 @@ source file ──parser──► clean rows ──lift──► RDF in the sour
             ──rdfsolve tables──► rows of the release's tables              python -m linkeddata import
 
 API request ──JSON-LD──pyshacl checks──► rows and revision                 PUT, POST, DELETE /api/...
+API query ──rows──rdfsolve from_tables──► JSON-LD, a page at a time            GET /api/...
 
 page ──rows──rdfsolve from_tables──► JSON-LD, Turtle, N-Triples
 ```
@@ -65,7 +66,8 @@ except that `database/` reads the base address of records from `linkeddata/model
 | | `changes.py` | each change field by field, and as RDF statements |
 | `routes/` | `pages.py` | the address of each record: its data, 410 Gone once removed, a general record page |
 | | `data.py` | the `/data-quality` and `/sources` pages |
-| | `api.py` | the write API |
+| | `api.py` | the API: records read a page at a time and filtered by their fields, and written |
+| | `openapi.py` | the API's OpenAPI document, made from its routes, the profile, the vocabularies and the records |
 | | `editor.py` | the record editor, a form that writes and removes records through the write API |
 | | `changes.py` | the `/changes` pages |
 | | `account.py` | the login of editors (ORCID, or a write token) and their tokens page |
@@ -139,6 +141,16 @@ rules:
 ```
 
 3. Run the import, and check its records and notes on the `/sources` and `/data-quality` pages.
+
+## Read records
+
+`GET /api/<kind>` gives the records of each kind of `model.yaml` (tools, methods, questions,
+organizations, people, pages, videos) in JSON-LD, a page at a time as a Hydra collection. Every field of
+the kind is a query parameter, so `/api/tools?about=<step>&provider=<organisation>` gives the tools about
+a step and provided by an organisation. `/api/notes` gives what the checks found, and `/api/sources` where
+the records come from. `/api/openapi.json` describes the whole API in OpenAPI 3.1, and `/api/docs` shows
+it: the document is made from the routes, the profile, the vocabularies and the records when it is asked
+for, so it changes with them.
 
 ## Write records
 

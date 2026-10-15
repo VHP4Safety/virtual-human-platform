@@ -137,6 +137,8 @@ def terms(iris: list[str]) -> dict[str, dict]:
     """The terms of the vocabularies at these addresses, such as the steps of the glossary, with their label,
     their description, and the title of their vocabulary."""
     found = {}
+    if not iris:
+        return found
     for path in vocabularies(settings()):
         graph = vocabulary(path)
         title = path.stem
