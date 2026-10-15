@@ -44,22 +44,18 @@ def convert(spec: dict, data, base: str) -> tuple[ox.Dataset, list[str]]:
     rows = lift(data, vocabulary, base, spec.get("kinds"))
     with SchemaMiner.from_graph(rows, delay=0) as miner:
         source = Client(miner.mine(dataset_name=spec["name"]), rows)
-    # The fields that each kind of row has, so that rules for a field or kind the source does not give are left out.
-    given = {}
-    for quad in rows.quads_for_predicate(TYPE):
-        kind = quad.object.value.removeprefix(vocabulary)
-        for statement in rows.quads_for_subject(quad.subject):
-            given.setdefault(kind, set()).add(statement.predicate.value.removeprefix(vocabulary))
     statements = ox.Dataset()
     queries = []
     for kind, arguments in spec["rules"].items():
-        if kind not in given:
-            continue
         rules = []
         for argument in arguments:
-            if "object" in argument and argument["object"].split("/")[0] not in given[kind]:
-                continue
-            rules.append(Rule.between(client=source, focus=kind, **argument))
+            # The kinds and fields are given as addresses, so that a rule stays when the data has none of them.
+            if "object" in argument:
+                steps = []
+                for step in argument["object"].split("/"):
+                    steps.append(f"<{vocabulary}{step}>")
+                argument = {**argument, "object": "/".join(steps)}
+            rules.append(Rule.between(client=source, focus=vocabulary + kind, **argument))
         queries.append(write_query(rules, title=f"{spec['name']}: {kind}", source=source, target=TARGET))
         for quad in Profile(spec["name"], rules).run(source):
             statements.add(quad)
