@@ -7,8 +7,7 @@ from rdflib.namespace import SDO
 
 from database import records
 from database.tables import Revision
-from linkeddata import fields
-from linkeddata.model import curie
+from linkeddata import documents, fields
 
 
 def statements(document: str | None) -> Graph:
@@ -41,8 +40,8 @@ def edges(before: Graph, after: Graph, record: URIRef) -> dict:
             continue
         status = "kept" if (predicate, link, value) in old and (predicate, link, value) in new else ("added" if (predicate, link, value) in new else "removed")
         found.append({
-            "label": labels.get(str(predicate), curie(str(predicate))),
-            "property": curie(str(predicate)),
+            "label": labels.get(str(predicate), documents.term(str(predicate))),
+            "property": documents.term(str(predicate)),
             "value": value,
             "link": link,
             "status": status,
@@ -57,7 +56,7 @@ def edges(before: Graph, after: Graph, record: URIRef) -> dict:
     return {
         "record": str(record),
         "record_name": str(name or record),
-        "type": curie(str(kind)) if kind is not None else "",
+        "type": documents.term(str(kind)) if kind is not None else "",
         "edges": found,
     }
 

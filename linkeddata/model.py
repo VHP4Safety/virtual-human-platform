@@ -7,7 +7,7 @@ from pathlib import Path
 
 import requests
 import yaml
-from rdflib import RDF, Graph, Namespace, URIRef
+from rdflib import RDF, Graph, URIRef
 from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SH
 from rdfsolve.client.sql_tables import layout
 from rdfsolve.schema_models import MinedSchema
@@ -18,8 +18,6 @@ RELEASE = "v1"
 MODEL_DIR = Path(__file__).parent / "model" / RELEASE
 # The tables of the release, which `python -m linkeddata model` writes from its profile.
 TABLES = Path(__file__).parent.parent / "database" / RELEASE / "tables.sql"
-# The vocabulary of SHACL forms, which the application profile uses to guide the editor.
-DASH = Namespace("http://datashapes.org/dash#")
 
 
 @cache
@@ -105,14 +103,6 @@ def tables_problems() -> list[str]:
 def profile() -> Graph:
     """The application profile: required, fixed and single values, and the guidance of the editor's form."""
     return Graph().parse(MODEL_DIR / "profile.ttl", format="turtle")
-
-
-def curie(iri: str) -> str:
-    """An address written with the model's prefixes: https://schema.org/name is schema:name."""
-    for prefix, namespace in settings()["prefixes"].items():
-        if iri.startswith(namespace):
-            return prefix + ":" + iri.removeprefix(namespace)
-    return iri
 
 
 def property_shapes(graph: Graph, kind: str) -> dict[str, list]:
