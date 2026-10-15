@@ -37,9 +37,13 @@ def document(kind: str, address: str, body: dict) -> dict:
             raise ValueError(f"The platform does not keep the field {name!r}.")
         items = []
         for item in value if isinstance(value, list) else [value]:
-            # A link is {"@id": ...}, with a "name" when it is a page that the record gives with its title.
+            # A link is {"@id": ...}, with a "name" when it is a page that the record gives with its title;
+            # such a page is given its class, so that the checks know it before it is saved.
             if isinstance(item, dict) and "@id" in item and set(item) <= {"@id", "name"}:
-                items.append({"@id": item["@id"]})
+                if item.get("name") and fields[name]["class"]:
+                    items.append({"@id": item["@id"], "@type": rdf.term(fields[name]["class"]), "name": item["name"]})
+                else:
+                    items.append({"@id": item["@id"]})
             elif fields[name]["links"] and isinstance(item, str) and item.startswith(("https://", "http://")):
                 items.append({"@id": item})
             else:
