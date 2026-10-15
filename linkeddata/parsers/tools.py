@@ -150,12 +150,19 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         for person in contacts:
             if not present(person.get("name")):
                 continue
-            identifier = "people/" + slug(person["name"])
-            row_of_person = {"@id": identifier, "@type": "Person", "name": person["name"]}
-            if present(person.get("email")):
-                row_of_person["email"] = person["email"]
-            others.setdefault(identifier, row_of_person)
-            maintainers.append(link(identifier))
+            # A contact can name several people, and their emails, separated by ";".
+            names = str(person["name"]).split(";")
+            emails = str(person.get("email") or "").split(";")
+            for position, name in enumerate(names):
+                if not present(name):
+                    continue
+                identifier = "people/" + slug(name)
+                row_of_person = {"@id": identifier, "@type": "Person", "name": name.strip()}
+                email = emails[position] if position < len(emails) else ""
+                if present(email):
+                    row_of_person["email"] = email.strip()
+                others.setdefault(identifier, row_of_person)
+                maintainers.append(link(identifier))
         if maintainers:
             row["maintainer"] = maintainers
         rows.append(row)
