@@ -65,7 +65,7 @@ def download_vocabularies() -> list[str]:
 def approved_schema() -> dict:
     """The approved schema, as the vocabularies and the profile give it."""
     config = settings()
-    return MinedSchema.from_vocabulary(vocabularies(config), config["classes"], profile=MODEL_DIR / "profile.ttl").to_dict()
+    return MinedSchema.from_vocabulary(vocabularies(config), list(config["kinds"].values()), profile=MODEL_DIR / "profile.ttl").to_dict()
 
 
 def write_schema() -> Path:

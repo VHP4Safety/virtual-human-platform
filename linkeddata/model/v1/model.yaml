@@ -15,14 +15,15 @@ vocabularies:
     url: https://raw.githubusercontent.com/VHP4Safety/glossary/34f9389a7f1f0073b67161e1ca6e6a6cf95c7371/glossary.owl
     sha256: 88e9c00b8de4c2c69d9b3120525530dbff9536f0e3cebcef7a41cbec1745feff
 
-classes:
-  - https://schema.org/SoftwareApplication
-  - https://bioschemas.org/draft_terms/LabProtocol
-  - https://schema.org/Question
-  - https://schema.org/Organization
-  - https://schema.org/Person
-  - https://schema.org/CreativeWork
-  - https://schema.org/VideoObject
+# The classes of the records, by the name of their kind, which the API lists at /api/<kind>.
+kinds:
+  tools: https://schema.org/SoftwareApplication
+  methods: https://bioschemas.org/draft_terms/LabProtocol
+  questions: https://schema.org/Question
+  organizations: https://schema.org/Organization
+  people: https://schema.org/Person
+  pages: https://schema.org/CreativeWork
+  videos: https://schema.org/VideoObject
 
 # Used for short names in the YAML mappings and in the JSON-LD documents.
 prefixes:

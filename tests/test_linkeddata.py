@@ -28,7 +28,7 @@ def test_rdf():
 
 def test_forms():
     assert model.pinned_problems() + model.schema_problems() + tables.problems() == []
-    for kind in settings()["classes"]:
+    for kind in settings()["kinds"].values():
         for field in forms.form(kind):
             assert field["label"] and field["entry"], (kind, field["name"])
 

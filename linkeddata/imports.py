@@ -142,7 +142,7 @@ def import_source(spec: dict) -> None:
     parsed = parser.parse(contents if "files" in spec or "entries" in spec else contents[spec["name"]])
     data, queries = convert(spec, parsed, config["base"])
     notes = rdf.notes(Graph().parse(data=ox.serialize(data, format=ox.RdfFormat.N_QUADS), format="nt"))
-    found = records_of(data, config["classes"], spec["name"])
+    found = records_of(data, list(config["kinds"].values()), spec["name"])
     checksum = hashlib.sha256()
     for name in sorted(contents):
         checksum.update(contents[name])

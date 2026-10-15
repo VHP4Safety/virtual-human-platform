@@ -116,7 +116,7 @@ the profile does not describe is explained by the vocabulary. To change the form
   row; rdfsolve finds the fields by name and writes the CONSTRUCT queries.
 - **`model/v1/`**: the model. `model.yaml` gives the base address of identifiers, the vocabularies
   (schema.org, the Bioschemas types and the VHP4Safety glossary, pinned with their SHA-256 and kept in
-  `vocabularies/`), the classes and the
+  `vocabularies/`), the classes by the name of their kind and the
   prefixes; `profile.ttl` is what the platform adds to them; `schema.json` is the approved model,
   generated with `python -m linkeddata model` (review the change before committing it).
 

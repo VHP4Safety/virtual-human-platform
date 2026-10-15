@@ -13,7 +13,7 @@ from linkeddata.model import settings
 def field_labels() -> dict[tuple[str, str], str]:
     """The name of each field on the platform, by its class and the address of its property."""
     labels = {}
-    for kind in settings()["classes"]:
+    for kind in settings()["kinds"].values():
         for field in forms.form(kind):
             labels[(kind, field["iri"])] = field["label"]
     return labels
