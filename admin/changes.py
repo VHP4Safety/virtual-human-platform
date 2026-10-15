@@ -2,7 +2,7 @@
 after the change. A change is shown field by field, and as linked data: a diagram of the statements
 about the record, with those the change added and removed."""
 
-from rdflib import RDF, Graph, URIRef
+from rdflib import RDF, BNode, Graph, URIRef
 from rdflib.namespace import SDO
 
 from database import records
@@ -15,6 +15,18 @@ def statements(document: str | None) -> Graph:
     if document:
         graph.parse(data=document, format="json-ld")
     return graph
+
+
+def shown(graph: Graph, value) -> str:
+    """A value as it is compared and shown. A blank node, such as a section of a page, is given by its own
+    values, so that a part with the same values is the same value before and after a change."""
+    if not isinstance(value, BNode):
+        return str(value)
+    parts = []
+    for predicate, given in graph.predicate_objects(value):
+        if predicate != RDF.type:
+            parts.append(f"{documents.term(str(predicate))}: {shown(graph, given)}")
+    return "; ".join(sorted(parts))
 
 
 def edges(before: Graph, after: Graph, record: URIRef) -> dict:
@@ -30,10 +42,10 @@ def edges(before: Graph, after: Graph, record: URIRef) -> dict:
     # A value is compared as a link or a text, so that "X" and "X"^^xsd:string are the same value.
     old = set()
     for predicate, value in before.predicate_objects(record):
-        old.add((predicate, isinstance(value, URIRef), str(value)))
+        old.add((predicate, isinstance(value, URIRef), shown(before, value)))
     new = set()
     for predicate, value in after.predicate_objects(record):
-        new.add((predicate, isinstance(value, URIRef), str(value)))
+        new.add((predicate, isinstance(value, URIRef), shown(after, value)))
     found = []
     for predicate, link, value in old | new:
         if predicate == RDF.type:
