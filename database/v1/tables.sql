@@ -87,6 +87,90 @@ CREATE TABLE IF NOT EXISTS "bioschemas_draft_lab_protocol__schema_subject_of" (
   FOREIGN KEY ("iri") REFERENCES "bioschemas_draft_lab_protocol" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "bioschemas_draft_lab_protocol__schema_subject_of__record" ON "bioschemas_draft_lab_protocol__schema_subject_of" ("record");
+CREATE TABLE IF NOT EXISTS "schema_dataset" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_description" TEXT,
+  "schema_description__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  "schema_url" TEXT,
+  "schema_url__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_dataset__record" ON "schema_dataset" ("record");
+CREATE TABLE IF NOT EXISTS "schema_dataset__schema_identifier" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_dataset" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_dataset__schema_identifier__record" ON "schema_dataset__schema_identifier" ("record");
+CREATE TABLE IF NOT EXISTS "schema_how_to_section" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_creative_work_status" TEXT,
+  "schema_creative_work_status__term" TEXT,
+  "schema_description" TEXT,
+  "schema_description__term" TEXT,
+  "schema_is_part_of" TEXT,
+  "schema_is_part_of__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  "schema_text" TEXT,
+  "schema_text__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_how_to_section__record" ON "schema_how_to_section" ("record");
+CREATE TABLE IF NOT EXISTS "schema_how_to_section__schema_about" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_how_to_section" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_how_to_section__schema_about__record" ON "schema_how_to_section__schema_about" ("record");
+CREATE TABLE IF NOT EXISTS "schema_how_to_section__schema_has_part" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_how_to_section" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_how_to_section__schema_has_part__record" ON "schema_how_to_section__schema_has_part" ("record");
+CREATE TABLE IF NOT EXISTS "schema_how_to_section__schema_step" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_how_to_section" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_how_to_section__schema_step__record" ON "schema_how_to_section__schema_step" ("record");
+CREATE TABLE IF NOT EXISTS "schema_how_to_section__schema_supply" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_how_to_section" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_how_to_section__schema_supply__record" ON "schema_how_to_section__schema_supply" ("record");
+CREATE TABLE IF NOT EXISTS "schema_how_to_section__schema_tool" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_how_to_section" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_how_to_section__schema_tool__record" ON "schema_how_to_section__schema_tool" ("record");
 CREATE TABLE IF NOT EXISTS "schema_organization" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -109,6 +193,99 @@ CREATE TABLE IF NOT EXISTS "schema_person" (
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_person__record" ON "schema_person" ("record");
+CREATE TABLE IF NOT EXISTS "schema_question" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_is_part_of" TEXT,
+  "schema_is_part_of__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  "schema_text" TEXT,
+  "schema_text__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_question__record" ON "schema_question" ("record");
+CREATE TABLE IF NOT EXISTS "schema_question__schema_has_part" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_question" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_question__schema_has_part__record" ON "schema_question__schema_has_part" ("record");
+CREATE TABLE IF NOT EXISTS "schema_research_project" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_abstract" TEXT,
+  "schema_abstract__term" TEXT,
+  "schema_description" TEXT,
+  "schema_description__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  "schema_text" TEXT,
+  "schema_text__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_research_project__record" ON "schema_research_project" ("record");
+CREATE TABLE IF NOT EXISTS "schema_research_project__schema_about" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_research_project" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_research_project__schema_about__record" ON "schema_research_project__schema_about" ("record");
+CREATE TABLE IF NOT EXISTS "schema_research_project__schema_has_part" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_research_project" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_research_project__schema_has_part__record" ON "schema_research_project__schema_has_part" ("record");
+CREATE TABLE IF NOT EXISTS "schema_research_project__schema_keywords" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_research_project" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_research_project__schema_keywords__record" ON "schema_research_project__schema_keywords" ("record");
+CREATE TABLE IF NOT EXISTS "schema_scholarly_article" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_date_published" TEXT,
+  "schema_date_published__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_scholarly_article__record" ON "schema_scholarly_article" ("record");
+CREATE TABLE IF NOT EXISTS "schema_scholarly_article__schema_author" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_scholarly_article" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_scholarly_article__schema_author__record" ON "schema_scholarly_article__schema_author" ("record");
+CREATE TABLE IF NOT EXISTS "schema_scholarly_article__schema_same_as" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_scholarly_article" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_scholarly_article__schema_same_as__record" ON "schema_scholarly_article__schema_same_as" ("record");
 CREATE TABLE IF NOT EXISTS "schema_software_application" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -237,6 +414,17 @@ CREATE TABLE IF NOT EXISTS "schema_software_application__schema_video" (
   FOREIGN KEY ("iri") REFERENCES "schema_software_application" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_software_application__schema_video__record" ON "schema_software_application__schema_video" ("record");
+CREATE TABLE IF NOT EXISTS "schema_web_page" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_description" TEXT,
+  "schema_description__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_web_page__record" ON "schema_web_page" ("record");
 CREATE TABLE IF NOT EXISTS "statements" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,

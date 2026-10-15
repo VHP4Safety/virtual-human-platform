@@ -11,7 +11,9 @@
 @prefix schema: <https://schema.org/> .
 @prefix bioschemas_draft: <https://bioschemas.org/draft_terms/> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix dct: <http://purl.org/dc/terms/> .
 @prefix dash: <http://datashapes.org/dash#> .
 @prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
@@ -24,6 +26,10 @@ form:people a sh:PropertyGroup ; sh:order 2 ; rdfs:label "Who is behind it" .
 form:documentation a sh:PropertyGroup ; sh:order 3 ; rdfs:label "Documentation and training" .
 form:technical a sh:PropertyGroup ; sh:order 4 ; rdfs:label "Technical details" .
 form:elsewhere a sh:PropertyGroup ; sh:order 5 ; rdfs:label "Elsewhere on the web" .
+form:casestudy a sh:PropertyGroup ; sh:order 1 ; rdfs:label "About the case study" .
+form:question a sh:PropertyGroup ; sh:order 1 ; rdfs:label "The question" .
+form:workflow a sh:PropertyGroup ; sh:order 1 ; rdfs:label "The page of the workflow" .
+form:parts a sh:PropertyGroup ; sh:order 2 ; rdfs:label "Its parts" .
 
 [] a sh:NodeShape ;
     sh:targetClass schema:SoftwareApplication ;
@@ -175,3 +181,89 @@ form:elsewhere a sh:PropertyGroup ; sh:order 5 ; rdfs:label "Elsewhere on the we
         sh:path dct:conformsTo ; sh:group form:elsewhere ; sh:order 2 ; sh:name "Bioschemas profile" ; sh:nodeKind sh:IRI ;
         sh:hasValue <https://bioschemas.org/profiles/LabProtocol/0.9-DRAFT> ;
         sh:message "A method follows the LabProtocol profile of Bioschemas, version 0.9-DRAFT." ] .
+
+# A case study, at /casestudies/<case>: the page of its regulatory questions.
+[] a sh:NodeShape ;
+    sh:targetClass schema:ResearchProject ;
+    sh:property [ sh:path schema:name ; sh:group form:casestudy ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "A case study needs one name." ] ;
+    sh:property [ sh:path schema:description ; sh:group form:casestudy ; sh:order 2 ; sh:name "Aim" ; sh:maxCount 1 ;
+        sh:description "What the case study studies, in one sentence." ] ;
+    sh:property [ sh:path schema:about ; sh:group form:casestudy ; sh:order 3 ; sh:name "Condition" ; sh:nodeKind sh:IRI ;
+        sh:description "The medical condition that the case study is about, as a SNOMED or MONDO term." ] ;
+    sh:property [ sh:path schema:keywords ; sh:group form:casestudy ; sh:order 4 ; sh:name "Keywords" ] ;
+    sh:property [ sh:path schema:abstract ; sh:group form:casestudy ; sh:order 5 ; sh:name "Introduction to the questions" ; sh:maxCount 1 ; dash:singleLine false ] ;
+    sh:property [ sh:path schema:text ; sh:group form:casestudy ; sh:order 6 ; sh:name "Text" ; sh:maxCount 1 ; dash:singleLine false ;
+        sh:description "The text of the case study's page, in HTML, when it is not in sections." ] ;
+    sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 1 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:Section ;
+        sh:description "The sections of the case study's page, each with a heading, a text in HTML, and its position." ] .
+
+# A regulatory question of a case study, at /casestudies/<case>/<question>.
+[] a sh:NodeShape ;
+    sh:targetClass schema:Question ;
+    sh:property [ sh:path schema:name ; sh:group form:question ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "A question needs one title." ] ;
+    sh:property [ sh:path schema:text ; sh:group form:question ; sh:order 2 ; sh:name "The question" ; sh:maxCount 1 ; dash:singleLine false ] ;
+    sh:property [ sh:path schema:isPartOf ; sh:group form:question ; sh:order 3 ; sh:name "Case study" ; sh:class schema:ResearchProject ; sh:maxCount 1 ] ;
+    sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 1 ; sh:name "Workflow" ; sh:class schema:HowToSection ] .
+
+# A page of the workflow of a question: its process flow steps, a step, or a part of a step, each with its
+# tools, data and text.
+[] a sh:NodeShape ;
+    sh:targetClass schema:HowToSection ;
+    sh:property [ sh:path schema:name ; sh:group form:workflow ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "A page of a workflow needs one title." ] ;
+    sh:property [ sh:path schema:description ; sh:group form:workflow ; sh:order 2 ; sh:name "Summary" ; sh:maxCount 1 ] ;
+    sh:property [ sh:path schema:text ; sh:group form:workflow ; sh:order 3 ; sh:name "Text" ; sh:maxCount 1 ; dash:singleLine false ;
+        sh:description "The text of the page, in HTML, when it is not in sections." ] ;
+    sh:property [ sh:path schema:isPartOf ; sh:group form:workflow ; sh:order 4 ; sh:name "Part of" ; sh:maxCount 1 ;
+        sh:or ( [ sh:class schema:Question ] [ sh:class schema:HowToSection ] ) ] ;
+    sh:property [ sh:path schema:step ; sh:group form:parts ; sh:order 1 ; sh:name "Steps" ; sh:class schema:HowToSection ] ;
+    sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 4 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:Section ;
+        sh:description "The sections of the page, each with a heading, a text in HTML, and its position." ] ;
+    sh:property [ sh:path schema:about ; sh:group form:workflow ; sh:order 5 ; sh:name "Process flow step" ; sh:nodeKind sh:IRI ;
+        sh:description "The step of the safety assessment in the glossary that the page is about." ] ;
+    sh:property [ sh:path schema:creativeWorkStatus ; sh:group form:workflow ; sh:order 6 ; sh:name "Status" ; sh:maxCount 1 ;
+        sh:description "\"disabled\" when the page's button is shown but cannot be opened yet." ] ;
+    sh:property [ sh:path schema:tool ; sh:group form:parts ; sh:order 2 ; sh:name "Tools" ; sh:class schema:HowToTool ; sh:node form:Tool ;
+        sh:description "The tools and methods that the page lists, each with a name, a description, and its page on the platform." ] ;
+    sh:property [ sh:path schema:supply ; sh:group form:parts ; sh:order 3 ; sh:name "Data" ; sh:class schema:HowToSupply ; sh:node form:Data ;
+        sh:description "The data that the page lists, each with a name, a description, and its page on the platform." ] .
+
+# A section of a page: its heading, its text in HTML, and its position on the page.
+form:Section a sh:NodeShape ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Heading" ; sh:maxCount 1 ] ;
+    sh:property [ sh:path schema:text ; sh:order 2 ; sh:name "Text" ; sh:maxCount 1 ; dash:singleLine false ] ;
+    sh:property [ sh:path schema:position ; sh:order 3 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ] ;
+    sh:property [ sh:path rdf:type ; sh:order 4 ; sh:name "Kind" ; sh:nodeKind sh:IRI ; sh:maxCount 1 ; sh:hasValue schema:WebPageElement ] .
+
+# A tool or a dataset that a page of a workflow lists: its name, a description, and its page on the platform.
+form:Item a sh:NodeShape ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:maxCount 1 ] ;
+    sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; dash:singleLine false ] ;
+    sh:property [ sh:path schema:url ; sh:order 3 ; sh:name "Page" ; sh:nodeKind sh:IRI ; sh:maxCount 1 ] .
+
+form:Tool a sh:NodeShape ;
+    sh:node form:Item ;
+    sh:property [ sh:path rdf:type ; sh:order 4 ; sh:name "Kind" ; sh:nodeKind sh:IRI ; sh:maxCount 1 ; sh:hasValue schema:HowToTool ] .
+
+form:Data a sh:NodeShape ;
+    sh:node form:Item ;
+    sh:property [ sh:path rdf:type ; sh:order 4 ; sh:name "Kind" ; sh:nodeKind sh:IRI ; sh:maxCount 1 ; sh:hasValue schema:HowToSupply ] .
+
+[] a sh:NodeShape ;
+    sh:targetClass schema:ScholarlyArticle ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ] ;
+    sh:property [ sh:path schema:author ; sh:order 2 ; sh:name "Authors" ] ;
+    sh:property [ sh:path schema:datePublished ; sh:order 3 ; sh:name "Published" ; sh:maxCount 1 ] ;
+    sh:property [ sh:path schema:sameAs ; sh:order 4 ; sh:name "Elsewhere" ; sh:nodeKind sh:IRI ;
+        sh:description "The publication's item in Wikidata, and its other addresses." ] .
+
+[] a sh:NodeShape ;
+    sh:targetClass schema:WebPage ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ] ;
+    sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ] .
+
+[] a sh:NodeShape ;
+    sh:targetClass schema:Dataset ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "A dataset needs one title." ] ;
+    sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; dash:singleLine false ] ;
+    sh:property [ sh:path schema:url ; sh:order 3 ; sh:name "Address" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+    sh:property [ sh:path schema:identifier ; sh:order 4 ; sh:name "Identifier" ] .

@@ -41,10 +41,10 @@ rules:
     - {predicate: "https://schema.org/name", object: name}
     - {predicate: "https://schema.org/email", object: email}
   Page:
-    - {predicate: a, value: "https://schema.org/CreativeWork"}
+    - {predicate: a, value: "https://schema.org/WebPage"}
     - {predicate: "https://schema.org/name", object: title}
   Video:
     - {predicate: a, value: "https://schema.org/VideoObject"}
     - {predicate: "https://schema.org/name", object: title}
   Publication:
-    - {predicate: a, value: "https://schema.org/CreativeWork"}
+    - {predicate: a, value: "https://schema.org/ScholarlyArticle"}

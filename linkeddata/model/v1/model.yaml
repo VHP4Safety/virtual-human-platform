@@ -22,10 +22,14 @@ vocabularies:
 kinds:
   tools: https://schema.org/SoftwareApplication
   methods: https://bioschemas.org/draft_terms/LabProtocol
+  casestudies: https://schema.org/ResearchProject
   questions: https://schema.org/Question
+  workflows: https://schema.org/HowToSection
+  publications: https://schema.org/ScholarlyArticle
+  datasets: https://schema.org/Dataset
   organizations: https://schema.org/Organization
   people: https://schema.org/Person
-  pages: https://schema.org/CreativeWork
+  pages: https://schema.org/WebPage
   videos: https://schema.org/VideoObject
 
 # Used for short names in the YAML mappings and in the JSON-LD documents.
