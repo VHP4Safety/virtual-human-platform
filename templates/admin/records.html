@@ -26,8 +26,10 @@
           </form>
           <div class="list-group list-group-flush record-list small">
             {% for item in records %}
-            <a class="list-group-item list-group-item-action{% if item.iri == selected %} active{% endif %}" href="?record={{ item.iri|urlencode }}">
-              {{ item.name or item.iri }}{% if item.removed_at %} <span class="badge text-bg-secondary">removed</span>{% endif %}
+            <a class="list-group-item list-group-item-action d-flex align-items-center gap-2{% if item.record.iri == selected %} active{% endif %}" href="?record={{ item.record.iri|urlencode }}">
+              <span class="me-auto">{{ item.record.name or item.record.iri }}{% if item.record.removed_at %} <span class="badge text-bg-secondary">removed</span>{% endif %}</span>
+              {% if item.notes %}<i class="bi bi-exclamation-triangle text-warning" title="{{ item.notes }} values that do not fit the model"></i>{% endif %}
+              <span class="small text-nowrap" title="Fields filled, of the fields of a {{ kind }} record">{{ item.filled }}/{{ item.fields }}</span>
             </a>
             {% endfor %}
           </div>

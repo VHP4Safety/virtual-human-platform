@@ -8,7 +8,10 @@
       <a class="card h-100 text-decoration-none" href="{{ url_for('admin.edit', kind=kind.kind) }}">
         <div class="card-body">
           <h2 class="h5 text-vhppurple">{{ kind.kind|capitalize }}</h2>
-          <p class="mb-0 small text-secondary">{{ kind.records }} records · {{ kind.edited }} written here · {{ kind.removed }} removed · {{ kind.notes }} values that do not fit</p>
+          <p class="small text-secondary">{{ kind.records }} records · {{ kind.edited }} written here · {{ kind.removed }} removed · {{ kind.notes }} values that do not fit</p>
+          <div class="progress" role="progressbar" aria-label="Fields filled" aria-valuenow="{{ kind.complete }}" aria-valuemin="0" aria-valuemax="100" title="Fields filled, on average: {{ kind.complete }}%">
+            <div class="progress-bar bg-vhpblue" style="width: {{ kind.complete }}%">{{ kind.complete }}%</div>
+          </div>
         </div>
       </a>
     </div>
