@@ -66,9 +66,9 @@ except that `database/` reads the base address of records from `linkeddata/model
 | | `writes.py` | records written on the platform, each change with its revision |
 | | `editor.py` | what the record editor shows for each kind of record |
 | | `changes.py` | each change field by field, and as RDF statements |
-| `routes/` | `pages.py` | the address of each record: its data, 410 Gone once removed, a general record page |
-| | `data.py` | the `/data-quality` and `/sources` pages |
-| | `api.py` | the API: records read a page at a time and filtered by their fields, and written |
+| `routes/` | `record_pages.py` | the address of each record: its data, 410 Gone once removed, a general record page |
+| | `data_quality.py` | the `/data-quality` and `/sources` pages |
+| | `records_api.py` | the API: records read a page at a time and filtered by their fields, and written |
 | | `openapi.py` | the API's OpenAPI document, made from its routes, the profile, the vocabularies and the records |
 | | `editor.py` | the record editor, a form that writes and removes records through the write API |
 | | `changes.py` | the `/changes` pages |

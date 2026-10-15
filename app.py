@@ -23,13 +23,13 @@ from data.mapping import normalize_all, scrub_draft
 from database import records
 from linkeddata import documents, storage
 from routes.account import blueprint as account_blueprint
-from routes.api import blueprint as api_blueprint
+from routes.records_api import blueprint as api_blueprint
 from routes.changes import blueprint as changes_blueprint
-from routes.data import blueprint as dashboards_blueprint
+from routes.data_quality import blueprint as dashboards_blueprint
 from routes.editor import blueprint as admin_blueprint
 from routes.images import blueprint as images_blueprint
-from routes.pages import blueprint as pages_blueprint
-from routes.pages import page_link
+from routes.record_pages import blueprint as pages_blueprint
+from routes.record_pages import page_link
 
 ################################################################################
 CACHE_TIMEOUT = 60 * 60 * 24 * 5  # 5 days
