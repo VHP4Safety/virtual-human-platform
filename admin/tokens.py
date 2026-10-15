@@ -8,8 +8,8 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 
-from linkeddata import database
-from linkeddata.database import Token, now
+import database
+from database.tables import Token, now
 
 PREFIX = "vhp_"
 DEFAULT_DAYS = 90

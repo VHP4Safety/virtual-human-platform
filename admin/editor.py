@@ -1,34 +1,34 @@
-"""The record editor: for each kind of record an editor may write, a form built from the model (see
-forms.py) that writes and removes records through the write API with the editor's login. A field that
-links to things offers, as choices, the records of the classes that the other records link to in it,
-grouped by the source they come from."""
+"""The record editor's data: for each kind of record an editor may write, its records and a form built
+from the model (see linkeddata/forms.py). A field that links to things offers, as choices, the records
+of the classes that the other records link to in it, grouped by the source they come from."""
 
-from flask import Blueprint, abort, make_response, redirect, render_template, request, url_for
+from sqlalchemy import func, select
 
-from linkeddata import accounts, forms, records
-from linkeddata.database import PLATFORM
+import database
+from database import records
+from database.tables import PLATFORM, Record
+from linkeddata import forms
 from linkeddata.imports import specs
 from linkeddata.model import curie, settings
 
-blueprint = Blueprint("admin", __name__)
+
+def linkable(kind: str, field: str) -> list[Record]:
+    """The records that a field can link to: those of the classes that the application profile names
+    for it, or else those that the records of *kind* already link to in it."""
+    classes = forms.linked_classes(kind, field)
+    with database.session() as db:
+        if classes:
+            statement = select(Record).where(Record.type.in_(classes))
+        else:
+            statement = select(Record).where(Record.iri.in_(records.used_values(kind, field)))
+        statement = statement.where(Record.removed_at.is_(None))
+        return list(db.scalars(statement.order_by(Record.source, func.lower(Record.name))))
 
 
-@blueprint.get("/admin/")
-def admin():
-    editor = accounts.current_editor()
-    if editor is None:
-        return redirect(url_for("account.login", next=request.path))
-    return redirect(url_for("admin.edit", kind=editor.kinds[0]))
-
-
-@blueprint.get("/admin/<kind>/")
-def edit(kind: str):
-    editor = accounts.current_editor()
-    if editor is None:
-        return redirect(url_for("account.login", next=request.path))
+def page(kind: str) -> dict:
+    """What the editor page of a kind shows: its records, the removed ones too, and the records each field
+    can link to, grouped by the source they come from."""
     writable = settings().get("writable", {})
-    if kind not in writable or kind not in editor.kinds:
-        abort(404)
     fields = forms.form(writable[kind])
     found = []
     for record in records.of_kind(kind):
@@ -62,14 +62,14 @@ def edit(kind: str):
             used = records.used_values(writable[kind], field["name"])
             groups = {}
             rank = {}
-            for choice in records.choices(writable[kind], field["name"]):
+            for choice in linkable(writable[kind], field["name"]):
                 title = titles.get(choice.source, choice.source)
                 groups.setdefault(title, []).append({"iri": choice.iri, "name": choice.name or choice.iri, "description": choice.description or ""})
                 if choice.iri in used:
                     rank[title] = min(rank.get(title, len(used)), used.index(choice.iri))
             ordered = sorted(groups, key=lambda title: rank.get(title, len(used)))
             choices[field["name"]] = [{"title": title, "options": groups[title]} for title in ordered]
-    data = {
+    return {
         "kind": kind,
         "type": curie(writable[kind]),
         "base": settings()["base"],
@@ -78,14 +78,3 @@ def edit(kind: str):
         "choices": choices,
         "names": records.names(titled),
     }
-    response = make_response(render_template(
-        "admin/records.html",
-        kind=kind,
-        kinds=[other for other in editor.kinds if other in writable],
-        fields=fields,
-        data=data,
-        form_token=accounts.form_token(),
-        page_title=f"{kind.capitalize()} — VHP4Safety editor",
-    ))
-    response.headers["X-Robots-Tag"] = "noindex"
-    return response

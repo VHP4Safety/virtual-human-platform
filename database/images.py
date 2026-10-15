@@ -3,8 +3,7 @@
 An upload is read in full by Pillow, so a file that only claims to be an image is refused, and a very
 large picture is refused before it is read. The picture is made smaller when it is large and saved
 again as WebP, which keeps the picture and leaves out the rest of the file (metadata, anything
-hidden in it). The file is named after the SHA-256 of what was saved, so it never changes, and is
-served under /images/ with headers that let browsers only show it as an image.
+hidden in it). The file is named after the SHA-256 of what was saved, so it never changes.
 """
 
 import hashlib
@@ -13,12 +12,11 @@ import re
 import secrets
 import warnings
 
-from flask import Blueprint, abort, send_from_directory
 from PIL import Image as Picture
 from PIL import ImageOps, UnidentifiedImageError
 
-from linkeddata import database
-from linkeddata.database import Image
+import database
+from database.tables import Image
 from linkeddata.model import settings
 
 MAX_BYTES = 5 * 1024 * 1024
@@ -26,8 +24,6 @@ MAX_PIXELS = 40_000_000
 LONGEST_SIDE = 2000
 FORMATS = {"PNG", "JPEG", "WEBP", "GIF"}
 NAME = re.compile(r"[0-9a-f]{64}\.webp")
-
-blueprint = Blueprint("images", __name__)
 
 
 def folder():
@@ -69,13 +65,3 @@ def store(stream, name: str, orcid: str) -> str:
         if db.get(Image, digest) is None:
             db.add(Image(sha256=digest, width=picture.width, height=picture.height, size=len(content), name=name, orcid=orcid))
     return settings()["base"] + f"images/{digest}.webp"
-
-
-@blueprint.get("/images/<name>")
-def image(name: str):
-    if not NAME.fullmatch(name):
-        abort(404)
-    response = send_from_directory(folder(), name, mimetype="image/webp", max_age=31536000)
-    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-    response.headers["Content-Security-Policy"] = "default-src 'none'"
-    return response

@@ -127,3 +127,17 @@ def form(kind: str) -> list[dict]:
     for _, found in ordered:
         fields.append(found)
     return fields + others
+
+
+def linked_classes(kind: str, field: str) -> list[str]:
+    """The classes that the application profile says a field links to: its sh:class, or those in its sh:or."""
+    path = rdf.fields(kind).loc[field, "property"]
+    found = []
+    for node in property_shapes(profile(), kind).get(path, []):
+        for value in profile().objects(node, SH["class"]):
+            found.append(str(value))
+        for listed in profile().objects(node, SH["or"]):
+            for alternative in Collection(profile(), listed):
+                for value in profile().objects(alternative, SH["class"]):
+                    found.append(str(value))
+    return found

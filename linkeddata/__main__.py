@@ -11,7 +11,9 @@
 import argparse
 import sys
 
-from linkeddata import database, export, tokens
+import database
+from admin import tokens
+from database import export
 from linkeddata.imports import import_all
 from linkeddata.model import write_schema
 

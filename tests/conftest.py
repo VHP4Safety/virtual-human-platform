@@ -2,7 +2,8 @@
 
 import pytest
 
-from linkeddata import database, export
+import database
+from database import export
 
 
 @pytest.fixture(autouse=True)

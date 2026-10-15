@@ -10,10 +10,10 @@ record page.
 import json
 
 from flask import Blueprint, Response, current_app, g, redirect, render_template, request
-from rdflib import Graph
 
-from linkeddata import forms, rdf, records
-from linkeddata.database import Record
+from database import records
+from database.tables import Record
+from linkeddata import forms, rdf
 from linkeddata.model import settings
 
 FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "application/n-triples"}
@@ -26,17 +26,8 @@ def page_path(record: Record) -> str:
     return "/" + record.iri.removeprefix(settings()["base"])
 
 
-def linked_graph(record: Record) -> Graph:
-    """The record and the records it links to, such as the terms of the glossary, as linked data."""
-    iris = [record.iri]
-    for field in rdf.fields(record.type).index:
-        if rdf.several(field):
-            iris.extend(getattr(record, field))
-    return rdf.graph(iris)
-
-
 def data(record: Record, media: str) -> Response:
-    found = linked_graph(record)
+    found = rdf.linked_graph(record)
     if media == "application/ld+json":
         body = json.dumps(rdf.document(found), indent=2)
     else:
@@ -94,7 +85,7 @@ def record_context() -> dict:
     for ending, media in FORMATS.items():
         formats[media] = page_path(g.record) + ending
     try:
-        document = rdf.document(linked_graph(g.record))
+        document = rdf.document(rdf.linked_graph(g.record))
     except ValueError as problem:
         current_app.logger.warning("The record %s does not fit the model: %s", g.record.iri, problem)
         document = None

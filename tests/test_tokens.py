@@ -1,6 +1,6 @@
 """Write tokens."""
 
-from linkeddata import tokens
+from admin import tokens
 
 ORCID = "0000-0002-1825-0097"
 

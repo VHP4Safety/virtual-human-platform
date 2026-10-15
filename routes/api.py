@@ -29,9 +29,12 @@ from rdflib import Graph, URIRef
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import RequestEntityTooLarge
 
-from linkeddata import accounts, changes, forms, images, rdf, records, tokens
-from linkeddata.database import PLATFORM
+from admin import changes, tokens, writes
+from database import images, records
+from database.tables import PLATFORM
+from linkeddata import rdf
 from linkeddata.model import settings
+from routes import account
 
 IDENTIFIER = re.compile(r"[a-z0-9][a-z0-9-]{0,79}")
 # Requests are limited per client address, as in ToxTempAssistant's API.
@@ -55,44 +58,6 @@ def rate_limited() -> bool:
     return count + 1 > RATE_LIMIT
 
 
-def values(kind: str, body: dict) -> dict[str, list]:
-    """The fields of a request's body, named as in the database, each with a list of values. The
-    values that the application profile fixes are set by the platform."""
-    found = {}
-    for name, value in body.items():
-        if name.startswith("@"):
-            continue
-        items = []
-        for item in value if isinstance(value, list) else [value]:
-            # A link is {"@id": ...}, with a "name" when it is a page that the record gives with its title.
-            if isinstance(item, dict) and "@id" in item and set(item) <= {"@id", "name"}:
-                items.append(item["@id"])
-            else:
-                items.append(item)
-        found[rdf.field_of(kind, name)] = items
-    for field in forms.form(kind):
-        if field["fixed"]:
-            found[field["name"]] = field["fixed"]
-    return found
-
-
-def titled(kind: str, body: dict) -> list[tuple[str, str, str]]:
-    """The pages that a request's body gives with their titles, in the fields the profile edits as
-    details (dash:DetailsEditor): (class, address, title)."""
-    found = []
-    for field in forms.form(kind):
-        if field["entry"] != "details":
-            continue
-        for item in body.get(field["name"]) or []:
-            if isinstance(item, dict) and isinstance(item.get("@id"), str) and isinstance(item.get("name"), str) and item["name"].strip():
-                found.append((field["class"], item["@id"], item["name"].strip()))
-    return found
-
-
-def slug(name: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:60] or "record"
-
-
 @blueprint.before_request
 def limit():
     if rate_limited():
@@ -105,7 +70,7 @@ def authorized(kind: str):
     header = request.headers.get("Authorization", "")
     if header.startswith("Bearer "):
         return tokens.check(header.removeprefix("Bearer ").strip(), kind)
-    return accounts.editor_of_request(kind)
+    return account.editor_of_request(kind)
 
 
 def done(address: str, revision, status: int, warnings: dict | None = None):
@@ -146,37 +111,28 @@ def store(kind: str, identifier: str, replace: bool = True):
     if conflict:
         return conflict
     try:
-        row = rdf.row(address, writable[kind], PLATFORM, values(writable[kind], body))
+        row = rdf.row(address, writable[kind], PLATFORM, writes.values(writable[kind], body))
         found, problems, warnings = rdf.checked(row)
     except ValueError as problem:
         return error(str(problem), 422)
     if problems:
         refused = rdf.NotFitting(problems)
         return jsonify({"error": str(refused), "fields": problems}), 422
-    revision = records.save(row, rdf.document(found), token.name, token.orcid, replace)
-    records.name_things(titled(writable[kind], body))
-    return done(address, revision, 201 if revision.action == "Added" else 200, together(warnings, records.duplicates(row)))
-
-
-def together(*found: dict[str, list[str]]) -> dict[str, list[str]]:
-    """The messages of several checks, by field."""
-    joined = {}
-    for messages in found:
-        for field, listed in messages.items():
-            joined.setdefault(field, []).extend(listed)
-    return joined
+    revision = writes.save(row, rdf.document(found), token.name, token.orcid, replace)
+    writes.name_things(writes.titled(writable[kind], body))
+    return done(address, revision, 201 if revision.action == "Added" else 200, writes.together(warnings, rdf.duplicates(row)))
 
 
 def preview(address: str, kind: str, body: dict):
     """The statements a write would publish, compared with the record as it is, and what is wrong with each field."""
     try:
-        row = rdf.row(address, kind, PLATFORM, values(kind, body))
+        row = rdf.row(address, kind, PLATFORM, writes.values(kind, body))
         found, problems, warnings = rdf.checked(row)
     except ValueError as problem:
         return error(str(problem), 422)
-    before = changes.statements(records.document_of(address))
+    before = changes.statements(rdf.document_of(address))
     edges = changes.edges(before, found if found is not None else Graph(), URIRef(address))
-    return jsonify({**edges, "fields": problems, "warnings": together(warnings, records.duplicates(row))})
+    return jsonify({**edges, "fields": problems, "warnings": writes.together(warnings, rdf.duplicates(row))})
 
 
 @blueprint.put("/api/<kind>/<identifier>")
@@ -197,7 +153,7 @@ def post(kind: str):
     name = body.get("name") if isinstance(body, dict) else None
     if not isinstance(name, str) or not name.strip():
         return error("A new record needs a name, from which its identifier is made.", 400)
-    identifier = slug(name)
+    identifier = writes.slug(name)
     number = 2
     while True:
         if records.get(records.address(f"{kind}/{identifier}")) is None:
@@ -205,7 +161,7 @@ def post(kind: str):
                 return store(kind, identifier, replace=False)
             except IntegrityError:
                 pass
-        identifier = f"{slug(name)}-{number}"
+        identifier = f"{writes.slug(name)}-{number}"
         number += 1
 
 
@@ -224,9 +180,9 @@ def delete(kind: str, identifier: str):
     if conflict:
         return conflict
     if permanent:
-        revision = records.remove(record.iri, token.name, token.orcid)
+        revision = writes.remove(record.iri, token.name, token.orcid)
     else:
-        revision = records.retire(record.iri, token.name, token.orcid)
+        revision = writes.retire(record.iri, token.name, token.orcid)
     return done(record.iri, revision, 200)
 
 
@@ -251,7 +207,7 @@ def move(kind: str, identifier: str):
     if conflict:
         return conflict
     address = records.address(f"{kind}/{to}")
-    return done(address, records.move(record.iri, address, token.name, token.orcid), 200)
+    return done(address, writes.move(record.iri, address, token.name, token.orcid), 200)
 
 
 @blueprint.post("/api/<kind>/<identifier>/restore")
@@ -264,7 +220,7 @@ def restore(kind: str, identifier: str):
     record = records.get(records.address(f"{kind}/{identifier}"))
     if record is None or not record.removed_at:
         return error("There is no removed record at this address.", 404)
-    return done(record.iri, records.restore(record.iri, token.name, token.orcid), 200)
+    return done(record.iri, writes.restore(record.iri, token.name, token.orcid), 200)
 
 
 @blueprint.post("/api/images")

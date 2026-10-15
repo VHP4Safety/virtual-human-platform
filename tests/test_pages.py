@@ -6,8 +6,10 @@ import json
 import pytest
 from sqlalchemy import insert
 
-from linkeddata import database, rdf, records
-from linkeddata.database import Record
+import database
+from admin import writes
+from database.tables import Record
+from linkeddata import rdf
 
 BASE = "https://platform.vhp4safety.nl/"
 TOOL = "https://schema.org/SoftwareApplication"
@@ -32,7 +34,7 @@ def site(monkeypatch):
             rdf.row(BASE + "methods/m", "https://bioschemas.org/draft_terms/LabProtocol", "methods", {"name": ["M"]}),
             rdf.row(STEP, "https://schema.org/DefinedTerm", "glossary", {"name": ["Toxicodynamics"]}),
         ])
-    records.retire(BASE + "tools/old", "Test Editor", ORCID)
+    writes.retire(BASE + "tools/old", "Test Editor", ORCID)
     return platform.app.test_client()
 
 
@@ -89,7 +91,7 @@ def test_sitemap_leaves_out_the_pages_for_editors(site):
 
 
 def test_an_earlier_address_forwards_to_the_record(site):
-    revision = records.move(BASE + "tools/t", BASE + "tools/renamed", "Test Editor", ORCID)
+    revision = writes.move(BASE + "tools/t", BASE + "tools/renamed", "Test Editor", ORCID)
     assert revision.action == "Moved"
     response = site.get("/tools/t")
     assert (response.status_code, response.headers["Location"]) == (301, "/tools/renamed")

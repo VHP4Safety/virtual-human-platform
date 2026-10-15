@@ -34,25 +34,33 @@ python -m pytest tests          # checks the parts on small inputs, offline
 
 ## The modules
 
-Each module has one concern:
+The code is in four packages, each with one concern. Each uses only the packages listed before it,
+except that `database/` reads the base address of records from `linkeddata/model.py`; the command line
+(`linkeddata/__main__.py`), like `app.py`, uses them all.
 
-| Module | Concern |
-|---|---|
-| `database.py` | the tables of the database (SQLAlchemy) |
-| `rdf.py` | rows as linked data and linked data as rows (pandas and rdfsolve) |
-| `records.py` | reading records, and writing them on the platform with their revisions |
-| `imports.py` | the sources: fetched, converted and checked with rdfsolve, and stored as records |
-| `export.py` | the records written on the platform, exported to a git repository |
-| `forms.py` | the editor's form of a class, read from the SHACL shapes and the application profile |
-| `pages.py` | the address of each record: its data, 410 Gone once removed, a general record page |
-| `changes.py` | the `/changes` pages: each change field by field, and as RDF statements |
-| `dashboards.py` | the `/data-quality` and `/sources` pages |
-| `api.py` | the write API |
-| `images.py` | uploaded images: checked, saved again as WebP, and served |
-| `admin.py` | the record editor, a form that writes and removes records through the write API |
-| `tokens.py`, `accounts.py` | write tokens, and the login of editors (ORCID, or a write token) |
-| `model.py`, `model/v1/` | the model and the application profile |
-| `parsers/`, `lift.py`, `sources/` | how each source becomes the model |
+| Package | Module | Concern |
+|---|---|---|
+| `database/` | `__init__.py`, `tables.py` | the database file and its tables (SQLAlchemy) |
+| | `records.py` | reading records and their revisions |
+| | `images.py` | uploaded images: checked and saved again as WebP |
+| | `export.py` | the records written on the platform, exported to a git repository |
+| `linkeddata/` | `model.py`, `model/v1/` | the model and the application profile |
+| | `parsers/`, `lift.py`, `sources/` | how each source becomes the model |
+| | `rdf.py` | rows as linked data and linked data as rows (pandas and rdfsolve), and the profile's checks of a record |
+| | `imports.py` | the sources: fetched, converted and checked with rdfsolve, and stored as records |
+| | `forms.py` | the editor's form of a class, read from the SHACL shapes and the application profile |
+| | `quality.py` | how complete the records are, what the checks found, and how each source becomes the model |
+| `admin/` | `accounts.py`, `tokens.py` | editors, and their write tokens |
+| | `writes.py` | records written on the platform, each change with its revision |
+| | `editor.py` | what the record editor shows for each kind of record |
+| | `changes.py` | each change field by field, and as RDF statements |
+| `routes/` | `pages.py` | the address of each record: its data, 410 Gone once removed, a general record page |
+| | `data.py` | the `/data-quality` and `/sources` pages |
+| | `api.py` | the write API |
+| | `editor.py` | the record editor, a form that writes and removes records through the write API |
+| | `changes.py` | the `/changes` pages |
+| | `account.py` | the login of editors (ORCID, or a write token) and their tokens page |
+| | `images.py` | the uploaded images, served |
 
 ## The database
 
@@ -68,7 +76,7 @@ Each module has one concern:
 The columns of `records` are fields of the model, named as rdfsolve names them (`conforms_to` for
 `dct:conformsTo`); a field with several values is a JSON column. `rdf.py` asks rdfsolve which columns
 are fields of a record's class, so to keep a new field it is enough to add its column in
-`database.py` (and to an existing database with `ALTER TABLE records ADD COLUMN ...`).
+`database/tables.py` (and to an existing database with `ALTER TABLE records ADD COLUMN ...`).
 
 ## The application profile
 

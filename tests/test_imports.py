@@ -7,8 +7,10 @@ import pyoxigraph as ox
 import yaml
 from sqlalchemy import select
 
-from linkeddata import database, imports, rdf, records
-from linkeddata.database import Note, Record, Source
+import database
+from database import records
+from database.tables import Note, Record, Source
+from linkeddata import imports, rdf
 from linkeddata.imports import check, convert
 from linkeddata.parsers import casestudies, glossary, methods, tools
 

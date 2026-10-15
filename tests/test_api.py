@@ -6,7 +6,10 @@ import pytest
 from flask import Flask
 from PIL import Image as Picture
 
-from linkeddata import api, changes, images, records, tokens
+from admin import tokens
+from database import images, records
+from routes import api, changes
+from routes import images as image_routes
 
 ORCID = "0000-0002-1825-0097"
 BASE = "https://platform.vhp4safety.nl/"
@@ -29,7 +32,7 @@ def client():
     app.config["SECRET_KEY"] = "test"
     app.register_blueprint(api.blueprint)
     app.register_blueprint(changes.blueprint)
-    app.register_blueprint(images.blueprint)
+    app.register_blueprint(image_routes.blueprint)
     return app.test_client()
 
 

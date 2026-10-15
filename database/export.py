@@ -12,8 +12,9 @@ from pathlib import Path
 
 from sqlalchemy import select
 
-from linkeddata import database, images
-from linkeddata.database import PLATFORM, Record, Revision
+import database
+from database import images
+from database.tables import PLATFORM, Record, Revision
 from linkeddata.model import settings
 
 RECORDS_DIR = Path(os.environ.get("PLATFORM_RECORDS", "records"))

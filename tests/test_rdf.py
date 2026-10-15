@@ -4,8 +4,9 @@ import pyoxigraph as ox
 import pytest
 from sqlalchemy import insert
 
-from linkeddata import database, rdf
-from linkeddata.database import Record
+import database
+from database.tables import Record
+from linkeddata import rdf
 from linkeddata.imports import records_of
 
 BASE = "https://platform.vhp4safety.nl/"

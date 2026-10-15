@@ -1,16 +1,16 @@
-"""Pages about the data. /data-quality shows how complete the records are and what the checks of the
-imports found; /sources shows where the records come from and how each source becomes the model."""
+"""What the pages about the data show: how complete the records are, what the checks of the imports
+found, and where the records come from and how each source becomes the model."""
 
 import pandas as pd
-from flask import Blueprint, render_template
 from sqlalchemy import func, select
 
-from linkeddata import database, forms, rdf, records
-from linkeddata.database import PLATFORM, Note, Record, Source
+import database
+from database import records
+from database.tables import PLATFORM, Note, Record, Source
+from linkeddata import forms, rdf
 from linkeddata.imports import files_of, specs
 from linkeddata.model import settings
 
-blueprint = Blueprint("dashboards", __name__)
 # What breaking each SHACL constraint means for a curator, by the name of the constraint.
 CONSTRAINTS = {
     "NodeKindConstraintComponent": "A text where a link (a web address) is expected.",
@@ -46,8 +46,8 @@ def meaning(component: str | None) -> str:
     return CONSTRAINTS.get(name, "A value that does not fit the model.")
 
 
-@blueprint.get("/data-quality")
-def data_quality():
+def report() -> dict:
+    """How complete the records of each class are, and the notes of the checks grouped by field and constraint."""
     with database.engine().connect() as connection:
         table = pd.read_sql(select(Record).where(Record.removed_at.is_(None)), connection)
         notes = pd.read_sql(select(Note).order_by(Note.field, Note.reason, Note.iri), connection)
@@ -69,16 +69,7 @@ def data_quality():
             "notes": rows.to_dict("records"),
         })
     groups.sort(key=lambda group: -len(group["notes"]))
-    return render_template(
-        "records/quality.html",
-        classes=classes,
-        groups=groups,
-        notes=len(notes),
-        names=records.names(list(notes["iri"])),
-        written=PLATFORM,
-        page_title="Data quality — VHP4Safety",
-        meta_description="How complete the records of the VHP4Safety platform are, and what the checks of the model found.",
-    )
+    return {"classes": classes, "groups": groups, "notes": len(notes), "names": records.names(list(notes["iri"]))}
 
 
 def mapping(spec: dict, labels: dict) -> list[dict]:
@@ -99,8 +90,9 @@ def mapping(spec: dict, labels: dict) -> list[dict]:
     return rows
 
 
-@blueprint.get("/sources")
-def sources():
+def sources() -> tuple[list[dict], int]:
+    """Each source with its files, when it was fetched, its records and notes, and how it becomes the model;
+    and how many records were written on the platform."""
     with database.session() as db:
         fetched = {source.name: source for source in db.scalars(select(Source))}
         counts = dict(db.execute(select(Record.source, func.count()).where(Record.removed_at.is_(None)).group_by(Record.source)).all())
@@ -118,10 +110,4 @@ def sources():
             "notes": noted.get(spec["name"], 0),
             "mapping": mapping(spec, labels),
         })
-    return render_template(
-        "records/sources.html",
-        sources=found,
-        written=counts.get(PLATFORM, 0),
-        page_title="Sources — VHP4Safety",
-        meta_description="Where the records of the VHP4Safety platform come from, and how each source becomes the platform's model.",
-    )
+    return found, counts.get(PLATFORM, 0)

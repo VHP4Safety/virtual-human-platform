@@ -5,8 +5,9 @@ import io
 import pytest
 from PIL import Image as Picture
 
-from linkeddata import database, images
-from linkeddata.database import Image
+import database
+from database import images
+from database.tables import Image
 
 BASE = "https://platform.vhp4safety.nl/"
 

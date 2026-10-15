@@ -1,0 +1,66 @@
+"""The records and their revisions, as the pages and the editor read them."""
+
+from sqlalchemy import select
+
+import database
+from database.tables import Record, Revision
+from linkeddata.model import settings
+
+
+def address(path: str) -> str:
+    return settings()["base"] + path.strip("/")
+
+
+def get(iri: str) -> Record | None:
+    with database.session() as db:
+        return db.get(Record, iri)
+
+
+def of_kind(kind: str) -> list[Record]:
+    """The records that have a page under /<kind>/ and are not removed."""
+    statement = select(Record).where(Record.iri.startswith(address(kind) + "/"), Record.removed_at.is_(None))
+    with database.session() as db:
+        return list(db.scalars(statement.order_by(Record.iri)))
+
+
+def removed(kind: str) -> set[str]:
+    """The identifiers of the removed records of a kind; the earlier addresses of moved records are not removed records."""
+    prefix = address(kind) + "/"
+    statement = select(Record.iri).where(Record.iri.startswith(prefix), Record.removed_at.is_not(None), Record.moved_to.is_(None))
+    with database.session() as db:
+        return {iri.removeprefix(prefix) for iri in db.scalars(statement)}
+
+
+def moved(kind: str) -> set[str]:
+    """The identifiers of the earlier addresses of records of a kind that moved."""
+    prefix = address(kind) + "/"
+    statement = select(Record.iri).where(Record.iri.startswith(prefix), Record.moved_to.is_not(None))
+    with database.session() as db:
+        return {iri.removeprefix(prefix) for iri in db.scalars(statement)}
+
+
+def names(iris: list[str]) -> dict[str, str]:
+    """The names of the records at these addresses."""
+    with database.session() as db:
+        return dict(db.execute(select(Record.iri, Record.name).where(Record.iri.in_(iris))).all())
+
+
+def used_values(kind: str, field: str) -> list[str]:
+    """The values that the records of a class have in a field, most used first."""
+    counts = {}
+    with database.session() as db:
+        for values in db.scalars(select(getattr(Record, field)).where(Record.type == kind, Record.removed_at.is_(None))):
+            for value in values if isinstance(values, list) else [values] if values else []:
+                counts[value] = counts.get(value, 0) + 1
+    return sorted(counts, key=lambda value: (-counts[value], value))
+
+
+def earlier_addresses(iri: str) -> list[str]:
+    """The addresses that a record had before it moved to *iri*."""
+    with database.session() as db:
+        return list(db.scalars(select(Record.iri).where(Record.moved_to == iri)))
+
+
+def history(limit: int) -> list[Revision]:
+    with database.session() as db:
+        return list(db.scalars(select(Revision).order_by(Revision.id.desc()).limit(limit)))

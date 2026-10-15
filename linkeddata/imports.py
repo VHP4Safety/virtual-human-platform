@@ -21,8 +21,9 @@ from rdflib import RDF, Graph
 from rdflib.namespace import SH
 from sqlalchemy import delete, func, insert, select
 
-from linkeddata import database, rdf
-from linkeddata.database import PLATFORM, Note, Record, Source
+import database
+from database.tables import PLATFORM, Note, Record, Source
+from linkeddata import rdf
 from linkeddata.lift import lift
 from linkeddata.model import MODEL_DIR, ontology, profile, settings, shapes
 

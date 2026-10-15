@@ -14,31 +14,15 @@ token of the session in the X-Form-Token header, which pages of other sites cann
 import hmac
 import os
 import secrets
-from dataclasses import dataclass
 from urllib.parse import urlencode
 
 import requests
 from flask import Blueprint, abort, redirect, render_template, request, session, url_for
 
-from linkeddata import tokens
+from admin import accounts, tokens
 from linkeddata.model import settings
 
 blueprint = Blueprint("account", __name__)
-
-
-@dataclass
-class Editor:
-    name: str
-    orcid: str
-    kinds: list[str]
-
-
-def orcid_base() -> str:
-    return "https://sandbox.orcid.org" if os.environ.get("FLASK_DEBUG") == "1" else "https://orcid.org"
-
-
-def editors() -> set[str]:
-    return {orcid.strip() for orcid in os.environ.get("PLATFORM_EDITORS", "").split(",") if orcid.strip()}
 
 
 def callback_address() -> str:
@@ -64,21 +48,12 @@ def local_path(address: str | None) -> str | None:
     return None
 
 
-def current_editor() -> Editor | None:
+def current_editor() -> accounts.Editor | None:
     """The editor of this session: logged in with ORCID, or with a write token that is still valid."""
-    orcid = session.get("orcid")
-    if not orcid or orcid not in editors():
-        return None
-    kinds = list(settings().get("writable", {}))
-    if "token_id" in session:
-        token = tokens.active(session["token_id"])
-        if token is None:
-            return None
-        kinds = token.kinds.split(",")
-    return Editor(session.get("name", orcid), orcid, kinds)
+    return accounts.editor(session.get("orcid"), session.get("name"), session.get("token_id"))
 
 
-def editor_of_request(kind: str) -> Editor | None:
+def editor_of_request(kind: str) -> accounts.Editor | None:
     """The editor of a request of the editor page, when they may write records of *kind*."""
     editor = current_editor()
     if editor is None or kind not in editor.kinds or "form_token" not in session:
@@ -105,7 +80,7 @@ def login():
 def token_login():
     check_form()
     token = tokens.find(request.form.get("token", "").strip())
-    if token is None or token.orcid not in editors():
+    if token is None or token.orcid not in accounts.editors():
         return render_template(
             "account/login.html",
             next=local_path(request.form.get("next")) or "",
@@ -133,7 +108,7 @@ def orcid_login():
         "redirect_uri": callback_address(),
         "state": session["orcid_state"],
     })
-    return redirect(f"{orcid_base()}/oauth/authorize?{query}")
+    return redirect(f"{accounts.orcid_base()}/oauth/authorize?{query}")
 
 
 @blueprint.get("/orcid/callback/")
@@ -146,7 +121,7 @@ def orcid_callback():
     if not code:
         return "No code provided.", 400
     response = requests.post(
-        f"{orcid_base()}/oauth/token",
+        f"{accounts.orcid_base()}/oauth/token",
         data={
             "client_id": os.environ.get("ORCID_CLIENT_ID", ""),
             "client_secret": os.environ.get("ORCID_CLIENT_SECRET", ""),

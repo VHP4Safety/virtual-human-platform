@@ -20,15 +20,15 @@ from werkzeug.routing import BaseConverter
 from data.biostudies.search import BioStudiesExtractor
 from data.zenodo.search import ZenodoExtractor
 from data.mapping import normalize_all, scrub_draft
-from linkeddata import records
-from linkeddata.accounts import blueprint as account_blueprint
-from linkeddata.admin import blueprint as admin_blueprint
-from linkeddata.api import blueprint as api_blueprint
-from linkeddata.changes import blueprint as changes_blueprint
-from linkeddata.dashboards import blueprint as dashboards_blueprint
-from linkeddata.images import blueprint as images_blueprint
-from linkeddata.pages import blueprint as pages_blueprint
-from linkeddata.pages import page_link
+from database import records
+from routes.account import blueprint as account_blueprint
+from routes.api import blueprint as api_blueprint
+from routes.changes import blueprint as changes_blueprint
+from routes.data import blueprint as dashboards_blueprint
+from routes.editor import blueprint as admin_blueprint
+from routes.images import blueprint as images_blueprint
+from routes.pages import blueprint as pages_blueprint
+from routes.pages import page_link
 
 ################################################################################
 CACHE_TIMEOUT = 60 * 60 * 24 * 5  # 5 days

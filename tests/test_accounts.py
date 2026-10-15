@@ -4,7 +4,8 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from linkeddata import accounts, tokens
+from admin import tokens
+from routes import account
 
 ORCID = "0000-0002-1825-0097"
 
@@ -28,7 +29,7 @@ def log_in(site, monkeypatch) -> None:
         def json(self):
             return {"orcid": ORCID, "name": "Test Editor"}
 
-    monkeypatch.setattr(accounts.requests, "post", lambda *a, **k: Answer())
+    monkeypatch.setattr(account.requests, "post", lambda *a, **k: Answer())
     location = site.get("/login/orcid/").headers["Location"]
     state = parse_qs(urlparse(location).query)["state"][0]
     assert site.get(f"/orcid/callback/?code=c&state={state}").status_code == 302

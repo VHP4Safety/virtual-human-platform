@@ -5,8 +5,12 @@ import json
 import pytest
 from sqlalchemy import insert
 
-from linkeddata import api, database, rdf, records, tokens
-from linkeddata.database import Record
+import database
+from admin import tokens, writes
+from database import records
+from database.tables import Record
+from linkeddata import rdf
+from routes import api
 
 BASE = "https://platform.vhp4safety.nl/"
 STEP = "https://vhp4safety.github.io/glossary#VHP0000156"
@@ -28,7 +32,7 @@ def site(monkeypatch):
             rdf.row(BASE + "tools/old", "https://schema.org/SoftwareApplication", "platform", {"name": ["Old"]}),
             rdf.row(STEP, "https://schema.org/DefinedTerm", "glossary", {"name": ["Toxicodynamics"]}),
         ])
-    records.retire(BASE + "tools/old", "Test Editor", ORCID)
+    writes.retire(BASE + "tools/old", "Test Editor", ORCID)
     return platform.app.test_client()
 
 

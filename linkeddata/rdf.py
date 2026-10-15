@@ -6,6 +6,7 @@ gives the records of converted data as a table (Results.table), which becomes ro
 the columns of the records table that rdfsolve finds in the model for the record's class.
 """
 
+import json
 from functools import cache
 
 import pandas as pd
@@ -13,12 +14,12 @@ import pyshacl
 from rdflib import RDF, Graph, Literal, URIRef
 from rdflib.namespace import SH
 from rdfsolve.api import RecordError
-from sqlalchemy import JSON, select
+from sqlalchemy import JSON, func, select
 
-from linkeddata import database
-from linkeddata.database import Record
+import database
+from database.tables import Record
 from linkeddata.document import compact
-from linkeddata.model import contract_client, profile, settings
+from linkeddata.model import DASH, contract_client, profile, property_shapes, settings
 
 
 class NotFitting(ValueError):
@@ -182,3 +183,44 @@ def graph(iris: list[str]) -> Graph:
 
 def document(found: Graph) -> dict:
     return compact(found.serialize(format="nt"), settings())
+
+
+def linked_graph(record: Record) -> Graph:
+    """The record and the records it links to, such as the terms of the glossary, as linked data."""
+    iris = [record.iri]
+    for field in fields(record.type).index:
+        if several(field):
+            iris.extend(getattr(record, field))
+    return graph(iris)
+
+
+def document_of(iri: str) -> str | None:
+    """The record at this address in JSON-LD as it is now; None when there is none."""
+    found = graph([iri])
+    if len(found) == 0:
+        return None
+    return json.dumps(document(found), indent=2)
+
+
+def duplicates(row: dict) -> dict[str, list[str]]:
+    """The fields whose value another record of the class already has, where the application profile
+    asks for a value that no other record has (dash:uniqueValueForClass)."""
+    found = {}
+    for path, nodes in property_shapes(profile(), row["type"]).items():
+        for node in nodes:
+            field = field_of_property(row["type"], path)
+            value = row.get(field)
+            if profile().value(node, DASH.uniqueValueForClass) is None or not isinstance(value, str) or not value:
+                continue
+            statement = select(Record).where(
+                Record.type == row["type"],
+                func.lower(getattr(Record, field)) == value.lower(),
+                Record.iri != row["iri"],
+                Record.removed_at.is_(None),
+            )
+            with database.session() as db:
+                other = db.scalars(statement).first()
+            if other is not None:
+                path_of_other = "/" + other.iri.removeprefix(settings()["base"])
+                found.setdefault(field, []).append(f"{other.name or other.iri} ({path_of_other}) has the same value; check that this is not a duplicate.")
+    return found
