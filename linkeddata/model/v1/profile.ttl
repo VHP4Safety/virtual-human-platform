@@ -31,7 +31,7 @@ form:elsewhere a sh:PropertyGroup ; sh:order 5 ; rdfs:label "Elsewhere on the we
     sh:property [
         sh:path schema:name ; sh:group form:about ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:description "The tool's name as its developers write it." ;
-        sh:message "Give the tool a name." ] ;
+        sh:message "Give the tool one name." ] ;
     sh:property [
         sh:path schema:description ; sh:group form:about ; sh:order 2 ; sh:name "Description" ; sh:minCount 1 ; sh:maxCount 1 ;
         dash:singleLine false ;
@@ -117,12 +117,12 @@ form:elsewhere a sh:PropertyGroup ; sh:order 5 ; rdfs:label "Elsewhere on the we
 
 [] a sh:NodeShape ;
     sh:targetClass schema:Organization ;
-    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "An organisation needs a name." ] ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "An organisation needs one name." ] ;
     sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Website" ; sh:maxCount 1 ] .
 
 [] a sh:NodeShape ;
     sh:targetClass schema:Person ;
-    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "A person needs a name." ] ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "A person needs one name." ] ;
     sh:property [ sh:path schema:email ; sh:order 2 ; sh:name "Email address" ; sh:maxCount 1 ] .
 
 [] a sh:NodeShape ;
@@ -131,7 +131,7 @@ form:elsewhere a sh:PropertyGroup ; sh:order 5 ; rdfs:label "Elsewhere on the we
     sh:property [
         sh:path schema:name ; sh:group form:method ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:description "The method's name as it is known in the lab." ;
-        sh:message "A method needs a name." ] ;
+        sh:message "A method needs one name." ] ;
     sh:property [
         sh:path schema:description ; sh:group form:method ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ;
         dash:singleLine false ;
