@@ -8,14 +8,15 @@ shapes before it is written.
 import json
 
 import pyshacl
-from rdflib import RDF, Graph, URIRef
+from pyld import jsonld
+from rdflib import RDF, BNode, Graph, URIRef
 from rdflib.namespace import SH
 from sqlalchemy import select
 
 import database
 from database.tables import Record
 from linkeddata import tables
-from linkeddata.document import compact
+from linkeddata.document import compact, context
 from linkeddata.model import DASH, hierarchy, property_shapes, settings, shapes
 
 # What breaking each SHACL constraint means for a curator, by the name of the constraint.
@@ -98,15 +99,34 @@ def links(document: dict) -> list[str]:
     return found
 
 
-def document(found: Graph, iri: str | None = None) -> dict:
-    """The JSON-LD document of the record at *iri*: its own statements in *found*; without *iri*, of
-    all the statements, such as those of a record and the records it links to."""
-    own = found
-    if iri is not None:
-        own = Graph()
-        for statement in found.triples((URIRef(iri), None, None)):
+def described(found: Graph, iri: str) -> Graph:
+    """The statements of the record at *iri* in *found*, with those of the nodes without an address (blank
+    nodes) that it holds, at any depth."""
+    own = Graph()
+    nodes = [URIRef(iri)]
+    seen = set()
+    while nodes:
+        node = nodes.pop()
+        if node in seen:
+            continue
+        seen.add(node)
+        for statement in found.triples((node, None, None)):
             own.add(statement)
-    return compact(own.serialize(format="nt"), settings())
+            if isinstance(statement[2], BNode):
+                nodes.append(statement[2])
+    return own
+
+
+def document(found: Graph, iri: str | None = None) -> dict:
+    """The JSON-LD document of the record at *iri*, with the nodes it holds without an address in it; without
+    *iri*, of all the statements, such as those of a record and the records it links to."""
+    if iri is None:
+        return compact(found.serialize(format="nt"), settings())
+    expanded = jsonld.from_rdf(described(found, iri).serialize(format="nt"), {"format": "application/n-quads"})
+    framed = jsonld.frame(expanded, {"@context": context(settings()), "@id": iri})
+    if "@graph" in framed:
+        return {"@context": framed["@context"], **framed["@graph"][0]} if framed["@graph"] else {"@context": framed["@context"]}
+    return framed
 
 
 def row(found: Graph, iri: str, kind: str, source: str) -> dict:

@@ -71,9 +71,7 @@ def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[tuple[
     found = []
     for kind in classes:
         for subject in sorted(set(graph.subjects(RDF.type, URIRef(kind)))):
-            own = Graph()
-            for statement in graph.triples((subject, None, None)):
-                own.add(statement)
+            own = rdf.described(graph, str(subject))
             found.append((rdf.row(own, str(subject), kind, source), own))
     return found
 

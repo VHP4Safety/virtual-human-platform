@@ -75,13 +75,8 @@ def write_schema() -> Path:
 
 
 def schema_problems() -> list[str]:
-    """Whether schema.json is the approved schema that the vocabularies and the profile give; the
-    identifier and the times of the run that wrote it are not compared."""
-    made = approved_schema()["schema"]
-    kept = json.loads((MODEL_DIR / "schema.json").read_text(encoding="utf-8"))["schema"]
-    made.pop("about", None)
-    kept.pop("about", None)
-    if made != kept:
+    """Whether schema.json is the approved schema that the vocabularies and the profile give."""
+    if (MODEL_DIR / "schema.json").read_text(encoding="utf-8") != json.dumps(approved_schema(), indent=1) + "\n":
         return [f"{MODEL_DIR / 'schema.json'} is not what the vocabularies and profile.ttl give: run python -m linkeddata model, review the change and commit it."]
     return []
 

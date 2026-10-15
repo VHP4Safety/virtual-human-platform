@@ -2,7 +2,8 @@
 
 The platform keeps its records (tools, methods, and the records they link to) in a SQLite
 database, in the tables of the model's release: one table for each class of the application profile,
-which `python -m linkeddata model` writes to `database/v1/tables.sql`. The model's SHACL shapes say
+and one for each of its fields that takes several values, which `python -m linkeddata model` writes to
+`database/v1/tables.sql`. Every row names the record it belongs to. The model's SHACL shapes say
 what a record holds, and pyshacl checks every record against them.
 [rdfsolve](https://github.com/jmillanacosta/rdfsolve) converts the sources into the model, gives the
 statements of a record as the rows of those tables, and makes the statements again from the rows.
