@@ -11,8 +11,8 @@ from functools import cache
 import pandas as pd
 import pyshacl
 from rdflib import RDF, Graph, Literal, URIRef
-from rdfsolve.client.authoring import RecordError
 from rdflib.namespace import SH
+from rdfsolve.api import RecordError
 from sqlalchemy import JSON, select
 
 from linkeddata import database
