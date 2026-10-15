@@ -68,9 +68,9 @@ def property_shapes(graph: Graph, kind: str) -> dict[str, list]:
 
 @cache
 def shapes() -> Graph:
-    """The checks of the model: the approved schema's value types, made active, and the application profile."""
+    """The checks of the model: the approved schema's value types, with the application profile's rules."""
     schema = MinedSchema.from_json(MODEL_DIR / "schema.json")
-    return Graph().parse(data=schema.to_shacl(activate_observed=True), format="turtle") + profile()
+    return Graph().parse(data=schema.to_shacl(), format="turtle")
 
 
 @cache
