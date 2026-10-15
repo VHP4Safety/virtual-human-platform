@@ -147,7 +147,7 @@ def form(kind: str) -> list[dict]:
         if order is None:
             others.append(found)
         else:
-            ordered.append(((found["section_order"], order), found))
+            ordered.append(((found["section_order"], found["section"], order), found))
     ordered.sort(key=lambda pair: pair[0])
     others.sort(key=lambda found: found["label"])
     fields = []

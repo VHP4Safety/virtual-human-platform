@@ -5,9 +5,8 @@ the tools, the rows are the organisations, people, help pages, videos and licens
 
 import json
 import re
-import unicodedata
 
-from linkeddata.parsers import link, present, web_link
+from linkeddata.parsers import link, present, slug, web_link
 
 # The catalogue marks the regulatory questions of a tool with yes/no flags.
 QUESTIONS = {
@@ -41,12 +40,6 @@ LICENSES = {
     "cc0": "CC0-1.0",
 }
 MARKDOWN_LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
-
-
-def slug(text: str) -> str:
-    """An identifier made from a name, with accents left out: "Millán" is "millan"."""
-    plain = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
-    return re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-")
 
 
 def pairs(entry) -> list[tuple[str, str]]:

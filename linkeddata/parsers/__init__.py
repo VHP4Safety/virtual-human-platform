@@ -11,6 +11,9 @@ its kind ("@type"). Addresses are written as {"@id": ...}. Placeholders are left
 parser cannot read are passed on as plain text, so the checks of the build report them.
 """
 
+import re
+import unicodedata
+
 MISSING = {"", "_No response_", "No response", "NA", "Unknown", "no_url", "[TODO]", "[DRAFT]"}
 
 
@@ -29,3 +32,9 @@ def web_link(value: str):
     if text.startswith(("http://", "https://")):
         return link(text)
     return text
+
+
+def slug(text: str) -> str:
+    """An identifier made from a name, with accents left out: "Café" is "cafe"."""
+    plain = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-")

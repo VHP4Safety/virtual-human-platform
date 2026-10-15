@@ -1,21 +1,14 @@
-"""Parser of the cloud catalogue's methods_index.json (a workaround, see linkeddata/parsers)."""
+"""Parser of the cloud catalogue's methods (a workaround, see linkeddata/parsers): methods_index.json
+lists the methods, and the detail file of each method (docs/methods/<id>.json) describes it. Values
+are passed on as the catalogue writes them; the checks of the import note those that do not fit."""
 
 import json
 
-from linkeddata.parsers import link, present
+from linkeddata.parsers import link, present, slug, web_link
 
-GLOSSARY = "https://vhp4safety.github.io/glossary#"
-# The catalogue names the safety assessment step of a method in free text.
-STEPS = {
-    "Chemical characteristics and Hazard Identification": GLOSSARY + "VHP0000153",
-    "Exposure": GLOSSARY + "VHP0000154",
-    "Toxicokinetics": GLOSSARY + "VHP0000155",
-    "Kinetics": GLOSSARY + "VHP0000155",
-    "Toxicodynamics": GLOSSARY + "VHP0000156",
-    "Adverse Outcome": GLOSSARY + "VHP0000158",
-}
-KEY_EVENTS = "relevant_aop_wiki_key_event(s)_to_the_assay_content"
 AOPS = "relevant_aop_wiki_adverse_outcome_pathway(s)_to_the_assay_content"
+KEY_EVENTS = "relevant_aop_wiki_key_event(s)_to_the_assay_content"
+ISSUES = "https://github.com/VHP4Safety/cloud/issues/"
 
 
 def parts(value) -> list[str]:
@@ -29,39 +22,35 @@ def parts(value) -> list[str]:
     return found
 
 
-def aop_wiki_links(value, prefix: str, namespace: str) -> list:
-    """Links for AOP-Wiki numbers written as "KE177" or "AOP464"; other text is passed on."""
-    found = []
-    for part in parts(value):
-        number = part.removeprefix(prefix).strip()
-        if number.isdigit():
-            found.append(link(namespace + number))
-        else:
-            found.append(part)
-    return found
-
-
-def parse(content: bytes) -> list[dict]:
+def parse(contents: dict[str, bytes]) -> list[dict]:
     rows = []
-    for entry in json.loads(content).values():
-        row = {"@id": "methods/" + entry["id"], "@type": "Method", "method": entry["method"]}
-        if present(entry.get("method_description_content")):
-            row["description"] = entry["method_description_content"]
-        if present(entry.get("citation_content")):
-            row["citation"] = entry["citation_content"]
-        key_events = aop_wiki_links(entry.get(KEY_EVENTS), "KE", "https://identifiers.org/aop.events/")
-        if key_events:
-            row["key_events"] = key_events
-        aops = aop_wiki_links(entry.get(AOPS), "AOP", "https://identifiers.org/aop/")
-        if aops:
-            row["aops"] = aops
-        stages = []
-        for stage in parts(entry.get("vhp4safety_workflow_stage_content")):
-            if stage in STEPS:
-                stages.append(link(STEPS[stage]))
-            else:
-                stages.append(stage)
-        if stages:
-            row["stages"] = stages
+    vendors = {}
+    for key, entry in json.loads(contents["methods"]).items():
+        detail = {**entry, **(json.loads(contents[key]) if key in contents else {})}
+        row = {"@id": "methods/" + entry["id"], "@type": "Method"}
+        for field, given in (("method", "method"), ("description", "method_description_content"), ("assay", "assay_name_content"),
+                             ("catalog_number", "catalog_number_content"), ("data_producer", "data_producer_content"),
+                             ("citation", "citation_content")):
+            if present(detail.get(given)):
+                row[field] = detail[given]
+        for field, given in (("url", "catalog_webpage_url"), ("sop", "available_sop_or_protocol_url")):
+            if present(detail.get(given)):
+                row[field] = web_link(detail[given])
+        about = parts(detail.get("vhp4safety_workflow_stage_content")) + parts(detail.get("workflow_substage_content"))
+        about += parts(detail.get(KEY_EVENTS)) + parts(detail.get(AOPS))
+        for given in ("type_url", "ontology_term_url", "ontology_term_content"):
+            if present(detail.get(given)):
+                about.append(web_link(detail[given]))
+        # A method answers the regulatory question of a case study, at the address of the question's page.
+        if present(detail.get("case_study_content")) and present(detail.get("regulatory_question_content")):
+            about.append(link(f"casestudies/{detail['case_study_content']}/{detail['regulatory_question_content']}"))
+        if about:
+            row["about"] = about
+        if present(detail.get("issue_number")):
+            row["issue"] = link(ISSUES + str(detail["issue_number"]))
+        if present(detail.get("vendor_content")):
+            vendor = "organizations/" + slug(detail["vendor_content"])
+            vendors.setdefault(vendor, {"@id": vendor, "@type": "Organization", "name": detail["vendor_content"]})
+            row["vendor"] = link(vendor)
         rows.append(row)
-    return rows
+    return rows + list(vendors.values())

@@ -21,6 +21,8 @@
 @prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
 
 form:about a sh:PropertyGroup ; sh:order 1 ; rdfs:label "About the tool" .
+form:method a sh:PropertyGroup ; sh:order 1 ; rdfs:label "About the method" .
+form:assay a sh:PropertyGroup ; sh:order 2 ; rdfs:label "The assay" .
 form:people a sh:PropertyGroup ; sh:order 2 ; rdfs:label "Who is behind it" .
 form:documentation a sh:PropertyGroup ; sh:order 3 ; rdfs:label "Documentation and training" .
 form:technical a sh:PropertyGroup ; sh:order 4 ; rdfs:label "Technical details" .
@@ -136,11 +138,48 @@ form:elsewhere a sh:PropertyGroup ; sh:order 5 ; rdfs:label "Elsewhere on the we
     sh:targetClass bioschemas_draft:LabProtocol ;
     rdfs:comment "Methods state the Bioschemas profile they follow (LabProtocol)." ;
     sh:property [
-        sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:path schema:name ; sh:group form:method ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:description "The method's name as it is known in the lab." ;
         sh:message "A method needs a name." ] ;
     sh:property [
-        sh:path schema:description ; sh:order 2 ; sh:name "Description" ; dash:singleLine false ] ;
+        sh:path schema:description ; sh:group form:method ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ;
+        dash:singleLine false ;
+        sh:description "What the method measures or shows, in one or two sentences." ] ;
     sh:property [
-        sh:path dct:conformsTo ; sh:name "Bioschemas profile" ; sh:nodeKind sh:IRI ;
+        sh:path schema:about ; sh:group form:method ; sh:order 3 ; sh:name "Assessment steps, key events and case-study questions" ;
+        dash:editor dash:InstancesSelectEditor ; sh:severity sh:Warning ;
+        sh:or ( [ sh:class schema:DefinedTerm ] [ sh:class schema:Question ] ) ;
+        sh:message "Choose the steps and questions from the lists; other links are kept but not shown in the catalogue's filters." ;
+        sh:description "The steps of the safety assessment, the AOP-Wiki key events and pathways, and the case-study questions that the method informs." ] ;
+    sh:property [
+        sh:path bioschemas_draft:reagent ; sh:group form:assay ; sh:order 1 ; sh:name "Assay" ; sh:maxCount 1 ;
+        sh:description "The assay or kit that the method uses, as its vendor names it." ] ;
+    sh:property [
+        sh:path schema:provider ; sh:group form:assay ; sh:order 2 ; sh:name "Vendor" ;
+        dash:editor dash:InstancesSelectEditor ; sh:class schema:Organization ;
+        sh:description "The company that sells the assay or kit." ] ;
+    sh:property [
+        sh:path schema:identifier ; sh:group form:assay ; sh:order 3 ; sh:name "Catalogue number" ; sh:maxCount 1 ;
+        sh:description "The vendor's catalogue number of the assay or kit." ] ;
+    sh:property [
+        sh:path schema:url ; sh:group form:assay ; sh:order 4 ; sh:name "Product page" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+        sh:description "The vendor's page of the assay or kit." ] ;
+    sh:property [
+        sh:path schema:creator ; sh:group form:people ; sh:order 1 ; sh:name "Data producer" ;
+        dash:editor dash:InstancesSelectEditor ; sh:class schema:Person ;
+        sh:description "The people who produce data with the method in VHP4Safety." ] ;
+    sh:property [
+        sh:path schema:citation ; sh:group form:documentation ; sh:order 1 ; sh:name "Publication or manual" ; sh:nodeKind sh:IRI ;
+        dash:editor dash:URIEditor ;
+        sh:description "Where the method is described: its publication (as a DOI web address) or the vendor's manual." ] ;
+    sh:property [
+        sh:path schema:subjectOf ; sh:group form:documentation ; sh:order 2 ; sh:name "Standard operating procedure" ; sh:nodeKind sh:IRI ;
+        dash:editor dash:URIEditor ;
+        sh:description "The standard operating procedure or protocol that the lab follows." ] ;
+    sh:property [
+        sh:path schema:isBasedOn ; sh:group form:elsewhere ; sh:order 1 ; sh:name "Catalogue request" ; sh:nodeKind sh:IRI ;
+        sh:description "The request in the cloud catalogue from which the method's record was made." ] ;
+    sh:property [
+        sh:path dct:conformsTo ; sh:group form:elsewhere ; sh:order 2 ; sh:name "Bioschemas profile" ; sh:nodeKind sh:IRI ;
         sh:hasValue <https://bioschemas.org/profiles/LabProtocol/0.9-DRAFT> ;
         sh:message "A method follows the LabProtocol profile of Bioschemas, version 0.9-DRAFT." ] .

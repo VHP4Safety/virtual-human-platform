@@ -1,6 +1,8 @@
 name: methods
 title: Method catalogue
 url: https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/methods_index.json
+# The detail file of each method, by the method's key in the index.
+entries: https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/docs/methods/{key}.json
 parser: methods
 
 # How the parsed rows become the model: the arguments of rdfsolve's Rule.between, for each kind of row.
@@ -9,8 +11,16 @@ rules:
     - {predicate: a, value: "https://bioschemas.org/draft_terms/LabProtocol"}
     - {predicate: "https://schema.org/name", object: method}
     - {predicate: "https://schema.org/description", object: description}
+    - {predicate: "https://schema.org/about", object: about}
+    - {predicate: "https://bioschemas.org/draft_terms/reagent", object: assay}
+    - {predicate: "https://schema.org/url", object: url}
+    - {predicate: "https://schema.org/provider", object: vendor}
+    - {predicate: "https://schema.org/identifier", object: catalog_number}
+    - {predicate: "https://schema.org/creator", object: data_producer}
     - {predicate: "https://schema.org/citation", object: citation}
-    - {predicate: "https://schema.org/about", object: key_events}
-    - {predicate: "https://schema.org/about", object: aops}
-    - {predicate: "https://schema.org/about", object: stages}
+    - {predicate: "https://schema.org/subjectOf", object: sop}
+    - {predicate: "https://schema.org/isBasedOn", object: issue}
     - {predicate: "http://purl.org/dc/terms/conformsTo", value: "https://bioschemas.org/profiles/LabProtocol/0.9-DRAFT"}
+  Organization:
+    - {predicate: a, value: "https://schema.org/Organization"}
+    - {predicate: "https://schema.org/name", object: name}

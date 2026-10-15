@@ -27,3 +27,4 @@ prefixes:
 # The kinds of records that are written through the platform's API, by the path of their pages.
 writable:
   tools: https://schema.org/SoftwareApplication
+  methods: https://bioschemas.org/draft_terms/LabProtocol
