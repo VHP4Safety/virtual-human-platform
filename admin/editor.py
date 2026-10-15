@@ -48,8 +48,8 @@ def shown(statements, iri: str, field: dict):
 def page(kind: str) -> dict:
     """What the editor page of a kind shows: its records, the removed ones too, and the records each field
     can link to, grouped by the source they come from."""
-    writable = settings().get("writable", {})
-    fields = forms.form(writable[kind])
+    kinds = settings()["kinds"]
+    fields = forms.form(kinds[kind])
     found = []
     listed = records.of_kind(kind)
     removed = []
@@ -83,10 +83,10 @@ def page(kind: str) -> dict:
                 titled.extend(record["values"].get(field["name"]) or [])
         if field["entry"] in ("links", "choice"):
             # The groups that the records use most come first.
-            used = used_values(writable[kind], field["name"])
+            used = used_values(kinds[kind], field["name"])
             groups = {}
             rank = {}
-            choices_of_field = linkable(writable[kind], field)
+            choices_of_field = linkable(kinds[kind], field)
             described = storage.read([choice.iri for choice in choices_of_field])
             options = []
             for choice in choices_of_field:
@@ -102,7 +102,7 @@ def page(kind: str) -> dict:
             choices[field["name"]] = [{"title": title, "options": groups[title]} for title in ordered]
     return {
         "kind": kind,
-        "type": curie(writable[kind]),
+        "type": curie(kinds[kind]),
         "base": settings()["base"],
         "fields": fields,
         "records": found,

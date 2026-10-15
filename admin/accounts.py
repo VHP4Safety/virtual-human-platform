@@ -26,7 +26,7 @@ def editor(orcid: str | None, name: str | None, token_id: int | None) -> Editor 
     """The editor who logged in with this ORCID iD: with ORCID, or with a write token that is still valid."""
     if not orcid or orcid not in editors():
         return None
-    kinds = list(settings().get("writable", {}))
+    kinds = list(settings()["kinds"])
     if token_id is not None:
         token = tokens.active(token_id)
         if token is None:

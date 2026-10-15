@@ -18,7 +18,7 @@ vocabularies:
     url: https://raw.githubusercontent.com/VHP4Safety/glossary/34f9389a7f1f0073b67161e1ca6e6a6cf95c7371/glossary.owl
     sha256: 88e9c00b8de4c2c69d9b3120525530dbff9536f0e3cebcef7a41cbec1745feff
 
-# The classes of the records, by the name of their kind, which the API lists at /api/<kind>.
+# The classes of the records, by the name of their kind; records of every kind are written on the platform.
 kinds:
   tools: https://schema.org/SoftwareApplication
   methods: https://bioschemas.org/draft_terms/LabProtocol
@@ -33,8 +33,3 @@ prefixes:
   schema: https://schema.org/
   bioschemas_draft: https://bioschemas.org/draft_terms/
   dct: http://purl.org/dc/terms/
-
-# The kinds of records that are written through the platform's API, by the path of their pages.
-writable:
-  tools: https://schema.org/SoftwareApplication
-  methods: https://bioschemas.org/draft_terms/LabProtocol

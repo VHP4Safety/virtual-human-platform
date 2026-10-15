@@ -163,7 +163,7 @@ and context that make the row linked data.
 
 ## Write records
 
-Tools (the kinds listed under `writable` in `model/v1/model.yaml`) are written through the API with a
+Records of every kind of `model/v1/model.yaml` are written through the API with a
 write token, as with ToxTempAssistant's workspace tokens. rdfsolve checks each record against the
 model and the application profile, and the record and its revision are saved at once, so its page
 shows it straight away. Every answer gives the address of the record and of its change.

@@ -23,14 +23,14 @@ def edit(kind: str):
     editor = current_editor()
     if editor is None:
         return redirect(url_for("account.login", next=request.path))
-    writable = settings().get("writable", {})
-    if kind not in writable or kind not in editor.kinds:
+    kinds = settings()["kinds"]
+    if kind not in kinds or kind not in editor.kinds:
         abort(404)
     data = page(kind)
     response = make_response(render_template(
         "admin/records.html",
         kind=kind,
-        kinds=[other for other in editor.kinds if other in writable],
+        kinds=[other for other in editor.kinds if other in kinds],
         fields=data["fields"],
         data=data,
         form_token=form_token(),

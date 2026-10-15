@@ -156,7 +156,7 @@ def account_tokens():
     # Tokens are made by editors who logged in with ORCID, so that a token never makes another.
     if "token_id" in session:
         return render_template("account/tokens.html", tokens=[], kinds=[], with_token=True, **page)
-    kinds = list(settings().get("writable", {}))
+    kinds = list(settings()["kinds"])
     secret = None
     if request.method == "POST":
         check_form()

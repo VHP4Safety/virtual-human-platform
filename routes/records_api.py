@@ -2,7 +2,7 @@
 JSON-LD, Turtle or N-Triples, as the request's Accept header asks; the model's SHACL shapes
 (/api/shapes.ttl) say what each field takes.
 
-Records of the kinds listed under `writable` in model.yaml are added, replaced, moved and removed with
+Records of every kind of model.yaml are added, replaced, moved and removed with
 a write token, or by the editor page with an editor's login, in JSON-LD with the fields named as the
 platform's JSON-LD context names them ("name", "url", "about", ..., and "dct:conformsTo" for a field of
 another vocabulary); a link is {"@id": "https://..."}. Each record is checked against the model, and one
@@ -248,7 +248,7 @@ def changed_since_read(address: str):
 
 def store(kind: str, identifier: str, replace: bool = True):
     """The record of the request's body is checked and saved; the answer says how it went."""
-    writable = settings()["writable"]
+    kinds = settings()["kinds"]
     token = authorized(kind)
     if token is None:
         return error("A valid write token for this kind of record is needed.", 401)
@@ -257,18 +257,18 @@ def store(kind: str, identifier: str, replace: bool = True):
         return error("The body is a JSON object of the record's fields.", 400)
     address = records.address(f"{kind}/{identifier}")
     if request.args.get("preview") == "true":
-        return preview(address, writable[kind], body)
+        return preview(address, kinds[kind], body)
     conflict = changed_since_read(address)
     if conflict:
         return conflict
     try:
-        found, problems, warnings = checks.checked(writes.document(writable[kind], address, body))
+        found, problems, warnings = checks.checked(writes.document(kinds[kind], address, body))
     except ValueError as problem:
         return error(str(problem), 422)
     if problems:
         return jsonify({"error": str(checks.NotFitting(problems)), "fields": problems}), 422
-    revision = writes.save(documents.document(found, address), writable[kind], token.name, token.orcid, replace)
-    writes.name_things(writes.titled(writable[kind], body))
+    revision = writes.save(documents.document(found, address), kinds[kind], token.name, token.orcid, replace)
+    writes.name_things(writes.titled(kinds[kind], body))
     return done(address, revision, 201 if revision.action == "Added" else 200, warnings)
 
 
@@ -387,7 +387,7 @@ def upload_image():
 
     The image is checked and saved again as WebP; its address is what a record gives in its image field."""
     uploader = None
-    for kind in settings().get("writable", {}):
+    for kind in settings()["kinds"]:
         uploader = uploader or authorized(kind)
     if uploader is None:
         return error("A valid write token, or an editor's login, is needed.", 401)
@@ -413,7 +413,7 @@ def model_shapes():
 
 
 # The routes of each kind of record that is written through the API, with the model of its own fields.
-for name, kind in settings().get("writable", {}).items():
+for name, kind in settings()["kinds"].items():
     record = record_model(kind)
     routes = [
         ("/<identifier>", "PUT", put, {"query": Write, "json": record, "security": {"token": []}, "resp": answers(
