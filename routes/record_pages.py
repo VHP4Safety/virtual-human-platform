@@ -63,6 +63,9 @@ def negotiate():
     if media != "text/html":
         return data(storage.linked_graph(record), media)
     g.record = record
+    # A record with no page of its own is shown on the general record page.
+    if request.url_rule is None:
+        return record_page(record)
     return None
 
 
@@ -114,12 +117,7 @@ def page_link(iri: str) -> str:
     return iri
 
 
-@blueprint.app_errorhandler(404)
-def record_page(error):
-    """A record with no page of its own is shown on the general record page."""
-    if "record" not in g:
-        return error
-    record = g.record
+def record_page(record: Record):
     statements = storage.graph([record.iri])
     shown = []
     links = []
