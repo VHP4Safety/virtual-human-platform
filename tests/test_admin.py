@@ -1,115 +1,29 @@
-"""The login of editors and the record editor, on the platform with its network calls replaced."""
+"""What editors do: their write tokens, and the records they write with their revisions."""
 
-import json
-
-import pytest
-from sqlalchemy import insert
-
-import database
-from admin import tokens, writes
+from admin import accounts, tokens, writes
 from database import records
-from database.tables import Record
-from linkeddata import rdf
-from routes import api
 
-BASE = "https://platform.vhp4safety.nl/"
-STEP = "https://vhp4safety.github.io/glossary#VHP0000156"
 ORCID = "0000-0002-1825-0097"
-TOOL = {"name": "T", "description": "Does T.", "url": "https://t.org/", "about": [STEP]}
+BASE = "https://platform.vhp4safety.nl/"
+TOOL = "https://schema.org/SoftwareApplication"
 
 
-def record(iri: str, kind: str, source: str, fields: dict) -> dict:
-    """A row of the records table, with the document of these fields."""
-    return rdf.row(writes.document(kind, iri, fields), kind, source)
-
-
-@pytest.fixture
-def site(monkeypatch):
-    import app as platform
-
-    monkeypatch.setattr(platform, "get_json_dict", lambda url, timeout=5: {})
-    monkeypatch.setattr(platform, "get_process_flow_steps", lambda: {})
-    monkeypatch.setenv("PLATFORM_EDITORS", ORCID)
-    api._requests.clear()
-    with database.session() as db, db.begin():
-        db.execute(insert(Record), [
-            record(BASE + "tools/t", "https://schema.org/SoftwareApplication", "tools", {"name": "T", "about": [STEP]}),
-            record(BASE + "tools/old", "https://schema.org/SoftwareApplication", "platform", {"name": "Old"}),
-            record(STEP, "https://schema.org/DefinedTerm", "glossary", {"name": "Toxicodynamics"}),
-        ])
-    writes.retire(BASE + "tools/old", "Test Editor", ORCID)
-    return platform.app.test_client()
-
-
-def log_in(site, secret: str):
-    site.get("/login/")
-    with site.session_transaction() as session:
-        form_token = session["form_token"]
-    return site.post("/login/token/", data={"token": secret, "form_token": form_token, "next": "/admin/"})
-
-
-def test_the_editor_needs_a_login(site):
-    assert site.get("/admin/").headers["Location"] == "/login/?next=/admin/"
-    page = site.get("/login/").data.decode()
-    assert "Log in with the token" in page
-    assert '<ul class="nav editor-nav">' in page
-
-
-def test_logging_in_with_a_token(site):
-    stranger = tokens.create("0000-0002-0000-0000", "Somebody", ["tools"])
-    assert log_in(site, stranger).status_code == 403
-    assert log_in(site, "vhp_wrong").status_code == 403
+def test_tokens():
     secret = tokens.create(ORCID, "Test Editor", ["tools"])
-    assert log_in(site, secret).headers["Location"] == "/admin/"
-    assert site.get("/admin/").headers["Location"].endswith("/admin/tools/")
-    response = site.get("/admin/tools/")
-    assert response.headers["X-Robots-Tag"] == "noindex"
-    page = response.data.decode()
-    data = json.loads(page.split('<script type="application/json" id="editor-data">')[1].split("</script>")[0])
-    assert [field["name"] for field in data["fields"]][:3] == ["name", "description", "url"]
-    assert data["choices"]["about"] == [
-        {"title": "Steps of the safety assessment", "options": [{"iri": STEP, "name": "Toxicodynamics", "description": ""}]}
-    ]
-    found = {record["identifier"]: record for record in data["records"]}
-    assert found["old"]["removed"]
-    assert "Test Editor" in page
-    tokens.revoke(tokens.tokens_of(ORCID)[0].id, ORCID)
-    assert site.get("/admin/tools/").headers["Location"].startswith("/login/")
+    assert tokens.check(secret, "tools").orcid == ORCID
+    assert tokens.check(secret, "methods") is None
+    token = tokens.tokens_of(ORCID)[0]
+    assert accounts.editor(ORCID, "Test Editor", token.id).kinds == ["tools"]
+    assert tokens.revoke(token.id, ORCID)
+    assert tokens.find(secret) is None and accounts.editor(ORCID, "Test Editor", token.id) is None
 
 
-def test_the_editor_writes_with_the_login(site):
-    log_in(site, tokens.create(ORCID, "Test Editor", ["tools"]))
-    site.get("/admin/tools/")
-    assert site.put("/api/tools/new", json=TOOL).status_code == 401
-    with site.session_transaction() as session:
-        form_token = session["form_token"]
-    response = site.put("/api/tools/new", json=TOOL, headers={"X-Form-Token": form_token})
-    assert response.status_code == 201
-    assert records.history(1)[0].name == "Test Editor"
-    change = site.get(response.json["change"]).data.decode()
-    assert "Added" in change and "Does T." in change
-    assert site.put("/api/tools/new", json=TOOL, headers={"X-Form-Token": "forged"}).status_code == 401
-
-
-def test_a_token_login_does_not_make_tokens(site):
-    log_in(site, tokens.create(ORCID, "Test Editor", ["tools"]))
-    assert b"logged in with a write token" in site.get("/account/tokens/").data
-
-
-def test_the_changes_are_shown_to_editors(site):
-    assert site.get("/changes").headers["Location"].startswith("/login/")
-    log_in(site, tokens.create(ORCID, "Test Editor", ["tools"]))
-    site.get("/admin/tools/")
-    with site.session_transaction() as session:
-        form_token = session["form_token"]
-    answer = site.put("/api/tools/t", json={**TOOL, "about": []}, headers={"X-Form-Token": form_token}).json
-    page = site.get(answer["change"]).data.decode()
-    assert "Changed: " in page and "Assessment steps and case-study questions" in page
-    assert "graph-removed" in page and "Toxicodynamics" in page
-    change = site.get(answer["change"] + ".json").json
-    removed = [edge for edge in change["edges"] if edge["status"] == "removed"]
-    assert [(edge["label"], edge["name"]) for edge in removed] == [("Assessment steps and case-study questions", "Toxicodynamics")]
-    assert site.get(answer["change"] + ".nt").mimetype == "application/n-triples"
-    now = site.get("/changes/record.json", query_string={"record": BASE + "tools/t"}).json
-    assert {edge["status"] for edge in now["edges"]} == {"kept"}
-    assert "Test Editor" in site.get("/changes").data.decode()
+def test_writes():
+    writes.save(writes.document(TOOL, BASE + "tools/x", {"name": "X"}), TOOL, "Test Editor", ORCID)
+    writes.move(BASE + "tools/x", BASE + "tools/y", "Test Editor", ORCID)
+    assert records.get(BASE + "tools/x").moved_to == BASE + "tools/y"
+    writes.retire(BASE + "tools/y", "Test Editor", ORCID)
+    writes.restore(BASE + "tools/y", "Test Editor", ORCID)
+    assert [record.iri for record in records.of_kind("tools")] == [BASE + "tools/y"]
+    writes.remove(BASE + "tools/y", "Test Editor", ORCID)
+    assert [revision.action for revision in records.history(10)] == ["Removed permanently", "Restored", "Removed", "Moved", "Added"]

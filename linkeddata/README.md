@@ -128,7 +128,7 @@ rules:
     - {predicate: "https://schema.org/name", object: service}   # the rows' "service" field
 ```
 
-3. Add a test with a few rows in `tests/test_imports.py`, and run the import.
+3. Run the import, and check its records and notes on the `/sources` and `/data-quality` pages.
 
 ## Write records
 
