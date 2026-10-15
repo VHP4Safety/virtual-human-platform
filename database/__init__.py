@@ -12,11 +12,9 @@ from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session
 
 from database.tables import Base
-from linkeddata.model import RELEASE
+from linkeddata.model import RELEASE, TABLES
 
 STATE_DIR = Path(os.environ.get("PLATFORM_STATE", "instance"))
-# The tables of the model's release, which `python -m linkeddata model` writes from its profile.
-TABLES = Path(__file__).parent / RELEASE / "tables.sql"
 _engines = {}
 
 

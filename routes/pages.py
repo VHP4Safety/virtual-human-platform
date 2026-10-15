@@ -13,7 +13,7 @@ from flask import Blueprint, Response, current_app, g, redirect, render_template
 
 from database import records
 from database.tables import Record
-from linkeddata import forms, rdf
+from linkeddata import documents, forms, storage
 from linkeddata.model import settings
 
 FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "application/n-triples"}
@@ -27,9 +27,9 @@ def page_path(record: Record) -> str:
 
 
 def data(record: Record, media: str) -> Response:
-    found = rdf.linked_graph(record)
+    found = storage.linked_graph(record)
     if media == "application/ld+json":
-        body = json.dumps(rdf.document(found), indent=2)
+        body = json.dumps(documents.document(found), indent=2)
     else:
         body = found.serialize(format=SERIALIZATIONS[media])
     return Response(body, mimetype=media, headers={"Vary": "Accept"})
@@ -85,7 +85,7 @@ def record_context() -> dict:
     for ending, media in FORMATS.items():
         formats[media] = page_path(g.record) + ending
     try:
-        document = rdf.document(rdf.linked_graph(g.record))
+        document = documents.document(storage.linked_graph(g.record))
     except ValueError as problem:
         current_app.logger.warning("The record %s does not fit the model: %s", g.record.iri, problem)
         document = None
@@ -117,17 +117,17 @@ def record_page(error):
     if "record" not in g:
         return error
     record = g.record
-    statements = rdf.graph([record.iri])
+    statements = storage.graph([record.iri])
     shown = []
     links = []
     for field in forms.form(record.type):
-        found = rdf.stored_values(statements, record.iri, field["name"])
+        found = documents.stored_values(statements, record.iri, field["name"])
         if found:
             shown.append({"name": field["name"], "label": field["label"], "values": found})
         if field["links"]:
             links.extend(found)
-    descriptions = rdf.stored_values(statements, record.iri, "description")
-    images = rdf.stored_values(statements, record.iri, "image")
+    descriptions = documents.stored_values(statements, record.iri, "description")
+    images = documents.stored_values(statements, record.iri, "image")
     name = record.name or record.iri
     return render_template(
         "records/record.html",

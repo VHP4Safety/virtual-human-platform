@@ -16,7 +16,7 @@ from admin import accounts, tokens
 from admin.changes import compare, edges, link_names, statements
 from database import records
 from database.tables import Revision
-from linkeddata import rdf
+from linkeddata import documents
 from routes.account import current_editor
 
 blueprint = Blueprint("changes", __name__)
@@ -94,7 +94,7 @@ def change_statements(number: int):
 @blueprint.get("/changes/record.json")
 def record_data():
     """The statements about a record as it is now, all kept, in the form of a change."""
-    document = rdf.document_of(request.args.get("record", ""))
+    document = documents.document_of(request.args.get("record", ""))
     if document is None:
         abort(404)
     now = statements(document)

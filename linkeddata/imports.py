@@ -20,7 +20,7 @@ from sqlalchemy import delete, func, insert, select
 
 import database
 from database.tables import PLATFORM, Note, Record, Source, now
-from linkeddata import rdf, tables
+from linkeddata import checks, documents, storage
 from linkeddata.model import RELEASE, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
@@ -71,8 +71,8 @@ def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[tuple[
     found = []
     for kind in classes:
         for subject in sorted(set(graph.subjects(RDF.type, URIRef(kind)))):
-            own = rdf.described(graph, str(subject))
-            found.append((rdf.row(own, str(subject), kind, source), own))
+            own = documents.described(graph, str(subject))
+            found.append((storage.row(own, str(subject), kind, source), own))
     return found
 
 
@@ -89,13 +89,13 @@ def store(source: Source, found: list[tuple[dict, Graph]], notes: list[dict]) ->
             raise Refused(f"the source gave {len(found)} records where it gave {before} before; the records were kept")
         written = set(db.scalars(select(Record.iri).where(Record.source == PLATFORM)))
         for iri in db.scalars(select(Record.iri).where(Record.source == source.name)):
-            tables.delete(db, iri)
+            storage.delete(db, iri)
         db.execute(delete(Record).where(Record.source == source.name))
         kept = {}
         for row, statements in found:
             if row["iri"] not in written:
                 kept[row["iri"]] = row
-                tables.save(db, statements, row["iri"])
+                storage.save(db, statements, row["iri"])
         if kept:
             db.execute(insert(Record), list(kept.values()))
         db.execute(delete(Note).where(Note.source == source.name))
@@ -139,7 +139,7 @@ def import_source(spec: dict) -> None:
     # A source of one file gives its parser the file; a source of several gives them by name.
     parsed = parser.parse(contents if "files" in spec or "entries" in spec else contents[spec["name"]])
     data, queries = convert(spec, parsed, config["base"])
-    notes = rdf.notes(Graph().parse(data=ox.serialize(data, format=ox.RdfFormat.N_QUADS), format="nt"))
+    notes = checks.notes(Graph().parse(data=ox.serialize(data, format=ox.RdfFormat.N_QUADS), format="nt"))
     found = records_of(data, list(config["kinds"].values()), spec["name"])
     checksum = hashlib.sha256()
     for name in sorted(contents):
@@ -170,7 +170,7 @@ def check_written() -> None:
     since they were written; what no longer fits is noted for the data quality page."""
     with database.session() as db:
         iris = list(db.scalars(select(Record.iri).where(Record.source == PLATFORM, Record.removed_at.is_(None))))
-    notes = rdf.notes(rdf.graph(iris))
+    notes = checks.notes(storage.graph(iris))
     with database.session() as db, db.begin():
         db.execute(delete(Note).where(Note.source == PLATFORM))
         for note in notes:

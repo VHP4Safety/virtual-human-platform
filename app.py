@@ -21,7 +21,7 @@ from data.biostudies.search import BioStudiesExtractor
 from data.zenodo.search import ZenodoExtractor
 from data.mapping import normalize_all, scrub_draft
 from database import records
-from linkeddata import rdf, views
+from linkeddata import documents, storage
 from routes.account import blueprint as account_blueprint
 from routes.api import blueprint as api_blueprint
 from routes.changes import blueprint as changes_blueprint
@@ -454,14 +454,14 @@ def linked_tools(catalogue: dict) -> dict:
             tools[tool_id] = dict(tool)
     stage_mapping = get_stage_mapping()
     listed = records.of_kind("tools")
-    statements = rdf.graph([record.iri for record in listed])
+    statements = storage.graph([record.iri for record in listed])
     for record in listed:
         tool_id = record.iri.rsplit("/", 1)[-1]
         tool = tools.setdefault(tool_id, {"id": tool_id, "stage": "Unknown", "main_url": "no_url"})
-        descriptions = rdf.stored_values(statements, record.iri, "description")
-        urls = rdf.stored_values(statements, record.iri, "url")
-        images = rdf.stored_values(statements, record.iri, "image")
-        about = rdf.stored_values(statements, record.iri, "about")
+        descriptions = documents.stored_values(statements, record.iri, "description")
+        urls = documents.stored_values(statements, record.iri, "url")
+        images = documents.stored_values(statements, record.iri, "image")
+        about = documents.stored_values(statements, record.iri, "about")
         tool["service"] = record.name or tool_id
         tool["description"] = descriptions[0] if descriptions else ""
         tool["main_url"] = urls[0] if urls else "no_url"
@@ -488,11 +488,11 @@ def linked_methods() -> dict:
     cases = records.address("casestudies/")
     methods = {}
     listed = records.of_kind("methods")
-    statements = rdf.graph([record.iri for record in listed])
+    statements = storage.graph([record.iri for record in listed])
     for record in listed:
         method_id = record.iri.rsplit("/", 1)[-1]
-        descriptions = rdf.stored_values(statements, record.iri, "description")
-        urls = rdf.stored_values(statements, record.iri, "url")
+        descriptions = documents.stored_values(statements, record.iri, "description")
+        urls = documents.stored_values(statements, record.iri, "url")
         method = {
             "id": method_id,
             "method": record.name or method_id,
@@ -500,7 +500,7 @@ def linked_methods() -> dict:
             "catalog_webpage_url": urls[0] if urls else "",
         }
         stages = []
-        for value in rdf.stored_values(statements, record.iri, "about"):
+        for value in documents.stored_values(statements, record.iri, "about"):
             if value.startswith(cases):
                 case, question = value.removeprefix(cases).split("/")[:2]
                 method["case_study"] = case
@@ -1578,9 +1578,9 @@ def method_page(methodid):
     record = records.get(records.address(f"methods/{methodid}"))
     if record is None:
         abort(404)
-    method = views.view(record, "methods/method")
+    method = documents.view(record, "methods/method")
     method_name = record.name or methodid
-    descriptions = rdf.stored_values(rdf.graph([record.iri]), record.iri, "description")
+    descriptions = documents.stored_values(storage.graph([record.iri]), record.iri, "description")
     return render_template(
         "methods/method.html",
         method=method,

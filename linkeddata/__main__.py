@@ -16,9 +16,8 @@ import sys
 import database
 from admin import tokens
 from database import export
-from linkeddata import tables
 from linkeddata.imports import import_all
-from linkeddata.model import RELEASE, download_vocabularies, pinned_problems, schema_problems, write_schema
+from linkeddata.model import RELEASE, download_vocabularies, pinned_problems, schema_problems, tables_problems, write_schema, write_tables
 
 
 def main() -> None:
@@ -34,11 +33,11 @@ def main() -> None:
         if problems:
             sys.exit(1)
         print(f"Wrote {write_schema()}")
-        print(f"Wrote {tables.generate()}")
+        print(f"Wrote {write_tables()}")
     elif args.command == "check":
         problems = pinned_problems()
         if not problems:
-            problems = schema_problems() + tables.problems()
+            problems = schema_problems() + tables_problems()
         if not problems and (database.STATE_DIR / "platform.sqlite").exists():
             problems = database.differences(database.STATE_DIR / "platform.sqlite")
         for problem in problems:

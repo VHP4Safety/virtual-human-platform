@@ -56,8 +56,9 @@ except that `database/` reads the base address of records from `linkeddata/model
 | | `export.py` | the records written on the platform, exported to a git repository |
 | `linkeddata/` | `model.py`, `model/v1/` | the model and the application profile |
 | | `parsers/`, `sources/` | how each source becomes the model |
-| | `tables.py` | the release's tables: written from the profile, and records written to them and read from them with rdfsolve |
-| | `rdf.py` | records as linked data and as JSON-LD, and the checks of a record against the model's shapes |
+| | `storage.py` | where records are kept: their statements as rows of the release's tables, with rdfsolve |
+| | `documents.py` | records as JSON-LD documents, and as the dictionaries that page templates read |
+| | `checks.py` | the checks of records against the model's shapes |
 | | `imports.py` | the sources: fetched, converted and checked with rdfsolve, and stored as records |
 | | `forms.py` | the editor's form of a class, read from the SHACL shapes and the application profile |
 | | `quality.py` | how complete the records are, what the checks found, and how each source becomes the model |

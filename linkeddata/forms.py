@@ -11,7 +11,7 @@ from rdflib import Graph, URIRef
 from rdflib.collection import Collection
 from rdflib.namespace import RDFS, SH
 
-from linkeddata import rdf
+from linkeddata import documents
 from linkeddata.model import DASH, curie, profile, property_shapes, shapes
 
 IMAGE = "https://schema.org/ImageObject"
@@ -125,7 +125,7 @@ def form(kind: str) -> list[dict]:
             if value != "IRI" and value not in datatypes:
                 datatypes.append(value)
         found = {
-            "name": rdf.term(iri),
+            "name": documents.term(iri),
             "iri": iri,
             "property": curie(iri),
             # A name the profile gives is kept; the name of a property of the vocabularies is made readable.

@@ -14,8 +14,8 @@ from sqlalchemy import delete, insert, select
 
 import database
 from database.tables import PLATFORM, Record, Revision, now
-from linkeddata import forms, rdf, tables
-from linkeddata.document import context
+from linkeddata import documents, forms, storage
+from linkeddata.documents import context
 from linkeddata.model import settings
 
 
@@ -31,7 +31,7 @@ def document(kind: str, address: str, body: dict) -> dict:
     fields = {}
     for field in forms.form(kind):
         fields[field["name"]] = field
-    found = {"@context": context(settings()), "@id": address, "@type": rdf.term(kind)}
+    found = {"@context": context(settings()), "@id": address, "@type": documents.term(kind)}
     for name, value in body.items():
         if name.startswith("@"):
             continue
@@ -43,7 +43,7 @@ def document(kind: str, address: str, body: dict) -> dict:
             # such a page is given its class, so that the checks know it before it is saved.
             if isinstance(item, dict) and "@id" in item and set(item) <= {"@id", "name"}:
                 if item.get("name") and fields[name]["class"]:
-                    items.append({"@id": item["@id"], "@type": rdf.term(fields[name]["class"]), "name": item["name"]})
+                    items.append({"@id": item["@id"], "@type": documents.term(fields[name]["class"]), "name": item["name"]})
                 else:
                     items.append({"@id": item["@id"]})
             elif fields[name]["links"] and isinstance(item, str) and item.startswith(("https://", "http://")):
@@ -101,12 +101,12 @@ def name_things(found: list[tuple[str, str, str]]) -> None:
                 found = Graph()
                 found.add((URIRef(iri), RDF.type, URIRef(kind)))
                 found.add((URIRef(iri), SDO.name, Literal(name)))
-                tables.save(db, found, iri)
+                storage.save(db, found, iri)
                 db.add(Record(iri=iri, type=kind, source=PLATFORM, name=name))
             elif thing.name != name:
-                found = tables.graph([iri])
+                found = storage.read([iri])
                 found.set((URIRef(iri), SDO.name, Literal(name)))
-                tables.save(db, found, iri)
+                storage.save(db, found, iri)
                 thing.name = name
                 thing.source = PLATFORM
                 thing.updated_at = version()
@@ -116,14 +116,14 @@ def save(document: dict, kind: str, name: str, orcid: str, replace: bool = True)
     """A record's document, checked with rdf.check, is written on the platform with its revision.
     It replaces the record at its address, unless *replace* is False."""
     iri = document["@id"]
-    previous = rdf.document_of(iri) if replace else None
+    previous = documents.document_of(iri) if replace else None
     with database.session() as db, db.begin():
         created = db.get(Record, iri) is None
         if replace:
             db.execute(delete(Record).where(Record.iri == iri))
-        found = rdf.statements(document)
-        tables.save(db, found, iri)
-        db.execute(insert(Record), [{**rdf.row(found, iri, kind, PLATFORM), "updated_at": version()}])
+        found = documents.statements(document)
+        storage.save(db, found, iri)
+        db.execute(insert(Record), [{**storage.row(found, iri, kind, PLATFORM), "updated_at": version()}])
         revision = Revision(
             record_iri=iri,
             action="Added" if created else "Changed",
@@ -138,7 +138,7 @@ def save(document: dict, kind: str, name: str, orcid: str, replace: bool = True)
 
 def retire(iri: str, name: str, orcid: str) -> Revision:
     """The record is removed and its address is kept, so that it is never given to another record."""
-    previous = rdf.document_of(iri)
+    previous = documents.document_of(iri)
     with database.session() as db, db.begin():
         record = db.get(Record, iri)
         record.removed_at = now()
@@ -152,20 +152,20 @@ def retire(iri: str, name: str, orcid: str) -> Revision:
 def move(old: str, new: str, name: str, orcid: str) -> Revision:
     """The record moves to a new address. The old address forwards to it, the record keeps the old one
     among its other addresses (sameAs), and so do the addresses it had before."""
-    previous = rdf.document_of(old)
+    previous = documents.document_of(old)
     with database.session() as db, db.begin():
         record = db.get(Record, old)
         moved = {}
         for column in Record.__table__.columns:
             moved[column.name] = getattr(record, column.name)
         found = Graph()
-        for _, prop, value in tables.graph([old]).triples((URIRef(old), None, None)):
+        for _, prop, value in storage.read([old]).triples((URIRef(old), None, None)):
             found.add((URIRef(new), prop, value))
         found.add((URIRef(new), SDO.sameAs, URIRef(old)))
         found.remove((URIRef(new), SDO.sameAs, URIRef(new)))
         # A record can move back to one of its earlier addresses; that address then stops forwarding.
         db.execute(delete(Record).where(Record.iri == new, Record.moved_to == old))
-        tables.save(db, found, new)
+        storage.save(db, found, new)
         db.execute(insert(Record), [{**moved, "iri": new, "source": PLATFORM, "updated_at": version()}])
         record.removed_at = now()
         record.moved_to = new
@@ -173,7 +173,7 @@ def move(old: str, new: str, name: str, orcid: str) -> Revision:
         record.updated_at = version()
         for earlier in db.scalars(select(Record).where(Record.moved_to == old)):
             earlier.moved_to = new
-    document = rdf.document_of(new)
+    document = documents.document_of(new)
     with database.session() as db, db.begin():
         revision = Revision(record_iri=new, action="Moved", previous=previous, document=document, name=name, orcid=orcid)
         db.add(revision)
@@ -186,7 +186,7 @@ def restore(iri: str, name: str, orcid: str) -> Revision:
         record = db.get(Record, iri)
         record.removed_at = None
         record.updated_at = version()
-    document = rdf.document_of(iri)
+    document = documents.document_of(iri)
     with database.session() as db, db.begin():
         revision = Revision(record_iri=iri, action="Restored", document=document, name=name, orcid=orcid)
         db.add(revision)
@@ -195,9 +195,9 @@ def restore(iri: str, name: str, orcid: str) -> Revision:
 
 def remove(iri: str, name: str, orcid: str) -> Revision:
     """The record and its address are removed; its revisions are kept."""
-    previous = rdf.document_of(iri)
+    previous = documents.document_of(iri)
     with database.session() as db, db.begin():
-        tables.delete(db, iri)
+        storage.delete(db, iri)
         db.execute(delete(Record).where(Record.iri == iri))
         revision = Revision(record_iri=iri, action="Removed permanently", previous=previous, name=name, orcid=orcid)
         db.add(revision)

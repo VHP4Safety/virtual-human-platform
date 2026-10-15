@@ -9,12 +9,15 @@ import requests
 import yaml
 from rdflib import RDF, Graph, Namespace, URIRef
 from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SH
+from rdfsolve.client.sql_tables import layout
 from rdfsolve.schema_models import MinedSchema
 
 # The release of the model that the platform serves: its model is in model/<release>, and its tables in
 # database/<release>.
 RELEASE = "v1"
 MODEL_DIR = Path(__file__).parent / "model" / RELEASE
+# The tables of the release, which `python -m linkeddata model` writes from its profile.
+TABLES = Path(__file__).parent.parent / "database" / RELEASE / "tables.sql"
 # The vocabulary of SHACL forms, which the application profile uses to guide the editor.
 DASH = Namespace("http://datashapes.org/dash#")
 
@@ -78,6 +81,23 @@ def schema_problems() -> list[str]:
     """Whether schema.json is the approved schema that the vocabularies and the profile give."""
     if (MODEL_DIR / "schema.json").read_text(encoding="utf-8") != json.dumps(approved_schema(), indent=1) + "\n":
         return [f"{MODEL_DIR / 'schema.json'} is not what the vocabularies and profile.ttl give: run python -m linkeddata model, review the change and commit it."]
+    return []
+
+
+def tables_sql() -> str:
+    return layout((MODEL_DIR / "profile.ttl").read_text(encoding="utf-8")).ddl()
+
+
+def write_tables() -> Path:
+    TABLES.parent.mkdir(parents=True, exist_ok=True)
+    TABLES.write_text(tables_sql(), encoding="utf-8")
+    return TABLES
+
+
+def tables_problems() -> list[str]:
+    """Whether the release's SQL is what the profile gives."""
+    if not TABLES.exists() or TABLES.read_text(encoding="utf-8") != tables_sql():
+        return [f"{TABLES} is not what profile.ttl gives: run python -m linkeddata model, review the change and commit it."]
     return []
 
 

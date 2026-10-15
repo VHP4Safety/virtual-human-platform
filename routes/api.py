@@ -51,8 +51,8 @@ from admin import changes, tokens, writes
 from admin.writes import IDENTIFIER
 from database import images, records
 from database.tables import Note, Record, Source
-from linkeddata import forms, rdf, tables
-from linkeddata.document import context
+from linkeddata import checks, documents, forms, storage
+from linkeddata.documents import context
 from linkeddata.model import settings
 from routes import account, openapi
 
@@ -143,7 +143,7 @@ def listing(kind: str):
     for name in request.args:
         values = request.args.getlist(name)
         if name in fields:
-            conditions.append(tables.having(kinds[kind], fields[name], values))
+            conditions.append(storage.having(kinds[kind], fields[name], values))
         elif name == "q":
             conditions.append(func.lower(Record.name).contains(values[0].lower(), autoescape=True))
         elif name == "id":
@@ -161,10 +161,10 @@ def listing(kind: str):
         total = db.scalar(select(func.count()).select_from(Record).where(*conditions))
         statement = select(Record.iri).where(*conditions).order_by(func.lower(Record.name), Record.iri)
         page = list(db.scalars(statement.limit(limit).offset(offset)))
-    found = tables.graph(page)
+    found = storage.read(page)
     members = []
     for iri in page:
-        member = forms.shaped(rdf.document(found, iri), kinds[kind])
+        member = forms.shaped(documents.document(found, iri), kinds[kind])
         member.pop("@context", None)
         members.append(member)
     last = max(total - 1, 0) // limit * limit
@@ -205,7 +205,7 @@ def get(kind: str, identifier: str):
         return redirect(url_for("api.get", kind=kind, identifier=record.moved_to.rsplit("/", 1)[-1]), code=301)
     if record.removed_at:
         return error("This record was removed.", 410)
-    document = forms.shaped(rdf.document(tables.graph([record.iri]), record.iri), record.type)
+    document = forms.shaped(documents.document(storage.read([record.iri]), record.iri), record.type)
     return Response(json.dumps(document, indent=2), mimetype="application/ld+json")
 
 
@@ -323,28 +323,28 @@ def store(kind: str, identifier: str, replace: bool = True):
     if conflict:
         return conflict
     try:
-        found, problems, warnings = rdf.checked(writes.document(writable[kind], address, body))
+        found, problems, warnings = checks.checked(writes.document(writable[kind], address, body))
     except ValueError as problem:
         return error(str(problem), 422)
     if problems:
-        refused = rdf.NotFitting(problems)
+        refused = checks.NotFitting(problems)
         return jsonify({"error": str(refused), "fields": problems}), 422
-    document = rdf.document(found, address)
+    document = documents.document(found, address)
     revision = writes.save(document, writable[kind], token.name, token.orcid, replace)
     writes.name_things(writes.titled(writable[kind], body))
-    return done(address, revision, 201 if revision.action == "Added" else 200, writes.together(warnings, rdf.duplicates(document, writable[kind])))
+    return done(address, revision, 201 if revision.action == "Added" else 200, writes.together(warnings, checks.duplicates(document, writable[kind])))
 
 
 def preview(address: str, kind: str, body: dict):
     """The statements a write would publish, compared with the record as it is, and what is wrong with each field."""
     try:
         new = writes.document(kind, address, body)
-        found, problems, warnings = rdf.checked(new)
+        found, problems, warnings = checks.checked(new)
     except ValueError as problem:
         return error(str(problem), 422)
-    before = changes.statements(rdf.document_of(address))
+    before = changes.statements(documents.document_of(address))
     edges = changes.edges(before, found, URIRef(address))
-    return jsonify({**edges, "fields": problems, "warnings": writes.together(warnings, rdf.duplicates(new, kind))})
+    return jsonify({**edges, "fields": problems, "warnings": writes.together(warnings, checks.duplicates(new, kind))})
 
 
 @blueprint.put("/api/<kind>/<identifier>")

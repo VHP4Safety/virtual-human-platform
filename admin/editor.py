@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 import database
 from database import records
 from database.tables import PLATFORM, Record
-from linkeddata import forms, rdf, tables
+from linkeddata import documents, forms, storage
 from linkeddata.imports import specs
 from linkeddata.model import curie, settings, terms
 
@@ -18,9 +18,9 @@ def used_values(kind: str, field: str) -> list[str]:
     counts = {}
     with database.session() as db:
         iris = list(db.scalars(select(Record.iri).where(Record.type == kind, Record.removed_at.is_(None))))
-    found = tables.graph(iris)
+    found = storage.read(iris)
     for iri in iris:
-        for value in rdf.stored_values(found, iri, field):
+        for value in documents.stored_values(found, iri, field):
             counts[value] = counts.get(value, 0) + 1
     return sorted(counts, key=lambda value: (-counts[value], value))
 
@@ -39,7 +39,7 @@ def linkable(kind: str, field: dict) -> list[Record]:
 
 def shown(statements, iri: str, field: dict):
     """The values of a field as the editor shows them: a list for a field with several values, else one value."""
-    found = rdf.stored_values(statements, iri, field["name"])
+    found = documents.stored_values(statements, iri, field["name"])
     if field["several"]:
         return found
     return found[0] if found else None
@@ -55,7 +55,7 @@ def page(kind: str) -> dict:
     removed = []
     for identifier in sorted(records.removed(kind)):
         removed.append(records.get(records.address(f"{kind}/{identifier}")))
-    statements = tables.graph([record.iri for record in listed + removed])
+    statements = storage.read([record.iri for record in listed + removed])
     for record in listed:
         values = {}
         for field in fields:
@@ -87,10 +87,10 @@ def page(kind: str) -> dict:
             groups = {}
             rank = {}
             choices_of_field = linkable(writable[kind], field)
-            described = tables.graph([choice.iri for choice in choices_of_field])
+            described = storage.read([choice.iri for choice in choices_of_field])
             options = []
             for choice in choices_of_field:
-                descriptions = rdf.stored_values(described, choice.iri, "description")
+                descriptions = documents.stored_values(described, choice.iri, "description")
                 options.append((titles.get(choice.source, choice.source), {"iri": choice.iri, "name": choice.name or choice.iri, "description": descriptions[0] if descriptions else ""}))
             for iri, term in terms(field["terms"]).items():
                 options.append((term["title"], {"iri": iri, "name": term["name"], "description": term["description"]}))

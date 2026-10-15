@@ -17,7 +17,8 @@ import database
 from admin import tokens
 from admin.writes import IDENTIFIER
 from database.tables import Note, Record, Source
-from linkeddata import forms, rdf, tables
+from linkeddata import forms, storage
+from linkeddata.documents import document as record_document, term as record_term
 from linkeddata.model import RELEASE, settings, terms
 
 # The records whose documents are read for the examples of a kind.
@@ -84,10 +85,10 @@ def samples(kind: str) -> list[dict]:
     for iri in iris:
         if iri not in noted:
             fitting.append(iri)
-    found = tables.graph(fitting)
+    found = storage.read(fitting)
     documents = []
     for iri in fitting:
-        document = forms.shaped(rdf.document(found, iri), kind)
+        document = forms.shaped(record_document(found, iri), kind)
         document.pop("@context", None)
         documents.append(document)
     documents.sort(key=lambda document: -len(document))
@@ -215,7 +216,7 @@ def record_schemas(name: str, kind: str, documents: list[dict]) -> dict:
         "@context": {"description": "The JSON-LD context of the document, when it is not given by a collection."},
         "@id": {"type": "string", "format": "uri", "readOnly": True, "description": "The record's address."},
         "@type": {
-            "anyOf": [{"const": rdf.term(kind)}, {"type": "array", "contains": {"const": rdf.term(kind)}}],
+            "anyOf": [{"const": record_term(kind)}, {"type": "array", "contains": {"const": record_term(kind)}}],
             "description": "The class of the record.",
         },
     }

@@ -9,7 +9,7 @@ import database
 from admin import writes
 from database import records
 from database.tables import Note, Source
-from linkeddata import forms, imports, model, rdf, tables
+from linkeddata import checks, documents, forms, imports, model, storage
 from linkeddata.model import settings
 
 BASE = "https://platform.vhp4safety.nl/"
@@ -19,15 +19,15 @@ STEP = "https://vhp4safety.github.io/glossary#VHP0000156"
 
 def test_rdf():
     fitting = writes.document(TOOL, BASE + "tools/t", {"name": "T", "description": "Does T.", "url": "https://t.org/"})
-    found = rdf.check(fitting)
-    assert rdf.document(found, BASE + "tools/t")["url"] == {"@id": "https://t.org/"}
-    with pytest.raises(rdf.NotFitting) as problem:
-        rdf.check(writes.document(TOOL, BASE + "tools/t", {"name": "T", "url": "not a link"}))
+    found = checks.check(fitting)
+    assert documents.document(found, BASE + "tools/t")["url"] == {"@id": "https://t.org/"}
+    with pytest.raises(checks.NotFitting) as problem:
+        checks.check(writes.document(TOOL, BASE + "tools/t", {"name": "T", "url": "not a link"}))
     assert set(problem.value.problems) == {"url", "description"}
 
 
 def test_forms():
-    assert model.pinned_problems() + model.schema_problems() + tables.problems() == []
+    assert model.pinned_problems() + model.schema_problems() + model.tables_problems() == []
     for kind in settings()["kinds"].values():
         for field in forms.form(kind):
             assert field["label"] and field["entry"], (kind, field["name"])
@@ -50,10 +50,10 @@ def test_imports(monkeypatch, tmp_path):
     monkeypatch.setattr(imports, "fetch", lambda url: json.dumps(files[url]).encode())
     assert imports.import_all() == []
     tool = records.get(BASE + "tools/aop-builder")
-    found = rdf.graph([BASE + "tools/aop-builder", BASE + "tools/x"])
-    assert (tool.name, rdf.stored_values(found, tool.iri, "about")) == ("AOP-Builder", [STEP])
+    found = storage.graph([BASE + "tools/aop-builder", BASE + "tools/x"])
+    assert (tool.name, documents.stored_values(found, tool.iri, "about")) == ("AOP-Builder", [STEP])
     assert records.get(BASE + "people/test-author").name == "Test Author"
     with database.session() as db:
         assert db.get(Source, "tools").queries.startswith("# title: tools: Tool")
         assert (BASE + "tools/x", "Other") in [(note.iri, note.value) for note in db.scalars(select(Note))]
-    assert rdf.stored_values(found, BASE + "tools/x", "about") == ["Other"]
+    assert documents.stored_values(found, BASE + "tools/x", "about") == ["Other"]
