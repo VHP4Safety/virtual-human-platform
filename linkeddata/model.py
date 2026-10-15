@@ -15,6 +15,7 @@ MODEL_DIR = Path(__file__).parent / "model" / "v1"
 DASH = Namespace("http://datashapes.org/dash#")
 
 
+@cache
 def settings() -> dict:
     return yaml.safe_load((MODEL_DIR / "model.yaml").read_text(encoding="utf-8"))
 
