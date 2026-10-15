@@ -103,7 +103,7 @@ def models(name: str) -> tuple[type[BaseModel], type[BaseModel]]:
     given = tables()[name]
     cells = {}
     filters = {
-        "limit": (int, Field(records_api.PAGE, ge=1, le=records_api.LARGEST_PAGE, description="How many rows a page gives.")),
+        "limit": (int, Field(50, ge=1, le=200, description="How many rows a page gives.")),
         "offset": (int, Field(0, ge=0, description="How many rows come before this page.")),
     }
     for found_column, explanation in given["columns"].items():

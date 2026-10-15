@@ -1,32 +1,26 @@
-"""The platform's records as linked data. The API gives every record in JSON-LD, with its fields named as
-the platform's JSON-LD context names them ("name", "url", "about", ..., and "dct:conformsTo" for a field
-of another vocabulary). A link is {"@id": "https://..."}, and a field that takes several values always
-gives a list. Each record's schema carries its JSON-LD type and context (x-jsonld-type, x-jsonld-context),
-and the model's SHACL shapes (/api/shapes.ttl) say what each field takes.
-
-The records of a kind are listed a page at a time as a Hydra collection, filtered by any of their
-fields. The address of each record gives its page, or its data in JSON-LD, Turtle or N-Triples, as the
-request's Accept header asks.
+"""The platform's records as linked data. The address of each record gives its page, or its data in
+JSON-LD, Turtle or N-Triples, as the request's Accept header asks; the model's SHACL shapes
+(/api/shapes.ttl) say what each field takes.
 
 Records of the kinds listed under `writable` in model.yaml are added, replaced, moved and removed with
-a write token, or by the editor page with an editor's login. Each record is checked against the model,
-and one that does not fit is refused with what is wrong with each field. Every answer gives the record's
-version: a write that sends it back in If-Match is refused when the record has changed since. With
-?preview=true, a write saves nothing and answers with what it would change.
+a write token, or by the editor page with an editor's login, in JSON-LD with the fields named as the
+platform's JSON-LD context names them ("name", "url", "about", ..., and "dct:conformsTo" for a field of
+another vocabulary); a link is {"@id": "https://..."}. Each record is checked against the model, and one
+that does not fit is refused with what is wrong with each field. Every answer gives the record's version:
+a write that sends it back in If-Match is refused when the record has changed since. With ?preview=true,
+a write saves nothing and answers with what it would change.
 """
 
-import json
 import re
 import time
 from functools import cache
 from typing import Any, Literal
-from urllib.parse import urlencode
 
-from flask import Blueprint, Response as Answer, jsonify, redirect, request, url_for
+from flask import Blueprint, Response as Answer, jsonify, request, url_for
 from pydantic import BaseModel, ConfigDict, Field, RootModel, create_model
 from rdflib import URIRef
 from spectree import Response, SecurityScheme, SecuritySchemeData, SpecTree
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import RequestEntityTooLarge
 
@@ -35,17 +29,13 @@ from admin import changes, tokens, writes
 from admin.writes import IDENTIFIER
 from database import images, records
 from database.tables import Record
-from linkeddata import checks, documents, forms, storage
+from linkeddata import checks, documents, forms
 from linkeddata.model import RELEASE, settings, shapes
 from routes import account
 
 # Requests are limited per client address, as in ToxTempAssistant's API.
 RATE_LIMIT = 300
 RATE_WINDOW = 60
-HYDRA = "http://www.w3.org/ns/hydra/core#"
-# How many records a page of a collection gives, unless it asks for another number, and at most.
-PAGE = 50
-LARGEST_PAGE = 200
 # The formats of a record's data at its address, by the media type that asks for them.
 FORMATS = ("application/ld+json", "text/turtle", "application/n-triples")
 
@@ -136,51 +126,12 @@ def record_model(kind: str) -> type[BaseModel]:
     return create_model(local(kind), __config__=ConfigDict(extra="allow", json_schema_extra=extensions), **fields)
 
 
-@cache
-def collection_model(kind: str) -> type[BaseModel]:
-    """A page of the records of a class, as a Hydra collection."""
-    fields = {
-        "@context": (dict, Field(description="The JSON-LD context of the page and of its records.")),
-        "@id": (str, Field(description="The address of the records of the query.")),
-        "@type": (Literal["hydra:Collection"], ...),
-        "hydra:totalItems": (int, Field(description="How many records the query gives.")),
-        "hydra:member": (list[record_model(kind)], Field(description="The records of this page.")),
-        "hydra:view": (dict[str, str], Field(description="This page, and the addresses of the first, previous, next and last pages.")),
-    }
-    extensions = {"x-jsonld-type": HYDRA + "Collection", "x-jsonld-context": {"hydra": HYDRA}}
-    return create_model(local(kind) + "Collection", __config__=ConfigDict(json_schema_extra=extensions), **fields)
-
-
-@cache
-def query_model(kind: str) -> type[BaseModel]:
-    """The query of a page of the records of a class: every field is a filter."""
-    fields = {
-        "q": (str | None, Field(None, description="Records whose name has this text, in small or capital letters.")),
-        "id": (list[str] | None, Field(None, description="Records at these addresses.")),
-        "source": (list[str] | None, Field(None, description='Records of these sources, or of "platform" for records written on the platform.')),
-        "limit": (int, Field(PAGE, ge=1, le=LARGEST_PAGE, description="How many records a page gives.")),
-        "offset": (int, Field(0, ge=0, description="How many records come before this page.")),
-    }
-    for field in forms.form(kind):
-        explanation = f"Records whose field has one of these values; a link is given by its address. {field['help']}"
-        fields[field["name"]] = (list[str] | None, Field(None, title=field["label"], description=explanation.strip()))
-    return create_model(local(kind) + "Query", __config__=ConfigDict(extra="forbid"), **fields)
-
-
 class RecordsDocument(SpecTree):
-    """The OpenAPI document of this API. JSON-LD answers are given under their own media type, and the
-    addresses of the records, which answer by content negotiation, are added to the API's own routes."""
+    """The OpenAPI document of this API, with the addresses of the records, which answer by content
+    negotiation, added to the API's own routes."""
 
     def _generate_spec(self) -> dict:
         found = super()._generate_spec()
-        schemas = found["components"]["schemas"]
-        for operations in found["paths"].values():
-            for operation in operations.values():
-                for answer in operation["responses"].values():
-                    content = answer.get("content", {})
-                    name = content.get("application/json", {}).get("schema", {}).get("$ref", "").rsplit("/", 1)[-1]
-                    if "x-jsonld-type" in schemas.get(name, {}):
-                        content["application/ld+json"] = content.pop("application/json")
         found["paths"].update(addresses())
         return found
 
@@ -266,75 +217,6 @@ def limit():
 def answers(**given) -> Response:
     """The answers of a route, and the refusal of too many requests that every route gives."""
     return Response(**given, HTTP_429=(Error, f"More than {RATE_LIMIT} requests in {RATE_WINDOW} seconds came from this address."))
-
-
-def paged(offset: int, limit: int) -> str:
-    """The address of a page of the collection that the request asks for."""
-    given = request.args.copy()
-    given["offset"] = str(offset)
-    given["limit"] = str(limit)
-    return request.base_url + "?" + urlencode(list(given.items(multi=True)))
-
-
-def listing(kind: str):
-    """The records of a kind, a page at a time.
-
-    A record is given when each field of the query has one of the values given for it; repeat a
-    parameter for several values. The records come in the order of their names."""
-    kinds = settings()["kinds"]
-    fields = {}
-    for field in forms.form(kinds[kind]):
-        fields[field["name"]] = field["iri"]
-    given = request.context.query.model_dump(exclude_none=True)
-    conditions = [Record.type == kinds[kind], Record.removed_at.is_(None)]
-    for name, values in given.items():
-        if name in fields:
-            conditions.append(storage.having(kinds[kind], fields[name], values))
-    if "q" in given:
-        conditions.append(func.lower(Record.name).contains(given["q"].lower(), autoescape=True))
-    if "id" in given:
-        conditions.append(Record.iri.in_(given["id"]))
-    if "source" in given:
-        conditions.append(Record.source.in_(given["source"]))
-    limit, offset = given["limit"], given["offset"]
-    with database.session() as db:
-        total = db.scalar(select(func.count()).select_from(Record).where(*conditions))
-        statement = select(Record.iri).where(*conditions).order_by(func.lower(Record.name), Record.iri)
-        page = list(db.scalars(statement.limit(limit).offset(offset)))
-    found = storage.read(page)
-    members = []
-    for iri in page:
-        member = forms.shaped(documents.document(found, iri), kinds[kind])
-        member.pop("@context", None)
-        members.append(member)
-    view = {"@id": paged(offset, limit), "@type": "hydra:PartialCollectionView", "hydra:first": paged(0, limit),
-            "hydra:last": paged(max(total - 1, 0) // limit * limit, limit)}
-    if offset > 0:
-        view["hydra:previous"] = paged(max(offset - limit, 0), limit)
-    if offset + limit < total:
-        view["hydra:next"] = paged(offset + limit, limit)
-    collection = {
-        "@context": {**documents.context(settings()), "hydra": HYDRA},
-        "@id": request.base_url,
-        "@type": "hydra:Collection",
-        "hydra:totalItems": total,
-        "hydra:member": members,
-        "hydra:view": view,
-    }
-    return Answer(json.dumps(collection, indent=2), mimetype="application/ld+json")
-
-
-def get(kind: str, identifier: str):
-    """A record, as the API takes it back with PUT."""
-    record = records.get(records.address(f"{kind}/{identifier}"))
-    if record is None or record.type != settings()["writable"][kind]:
-        return error("There is no record of this kind at this address.", 404)
-    if record.moved_to:
-        return redirect(url_for(f"api.get_{kind}", identifier=record.moved_to.rsplit("/", 1)[-1]), code=301)
-    if record.removed_at:
-        return error("This record was removed.", 410)
-    found = forms.shaped(documents.document(storage.read([record.iri]), record.iri), record.type)
-    return Answer(json.dumps(found, indent=2), mimetype="application/ld+json")
 
 
 def authorized(kind: str):
@@ -530,14 +412,10 @@ def model_shapes():
     return Answer(shapes().serialize(format="turtle"), mimetype="text/turtle")
 
 
-# The routes of each kind of record, with the models of its own fields.
-for name, kind in settings()["kinds"].items():
-    view = document.validate(query=query_model(kind), resp=answers(HTTP_200=(collection_model(kind), "A page of the records, with how many the query gives.")), tags=[name])(listing)
-    blueprint.add_url_rule(f"/api/{name}", f"list_{name}", view, methods=["GET"], defaults={"kind": name})
+# The routes of each kind of record that is written through the API, with the model of its own fields.
 for name, kind in settings().get("writable", {}).items():
     record = record_model(kind)
     routes = [
-        ("/<identifier>", "GET", get, {"resp": answers(HTTP_200=record, HTTP_301=None, HTTP_404=MISSING, HTTP_410=(Error, "The record was removed."))}),
         ("/<identifier>", "PUT", put, {"query": Write, "json": record, "security": {"token": []}, "resp": answers(
             HTTP_200=(Written, "The record was replaced; with preview=true, what the write would change."), HTTP_201=(Done, "The record was added."),
             HTTP_400=(Error, "The identifier or the body is not as the API takes it."), HTTP_401=TOKEN,
