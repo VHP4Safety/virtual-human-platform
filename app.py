@@ -21,7 +21,7 @@ from data.biostudies.search import BioStudiesExtractor
 from data.zenodo.search import ZenodoExtractor
 from data.mapping import normalize_all, scrub_draft
 from database import records
-from linkeddata import rdf
+from linkeddata import rdf, views
 from routes.account import blueprint as account_blueprint
 from routes.api import blueprint as api_blueprint
 from routes.changes import blueprint as changes_blueprint
@@ -479,6 +479,36 @@ PARTNERS_FILE = os.path.join(PARTNERS_DIR, "partners.txt")
 _PARTNER_IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".svg", ".gif", ".webp")
 
 
+def linked_methods() -> dict:
+    """The methods of the platform's records, as the cloud catalogue's methods index gives them, so
+    that the methods pages read them as they read the index."""
+    stage_mapping = get_stage_mapping()
+    cases = records.address("casestudies/")
+    methods = {}
+    for record in records.of_kind("methods"):
+        method_id = record.iri.rsplit("/", 1)[-1]
+        descriptions = rdf.values(record.document, "description")
+        urls = rdf.values(record.document, "url")
+        method = {
+            "id": method_id,
+            "method": record.name or method_id,
+            "method_description_content": descriptions[0] if descriptions else "",
+            "catalog_webpage_url": urls[0] if urls else "",
+        }
+        stages = []
+        for value in rdf.values(record.document, "about"):
+            if value.startswith(cases):
+                case, question = value.removeprefix(cases).split("/")[:2]
+                method["case_study"] = case
+                if question[1:].isdigit():
+                    method["regulatory_question"] = _REG_QUESTION_KEYS.get((case, int(question[1:]) - 1), "")
+            elif value in stage_mapping or value in stage_mapping.values():
+                stages.append(value)
+        method["vhp4safety_workflow_stage_content"] = ", ".join(stages)
+        methods[method_id] = method
+    return methods
+
+
 def get_partner_logos() -> list:
     """Return partner logos from static/images/partners/.
 
@@ -696,7 +726,7 @@ def inject_methods_menu():
     """Fetch methods_index.json and expose a simple list of {id, title} to templates.
     Return an empty list on any error to avoid breaking pages.
     """
-    data = get_json_dict(METHODS_URL)
+    data = linked_methods()
     if data:
         items = []
         for key, val in data.items() if isinstance(data, dict) else []:
@@ -800,7 +830,7 @@ def home():
     num_tools = len(tools)
     num_case_studies = len(get_casestudies())
     try:
-        methods = get_json_dict(METHODS_URL)
+        methods = linked_methods()
         num_methods = len(methods) if isinstance(methods, dict) else 0
     except Exception:
         num_methods = 0
@@ -863,7 +893,7 @@ def sitemap():
         paths += [f"/tools/{urllib.parse.quote(str(k))}" for k in tools]
 
     # Method detail pages
-    methods = get_json_dict(METHODS_URL)
+    methods = linked_methods()
     if isinstance(methods, dict):
         paths += [f"/methods/{urllib.parse.quote(str(k))}" for k in methods]
 
@@ -1385,7 +1415,7 @@ def tools():
 @app.route("/methods/")
 def methods():
     """Fetch methods_index.json from the cloud repo, normalize fields and render a methods list page."""
-    methods = get_json_dict(METHODS_URL)  # cached for CACHE_TIMEOUT (5 days)
+    methods = linked_methods()
 
     if not methods:
         return "Error fetching methods list", 503
@@ -1539,56 +1569,21 @@ def methods():
 
 @app.route("/methods/<methodid>")
 def method_page(methodid):
-    """Render a single method page using templates/methods/method.html
-    Method details are taken from methods_index.json (keyed by method id).
-    """
-    methods = get_json_dict(METHODS_URL)
-    # methods_index.json is a dict keyed by method id
-    if methodid not in methods:
+    """Render a single method page using templates/methods/method.html, from the method's record
+    named with the keys of its template (templates/methods/method.context.jsonld)."""
+    record = records.get(records.address(f"methods/{methodid}"))
+    if record is None:
         abort(404)
-    method_details = methods[methodid]
-
-    # Try to load the full method JSON from the docs/methods folder (raw github)
-    method_json = None
-    # URL-encode the filename part to be safe
-    encoded = urllib.parse.quote(methodid, safe="")
-    raw_url = (
-        "https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/docs/methods/"
-        + f"{encoded}.json"
-    )
-    try:
-        r = requests.get(raw_url, timeout=5)
-        if r.status_code == 200:
-            method_json = r.json()
-        else:
-            # fall back to using the index entry as minimal data
-            method_json = method_details
-    except Exception:
-        # on any error, fall back to index entry
-        method_json = method_details
-
-    # Mirror the template's title/description resolution (methods/method.html)
-    src = method_json if isinstance(method_json, dict) else method_details
-    method_name = (
-        src.get("method")
-        or src.get("method_name_content")
-        or src.get("service")
-        or methodid
-    )
-    method_desc = (
-        src.get("method_description_content")
-        or src.get("method_description")
-        or src.get("description")
-        or ""
-    )
-    # Pass both to the template: some templates expect method_json, others method_details
+    method = views.view(record, "methods/method")
+    method_name = record.name or methodid
+    descriptions = rdf.values(record.document, "description")
     return render_template(
         "methods/method.html",
-        method=method_details,
-        method_details=method_details,
-        method_json=method_json,
+        method=method,
+        method_details=method,
+        method_json=method,
         page_title=f"{method_name} — VHP4Safety",
-        meta_description=clip(method_desc)
+        meta_description=clip(descriptions[0] if descriptions else "")
         or f"{method_name}, a method in the VHP4Safety Virtual Human Platform.",
     )
 
