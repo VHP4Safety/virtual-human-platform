@@ -43,7 +43,7 @@ except that `database/` reads the base address of records from `linkeddata/model
 | Package | Module | Concern |
 |---|---|---|
 | `database/` | `__init__.py`, `tables.py` | the database file and its tables (SQLAlchemy) |
-| | `records.py` | reading records and their revisions |
+| | `records.py` | reading records |
 | | `images.py` | uploaded images: checked and saved again as WebP |
 | | `export.py` | the records written on the platform, exported to a git repository |
 | `linkeddata/` | `model.py`, `model/v1/` | the model and the application profile |

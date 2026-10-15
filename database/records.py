@@ -1,9 +1,9 @@
-"""The records and their revisions, as the pages and the editor read them."""
+"""The records, as the pages and the editor read them."""
 
 from sqlalchemy import select
 
 import database
-from database.tables import Record, Revision
+from database.tables import Record
 from linkeddata.model import settings, terms
 
 
@@ -56,8 +56,3 @@ def earlier_addresses(iri: str) -> list[str]:
     """The addresses that a record had before it moved to *iri*."""
     with database.session() as db:
         return list(db.scalars(select(Record.iri).where(Record.moved_to == iri)))
-
-
-def history(limit: int) -> list[Revision]:
-    with database.session() as db:
-        return list(db.scalars(select(Revision).order_by(Revision.id.desc()).limit(limit)))

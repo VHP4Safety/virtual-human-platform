@@ -213,7 +213,7 @@ def check_written() -> None:
     with database.session() as db:
         iris = list(db.scalars(select(Record.iri).where(Record.source == PLATFORM, Record.removed_at.is_(None))))
     notes = {}
-    conforms, results, _ = pyshacl.validate(rdf.graph(iris), shacl_graph=profile())
+    _, results, _ = pyshacl.validate(rdf.graph(iris), shacl_graph=profile())
     for result in results.subjects(RDF.type, SH.ValidationResult):
         note = {
             "iri": str(results.value(result, SH.focusNode)),
