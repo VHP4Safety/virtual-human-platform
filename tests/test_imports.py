@@ -143,7 +143,7 @@ def test_checks_report_values_that_do_not_fit():
         <{BASE}tools/b> a schema:SoftwareApplication ; schema:name "B" ; schema:description "Does B." ;
             schema:url "not a link" ; dct:conformsTo <{PROFILE}> .
     """)
-    notes = check(data, ["https://schema.org/SoftwareApplication"])
+    notes = check(data)
     assert {(note["iri"], note["field"], note["value"]) for note in notes} == {
         (BASE + "tools/b", SCHEMA + "url", "not a link")
     }

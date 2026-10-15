@@ -17,7 +17,7 @@ import yaml
 from rdfsolve import SchemaMiner
 from rdfsolve.api import Client
 from rdfsolve.conversion import Profile, Rule, write_query
-from rdflib import RDF
+from rdflib import RDF, Graph
 from rdflib.namespace import SH
 from sqlalchemy import delete, func, insert, select
 
@@ -66,38 +66,30 @@ def convert(spec: dict, data, base: str) -> tuple[ox.Dataset, list[str]]:
     return statements, queries
 
 
-def check(data: ox.Dataset, classes: list[str]) -> list[dict]:
-    """The records of each class of the model, extracted with rdfsolve and checked against the model.
-    The extraction of a class also holds the records its records link to, with their class only, so
-    each check reports on the records of its own class."""
-    with SchemaMiner.from_graph(data, delay=0) as miner:
-        mined = miner.mine(dataset_name="platform")
-    client = Client(mined, data)
-    model_shapes = shapes()
-    vocabulary = ontology()
+def check(data: ox.Dataset) -> list[dict]:
+    """The records in converted data, checked with pyshacl against the model and the class hierarchy of its
+    vocabularies. The records of other sources that they link to are in the data with their class only,
+    and are not reported."""
+    graph = Graph().parse(data=ox.serialize(data, format=ox.RdfFormat.N_QUADS), format="nt")
+    described = set()
+    for subject, predicate in graph.subject_predicates():
+        if predicate != RDF.type:
+            described.add(subject)
+    _, results, _ = pyshacl.validate(graph, shacl_graph=shapes(), ont_graph=ontology())
     notes = []
-    for kind in classes:
-        own = set()
-        for quad in data.quads_for_predicate(TYPE):
-            if quad.object == ox.NamedNode(kind):
-                own.add(quad.subject.value)
-        fields = []
-        for pattern in mined.patterns:
-            if pattern.subject_class == kind and (kind, pattern.property_uri) not in fields:
-                fields.append((kind, pattern.property_uri))
-        if not fields:
+    for result in results.subjects(RDF.type, SH.ValidationResult):
+        if results.value(result, SH.focusNode) not in described:
             continue
-        extraction = client.extract(mined.select(fields=fields), root_class=kind)
-        for violation in extraction.assess(model_shapes, ontology=vocabulary, inference="rdfs").violations:
-            if violation.focus is None or violation.focus.value not in own:
-                continue
-            notes.append({
-                "iri": violation.focus.value if violation.focus else "",
-                "field": violation.path.value if violation.path else "",
-                "value": violation.value.value if violation.value else "",
-                "reason": " ".join(violation.messages),
-                "component": violation.component,
-            })
+        messages = []
+        for message in results.objects(result, SH.resultMessage):
+            messages.append(str(message))
+        notes.append({
+            "iri": str(results.value(result, SH.focusNode)),
+            "field": str(results.value(result, SH.resultPath) or ""),
+            "value": str(results.value(result, SH.value) or ""),
+            "reason": " ".join(messages),
+            "component": str(results.value(result, SH.sourceConstraintComponent)),
+        })
     return notes
 
 
@@ -195,7 +187,7 @@ def import_source(spec: dict, offline: bool) -> None:
     # A source of one file gives its parser the file; a source of several gives them by name.
     parsed = parser.parse(contents if "files" in spec or "entries" in spec else contents[spec["name"]])
     data, queries = convert(spec, parsed, config["base"])
-    notes = check(ox.Dataset([*data, *known_types(spec["name"])]), config["classes"])
+    notes = check(ox.Dataset([*data, *known_types(spec["name"])]))
     rows = records_of(data, config["classes"], spec["name"])
     checksum = hashlib.sha256()
     for name in sorted(contents):
