@@ -1,4 +1,4 @@
-rdfsolve[validation] @ git+https://github.com/jmillanacosta/rdfsolve@cf850ebaad350e14da366a2236908a16d5e054a0
+rdfsolve[validation] @ git+https://github.com/jmillanacosta/rdfsolve@be75721c7cda5092504d5a5468040fb55a2aefee
 pillow>=11
 pyshacl>=0.30
 pyyaml>=6.0

@@ -67,13 +67,10 @@ def property_shapes(graph: Graph, kind: str) -> dict[str, list]:
 
 @cache
 def shapes() -> Graph:
-    """The checks of the model: the approved schema's value types of the fields the profile has, and the
-    application profile next to them. They are not merged, so that a recommendation of the profile
-    (sh:Warning) never makes a value of the wrong type a recommendation too."""
+    """The checks of the model: the approved schema's value types of the fields the profile has, with the
+    profile's rules."""
     schema = MinedSchema.from_json(MODEL_DIR / "schema.json")
-    paths = [str(path) for path in profile().objects(None, SH.path) if isinstance(path, URIRef)]
-    generated = schema.model_copy(update={"shape_profile": None}).to_shacl(properties=paths)
-    return Graph().parse(data=generated, format="turtle") + profile()
+    return Graph().parse(data=schema.to_shacl(properties="profile"), format="turtle")
 
 
 @cache
