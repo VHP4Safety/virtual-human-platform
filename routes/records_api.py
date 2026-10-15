@@ -140,7 +140,6 @@ def store(address: str, body: dict, replace: bool, preview: bool):
     if problems:
         abort(422, message=str(checks.NotFitting(problems)), errors=problems)
     revision = writes.save(documents.document(found, address), kind, who.name, who.orcid, replace)
-    writes.name_things(writes.titled(kind, body))
     return done(address, revision, 201 if revision.action == "Added" else 200, warnings)
 
 
@@ -171,12 +170,14 @@ def read(given):
 @blueprint.arguments(Record)
 @blueprint.response(200, Done, description="The record was replaced; with preview=true, what the write would change.")
 @blueprint.alt_response(201, schema=Done, description="The record was added.")
-@blueprint.doc(security=TOKEN)
+@blueprint.doc(security=TOKEN, requestBody={"content": {"text/turtle": {"schema": {"type": "string"}}}})
 def replace(given, body):
-    """Add or replace the record at this address."""
+    """Add or replace the record at this address, given in JSON-LD or in Turtle."""
     record = records.get(given["graph"])
     if record is not None and (record.moved_to or record.removed_at):
         abort(409, message="This address belongs to a record that moved or was removed, and is not written again.")
+    if request.mimetype == "text/turtle":
+        body = documents.document(Graph().parse(data=request.get_data(as_text=True), format="turtle"), given["graph"])
     return store(given["graph"], body, True, given["preview"])
 
 

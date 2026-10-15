@@ -13,7 +13,7 @@ ORCID = "0000-0002-1825-0097"
 BASE = "https://platform.vhp4safety.nl/"
 TOOL = "https://schema.org/SoftwareApplication"
 STEP = "https://vhp4safety.github.io/glossary#VHP0000156"
-FITTING = {"name": "T", "description": "Does T.", "url": "https://t.org/", "about": [STEP]}
+FITTING = {"name": "T", "description": "Does T.", "url": {"@id": "https://t.org/"}, "about": [{"@id": STEP}]}
 NEW = "/api/records?graph=" + BASE + "tools/new"
 
 
@@ -44,14 +44,15 @@ def test_editor_and_changes(site):
         form_token = session["form_token"]
     secret = tokens.create(ORCID, "Test Editor", ["tools"])
     assert site.post("/login/token/", data={"token": secret, "form_token": form_token, "next": "/admin/"}).status_code == 302
-    page = site.get("/admin/tools/").data.decode()
+    assert "Tools" in site.get("/admin/").data.decode()
+    assert "<shacl-form" in site.get("/admin/tools/?record=" + BASE + "tools/t").data.decode()
+    assert "Toxicodynamics (Process Flow Step)" in site.get("/admin/form.ttl").data.decode()
     with site.session_transaction() as session:
         form_token = session["form_token"]
-    data = json.loads(page.split('<script type="application/json" id="editor-data">')[1].split("</script>")[0])
-    assert {option["iri"]: option["name"] for option in data["choices"]["about"][0]["options"]}[STEP] == "Toxicodynamics (Process Flow Step)"
-    answer = site.put("/api/records?graph=" + BASE + "tools/t", json={**FITTING, "about": []}, headers={"X-Form-Token": form_token}).json
+    turtle = f'<{BASE}tools/t> a <{TOOL}> ; <https://schema.org/name> "T" ; <https://schema.org/description> "Does T." .'
+    answer = site.put("/api/records?graph=" + BASE + "tools/t", data=turtle, content_type="text/turtle", headers={"X-Form-Token": form_token}).json
     change = site.get(answer["change"] + ".json").json
-    assert [(edge["status"], edge["name"]) for edge in change["edges"] if edge["status"] != "kept"] == [("removed", "Toxicodynamics (Process Flow Step)")]
+    assert ("removed", "Toxicodynamics (Process Flow Step)") in [(edge["status"], edge["name"]) for edge in change["edges"]]
 
 
 def test_api(site):

@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 import database
 from database import records
 from database.tables import PLATFORM, Note, Record, Source
-from linkeddata import checks, documents, forms, storage
+from linkeddata import checks, documents, fields, storage
 from linkeddata.imports import files_of, specs
 from linkeddata.model import settings
 
@@ -14,7 +14,7 @@ def field_labels() -> dict[tuple[str, str], str]:
     """The name of each field on the platform, by its class and the address of its property."""
     labels = {}
     for kind in settings()["kinds"].values():
-        for field in forms.form(kind):
+        for field in fields.of(kind):
             labels[(kind, field["iri"])] = field["label"]
     return labels
 
@@ -34,7 +34,7 @@ def report() -> dict:
     classes = []
     for kind in sorted(of_class):
         completeness = []
-        for field in forms.form(kind):
+        for field in fields.of(kind):
             filled = 0
             for record in of_class[kind]:
                 if documents.stored_values(statements, record.iri, field["name"]):

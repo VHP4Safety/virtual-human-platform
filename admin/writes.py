@@ -8,13 +8,13 @@ import json
 import re
 from datetime import datetime, timezone
 
-from rdflib import RDF, Graph, Literal, URIRef
+from rdflib import Graph, URIRef
 from rdflib.namespace import SDO
 from sqlalchemy import delete, insert, select
 
 import database
 from database.tables import PLATFORM, Record, Revision, now
-from linkeddata import documents, forms, storage
+from linkeddata import documents, fields, storage
 from linkeddata.documents import context
 from linkeddata.model import settings
 
@@ -25,78 +25,26 @@ def version() -> str:
 
 
 def document(kind: str, address: str, body: dict) -> dict:
-    """The JSON-LD document of a request's body: its fields, named as the form of *kind* names them. A
-    link is {"@id": ...}, or a web address in a field that takes links. The values that the model fixes
-    are set by the platform."""
-    fields = {}
-    for field in forms.form(kind):
-        fields[field["name"]] = field
+    """The JSON-LD document of a request's body: its fields, named as the platform's JSON-LD context names
+    them, and the values that the model fixes. A field that the class does not have is refused."""
+    known = {}
+    for field in fields.of(kind):
+        known[field["name"]] = field
     found = {"@context": context(settings()), "@id": address, "@type": documents.term(kind)}
     for name, value in body.items():
         if name.startswith("@"):
             continue
-        if name not in fields:
+        if name not in known:
             raise ValueError(f"The platform does not keep the field {name!r}.")
-        items = []
-        for item in value if isinstance(value, list) else [value]:
-            # A link is {"@id": ...}, with a "name" when it is a page that the record gives with its title;
-            # such a page is given its class, so that the checks know it before it is saved.
-            if isinstance(item, dict) and "@id" in item and set(item) <= {"@id", "name"}:
-                if item.get("name") and fields[name]["class"]:
-                    items.append({"@id": item["@id"], "@type": documents.term(fields[name]["class"]), "name": item["name"]})
-                else:
-                    items.append({"@id": item["@id"]})
-            elif fields[name]["links"] and isinstance(item, str) and item.startswith(("https://", "http://")):
-                items.append({"@id": item})
-            else:
-                items.append(item)
-        if not items:
-            continue
-        if len(items) > 1 and not fields[name]["several"]:
-            raise ValueError(f"{name}: the platform keeps one value.")
-        found[name] = items if fields[name]["several"] else items[0]
-    for name, field in fields.items():
+        found[name] = value
+    for name, field in known.items():
         if field["fixed"]:
             found[name] = [{"@id": value} for value in field["fixed"]]
     return found
 
 
-def titled(kind: str, body: dict) -> list[tuple[str, str, str]]:
-    """The pages that a request's body gives with their titles, in the fields the profile edits as
-    details (dash:DetailsEditor): (class, address, title)."""
-    found = []
-    for field in forms.form(kind):
-        if field["entry"] != "details":
-            continue
-        for item in body.get(field["name"]) or []:
-            if isinstance(item, dict) and isinstance(item.get("@id"), str) and isinstance(item.get("name"), str) and item["name"].strip():
-                found.append((field["class"], item["@id"], item["name"].strip()))
-    return found
-
-
 def slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:60] or "record"
-
-
-def name_things(found: list[tuple[str, str, str]]) -> None:
-    """The things a record links to with their titles, such as its guides: (class, address, name).
-    A thing the platform does not know yet is added; a known one takes the new name."""
-    with database.session() as db, db.begin():
-        for kind, iri, name in found:
-            thing = db.get(Record, iri)
-            if thing is None:
-                found = Graph()
-                found.add((URIRef(iri), RDF.type, URIRef(kind)))
-                found.add((URIRef(iri), SDO.name, Literal(name)))
-                storage.save(db, found, iri)
-                db.add(Record(iri=iri, type=kind, source=PLATFORM, name=name))
-            elif thing.name != name:
-                found = storage.read([iri])
-                found.set((URIRef(iri), SDO.name, Literal(name)))
-                storage.save(db, found, iri)
-                thing.name = name
-                thing.source = PLATFORM
-                thing.updated_at = version()
 
 
 def save(document: dict, kind: str, name: str, orcid: str, replace: bool = True) -> Revision:

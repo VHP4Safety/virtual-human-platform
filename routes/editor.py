@@ -1,40 +1,59 @@
-"""The record editor: for each kind of record an editor may write, a form built from the model that
-writes and removes records through the write API with the editor's login."""
+"""The record editor: every kind of record, and for each a list of its records and a form that shacl-form
+builds from the model's shapes, which writes and removes records through the records API with the
+editor's login."""
 
-from flask import Blueprint, abort, make_response, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, redirect, render_template, request, url_for
 
-from admin.editor import page
+from admin import editor
+from database import records
 from linkeddata.model import settings
 from routes.account import current_editor, form_token
 
 blueprint = Blueprint("admin", __name__)
 
 
+def logged_in(kind: str | None = None):
+    """The editor who makes the request; one who may not write records of *kind* gets 404."""
+    found = current_editor()
+    if found is not None and kind is not None and (kind not in settings()["kinds"] or kind not in found.kinds):
+        abort(404)
+    return found
+
+
 @blueprint.get("/admin/")
 def admin():
-    editor = current_editor()
-    if editor is None:
+    if logged_in() is None:
         return redirect(url_for("account.login", next=request.path))
-    return redirect(url_for("admin.edit", kind=editor.kinds[0]))
+    return render_template("admin/kinds.html", kinds=editor.counts(), page_title="VHP4Safety editor")
 
 
 @blueprint.get("/admin/<kind>/")
 def edit(kind: str):
-    editor = current_editor()
-    if editor is None:
+    if logged_in(kind) is None:
         return redirect(url_for("account.login", next=request.path))
-    kinds = settings()["kinds"]
-    if kind not in kinds or kind not in editor.kinds:
-        abort(404)
-    data = page(kind)
-    response = make_response(render_template(
+    listed = editor.listing(kind)
+    selected = request.args.get("record") or ""
+    if request.args.get("new"):
+        selected = records.address(f"{kind}/{request.args['new']}")
+    record = records.get(selected) if selected else None
+    response = Response(render_template(
         "admin/records.html",
         kind=kind,
-        kinds=[other for other in editor.kinds if other in kinds],
-        fields=data["fields"],
-        data=data,
+        kinds=list(settings()["kinds"]),
+        records=listed,
+        selected=selected,
+        record=record,
+        shape=editor.root_shape(kind),
         form_token=form_token(),
         page_title=f"{kind.capitalize()} — VHP4Safety editor",
     ))
     response.headers["X-Robots-Tag"] = "noindex"
     return response
+
+
+@blueprint.get("/admin/form.ttl")
+def form():
+    """The graph from which the forms are built: the model's shapes and what their fields can link to."""
+    if logged_in() is None:
+        abort(401)
+    return Response(editor.form_graph().serialize(format="turtle"), mimetype="text/turtle")

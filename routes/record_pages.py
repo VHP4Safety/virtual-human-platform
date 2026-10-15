@@ -14,7 +14,7 @@ from rdflib import Graph
 
 from database import records
 from database.tables import Record
-from linkeddata import documents, forms, storage
+from linkeddata import documents, fields, storage
 from linkeddata.model import settings
 
 FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "application/n-triples"}
@@ -121,11 +121,10 @@ def record_page(record: Record):
     statements = storage.graph([record.iri])
     shown = []
     links = []
-    for field in forms.form(record.type):
+    for field in fields.of(record.type):
         found = documents.stored_values(statements, record.iri, field["name"])
         if found:
             shown.append({"name": field["name"], "label": field["label"], "values": found})
-        if field["links"]:
             links.extend(found)
     descriptions = documents.stored_values(statements, record.iri, "description")
     images = documents.stored_values(statements, record.iri, "image")

@@ -21,77 +21,6 @@ body.editor {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-/* The record editor: the list of records, the form, and the linked data, each in its own area.
-   Wide screens show the three side by side; narrower ones put the linked data under the form. */
-.editor-layout {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "list" "main" "preview";
-}
-
-#list-column {
-  grid-area: list;
-}
-
-#main-column {
-  grid-area: main;
-}
-
-#rdf-column {
-  grid-area: preview;
-}
-
-@media (min-width: 992px) {
-  .editor-layout {
-    grid-template-columns: 300px minmax(0, 1fr);
-    grid-template-areas: "list main" "list preview";
-  }
-}
-
-@media (min-width: 1200px) {
-  .editor-layout.with-preview {
-    grid-template-columns: 240px minmax(0, 1fr) minmax(340px, 30%);
-    grid-template-areas: "list main preview";
-  }
-}
-
-/* The list of records scrolls on its own, next to the form */
-.record-list {
-  max-height: calc(100vh - 330px);
-  min-height: 240px;
-  overflow-y: auto;
-}
-
-/* The save bar stays in view at the bottom of a long form */
-.form-actions {
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-}
-
-/* The current image of a record, or the place where it will be */
-.image-box {
-  width: 200px;
-  height: 120px;
-  overflow: hidden;
-  background: repeating-conic-gradient(#eee 0% 25%, #fff 0% 50%) 50% / 16px 16px;
-}
-
-.image-preview {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-/* The explanation of a choice is kept to two lines; the whole text shows when hovered */
-.choice-description {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
 /* A record's statements as a diagram: the record, and an arrow from each field to its value */
 .graph-node {
   display: inline-flex;
@@ -158,19 +87,4 @@ body.editor {
 
 .graph-kept {
   color: var(--bs-secondary-color);
-}
-
-/* The linked data beside the form stays in view while the form scrolls */
-.rdf-preview {
-  position: sticky;
-  top: 1rem;
-  max-height: calc(100vh - 2rem);
-  overflow-y: auto;
-}
-
-pre.rdf {
-  max-height: 320px;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-all;
 }

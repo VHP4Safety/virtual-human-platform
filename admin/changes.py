@@ -7,7 +7,7 @@ from rdflib.namespace import SDO
 
 from database import records
 from database.tables import Revision
-from linkeddata import forms
+from linkeddata import fields
 from linkeddata.model import curie
 
 
@@ -22,13 +22,11 @@ def edges(before: Graph, after: Graph, record: URIRef) -> dict:
     """The statements about a record before and after a change, as edges from the record to each value:
     added, removed, or kept. Each edge is named by the field of the record's form."""
     kind = after.value(record, RDF.type) or before.value(record, RDF.type)
-    form = forms.form(str(kind)) if kind is not None else []
+    form = fields.of(str(kind)) if kind is not None else []
     labels = {}
-    entries = {}
     order = {}
     for position, field in enumerate(form):
         labels[field["iri"]] = field["label"]
-        entries[field["iri"]] = field["entry"]
         order[field["iri"]] = position
     # A value is compared as a link or a text, so that "X" and "X"^^xsd:string are the same value.
     old = set()
@@ -47,7 +45,6 @@ def edges(before: Graph, after: Graph, record: URIRef) -> dict:
             "property": curie(str(predicate)),
             "value": value,
             "link": link,
-            "entry": entries.get(str(predicate), "text"),
             "status": status,
             "order": order.get(str(predicate), len(form)),
         })
@@ -79,23 +76,23 @@ def compare(revision: Revision) -> dict:
     after = statements(revision.document)
     record = URIRef(revision.record_iri)
     graph = edges(before, after, record)
-    fields = {}
+    changed = {}
     for edge in graph["edges"]:
         if edge["status"] == "kept":
             continue
-        field = fields.setdefault(edge["label"], {"field": edge["label"], "order": edge["order"], "entry": edge["entry"], "before": [], "after": []})
+        field = changed.setdefault(edge["label"], {"field": edge["label"], "order": edge["order"], "before": [], "after": []})
         field["before" if edge["status"] == "removed" else "after"].append(edge["value"])
     for edge in graph["edges"]:
-        if edge["status"] == "kept" and edge["label"] in fields:
-            fields[edge["label"]]["before"].append(edge["value"])
-            fields[edge["label"]]["after"].append(edge["value"])
+        if edge["status"] == "kept" and edge["label"] in changed:
+            changed[edge["label"]]["before"].append(edge["value"])
+            changed[edge["label"]]["after"].append(edge["value"])
     return {
         "number": revision.id,
         "action": revision.action,
         "name": revision.name,
         "orcid": revision.orcid,
         "date": revision.created_at,
-        "fields": sorted(fields.values(), key=lambda field: field["order"]),
+        "fields": sorted(changed.values(), key=lambda field: field["order"]),
         "added": triples(after - before),
         "removed": triples(before - after),
         **graph,

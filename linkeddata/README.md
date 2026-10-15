@@ -60,17 +60,17 @@ except that `database/` reads the base address of records from `linkeddata/model
 | | `documents.py` | records as JSON-LD documents, and as the dictionaries that page templates read |
 | | `checks.py` | the checks of records against the model's shapes |
 | | `imports.py` | the sources: fetched, converted and checked with rdfsolve, and stored as records |
-| | `forms.py` | the editor's form of a class, read from the SHACL shapes and the application profile |
+| | `fields.py` | the fields of a class, read from the SHACL shapes and the application profile |
 | | `quality.py` | how complete the records are, what the checks found, and how each source becomes the model |
 | `admin/` | `accounts.py`, `tokens.py` | editors, and their write tokens |
 | | `writes.py` | records written on the platform, each change with its revision |
-| | `editor.py` | what the record editor shows for each kind of record |
+| | `editor.py` | what the record editor shows: the records of each kind, and the graph its forms are built from |
 | | `changes.py` | each change field by field, and as RDF statements |
 | `routes/` | `record_pages.py` | the address of each record: its data, 410 Gone once removed, a general record page |
 | | `data_quality.py` | the `/data-quality` and `/sources` pages |
 | | `records_api.py` | the records API (flask-smorest): each record a graph of the W3C Graph Store Protocol |
 | | `tables_api.py` | the tables API (flask-smorest): the rows of the release's tables and of the records, notes and sources tables |
-| | `editor.py` | the record editor, a form that writes and removes records through the write API |
+| | `editor.py` | the record editor: shacl-form builds each form from the shapes, and writes through the records API |
 | | `changes.py` | the `/changes` pages |
 | | `account.py` | the login of editors (ORCID, or a write token) and their tokens page |
 | | `images.py` | the uploaded images, served |
@@ -102,12 +102,9 @@ platform asks of its records beyond schema.org and Bioschemas: which fields are 
 pyshacl, after rdfsolve has checked the type of each value, and a refused write says what is wrong
 with each field, in the words of the profile's `sh:message`.
 
-The same profile leads the editor's form (`forms.py`): `sh:order`, `sh:name` and `sh:description`
-place, name and explain each field, and `dash:singleLine false` asks for a longer text. What an
-editor enters follows from the model: a text, a web address, a choice of the records that a field
-links to (as checkboxes, grouped by the source of those records, and the terms of a vocabulary that
-the profile lists with `sh:in`), or an image to upload. A field that
-the profile does not describe is explained by the vocabulary. To change the form, change the profile.
+The editor's forms are built by shacl-form (`@ulb-darmstadt/shacl-form`) from the model's shapes:
+`sh:group`, `sh:order`, `sh:name` and `sh:description` place, name and explain each field, and a field
+that links to a class offers the records of that class. To change the form, change the profile.
 
 ## The parts of an import
 
@@ -182,7 +179,7 @@ A refused record is answered with `422`, flask-smorest's message, and what is wr
 (`POST /api/images`, form field `image`) is read in full, made at most 2000 pixels wide, and saved again as
 WebP; other files are refused. A record's changes are at `/changes?record=<address>`.
 
-The record editor, `/admin/`, writes with a form through the same API. Editors log in at `/login/`,
+The record editor, `/admin/`, lists every kind of record and writes through the same API. Editors log in at `/login/`,
 with ORCID or with a write token; the editor's requests carry the session's form token in the
 `X-Form-Token` header, so that other sites cannot make them. Editors who logged in with ORCID make
 tokens at `/account/tokens/`; the first token can be made with

@@ -1,242 +1,56 @@
 {% extends "editor/base.html" %}
-{% set one = kind[:-1] if kind.endswith("s") else kind %}
 {% block content %}
 <div class="container-fluid px-lg-4 py-4">
   <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
-    <div>
-      <h1 class="h3 text-vhppurple mb-0">{{ kind|capitalize }}</h1>
-      <div class="small text-secondary" id="counts"></div>
-    </div>
-    {% if kinds|length > 1 %}
+    <h1 class="h3 text-vhppurple mb-0">{{ kind|capitalize }}</h1>
     <ul class="nav nav-pills">
       {% for other in kinds %}
       <li class="nav-item"><a class="nav-link{% if other == kind %} active bg-vhppurple{% else %} link-vhppurple{% endif %}" href="{{ url_for('admin.edit', kind=other) }}">{{ other|capitalize }}</a></li>
       {% endfor %}
     </ul>
-    {% endif %}
-    <span class="flex-grow-1"></span>
-    <div class="form-check form-switch mb-0 me-2" title="Shows the statements that saving will publish, next to the form">
-      <input class="form-check-input" type="checkbox" role="switch" id="show-rdf">
-      <label class="form-check-label small" for="show-rdf">Linked data</label>
-    </div>
-    <button type="button" class="btn btn-vhpblue" data-new><i class="bi bi-plus-lg"></i> Add a {{ one }}</button>
   </div>
-
-  <div class="editor-layout" id="layout">
-    <aside id="list-column">
-      <div class="card">
-        <div class="card-body p-2">
-          <label class="visually-hidden" for="filter">Find a {{ one }}</label>
-          <div class="input-group input-group-sm mb-2">
-            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-            <input class="form-control" type="search" id="filter" placeholder="Find a {{ one }}">
-          </div>
-          <div class="btn-group btn-group-sm w-100 mb-2" role="group" aria-label="Show">
-            <input type="radio" class="btn-check" name="show" id="show-all" value="all" checked><label class="btn btn-outline-secondary" for="show-all">All</label>
-            <input type="radio" class="btn-check" name="show" id="show-edited" value="edited"><label class="btn btn-outline-secondary" for="show-edited">Edited</label>
-            <input type="radio" class="btn-check" name="show" id="show-removed" value="removed"><label class="btn btn-outline-secondary" for="show-removed">Removed</label>
-          </div>
-          <div class="list-group list-group-flush record-list" id="record-list"></div>
-        </div>
-      </div>
-    </aside>
-
-    <div id="main-column">
-      <div class="card" id="start">
-        <div class="card-body p-5 text-center">
-          <i class="bi bi-pencil-square display-5 text-vhppurple"></i>
-          <h2 class="h4 mt-3">Edit the {{ one }} catalogue</h2>
-          <p class="text-secondary mx-auto" style="max-width: 34rem">Choose a {{ one }} in the list to change it, or add a new one. Changes are checked and published straight away, and each one is kept in the record's history with your name.</p>
-          <button type="button" class="btn btn-vhpblue" data-new><i class="bi bi-plus-lg"></i> Add a {{ one }}</button>
-        </div>
-      </div>
-
-      <form class="card d-none" id="record-form" novalidate data-form-token="{{ form_token }}">
-        <div class="card-header bg-white py-3">
-          <div class="d-flex flex-wrap align-items-center gap-2">
-            <h2 class="h5 mb-0" id="form-title"></h2>
-            <span id="form-badges"></span>
-            <span class="flex-grow-1"></span>
-            <a class="btn btn-sm btn-outline-vhpblue d-none" id="view" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> View page</a>
-            <a class="btn btn-sm btn-outline-secondary d-none" id="history" target="_blank" rel="noopener"><i class="bi bi-clock-history"></i> History</a>
-          </div>
-          <div class="small text-secondary mt-1" id="form-note"></div>
-          <div class="small mt-2" id="completeness"></div>
-        </div>
-
-        <div class="card-body px-4">
-          <div class="alert alert-danger d-none" id="form-problem" role="alert"></div>
-
-          {% for section in fields|rejectattr("entry", "equalto", "fixed")|groupby("section_order") %}
-          {% set first_section = loop.first %}
-          <h3 class="h6 text-vhppurple fw-semibold border-bottom pb-2 mb-3{% if not loop.first %} mt-5{% endif %}">{{ section.list[0].section }}</h3>
-          {% for field in section.list %}
-          {% set marks %}{% if field.required %} <span class="text-danger" title="Required">*</span>{% elif field.recommended %} <span class="small text-secondary fw-normal">recommended</span>{% endif %}{% if not field.required %}<span class="badge rounded-pill text-bg-light border fw-normal ms-1 d-none" data-missing="{{ field.name }}">Not filled in</span>{% endif %}{% endset %}
-          <div class="mb-4" data-field-box="{{ field.name }}">
-            {% if field.entry in ("links", "choice") %}
-            <fieldset>
-              <legend class="form-label fw-semibold fs-6 mb-1">{{ field.label }}{{ marks }}</legend>
-              <div class="form-text mt-0 mb-2">{{ field.help }}</div>
-              <div class="row g-3" data-choices="{{ field.name }}"></div>
-            </fieldset>
-
-            {% elif field.entry == "details" %}
-            <div class="form-label fw-semibold">{{ field.label }}{{ marks }}</div>
-            <div class="form-text mt-0 mb-2">{{ field.help }}</div>
-            <div class="d-flex flex-column gap-2" data-details="{{ field.name }}"></div>
-            <button type="button" class="btn btn-sm btn-outline-vhpblue mt-2" data-add-detail="{{ field.name }}"><i class="bi bi-plus-lg"></i> Add a page</button>
-
-            {% elif field.entry == "addresses" %}
-            <div class="form-label fw-semibold">{{ field.label }}{{ marks }}</div>
-            <div class="d-flex flex-column gap-2" data-addresses="{{ field.name }}"></div>
-            <button type="button" class="btn btn-sm btn-outline-vhpblue mt-2" data-add-address="{{ field.name }}"><i class="bi bi-plus-lg"></i> Add an address</button>
-            <div class="form-text">{{ field.help }}</div>
-
-            {% elif field.entry == "image" %}
-            <div class="form-label fw-semibold">{{ field.label }}{{ marks }}</div>
-            <div class="d-flex flex-wrap align-items-center gap-3">
-              <div class="image-box rounded border d-flex align-items-center justify-content-center">
-                <img class="image-preview d-none" data-preview="{{ field.name }}" alt="">
-                <span class="text-secondary small" data-no-image="{{ field.name }}">No image</span>
-              </div>
-              <div>
-                <input class="d-none" type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-upload="{{ field.name }}" aria-label="{{ field.label }}">
-                <input type="hidden" data-field="{{ field.name }}">
-                <button type="button" class="btn btn-outline-vhpblue btn-sm" data-choose="{{ field.name }}"><i class="bi bi-upload"></i> <span>Upload an image</span></button>
-                <button type="button" class="btn btn-link btn-sm link-secondary d-none" data-clear="{{ field.name }}">Remove the image</button>
-                <div class="form-text">{{ field.help }} PNG, JPEG or WebP, up to 5 MB.</div>
-              </div>
-            </div>
-
-            {% else %}
-            <label class="form-label fw-semibold" for="field-{{ field.name }}">{{ field.label }}{{ marks }}</label>
-            {% if field.entry == "long text" %}
-            <textarea class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}" rows="4"></textarea>
-            {% elif field.entry == "select" %}
-            <select class="form-select" id="field-{{ field.name }}" data-field="{{ field.name }}">
-              <option value="">Not given</option>
-              {% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
-            </select>
-            {% elif field.entry == "address" %}
-            <input class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}" type="url" inputmode="url" placeholder="{{ 'https://doi.org/10.' if field.pattern.startswith('^https://doi') else 'https://' }}">
-            <div class="form-text d-none" data-lookup="{{ field.name }}" aria-live="polite"></div>
-            {% else %}
-            <input class="form-control" id="field-{{ field.name }}" data-field="{{ field.name }}">
-            {% endif %}
-            <div class="form-text">{{ field.help }}</div>
-            {% endif %}
-
-            <div class="invalid-feedback d-block d-none" data-problem="{{ field.name }}"></div>
-          </div>
-
-          {% if first_section and loop.first %}
-          <div class="mb-4" data-field-box="identifier">
-            <label class="form-label fw-semibold" for="identifier">Page address</label>
-            <div class="input-group">
-              <span class="input-group-text text-secondary">{{ request.host }}/{{ kind }}/</span>
-              <input class="form-control" id="identifier" pattern="[a-z0-9][a-z0-9_\-]*" maxlength="80" autocomplete="off">
-              <button type="button" class="btn btn-outline-secondary d-none" id="identifier-change"><i class="bi bi-pencil"></i> Change address</button>
-            </div>
-            <div class="form-text" id="identifier-help">Made from the name; you can shorten it. Lowercase letters, digits, hyphens and underscores.</div>
-            <div class="invalid-feedback d-block d-none" data-problem="identifier"></div>
-          </div>
-          {% endif %}
-          {% endfor %}
-          {% endfor %}
-
-          {% for field in fields if field.entry == "fixed" %}
-          <p class="small text-secondary border-top pt-3 mb-0"><i class="bi bi-info-circle"></i> {{ field.help }}</p>
-          {% endfor %}
-        </div>
-
-        <div class="card-footer bg-white form-actions d-flex flex-wrap align-items-center gap-2 py-3 px-4">
-          <button type="submit" class="btn btn-vhpblue px-4" id="save">Save</button>
-          <button type="button" class="btn btn-outline-secondary" id="discard">Cancel</button>
-          <span class="small text-secondary d-none" id="unsaved"><i class="bi bi-circle-fill text-warning small"></i> Not saved yet</span>
-          <span class="flex-grow-1"></span>
-          <button type="button" class="btn btn-outline-vhpblue d-none" id="restore"><i class="bi bi-arrow-counterclockwise"></i> Restore</button>
-          <button type="button" class="btn btn-outline-danger d-none" id="remove"><i class="bi bi-trash"></i> Remove</button>
-        </div>
+  <div class="row g-4">
+    <aside class="col-lg-3">
+      <form class="input-group input-group-sm mb-3" method="get">
+        <span class="input-group-text">/{{ kind }}/</span>
+        <input class="form-control" name="new" required pattern="[a-z0-9][a-z0-9_\-]*" placeholder="new-record" aria-label="The address of a new record">
+        <button class="btn btn-vhpblue"><i class="bi bi-plus-lg"></i> Add</button>
       </form>
-
-    </div>
-
-    <aside class="d-none" id="rdf-column">
-      <div class="card rdf-preview">
-        <div class="card-header bg-white">
-          <div class="fw-semibold">Linked data</div>
-          <div class="small text-secondary" id="rdf-caption"></div>
-        </div>
-        <div class="card-body">
-          <div class="alert alert-danger small py-2 d-none"><div class="fw-semibold mb-1">Not ready to save</div><ul class="mb-0 ps-3" id="rdf-problems"></ul></div>
-          <div class="alert alert-warning small py-2 d-none"><div class="fw-semibold mb-1">Check before saving</div><ul class="mb-0 ps-3" id="rdf-warnings"></ul></div>
-          <div id="rdf-graph"></div>
-          <p class="small text-secondary mb-0 mt-3">Each arrow is a statement that the platform publishes about this {{ one }}. Green ones are added when you save, red ones removed.
-            <a class="link-secondary d-none" id="rdf-raw" target="_blank" rel="noopener">The published data (Turtle)</a></p>
-        </div>
+      <div class="list-group small">
+        {% for item in records %}
+        <a class="list-group-item list-group-item-action{% if item.iri == selected %} active{% endif %}" href="?record={{ item.iri|urlencode }}">
+          {{ item.name or item.iri }}{% if item.removed_at %} <span class="badge text-bg-secondary">removed</span>{% endif %}
+        </a>
+        {% endfor %}
       </div>
     </aside>
+    <section class="col-lg-9">
+      {% if selected %}
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <code class="me-auto align-self-center">{{ selected }}</code>
+        {% if record %}
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('changes.changes', record=selected) }}"><i class="bi bi-clock-history"></i> Changes</a>
+        {% if record.removed_at %}
+        <button class="btn btn-sm btn-outline-vhpblue" data-action="restore"><i class="bi bi-arrow-counterclockwise"></i> Restore</button>
+        {% else %}
+        <button class="btn btn-sm btn-outline-secondary" data-action="move"><i class="bi bi-pencil"></i> Move</button>
+        <button class="btn btn-sm btn-outline-danger" data-action="remove"><i class="bi bi-trash"></i> Remove</button>
+        {% endif %}
+        {% endif %}
+        <label class="btn btn-sm btn-outline-secondary mb-0"><i class="bi bi-upload"></i> Upload an image<input type="file" id="image" accept="image/png,image/jpeg,image/webp,image/gif" hidden></label>
+      </div>
+      <div class="alert d-none" id="message" role="status"></div>
+      {% if not record or not record.removed_at %}
+      <shacl-form data-shapes-url="{{ url_for('admin.form') }}" data-shape-subject="{{ shape }}"
+                  {% if record %}data-values-url="{{ url_for('api.read', graph=selected) }}"{% endif %}
+                  data-values-subject="{{ selected }}" data-generate-node-shape-reference="" data-collapse="open"
+                  data-submit-button="Save"></shacl-form>
+      {% endif %}
+      {% endif %}
+    </section>
   </div>
 </div>
-
-<div class="modal fade" id="remove-dialog" tabindex="-1" aria-labelledby="remove-title" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title h5" id="remove-title">Remove this {{ one }}?</h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="form-check mb-3">
-          <input class="form-check-input" type="radio" name="removal" id="removal-keep" value="keep" checked>
-          <label class="form-check-label" for="removal-keep"><strong>Remove</strong><br><span class="small text-secondary">The {{ one }} leaves the catalogue. Its page says that it was removed, and its address is not used again.</span></label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input" type="radio" name="removal" id="removal-free" value="free">
-          <label class="form-check-label" for="removal-free"><strong>Remove permanently</strong><br><span class="small text-secondary">Also frees its address, for example after a {{ one }} was added by mistake. Its history is kept.</span></label>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep it</button>
-        <button type="button" class="btn btn-danger" id="remove-confirm">Remove</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal fade" id="move-dialog" tabindex="-1" aria-labelledby="move-title" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title h5" id="move-title">Change the address</h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <label class="form-label" for="move-to">New address</label>
-        <div class="input-group">
-          <span class="input-group-text text-secondary">{{ request.host }}/{{ kind }}/</span>
-          <input class="form-control" id="move-to" pattern="[a-z0-9][a-z0-9_\-]*" maxlength="80" autocomplete="off">
-        </div>
-        <div class="invalid-feedback d-block d-none" id="move-problem"></div>
-        <p class="small text-secondary mt-3 mb-0">The current address keeps working: it forwards visitors and programs to the new one, and the {{ one }} keeps it among its other addresses. The nightly import treats it as the same {{ one }}.</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-vhpblue" id="move-confirm">Change the address</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="toast-container position-fixed bottom-0 end-0 p-3">
-  <div class="toast align-items-center border-0" id="toast" role="status" aria-live="polite" aria-atomic="true">
-    <div class="d-flex"><div class="toast-body" id="toast-text"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>
-  </div>
-</div>
-
-<script type="application/json" id="editor-data">{{ data|tojson }}</script>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script type="application/json" id="editor">{{ {"graph": selected, "version": record.updated_at if record else none, "token": form_token}|tojson }}</script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@ulb-darmstadt/shacl-form@3.7.3/dist/bundle.js"></script>
+<script src="{{ url_for('static', filename='js/editor.js') }}"></script>
 {% endblock %}

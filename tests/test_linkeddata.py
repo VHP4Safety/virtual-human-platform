@@ -1,4 +1,4 @@
-"""Records as linked data: their documents and checks, the forms read from the model, and an import."""
+"""Records as linked data: their documents and checks, the fields read from the model, and an import."""
 
 import json
 
@@ -9,7 +9,7 @@ import database
 from admin import writes
 from database import records
 from database.tables import Note, Source
-from linkeddata import checks, documents, forms, imports, model, storage
+from linkeddata import checks, documents, fields, imports, model, storage
 from linkeddata.model import settings
 
 BASE = "https://platform.vhp4safety.nl/"
@@ -18,7 +18,7 @@ STEP = "https://vhp4safety.github.io/glossary#VHP0000156"
 
 
 def test_rdf():
-    fitting = writes.document(TOOL, BASE + "tools/t", {"name": "T", "description": "Does T.", "url": "https://t.org/"})
+    fitting = writes.document(TOOL, BASE + "tools/t", {"name": "T", "description": "Does T.", "url": {"@id": "https://t.org/"}})
     found = checks.check(fitting)
     assert documents.document(found, BASE + "tools/t")["url"] == {"@id": "https://t.org/"}
     with pytest.raises(checks.NotFitting) as problem:
@@ -26,11 +26,11 @@ def test_rdf():
     assert set(problem.value.problems) == {"url", "description"}
 
 
-def test_forms():
+def test_fields():
     assert model.pinned_problems() + model.schema_problems() + model.tables_problems() == []
     for kind in settings()["kinds"].values():
-        for field in forms.form(kind):
-            assert field["label"] and field["entry"], (kind, field["name"])
+        for field in fields.of(kind):
+            assert field["label"], (kind, field["name"])
 
 
 def test_imports(monkeypatch, tmp_path):
