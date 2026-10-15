@@ -21,10 +21,10 @@ from sqlalchemy import delete, func, insert, select
 import database
 from database.tables import PLATFORM, Note, Record, Source, now
 from linkeddata import rdf, tables
-from linkeddata.model import settings
+from linkeddata.model import RELEASE, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
-TARGET = "VHP4Safety model v1"
+TARGET = f"VHP4Safety model {RELEASE}"
 
 
 def fetch(url: str) -> bytes:
