@@ -47,15 +47,14 @@ def slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:60] or "record"
 
 
-def save(document: dict, kind: str, name: str, orcid: str, replace: bool = True) -> Revision:
-    """A record's document, checked with rdf.check, is written on the platform with its revision.
-    It replaces the record at its address, unless *replace* is False."""
+def save(document: dict, kind: str, name: str, orcid: str) -> Revision:
+    """A record's document, checked against the model, is written on the platform in place of the record at
+    its address, with its revision."""
     iri = document["@id"]
-    previous = documents.document_of(iri) if replace else None
+    previous = documents.document_of(iri)
     with database.session() as db, db.begin():
         created = db.get(Record, iri) is None
-        if replace:
-            db.execute(delete(Record).where(Record.iri == iri))
+        db.execute(delete(Record).where(Record.iri == iri))
         found = documents.statements(document)
         storage.save(db, found, iri)
         db.execute(insert(Record), [{**storage.row(found, iri, kind, PLATFORM), "updated_at": version()}])

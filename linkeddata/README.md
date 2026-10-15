@@ -145,7 +145,7 @@ rules:
 
 Each record is a graph of the W3C SPARQL 1.1 Graph Store HTTP Protocol, named by its address:
 `GET /api/records?graph=<address>` gives it in JSON-LD, Turtle or N-Triples, `PUT` adds or replaces it,
-`POST /api/records` adds a record at an address made from its kind and name, and `DELETE` removes it.
+and `DELETE` removes it.
 Writes are checked against the model's SHACL shapes (`/api/shapes.ttl`), need a write token or an editor's
 login, and are refused with `412` when If-Match does not give the record's version (its ETag). The address
 of each record also answers in HTML, JSON-LD, Turtle or N-Triples, as the Accept header asks. flask-smorest

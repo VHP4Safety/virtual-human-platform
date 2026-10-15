@@ -62,7 +62,6 @@ def test_api(site):
     assert created.status_code == 201 and "Does T." in site.get(NEW, headers={"Accept": "text/turtle"}).data.decode()
     refused = site.put(NEW, json={"name": "N", "url": "not a link"}, headers=bearer)
     assert refused.status_code == 422 and set(refused.json["errors"]) == {"url", "description"}
-    assert set(site.put("/api/records?graph=" + BASE + "tools/t&preview=true", json={"name": "Z"}, headers=bearer).json["fields"]) == {"description"}
     stale = {**bearer, "If-Match": "an older version"}
     assert site.put(NEW, json=FITTING, headers=stale).status_code == 412
     assert site.post("/api/records/move?graph=" + BASE + "tools/new", json={"to": BASE + "tools/renamed"}, headers=bearer).status_code == 200

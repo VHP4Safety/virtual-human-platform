@@ -32,8 +32,13 @@
     window.location.search = "?record=" + encodeURIComponent(address);
   }
 
+  // The record's linked data, as the form will send it.
   const form = document.querySelector("shacl-form");
+  const turtle = document.getElementById("turtle");
   if (form) {
+    form.addEventListener("change", function () {
+      turtle.textContent = form.serialize("text/turtle");
+    });
     form.addEventListener("submit", async function () {
       if (await send("PUT", graph, form.serialize("text/turtle"), "text/turtle")) {
         reopen(editor.graph);

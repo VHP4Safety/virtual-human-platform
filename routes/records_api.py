@@ -1,27 +1,24 @@
 """The platform's records as graphs of the W3C SPARQL 1.1 Graph Store HTTP Protocol, with flask-smorest: each
 record is a graph, named by its address. GET /api/records?graph=<address> gives it in JSON-LD, Turtle or
-N-Triples, as Accept asks; PUT adds or replaces it, POST /api/records adds a record at an address made from
-its kind and name, and DELETE removes it.
+N-Triples, as Accept asks; PUT adds or replaces it, and DELETE removes it.
 
 A record is written in JSON-LD, with its fields named as the platform's JSON-LD context names them ("name",
 "url", "about", ..., and "dct:conformsTo" for a field of another vocabulary), or with a context of its own;
 a link is {"@id": "https://..."}. The model's SHACL shapes (/api/shapes.ttl) say what each field takes: a
 record that does not fit is refused, with what is wrong with each field. Writing needs a write token, or an
 editor's login on the editor page. A record's ETag is its version: a write that sends it in If-Match is
-refused when the record has changed since. With preview=true, a write saves nothing and answers with what
-it would change.
+refused when the record has changed since.
 """
 
 import json
 
-from flask import Response, jsonify, redirect, request, url_for
+from flask import Response, redirect, request, url_for
 from flask_smorest import Api, Blueprint, abort
 from marshmallow import INCLUDE, Schema, fields
-from rdflib import Graph, URIRef
-from sqlalchemy.exc import IntegrityError
+from rdflib import Graph
 from werkzeug.exceptions import RequestEntityTooLarge
 
-from admin import changes, tokens, writes
+from admin import tokens, writes
 from database import images, records
 from linkeddata import checks, documents, storage
 from linkeddata.model import RELEASE, settings, shapes
@@ -42,14 +39,6 @@ class Record(Schema.from_dict({"@type": fields.Raw(metadata={"description": "The
 
 class Address(Schema):
     graph = fields.Url(required=True, require_tld=False, metadata={"description": "The record's address, which names its graph."})
-
-
-class Writing(Address):
-    preview = fields.Boolean(load_default=False, metadata={"description": "Save nothing; answer with what the write would change."})
-
-
-class Adding(Schema):
-    preview = fields.Boolean(load_default=False, metadata={"description": "Save nothing; answer with what the write would change."})
 
 
 class Removal(Address):
@@ -120,7 +109,7 @@ def unchanged(address: str) -> None:
         abort(412, message="Someone else changed this record since you opened it. Open it again to see their change, then make yours.")
 
 
-def store(address: str, body: dict, replace: bool, preview: bool):
+def store(address: str, body: dict):
     """The record of a request's body is checked and saved at *address*."""
     kind = kind_of(address, body)
     if kind is None:
@@ -133,13 +122,10 @@ def store(address: str, body: dict, replace: bool, preview: bool):
         found, problems, warnings = checks.checked(writes.document(kind, address, body))
     except ValueError as problem:
         abort(422, message=str(problem))
-    if preview:
-        before = changes.statements(documents.document_of(address))
-        return jsonify({**changes.edges(before, found, URIRef(address)), "fields": problems, "warnings": warnings})
     unchanged(address)
     if problems:
         abort(422, message=str(checks.NotFitting(problems)), errors=problems)
-    revision = writes.save(documents.document(found, address), kind, who.name, who.orcid, replace)
+    revision = writes.save(documents.document(found, address), kind, who.name, who.orcid)
     return done(address, revision, 201 if revision.action == "Added" else 200, warnings)
 
 
@@ -166,9 +152,9 @@ def read(given):
 
 
 @blueprint.put("/records")
-@blueprint.arguments(Writing, location="query")
+@blueprint.arguments(Address, location="query")
 @blueprint.arguments(Record)
-@blueprint.response(200, Done, description="The record was replaced; with preview=true, what the write would change.")
+@blueprint.response(200, Done, description="The record was replaced.")
 @blueprint.alt_response(201, schema=Done, description="The record was added.")
 @blueprint.doc(security=TOKEN, requestBody={"content": {"text/turtle": {"schema": {"type": "string"}}}})
 def replace(given, body):
@@ -178,33 +164,7 @@ def replace(given, body):
         abort(409, message="This address belongs to a record that moved or was removed, and is not written again.")
     if request.mimetype == "text/turtle":
         body = documents.document(Graph().parse(data=request.get_data(as_text=True), format="turtle"), given["graph"])
-    return store(given["graph"], body, True, given["preview"])
-
-
-@blueprint.post("/records")
-@blueprint.arguments(Adding, location="query")
-@blueprint.arguments(Record)
-@blueprint.response(201, Done, description="The record was added; Location gives it. With preview=true, 200 and what the write would change.")
-@blueprint.doc(security=TOKEN)
-def add(given, body):
-    """Add a record at an address made from its kind and its name.
-
-    When another record has that address, a number is added to it."""
-    kind = kind_of(None, body)
-    name = body.get("name")
-    if kind is None or not isinstance(name, str) or not name.strip():
-        abort(400, message="A new record needs a name and an @type of one of the platform's classes.")
-    identifier = writes.slug(name)
-    number = 2
-    while True:
-        address = records.address(f"{kind}/{identifier}")
-        if records.get(address) is None:
-            try:
-                return store(address, body, False, given["preview"])
-            except IntegrityError:
-                pass
-        identifier = f"{writes.slug(name)}-{number}"
-        number += 1
+    return store(given["graph"], body)
 
 
 @blueprint.delete("/records")

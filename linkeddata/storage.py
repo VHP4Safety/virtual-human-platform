@@ -9,7 +9,7 @@ import pandas as pd
 from rdflib import Graph, URIRef
 from rdflib.namespace import SDO
 from rdfsolve.client.sql_tables import from_tables, layout, tables
-from sqlalchemy import bindparam, column, or_, select, table, text
+from sqlalchemy import bindparam, select, text
 
 import database
 from database.tables import Record
@@ -56,24 +56,6 @@ def row(found: Graph, iri: str, kind: str, source: str) -> dict:
     """The row of a record in the records table, which lists every record with its class and name."""
     name = found.value(URIRef(iri), SDO.name)
     return {"iri": iri, "type": kind, "source": source, "name": str(name) if name is not None else None}
-
-
-def having(kind: str, path: str, values: list[str]):
-    """The condition that a record of the class *kind* has one of *values* in the field of the property *path*,
-    wherever the tables keep it: in the column of a single field, in the table of a field that takes several
-    values, or among the statements that are not fields of a class."""
-    conditions = []
-    found = layout(profile()).classes.get(kind)
-    if found is not None and path in found.single:
-        name = found.single[path]
-        own = table(found.name, column("iri"), column(name))
-        conditions.append(Record.iri.in_(select(own.c.iri).where(own.c[name].in_(values))))
-    if found is not None and path in found.several:
-        several = table(found.field_table(found.several[path]), column("iri"), column("value"))
-        conditions.append(Record.iri.in_(select(several.c.iri).where(several.c.value.in_(values))))
-    rest = table("statements", column("iri"), column("property"), column("value"))
-    conditions.append(Record.iri.in_(select(rest.c.iri).where(rest.c.property == path, rest.c.value.in_(values))))
-    return or_(*conditions)
 
 
 def graph(iris: list[str]) -> Graph:

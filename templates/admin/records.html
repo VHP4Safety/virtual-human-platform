@@ -45,6 +45,10 @@
                   {% if record %}data-values-url="{{ url_for('api.read', graph=selected) }}"{% endif %}
                   data-values-subject="{{ selected }}" data-generate-node-shape-reference="" data-collapse="open"
                   data-submit-button="Save"></shacl-form>
+      <details class="mt-4">
+        <summary class="text-vhppurple">Linked data</summary>
+        <pre class="small bg-white border rounded p-3" id="turtle"></pre>
+      </details>
       {% endif %}
       {% endif %}
     </section>
