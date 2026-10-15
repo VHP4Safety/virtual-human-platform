@@ -1,15 +1,54 @@
 name: casestudies
-title: Case-study questions
+title: Case studies
 parser: casestudies
-# The content file of each case study, by the case study's identifier.
+# The RO-Crate that describes the case studies, and the content file of each, by the case study's identifier.
 files:
+  crate: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/ro-crate-metadata.json
   kidney: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/kidney_content.json
   parkinson: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/parkinson_content.json
   thyroid: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/thyroid_content.json
 
 # How the parsed rows become the model: the arguments of rdfsolve's Rule.between, for each kind of row.
 rules:
+  CaseStudy:
+    - {predicate: a, value: "https://schema.org/ResearchProject"}
+    - {predicate: "https://schema.org/name", object: name}
+    - {predicate: "https://schema.org/description", object: description}
+    - {predicate: "https://schema.org/about", object: about}
+    - {predicate: "https://schema.org/keywords", object: keywords}
+    - {predicate: "https://schema.org/abstract", object: intro}
+    - {predicate: "https://schema.org/text", object: content}
+    - {predicate: "https://schema.org/hasPart", object: sections}
   Question:
     - {predicate: a, value: "https://schema.org/Question"}
     - {predicate: "https://schema.org/name", object: label}
-    - {predicate: "https://schema.org/description", object: text}
+    - {predicate: "https://schema.org/text", object: text}
+    - {predicate: "https://schema.org/isPartOf", object: case}
+    - {predicate: "https://schema.org/hasPart", object: workflow}
+  Workflow:
+    - {predicate: a, value: "https://schema.org/HowToSection"}
+    - {predicate: "https://schema.org/name", object: title}
+    - {predicate: "https://schema.org/description", object: summary}
+    - {predicate: "https://schema.org/text", object: content}
+    - {predicate: "https://schema.org/about", object: about}
+    - {predicate: "https://schema.org/creativeWorkStatus", object: status}
+    - {predicate: "https://schema.org/isPartOf", object: parent}
+    - {predicate: "https://schema.org/step", object: steps}
+    - {predicate: "https://schema.org/tool", object: tools}
+    - {predicate: "https://schema.org/supply", object: supplies}
+    - {predicate: "https://schema.org/hasPart", object: sections}
+  Section:
+    - {predicate: a, value: "https://schema.org/WebPageElement"}
+    - {predicate: "https://schema.org/name", object: title}
+    - {predicate: "https://schema.org/text", object: text}
+    - {predicate: "https://schema.org/position", object: position}
+  Tool:
+    - {predicate: a, value: "https://schema.org/HowToTool"}
+    - {predicate: "https://schema.org/name", object: label}
+    - {predicate: "https://schema.org/description", object: description}
+    - {predicate: "https://schema.org/url", object: page}
+  Data:
+    - {predicate: a, value: "https://schema.org/HowToSupply"}
+    - {predicate: "https://schema.org/name", object: label}
+    - {predicate: "https://schema.org/description", object: description}
+    - {predicate: "https://schema.org/url", object: page}
