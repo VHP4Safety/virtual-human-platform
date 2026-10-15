@@ -12,6 +12,7 @@ rules:
     - {predicate: "https://schema.org/name", object: method}
     - {predicate: "https://schema.org/description", object: description}
     - {predicate: "https://schema.org/about", object: about}
+    - {predicate: "https://schema.org/additionalType", object: types}
     - {predicate: "https://bioschemas.org/draft_terms/reagent", object: assay}
     - {predicate: "https://schema.org/url", object: url}
     - {predicate: "https://schema.org/provider", object: vendor}

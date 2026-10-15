@@ -38,9 +38,12 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 row[field] = web_link(detail[given])
         about = parts(detail.get("vhp4safety_workflow_stage_content")) + parts(detail.get("workflow_substage_content"))
         about += parts(detail.get(KEY_EVENTS)) + parts(detail.get(AOPS))
+        types = []
         for given in ("type_url", "ontology_term_url", "ontology_term_content"):
             if present(detail.get(given)):
-                about.append(web_link(detail[given]))
+                types.append(web_link(detail[given]))
+        if types:
+            row["types"] = types
         # A method answers the regulatory question of a case study, at the address of the question's page.
         if present(detail.get("case_study_content")) and present(detail.get("regulatory_question_content")):
             about.append(link(f"casestudies/{detail['case_study_content']}/{detail['regulatory_question_content']}"))

@@ -152,6 +152,10 @@ form:elsewhere a sh:PropertyGroup ; sh:order 5 ; rdfs:label "Elsewhere on the we
         sh:message "Choose the steps and questions from the lists; other links are kept but not shown in the catalogue's filters." ;
         sh:description "The steps of the safety assessment, the AOP-Wiki key events and pathways, and the case-study questions that the method informs." ] ;
     sh:property [
+        sh:path schema:additionalType ; sh:group form:method ; sh:order 4 ; sh:name "Kind of assay" ; sh:nodeKind sh:IRI ;
+        dash:editor dash:URIEditor ;
+        sh:description "Terms of ontologies such as OBI or BAO that say what kind of assay the method is." ] ;
+    sh:property [
         sh:path bioschemas_draft:reagent ; sh:group form:assay ; sh:order 1 ; sh:name "Assay" ; sh:maxCount 1 ;
         sh:description "The assay or kit that the method uses, as its vendor names it." ] ;
     sh:property [
