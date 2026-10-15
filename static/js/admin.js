@@ -808,7 +808,7 @@
     const graph = result.answer;
     const added = graph.edges.filter(function (edge) { return edge.status === "added"; }).length;
     const removed = graph.edges.filter(function (edge) { return edge.status === "removed"; }).length;
-    caption.textContent = added || removed
+    document.getElementById("rdf-caption").textContent = added || removed
       ? "When you save: " + added + " added, " + removed + " removed"
       : (selected ? "As published; nothing to save" : "Nothing to publish yet");
     renderGraph(document.getElementById("rdf-graph"), graph);
