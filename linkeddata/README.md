@@ -109,7 +109,8 @@ the profile does not describe is explained by the vocabulary. To change the form
   title, its parser, and its rules: how its rows become the model. The rules are the arguments of rdfsolve's `Rule.between`, one list per kind of
   row; rdfsolve finds the fields by name and writes the CONSTRUCT queries.
 - **`model/v1/`**: the model. `model.yaml` gives the base address of identifiers, the vocabularies
-  (schema.org, the Bioschemas types and the VHP4Safety glossary, pinned and kept in `vocabularies/`), the classes and the
+  (schema.org, the Bioschemas types and the VHP4Safety glossary, pinned with their SHA-256 and kept in
+  `vocabularies/`), the classes and the
   prefixes; `profile.ttl` is what the platform adds to them; `schema.json` is the approved model,
   generated with `python -m linkeddata model` (review the change before committing it).
 

@@ -16,7 +16,7 @@ from admin import tokens
 from database import export
 from linkeddata import tables
 from linkeddata.imports import import_all
-from linkeddata.model import write_schema
+from linkeddata.model import download_vocabularies, write_schema
 
 
 def main() -> None:
@@ -26,6 +26,11 @@ def main() -> None:
     parser.add_argument("--days", type=int, default=tokens.DEFAULT_DAYS, help="how long a new token is valid")
     args = parser.parse_args()
     if args.command == "model":
+        problems = download_vocabularies()
+        for problem in problems:
+            print(problem, file=sys.stderr)
+        if problems:
+            sys.exit(1)
         print(f"Wrote {write_schema()}")
         print(f"Wrote {tables.generate()}")
     elif args.command == "import":

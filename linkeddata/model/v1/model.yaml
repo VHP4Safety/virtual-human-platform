@@ -3,11 +3,17 @@
 # Every record that has a page on the platform is identified by its page address.
 base: https://platform.vhp4safety.nl/
 
-# Vocabularies are pinned to exact versions.
+# Vocabularies are pinned to exact versions, and kept in vocabularies/ with the SHA-256 of their content.
 vocabularies:
-  schemaorg-30.1.ttl: https://schema.org/version/30.1/schemaorg-current-https.ttl
-  bioschemas-draft-types-e5c27db.jsonld: https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/e5c27dbd2b1269a79fbe8f26e0173a9dc390aff0/pages/_types/bioschemas_draft_types.jsonld
-  vhp4safety-glossary-34f9389.ttl: https://raw.githubusercontent.com/VHP4Safety/glossary/34f9389a7f1f0073b67161e1ca6e6a6cf95c7371/glossary.owl
+  schemaorg-30.1.ttl:
+    url: https://schema.org/version/30.1/schemaorg-current-https.ttl
+    sha256: 7f15ca89398c4f235f478a4b3b8d1f975d63c5a860b77c8a8fce01f791b7ae2f
+  bioschemas-draft-types-e5c27db.jsonld:
+    url: https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/e5c27dbd2b1269a79fbe8f26e0173a9dc390aff0/pages/_types/bioschemas_draft_types.jsonld
+    sha256: 420b235d76aaafa92e72a6ed730457222166b455c7ff0df5f4365dd2dd887de8
+  vhp4safety-glossary-34f9389.ttl:
+    url: https://raw.githubusercontent.com/VHP4Safety/glossary/34f9389a7f1f0073b67161e1ca6e6a6cf95c7371/glossary.owl
+    sha256: 88e9c00b8de4c2c69d9b3120525530dbff9536f0e3cebcef7a41cbec1745feff
 
 classes:
   - https://schema.org/SoftwareApplication

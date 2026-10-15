@@ -1,5 +1,6 @@
 """The data model: the vocabularies, classes and application profile of one model version."""
 
+import hashlib
 import json
 from functools import cache
 from pathlib import Path
@@ -21,17 +22,31 @@ def settings() -> dict:
 
 
 def vocabularies(config: dict) -> list[Path]:
-    """The vocabulary files, kept in the model folder and downloaded when one is missing."""
+    """The vocabulary files, kept in the model folder; only `python -m linkeddata model` downloads them."""
     files = []
-    for name, url in config["vocabularies"].items():
+    for name in config["vocabularies"]:
         path = MODEL_DIR / "vocabularies" / name
         if not path.exists():
-            response = requests.get(url, timeout=60)
+            raise FileNotFoundError(f"The vocabulary {path} is missing: run python -m linkeddata model.")
+        files.append(path)
+    return files
+
+
+def download_vocabularies() -> list[str]:
+    """The missing vocabulary files are downloaded from their pinned addresses. What does not match its
+    SHA-256 in model.yaml is given back."""
+    problems = []
+    for name, pinned in settings()["vocabularies"].items():
+        path = MODEL_DIR / "vocabularies" / name
+        if not path.exists():
+            response = requests.get(pinned["url"], timeout=60)
             response.raise_for_status()
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(response.content)
-        files.append(path)
-    return files
+        found = hashlib.sha256(path.read_bytes()).hexdigest()
+        if found != pinned.get("sha256"):
+            problems.append(f"{path} has SHA-256 {found}, where model.yaml pins {pinned.get('sha256')}.")
+    return problems
 
 
 def write_schema() -> Path:
