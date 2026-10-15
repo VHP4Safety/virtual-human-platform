@@ -4,7 +4,6 @@ the tools, the rows are the organisations, people, help pages and videos that to
 """
 
 import json
-import re
 
 from linkeddata.parsers import link, present, slug, web_link
 
