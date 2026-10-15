@@ -21,19 +21,17 @@ class Base(DeclarativeBase):
 
 
 class Record(Base):
-    """A thing the platform knows by its address: a tool or a method, which has a page on the
-    platform, or a term of the glossary that they link to."""
+    """A thing the platform knows by its address, such as a tool, a method or the organisations and
+    people they link to, with its class and its name for lists and links."""
 
     __tablename__ = "records"
-    iri: Mapped[str] = mapped_column(primary_key=True)
-    type: Mapped[str] = mapped_column(index=True)
-    # The source the record is imported from, or "platform" when it is written on the platform.
-    source: Mapped[str] = mapped_column(index=True)
-    updated_at: Mapped[str] = mapped_column(default=now)
-    removed_at: Mapped[str | None]
-    # The address the record moved to, when this address is an earlier one; it forwards there.
-    moved_to: Mapped[str | None]
-    name: Mapped[str | None]
+    iri: Mapped[str] = mapped_column(primary_key=True, doc="The record's address.")
+    type: Mapped[str] = mapped_column(index=True, doc="The record's class.")
+    source: Mapped[str] = mapped_column(index=True, doc='The source the record is imported from, or "platform" when it is written on the platform.')
+    updated_at: Mapped[str] = mapped_column(default=now, doc="When the record was last written, in UTC (ISO 8601).")
+    removed_at: Mapped[str | None] = mapped_column(doc="When the record was removed.")
+    moved_to: Mapped[str | None] = mapped_column(doc="The address the record moved to, when this address is an earlier one; it forwards there.")
+    name: Mapped[str | None] = mapped_column(doc="The record's name.")
 
 
 class Revision(Base):

@@ -24,6 +24,7 @@ from database import records
 from linkeddata import documents, storage
 from routes.account import blueprint as account_blueprint
 from routes.records_api import blueprint as api_blueprint
+from routes.tables_api import blueprint as tables_api_blueprint
 from routes.changes import blueprint as changes_blueprint
 from routes.data_quality import blueprint as dashboards_blueprint
 from routes.editor import blueprint as admin_blueprint
@@ -136,6 +137,7 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.register_blueprint(account_blueprint)
 app.register_blueprint(admin_blueprint)
 app.register_blueprint(api_blueprint)
+app.register_blueprint(tables_api_blueprint)
 app.register_blueprint(pages_blueprint)
 app.register_blueprint(dashboards_blueprint)
 app.register_blueprint(changes_blueprint)

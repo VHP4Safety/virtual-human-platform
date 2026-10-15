@@ -78,6 +78,7 @@ def test_reads(site):
     assert [member["@id"] for member in page["hydra:member"]] == [BASE + "tools/t"]
     assert page["hydra:member"][0]["about"] == [{"@id": STEP}]
     assert site.get("/api/tools?nothing=1").status_code == 422
+    assert site.get("/api/tables/schema_software_application?schema_name=T").json["rows"][0]["iri"] == BASE + "tools/t"
     assert site.get("/api/docs/records/openapi.json").json["paths"]["/api/tools/{identifier}"]["put"]["security"] == [{"token": []}]
 
 

@@ -69,6 +69,7 @@ except that `database/` reads the base address of records from `linkeddata/model
 | `routes/` | `record_pages.py` | the address of each record: its data, 410 Gone once removed, a general record page |
 | | `data_quality.py` | the `/data-quality` and `/sources` pages |
 | | `records_api.py` | the records API: records in JSON-LD, read a page at a time and filtered by their fields, and written |
+| | `tables_api.py` | the tables API: the rows of the release's tables and of the records, notes and sources tables |
 | | `editor.py` | the record editor, a form that writes and removes records through the write API |
 | | `changes.py` | the `/changes` pages |
 | | `account.py` | the login of editors (ORCID, or a write token) and their tokens page |
@@ -155,6 +156,11 @@ context (`x-jsonld-type`, `x-jsonld-context`, from the OpenAPI extensions regist
 gives the address of each kind of record, which answers in HTML, JSON-LD, Turtle or N-Triples as the
 Accept header asks. Every record's answer links the model's SHACL shapes (`/api/shapes.ttl`) with
 `rel="describedby"`.
+
+`GET /api/tables/<table>` gives the rows of each table of the release, and of the records, notes and
+sources tables, a page at a time and filtered by any of their columns; its own document is at
+`/api/docs/tables/openapi.json`. Each row's schema carries the JSON-LD type and context that make the row
+linked data, so that `iri` is the node a row describes and each column of values is its property.
 
 ## Write records
 
