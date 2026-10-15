@@ -52,4 +52,4 @@ def test_imports(monkeypatch, tmp_path):
     with database.session() as db:
         assert db.get(Source, "tools").queries.startswith("# title: tools: Tool")
         assert (BASE + "tools/x", "Other") in [(note.iri, note.value) for note in db.scalars(select(Note))]
-    assert rdf.values(records.get(BASE + "tools/x").document, "about") == []
+    assert rdf.values(records.get(BASE + "tools/x").document, "about") == ["Other"]

@@ -71,7 +71,7 @@ except that `database/` reads the base address of records from `linkeddata/model
 | `tokens` | the write tokens (only the hash of each secret) |
 | `images` | the images uploaded to the platform, by the SHA-256 of their file, with who uploaded them |
 | `sources` | for each source: its address, when it was fetched, its checksum, and the CONSTRUCT queries that convert it |
-| `notes` | the values of the sources that do not fit the model, found by the checks of the imports; a text where a field takes only links, or a link where it takes only texts, is left out of the record |
+| `notes` | the values of the sources that do not fit the model, found by the checks of the imports; the records keep them as the sources give them |
 
 A document is compacted with the platform's JSON-LD context: schema.org terms have no prefix
 (`name`), and the terms of other vocabularies keep theirs (`dct:conformsTo`). A new field or kind of
