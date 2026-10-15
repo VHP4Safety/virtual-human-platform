@@ -930,11 +930,11 @@
     bootstrap.Modal.getOrCreateInstance(document.getElementById("move-dialog")).hide();
     record.identifier = to;
     record.version = result.answer.version;
-    const others = (record.values.same_as || []).filter(function (value) { return value !== result.answer["@id"]; });
+    const others = (record.values.sameAs || []).filter(function (value) { return value !== result.answer["@id"]; });
     if (!others.includes(old)) {
       others.push(old);
     }
-    record.values.same_as = others;
+    record.values.sameAs = others;
     setUnsaved(false);
     open(record);
     toast("The address changed; the old one forwards here.", true, { text: "See the change", href: result.answer.change });

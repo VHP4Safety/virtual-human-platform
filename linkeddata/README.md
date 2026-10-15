@@ -1,18 +1,18 @@
 # Linked data of the platform
 
 The platform keeps its records (tools, methods, and the glossary terms they link to) in a SQLite
-database, through SQLAlchemy. [rdfsolve](https://github.com/jmillanacosta/rdfsolve) decides what fits
-the platform's model: it converts the sources into records, checks every record written on the
-platform, and makes the linked data of every page from the database's rows.
+database, through SQLAlchemy, each record as one JSON-LD document. The model's SHACL shapes say what a
+record holds, and pyshacl checks every record against them.
+[rdfsolve](https://github.com/jmillanacosta/rdfsolve) converts the sources into the model.
 
 ```
 source file ──parser──► clean rows ──lift──► RDF in the source's vocabulary
-            ──rdfsolve rules──► RDF in the model ──rdfsolve checks──► notes
-            ──rdfsolve table──► rows of the records table                 python -m linkeddata import
+            ──rdfsolve rules──► RDF in the model ──pyshacl checks──► notes
+            ──► one JSON-LD document per record                              python -m linkeddata import
 
-API request ──rdfsolve from_table (checks)──► row and revision              PUT, POST, DELETE /api/...
+API request ──JSON-LD──pyshacl checks──► document and revision               PUT, POST, DELETE /api/...
 
-page ──pandas read_sql──► rows ──rdfsolve from_table──► JSON-LD, Turtle, N-Triples
+page ──document──► JSON-LD, Turtle, N-Triples
 ```
 
 ## Run it
@@ -46,7 +46,7 @@ except that `database/` reads the base address of records from `linkeddata/model
 | | `export.py` | the records written on the platform, exported to a git repository |
 | `linkeddata/` | `model.py`, `model/v1/` | the model and the application profile |
 | | `parsers/`, `lift.py`, `sources/` | how each source becomes the model |
-| | `rdf.py` | rows as linked data and linked data as rows (pandas and rdfsolve), and the profile's checks of a record |
+| | `rdf.py` | records as JSON-LD documents and as linked data, and the checks of a record against the model's shapes |
 | | `imports.py` | the sources: fetched, converted and checked with rdfsolve, and stored as records |
 | | `forms.py` | the editor's form of a class, read from the SHACL shapes and the application profile |
 | | `quality.py` | how complete the records are, what the checks found, and how each source becomes the model |
@@ -66,17 +66,16 @@ except that `database/` reads the base address of records from `linkeddata/model
 
 | Table | Holds |
 |---|---|
-| `records` | one row per record, by its address (`iri`), with its class, its source (or `platform`), and one column per field |
+| `records` | one row per record, by its address (`iri`), with its class, its source (or `platform`), its name, and the record as a JSON-LD document |
 | `revisions` | every change made on the platform: the record in JSON-LD before and after, who made it (name and ORCID iD) and when |
 | `tokens` | the write tokens (only the hash of each secret) |
 | `images` | the images uploaded to the platform, by the SHA-256 of their file, with who uploaded them |
 | `sources` | for each source: its address, when it was fetched, its checksum, and the CONSTRUCT queries that convert it |
-| `notes` | the values of the sources that do not fit the model, found by rdfsolve's checks; they are left out of the records |
+| `notes` | the values of the sources that do not fit the model, found by the checks of the imports; a text where a field takes only links, or a link where it takes only texts, is left out of the record |
 
-The columns of `records` are fields of the model, named as rdfsolve names them (`conforms_to` for
-`dct:conformsTo`); a field with several values is a JSON column. `rdf.py` asks rdfsolve which columns
-are fields of a record's class, so to keep a new field it is enough to add its column in
-`database/tables.py` (and to an existing database with `ALTER TABLE records ADD COLUMN ...`).
+A document is compacted with the platform's JSON-LD context: schema.org terms have no prefix
+(`name`), and the terms of other vocabularies keep theirs (`dct:conformsTo`). A new field or kind of
+record needs no change to the database: only its shapes in the model.
 
 ## The application profile
 

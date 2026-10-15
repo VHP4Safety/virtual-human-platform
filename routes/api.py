@@ -13,9 +13,10 @@ revision are saved in the database, so its page shows it at once.
 With ?preview=true, PUT and POST save nothing: they answer with the statements the record would have,
 compared with those it has, and with what is wrong with each field.
 
-The body of PUT and POST is a JSON object of the record's fields, named as in the model ("name",
-"description", "url", "about", ...). A link is written as {"@id": "https://..."}, and a field
-with several values as a list. A record that does not fit the model is refused with what is wrong
+The body of PUT and POST is a JSON object of the record's fields, named as in the platform's JSON-LD
+("name", "description", "url", "about", ..., and "dct:conformsTo" for a field of another vocabulary).
+A link is written as {"@id": "https://..."}, or as a web address in a field that takes links, and a
+field with several values as a list. A record that does not fit the model is refused with what is wrong
 with each field. A request is made with a write token, or by the editor page with an editor's login.
 Every answer gives the record's version; a request that sends it back (If-Match) is refused when the
 record has changed since, so that one editor's change never silently replaces another's.
@@ -25,13 +26,12 @@ import re
 import time
 
 from flask import Blueprint, jsonify, request, url_for
-from rdflib import Graph, URIRef
+from rdflib import URIRef
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from admin import changes, tokens, writes
 from database import images, records
-from database.tables import PLATFORM
 from linkeddata import rdf
 from linkeddata.model import settings
 from routes import account
@@ -111,28 +111,28 @@ def store(kind: str, identifier: str, replace: bool = True):
     if conflict:
         return conflict
     try:
-        row = rdf.row(address, writable[kind], PLATFORM, writes.values(writable[kind], body))
-        found, problems, warnings = rdf.checked(row)
+        found, problems, warnings = rdf.checked(writes.document(writable[kind], address, body))
     except ValueError as problem:
         return error(str(problem), 422)
     if problems:
         refused = rdf.NotFitting(problems)
         return jsonify({"error": str(refused), "fields": problems}), 422
-    revision = writes.save(row, rdf.document(found), token.name, token.orcid, replace)
+    document = rdf.document(found, address)
+    revision = writes.save(document, writable[kind], token.name, token.orcid, replace)
     writes.name_things(writes.titled(writable[kind], body))
-    return done(address, revision, 201 if revision.action == "Added" else 200, writes.together(warnings, rdf.duplicates(row)))
+    return done(address, revision, 201 if revision.action == "Added" else 200, writes.together(warnings, rdf.duplicates(document, writable[kind])))
 
 
 def preview(address: str, kind: str, body: dict):
     """The statements a write would publish, compared with the record as it is, and what is wrong with each field."""
     try:
-        row = rdf.row(address, kind, PLATFORM, writes.values(kind, body))
-        found, problems, warnings = rdf.checked(row)
+        new = writes.document(kind, address, body)
+        found, problems, warnings = rdf.checked(new)
     except ValueError as problem:
         return error(str(problem), 422)
     before = changes.statements(rdf.document_of(address))
-    edges = changes.edges(before, found if found is not None else Graph(), URIRef(address))
-    return jsonify({**edges, "fields": problems, "warnings": writes.together(warnings, rdf.duplicates(row))})
+    edges = changes.edges(before, found, URIRef(address))
+    return jsonify({**edges, "fields": problems, "warnings": writes.together(warnings, rdf.duplicates(new, kind))})
 
 
 @blueprint.put("/api/<kind>/<identifier>")

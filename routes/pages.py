@@ -118,19 +118,18 @@ def record_page(error):
         return error
     record = g.record
     shown = []
-    links = []
     for field in forms.form(record.type):
-        value = getattr(record, field["name"])
-        if value:
-            shown.append({"name": field["name"], "label": field["label"], "values": value if isinstance(value, list) else [value]})
-        if field["several"]:
-            links.extend(value or [])
+        found = rdf.values(record.document, field["name"])
+        if found:
+            shown.append({"name": field["name"], "label": field["label"], "values": found})
+    descriptions = rdf.values(record.document, "description")
+    images = rdf.values(record.document, "image")
     name = record.name or record.iri
     return render_template(
         "records/record.html",
-        record=record,
+        record={"iri": record.iri, "name": record.name, "description": descriptions[0] if descriptions else None, "image": images[0] if images else None},
         fields=shown,
-        names=records.names(links),
+        names=records.names(rdf.links(record.document)),
         page_title=f"{name} — VHP4Safety",
-        meta_description=(record.description or "")[:160] or f"{name}, a record of the VHP4Safety Virtual Human Platform.",
+        meta_description=(descriptions[0] if descriptions else "")[:160] or f"{name}, a record of the VHP4Safety Virtual Human Platform.",
     )

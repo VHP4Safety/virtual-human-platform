@@ -21,6 +21,7 @@ from data.biostudies.search import BioStudiesExtractor
 from data.zenodo.search import ZenodoExtractor
 from data.mapping import normalize_all, scrub_draft
 from database import records
+from linkeddata import rdf
 from routes.account import blueprint as account_blueprint
 from routes.api import blueprint as api_blueprint
 from routes.changes import blueprint as changes_blueprint
@@ -455,16 +456,20 @@ def linked_tools(catalogue: dict) -> dict:
     for record in records.of_kind("tools"):
         tool_id = record.iri.rsplit("/", 1)[-1]
         tool = tools.setdefault(tool_id, {"id": tool_id, "stage": "Unknown", "main_url": "no_url"})
+        descriptions = rdf.values(record.document, "description")
+        urls = rdf.values(record.document, "url")
+        images = rdf.values(record.document, "image")
+        about = rdf.values(record.document, "about")
         tool["service"] = record.name or tool_id
-        tool["description"] = record.description or ""
-        tool["main_url"] = record.url or "no_url"
-        tool["png_file_name"] = page_link(record.image) if record.image else None
-        for iri in record.about:
+        tool["description"] = descriptions[0] if descriptions else ""
+        tool["main_url"] = urls[0] if urls else "no_url"
+        tool["png_file_name"] = page_link(images[0]) if images else None
+        for iri in about:
             if iri in stage_mapping:
                 tool["stage"] = iri
         # A record links the regulatory questions that the catalogue marks with reg_q_Xy flags.
         for (case, number), field in _REG_QUESTION_KEYS.items():
-            tool[field] = str(records.address(f"casestudies/{case}/Q{number + 1}") in record.about).lower()
+            tool[field] = str(records.address(f"casestudies/{case}/Q{number + 1}") in about).lower()
     return tools
 
 

@@ -1,9 +1,8 @@
 """The tables of the database.
 
-The records table has one row per record and one column per field of the model, named as rdfsolve
-names the field (conforms_to for dct:conformsTo). A field with several values is a JSON column. To
-keep a new field, a column of that name is added here; an existing database gets it when the platform
-starts (columns are only ever added).
+The records table has one row per record: its address, class, source and dates, its name for lists
+and links, and the record itself as a compact JSON-LD document. A new field or kind of record needs no
+new column: the model's shapes say what a document holds.
 """
 
 from datetime import datetime, timezone
@@ -36,28 +35,8 @@ class Record(Base):
     # The address the record moved to, when this address is an earlier one; it forwards there.
     moved_to: Mapped[str | None]
     name: Mapped[str | None]
-    description: Mapped[str | None]
-    citation: Mapped[str | None]
-    url: Mapped[str | None]
-    image: Mapped[str | None]
-    about: Mapped[list[str]] = mapped_column(JSON, default=list)
-    conforms_to: Mapped[list[str]] = mapped_column(JSON, default=list)
-    same_as: Mapped[list[str]] = mapped_column(JSON, default=list)
-    install_url: Mapped[str | None]
-    software_version: Mapped[str | None]
-    license: Mapped[str | None]
-    creative_work_status: Mapped[str | None]
-    keywords: Mapped[str | None]
-    release_notes: Mapped[str | None]
-    email: Mapped[str | None]
-    provider: Mapped[list[str]] = mapped_column(JSON, default=list)
-    creator: Mapped[list[str]] = mapped_column(JSON, default=list)
-    maintainer: Mapped[list[str]] = mapped_column(JSON, default=list)
-    software_help: Mapped[list[str]] = mapped_column(JSON, default=list)
-    subject_of: Mapped[list[str]] = mapped_column(JSON, default=list)
-    video: Mapped[list[str]] = mapped_column(JSON, default=list)
-    is_based_on: Mapped[list[str]] = mapped_column(JSON, default=list)
-    download_url: Mapped[list[str]] = mapped_column(JSON, default=list)
+    # The record in JSON-LD, compacted with the platform's context (linkeddata/document.py).
+    document: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
 class Revision(Base):

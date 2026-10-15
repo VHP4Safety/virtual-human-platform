@@ -8,6 +8,7 @@ import yaml
 from sqlalchemy import select
 
 import database
+from admin import writes
 from database import records
 from database.tables import Note, Record, Source
 from linkeddata import imports, rdf
@@ -164,8 +165,8 @@ def test_import(tmp_path, monkeypatch):
     imports.import_all(offline=True)
     tool = records.get(BASE + "tools/aop-builder")
     assert (tool.name, tool.source) == ("AOP-Builder", "tools")
-    assert tool.about == [GLOSSARY + "VHP0000156", BASE + "casestudies/parkinson/Q1"]
-    assert tool.conforms_to == ["https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"]
+    assert set(rdf.values(tool.document, "about")) == {GLOSSARY + "VHP0000156", BASE + "casestudies/parkinson/Q1"}
+    assert rdf.values(tool.document, "dct:conformsTo") == ["https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"]
     assert records.get(BASE + "tools/old") is None
     assert records.get(BASE + "tools/x").name == "X on the platform"
     with database.session() as db:
@@ -195,13 +196,13 @@ def test_records_written_on_the_platform_are_checked_again(tmp_path, monkeypatch
     monkeypatch.setattr(imports, "SOURCES_DIR", tmp_path / "sources")
     (tmp_path / "sources").mkdir()
     with database.session() as db, db.begin():
-        db.add(Record(**rdf.row(BASE + "tools/t", SCHEMA + "SoftwareApplication", "platform", {
-            "name": ["T"],
-            "description": ["Does T."],
-            "url": ["https://t.org/"],
-            "citation": ["a text about a paper"],
-            "conforms_to": [PROFILE],
-        })))
+        document = writes.document(SCHEMA + "SoftwareApplication", BASE + "tools/t", {
+            "name": "T",
+            "description": "Does T.",
+            "url": "https://t.org/",
+            "citation": "a text about a paper",
+        })
+        db.add(Record(**rdf.row(document, SCHEMA + "SoftwareApplication", "platform")))
     imports.import_all(offline=True)
     with database.session() as db:
         notes = list(db.scalars(select(Note)))

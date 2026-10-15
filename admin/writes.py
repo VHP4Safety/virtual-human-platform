@@ -13,6 +13,8 @@ from sqlalchemy import delete, insert, select
 import database
 from database.tables import PLATFORM, Record, Revision, now
 from linkeddata import forms, rdf
+from linkeddata.document import context
+from linkeddata.model import settings
 
 
 def version() -> str:
@@ -20,24 +22,36 @@ def version() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def values(kind: str, body: dict) -> dict[str, list]:
-    """The fields of a request's body, named as in the database, each with a list of values. The
-    values that the application profile fixes are set by the platform."""
-    found = {}
+def document(kind: str, address: str, body: dict) -> dict:
+    """The JSON-LD document of a request's body: its fields, named as the form of *kind* names them. A
+    link is {"@id": ...}, or a web address in a field that takes links. The values that the model fixes
+    are set by the platform."""
+    fields = {}
+    for field in forms.form(kind):
+        fields[field["name"]] = field
+    found = {"@context": context(settings()), "@id": address, "@type": rdf.term(kind)}
     for name, value in body.items():
         if name.startswith("@"):
             continue
+        if name not in fields:
+            raise ValueError(f"The platform does not keep the field {name!r}.")
         items = []
         for item in value if isinstance(value, list) else [value]:
             # A link is {"@id": ...}, with a "name" when it is a page that the record gives with its title.
             if isinstance(item, dict) and "@id" in item and set(item) <= {"@id", "name"}:
-                items.append(item["@id"])
+                items.append({"@id": item["@id"]})
+            elif fields[name]["links"] and isinstance(item, str) and item.startswith(("https://", "http://")):
+                items.append({"@id": item})
             else:
                 items.append(item)
-        found[rdf.field_of(kind, name)] = items
-    for field in forms.form(kind):
+        if not items:
+            continue
+        if len(items) > 1 and not fields[name]["several"]:
+            raise ValueError(f"{name}: the platform keeps one value.")
+        found[name] = items if fields[name]["several"] else items[0]
+    for name, field in fields.items():
         if field["fixed"]:
-            found[field["name"]] = field["fixed"]
+            found[name] = [{"@id": value} for value in field["fixed"]]
     return found
 
 
@@ -74,24 +88,27 @@ def name_things(found: list[tuple[str, str, str]]) -> None:
         for kind, iri, name in found:
             thing = db.get(Record, iri)
             if thing is None:
-                db.add(Record(iri=iri, type=kind, source=PLATFORM, name=name))
+                document = {"@context": context(settings()), "@id": iri, "@type": rdf.term(kind), "name": name}
+                db.add(Record(iri=iri, type=kind, source=PLATFORM, name=name, document=document))
             elif thing.name != name:
                 thing.name = name
+                thing.document = {**thing.document, "name": name}
                 thing.source = PLATFORM
                 thing.updated_at = version()
 
 
-def save(row: dict, document: dict, name: str, orcid: str, replace: bool = True) -> Revision:
-    """The record of a row, checked with rdf.check, is written on the platform with its revision.
+def save(document: dict, kind: str, name: str, orcid: str, replace: bool = True) -> Revision:
+    """A record's document, checked with rdf.check, is written on the platform with its revision.
     It replaces the record at its address, unless *replace* is False."""
-    previous = rdf.document_of(row["iri"]) if replace else None
+    iri = document["@id"]
+    previous = rdf.document_of(iri) if replace else None
     with database.session() as db, db.begin():
-        created = db.get(Record, row["iri"]) is None
+        created = db.get(Record, iri) is None
         if replace:
-            db.execute(delete(Record).where(Record.iri == row["iri"]))
-        db.execute(insert(Record), [{**row, "source": PLATFORM, "updated_at": version()}])
+            db.execute(delete(Record).where(Record.iri == iri))
+        db.execute(insert(Record), [{**rdf.row(document, kind, PLATFORM), "updated_at": version()}])
         revision = Revision(
-            record_iri=row["iri"],
+            record_iri=iri,
             action="Added" if created else "Changed",
             previous=previous,
             document=json.dumps(document, indent=2),
@@ -124,14 +141,15 @@ def move(old: str, new: str, name: str, orcid: str) -> Revision:
         moved = {}
         for column in Record.__table__.columns:
             moved[column.name] = getattr(record, column.name)
-        same_as = list(record.same_as or [])
+        same_as = rdf.values(record.document, "sameAs")
         if old not in same_as:
             same_as.append(old)
         if new in same_as:
             same_as.remove(new)
+        document = {**record.document, "@id": new, "sameAs": [{"@id": address} for address in same_as]}
         # A record can move back to one of its earlier addresses; that address then stops forwarding.
         db.execute(delete(Record).where(Record.iri == new, Record.moved_to == old))
-        db.execute(insert(Record), [{**moved, "iri": new, "source": PLATFORM, "updated_at": version(), "same_as": same_as}])
+        db.execute(insert(Record), [{**moved, "iri": new, "source": PLATFORM, "updated_at": version(), "document": document}])
         record.removed_at = now()
         record.moved_to = new
         record.source = PLATFORM

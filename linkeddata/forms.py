@@ -1,7 +1,7 @@
-"""The editor's form for a class, read from the model. Its fields are the columns of the records table
-that the class has. The application profile gives their section (sh:group), order, name, explanation,
-and required, recommended or fixed values, and the editor of each (dash:editor); the shapes made from
-the vocabularies explain the fields that the profile leaves out. Otherwise, what an editor enters in a
+"""The editor's form for a class, read from the model's shapes: one field for each property shape of
+the class. The application profile gives their section (sh:group), order, name, explanation, and
+required, recommended or fixed values, and the editor of each (dash:editor); the shapes made from the
+vocabularies explain the fields that the profile leaves out. Otherwise, what an editor enters in a
 field follows from the values the model allows in it."""
 
 import re
@@ -69,51 +69,78 @@ def entry(known, fixed: list, single_line: bool, address: bool, editor: str | No
     return "address"
 
 
+def allowed(graph: Graph, nodes: list) -> dict:
+    """The classes that the values of some shapes link to (their sh:class, else those in their sh:or),
+    and the kinds of their other values: datatypes, or "IRI" for web addresses."""
+    direct = []
+    alternatives = []
+    kinds = []
+    for node in nodes:
+        options = [node]
+        for listed in graph.objects(node, SH["or"]):
+            options.extend(Collection(graph, listed))
+        for option in options:
+            for value in graph.objects(option, SH["class"]):
+                (direct if option == node else alternatives).append(str(value))
+            for value in graph.objects(option, SH.datatype):
+                kinds.append(str(value))
+            if graph.value(option, SH.nodeKind) in (SH.IRI, SH.BlankNodeOrIRI):
+                kinds.append("IRI")
+    return {"targets": direct or alternatives, "values": kinds}
+
+
 @cache
 def form(kind: str) -> list[dict]:
     """The fields of the form for a class: those the profile orders come first, in its order, and
     the others follow by name."""
-    known = rdf.fields(kind)
     every = shapes()
     in_profile = property_shapes(profile(), kind)
-    in_every = property_shapes(every, kind)
     ordered = []
     others = []
-    for field in known.index:
-        iri = known.loc[field, "property"]
+    for iri, nodes in property_shapes(every, kind).items():
+        # The profile's shape comes first, so that its names and explanations are read before those of the vocabularies.
         mine = in_profile.get(iri, [])
+        nodes = mine + [node for node in nodes if node not in mine]
+        known = allowed(every, nodes)
         fixed = []
-        for node in mine:
-            for value in profile().objects(node, SH.hasValue):
+        for node in nodes:
+            for value in every.objects(node, SH.hasValue):
                 fixed.append(str(value))
-        description = first(profile(), mine, SH.description) or first(every, in_every.get(iri, []), SH.description)
-        required = first(profile(), mine, SH.minCount)
-        order = first(profile(), mine, SH.order)
-        group = term(profile(), mine, SH.group)
-        listed = term(profile(), mine, SH["in"])
-        options = [str(value) for value in Collection(profile(), listed)] if listed is not None else []
+        local = iri.rsplit("/", 1)[-1].rsplit("#", 1)[-1]
+        name = first(every, nodes, SH.name) or local
+        required = first(every, nodes, SH.minCount)
+        order = first(every, nodes, SH.order)
+        group = term(every, nodes, SH.group)
+        listed = term(every, nodes, SH["in"])
+        options = [str(value) for value in Collection(every, listed)] if listed is not None else []
+        several = first(every, nodes, SH.maxCount) != 1
         found = {
-            "name": field,
+            "name": rdf.term(iri),
+            "iri": iri,
             "property": curie(iri),
-            "label": first(profile(), mine, SH.name) or readable(known.loc[field, "label"]),
-            "help": plain(description or ""),
-            "required": bool(required) and first(profile(), mine, SH.severity) != str(SH.Warning),
-            "recommended": bool(required) and first(profile(), mine, SH.severity) == str(SH.Warning),
-            "message": first(profile(), mine, SH.message) or "",
-            "pattern": first(profile(), mine, SH.pattern) or "",
+            # A name the profile gives is kept; the name of a property of the vocabularies is made readable.
+            "label": readable(name) if name == local else name,
+            "help": plain(first(every, nodes, SH.description) or ""),
+            "required": bool(required) and first(every, nodes, SH.severity) != str(SH.Warning),
+            "recommended": bool(required) and first(every, nodes, SH.severity) == str(SH.Warning),
+            "message": first(every, nodes, SH.message) or "",
+            "pattern": first(every, nodes, SH.pattern) or "",
             "options": options,
-            "class": str(first(profile(), mine, SH["class"]) or ""),
-            "section": str(profile().value(group, RDFS.label) or "More") if group is not None else "More",
-            "section_order": int(profile().value(group, SH.order) or 99) if group is not None else 99,
-            "several": rdf.several(field),
+            "class": known["targets"][0] if known["targets"] else "",
+            "classes": known["targets"],
+            "links": bool(known["targets"]) or "IRI" in known["values"],
+            "texts": any(value != "IRI" for value in known["values"]),
+            "section": str(every.value(group, RDFS.label) or "More") if group is not None else "More",
+            "section_order": int(every.value(group, SH.order) or 99) if group is not None else 99,
+            "several": several,
             "fixed": fixed,
             "entry": entry(
-                known.loc[field],
+                known,
                 fixed,
-                first(profile(), mine, DASH.singleLine) is not False,
-                str(first(profile(), mine, SH.nodeKind)) == str(SH.IRI),
-                str(first(profile(), mine, DASH.editor) or ""),
-                rdf.several(field),
+                first(every, nodes, DASH.singleLine) is not False,
+                str(first(every, nodes, SH.nodeKind)) == str(SH.IRI),
+                str(first(every, nodes, DASH.editor) or ""),
+                several,
                 options,
             ),
         }
@@ -127,17 +154,3 @@ def form(kind: str) -> list[dict]:
     for _, found in ordered:
         fields.append(found)
     return fields + others
-
-
-def linked_classes(kind: str, field: str) -> list[str]:
-    """The classes that the application profile says a field links to: its sh:class, or those in its sh:or."""
-    path = rdf.fields(kind).loc[field, "property"]
-    found = []
-    for node in property_shapes(profile(), kind).get(path, []):
-        for value in profile().objects(node, SH["class"]):
-            found.append(str(value))
-        for listed in profile().objects(node, SH["or"]):
-            for alternative in Collection(profile(), listed):
-                for value in profile().objects(alternative, SH["class"]):
-                    found.append(str(value))
-    return found

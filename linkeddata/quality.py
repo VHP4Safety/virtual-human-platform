@@ -1,7 +1,6 @@
 """What the pages about the data show: how complete the records are, what the checks of the imports
 found, and where the records come from and how each source becomes the model."""
 
-import pandas as pd
 from sqlalchemy import func, select
 
 import database
@@ -11,65 +10,52 @@ from linkeddata import forms, rdf
 from linkeddata.imports import files_of, specs
 from linkeddata.model import settings
 
-# What breaking each SHACL constraint means for a curator, by the name of the constraint.
-CONSTRAINTS = {
-    "NodeKindConstraintComponent": "A text where a link (a web address) is expected.",
-    "ClassConstraintComponent": "A link to something of which the platform does not know the kind.",
-    "DatatypeConstraintComponent": "A value of the wrong type.",
-    "MinCountConstraintComponent": "A required value is missing.",
-    "MaxCountConstraintComponent": "Several values where the platform takes one.",
-    "HasValueConstraintComponent": "A value that the platform sets is missing or different.",
-}
-
-
-def filled(values) -> int:
-    """How many of the values are given: a text that is not empty, or a list that is not empty."""
-    count = 0
-    for value in values:
-        if isinstance(value, (str, list)) and value:
-            count += 1
-    return count
-
-
 def field_labels() -> dict[tuple[str, str], str]:
     """The name of each field on the platform, by its class and the address of its property."""
     labels = {}
     for kind in settings()["classes"]:
-        known = rdf.fields(kind)
         for field in forms.form(kind):
-            labels[(kind, known.loc[field["name"], "property"])] = field["label"]
+            labels[(kind, field["iri"])] = field["label"]
     return labels
-
-
-def meaning(component: str | None) -> str:
-    name = (component or "").replace("#", ":").rsplit(":", 1)[-1]
-    return CONSTRAINTS.get(name, "A value that does not fit the model.")
 
 
 def report() -> dict:
     """How complete the records of each class are, and the notes of the checks grouped by field and constraint."""
-    with database.engine().connect() as connection:
-        table = pd.read_sql(select(Record).where(Record.removed_at.is_(None)), connection)
-        notes = pd.read_sql(select(Note).order_by(Note.field, Note.reason, Note.iri), connection)
+    with database.session() as db:
+        kept = list(db.scalars(select(Record).where(Record.removed_at.is_(None))))
+        notes = list(db.scalars(select(Note).order_by(Note.field, Note.reason, Note.iri)))
     labels = field_labels()
-    types = dict(zip(table["iri"], table["type"]))
+    types = {}
+    of_class = {}
+    for record in kept:
+        types[record.iri] = record.type
+        of_class.setdefault(record.type, []).append(record)
     classes = []
-    for kind, rows in table.groupby("type"):
+    for kind in sorted(of_class):
         completeness = []
         for field in forms.form(kind):
-            completeness.append({"field": field["label"], "required": field["required"], "records": filled(rows[field["name"]])})
-        classes.append({"type": kind, "records": len(rows), "fields": completeness})
+            filled = 0
+            for record in of_class[kind]:
+                if rdf.values(record.document, field["name"]):
+                    filled += 1
+            completeness.append({"field": field["label"], "required": field["required"], "records": filled})
+        classes.append({"type": kind, "records": len(of_class[kind]), "fields": completeness})
+    grouped = {}
+    for note in notes:
+        grouped.setdefault((note.field, note.component or ""), []).append(note)
     groups = []
-    for (field, component), rows in notes.groupby(["field", notes["component"].fillna("")]):
-        kind = types.get(rows["iri"].iloc[0], "")
+    for (field, component), noted in grouped.items():
         groups.append({
-            "field": labels.get((kind, field), field),
-            "meaning": meaning(component),
-            "reason": rows["reason"].iloc[0],
-            "notes": rows.to_dict("records"),
+            "field": labels.get((types.get(noted[0].iri, ""), field), field),
+            "meaning": rdf.meaning(component),
+            "reason": noted[0].reason,
+            "notes": noted,
         })
     groups.sort(key=lambda group: -len(group["notes"]))
-    return {"classes": classes, "groups": groups, "notes": len(notes), "names": records.names(list(notes["iri"]))}
+    iris = []
+    for note in notes:
+        iris.append(note.iri)
+    return {"classes": classes, "groups": groups, "notes": len(notes), "names": records.names(iris)}
 
 
 def mapping(spec: dict, labels: dict) -> list[dict]:

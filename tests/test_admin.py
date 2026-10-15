@@ -18,6 +18,11 @@ ORCID = "0000-0002-1825-0097"
 TOOL = {"name": "T", "description": "Does T.", "url": "https://t.org/", "about": [STEP]}
 
 
+def record(iri: str, kind: str, source: str, fields: dict) -> dict:
+    """A row of the records table, with the document of these fields."""
+    return rdf.row(writes.document(kind, iri, fields), kind, source)
+
+
 @pytest.fixture
 def site(monkeypatch):
     import app as platform
@@ -28,9 +33,9 @@ def site(monkeypatch):
     api._requests.clear()
     with database.session() as db, db.begin():
         db.execute(insert(Record), [
-            rdf.row(BASE + "tools/t", "https://schema.org/SoftwareApplication", "tools", {"name": ["T"], "about": [STEP]}),
-            rdf.row(BASE + "tools/old", "https://schema.org/SoftwareApplication", "platform", {"name": ["Old"]}),
-            rdf.row(STEP, "https://schema.org/DefinedTerm", "glossary", {"name": ["Toxicodynamics"]}),
+            record(BASE + "tools/t", "https://schema.org/SoftwareApplication", "tools", {"name": "T", "about": [STEP]}),
+            record(BASE + "tools/old", "https://schema.org/SoftwareApplication", "platform", {"name": "Old"}),
+            record(STEP, "https://schema.org/DefinedTerm", "glossary", {"name": "Toxicodynamics"}),
         ])
     writes.retire(BASE + "tools/old", "Test Editor", ORCID)
     return platform.app.test_client()

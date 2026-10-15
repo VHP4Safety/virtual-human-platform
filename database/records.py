@@ -45,16 +45,6 @@ def names(iris: list[str]) -> dict[str, str]:
         return dict(db.execute(select(Record.iri, Record.name).where(Record.iri.in_(iris))).all())
 
 
-def used_values(kind: str, field: str) -> list[str]:
-    """The values that the records of a class have in a field, most used first."""
-    counts = {}
-    with database.session() as db:
-        for values in db.scalars(select(getattr(Record, field)).where(Record.type == kind, Record.removed_at.is_(None))):
-            for value in values if isinstance(values, list) else [values] if values else []:
-                counts[value] = counts.get(value, 0) + 1
-    return sorted(counts, key=lambda value: (-counts[value], value))
-
-
 def earlier_addresses(iri: str) -> list[str]:
     """The addresses that a record had before it moved to *iri*."""
     with database.session() as db:

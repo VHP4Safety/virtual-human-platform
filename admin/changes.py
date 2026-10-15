@@ -7,7 +7,7 @@ from rdflib.namespace import SDO
 
 from database import records
 from database.tables import Revision
-from linkeddata import forms, rdf
+from linkeddata import forms
 from linkeddata.model import curie
 
 
@@ -27,9 +27,9 @@ def edges(before: Graph, after: Graph, record: URIRef) -> dict:
     entries = {}
     order = {}
     for position, field in enumerate(form):
-        labels[field["name"]] = field["label"]
-        entries[field["name"]] = field["entry"]
-        order[field["name"]] = position
+        labels[field["iri"]] = field["label"]
+        entries[field["iri"]] = field["entry"]
+        order[field["iri"]] = position
     # A value is compared as a link or a text, so that "X" and "X"^^xsd:string are the same value.
     old = set()
     for predicate, value in before.predicate_objects(record):
@@ -42,15 +42,14 @@ def edges(before: Graph, after: Graph, record: URIRef) -> dict:
         if predicate == RDF.type:
             continue
         status = "kept" if (predicate, link, value) in old and (predicate, link, value) in new else ("added" if (predicate, link, value) in new else "removed")
-        field = rdf.field_of_property(str(kind), str(predicate)) if kind is not None else str(predicate)
         found.append({
-            "label": labels.get(field, curie(str(predicate))),
+            "label": labels.get(str(predicate), curie(str(predicate))),
             "property": curie(str(predicate)),
             "value": value,
             "link": link,
-            "entry": entries.get(field, "text"),
+            "entry": entries.get(str(predicate), "text"),
             "status": status,
-            "order": order.get(field, len(form)),
+            "order": order.get(str(predicate), len(form)),
         })
     found.sort(key=lambda edge: (edge["order"], edge["status"] != "removed", edge["value"]))
     values = [edge["value"] for edge in found if edge["link"]]

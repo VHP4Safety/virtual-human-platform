@@ -17,15 +17,15 @@ import yaml
 from rdfsolve import SchemaMiner
 from rdfsolve.api import Client
 from rdfsolve.conversion import Profile, Rule, write_query
-from rdflib import RDF, Graph
+from rdflib import RDF, Graph, Literal, URIRef
 from rdflib.namespace import SH
 from sqlalchemy import delete, func, insert, select
 
 import database
 from database.tables import PLATFORM, Note, Record, Source
-from linkeddata import rdf
+from linkeddata import forms, rdf
 from linkeddata.lift import lift
-from linkeddata.model import MODEL_DIR, ontology, profile, settings, shapes
+from linkeddata.model import ontology, profile, settings, shapes
 
 SOURCES_DIR = Path(__file__).parent / "sources"
 TARGET = "VHP4Safety model v1"
@@ -91,17 +91,22 @@ def check(data: ox.Dataset) -> list[dict]:
 
 
 def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[dict]:
-    """The rows of the records of each class in converted data, as rdfsolve reads them."""
-    client = Client.open(MODEL_DIR / "schema.json", data)
+    """The rows of the records of each class in converted data, each with its JSON-LD document."""
+    graph = Graph().parse(data=ox.serialize(data, format=ox.RdfFormat.N_QUADS), format="nt")
     rows = []
     for kind in classes:
-        iris = set()
-        for quad in data.quads_for_predicate(TYPE):
-            if quad.object == ox.NamedNode(kind):
-                iris.add(quad.subject.value)
-        if iris:
-            selection = client.fetch(sorted(iris), *rdf.fields(kind).index, kind=kind)
-            rows.extend(rdf.rows(selection, kind, source))
+        fields = {}
+        for field in forms.form(kind):
+            fields[field["iri"]] = field
+        for subject in sorted(set(graph.subjects(RDF.type, URIRef(kind)))):
+            own = Graph()
+            for _, predicate, value in graph.triples((subject, None, None)):
+                field = fields.get(str(predicate))
+                # A text where a field takes only links, or a link where it takes only texts, is left out; the checks note it.
+                if field and ((isinstance(value, Literal) and not field["texts"]) or (isinstance(value, URIRef) and not field["links"])):
+                    continue
+                own.add((subject, predicate, value))
+            rows.append(rdf.row(rdf.document(own), kind, source))
     return rows
 
 

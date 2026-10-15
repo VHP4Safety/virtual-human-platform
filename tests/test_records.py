@@ -1,22 +1,19 @@
 """Records written on the platform: saving, removing, and their revisions."""
 
-from admin import writes
+from admin import editor, writes
 from database import records
-from database.tables import PLATFORM
+from linkeddata import rdf
 
 ORCID = "0000-0002-1825-0097"
 IRI = "https://platform.vhp4safety.nl/tools/x"
-
-
-def row(**fields) -> dict:
-    return {"iri": IRI, "type": "https://schema.org/SoftwareApplication", "source": PLATFORM, **fields}
+TOOL = "https://schema.org/SoftwareApplication"
 
 
 def test_records():
-    assert writes.save(row(name="X", about=["https://example.org/a"]), {"name": "X"}, "Test Editor", ORCID).action == "Added"
-    assert writes.save(row(name="Y"), {"name": "Y"}, "Test Editor", ORCID).action == "Changed"
+    assert writes.save(writes.document(TOOL, IRI, {"name": "X", "about": ["https://example.org/a"]}), TOOL, "Test Editor", ORCID).action == "Added"
+    assert writes.save(writes.document(TOOL, IRI, {"name": "Y"}), TOOL, "Test Editor", ORCID).action == "Changed"
     record = records.get(IRI)
-    assert (record.name, record.about) == ("Y", [])
+    assert (record.name, rdf.values(record.document, "about")) == ("Y", [])
     assert [record.iri for record in records.of_kind("tools")] == [IRI]
     writes.retire(IRI, "Test Editor", ORCID)
     assert records.get(IRI).removed_at
@@ -29,24 +26,14 @@ def test_records():
     assert (history[0].name, history[0].orcid) == ("Test Editor", ORCID)
     assert '"name": "Y"' in history[2].document
     assert '"name": "X"' in history[2].previous
-    assert records.used_values("https://schema.org/SoftwareApplication", "about") == []
+    assert editor.used_values(TOOL, "about") == []
 
 
-def test_a_database_made_before_a_column_was_added(monkeypatch):
-    from sqlalchemy import create_engine, inspect, text
+def test_the_database_uses_the_write_ahead_log():
+    from sqlalchemy import text
 
     import database
 
-    path = database.STATE_DIR / "platform.sqlite"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    old = create_engine(f"sqlite:///{path}")
-    with old.begin() as connection:
-        connection.execute(text("CREATE TABLE records (iri VARCHAR PRIMARY KEY, type VARCHAR NOT NULL, source VARCHAR NOT NULL, updated_at VARCHAR NOT NULL)"))
-        connection.execute(text("INSERT INTO records VALUES ('https://platform.vhp4safety.nl/tools/old', 'https://schema.org/SoftwareApplication', 'tools', '2026-01-01')"))
-    old.dispose()
-    columns = {column["name"] for column in inspect(database.engine()).get_columns("records")}
-    assert {"name", "about", "conforms_to"} <= columns
-    assert records.get("https://platform.vhp4safety.nl/tools/old").about == []
     with database.engine().connect() as connection:
         assert connection.execute(text("PRAGMA journal_mode")).scalar() == "wal"
 
@@ -54,7 +41,7 @@ def test_a_database_made_before_a_column_was_added(monkeypatch):
 def test_backups():
     import database
 
-    writes.save(row(name="X"), {"name": "X"}, "Test Editor", ORCID)
+    writes.save(writes.document(TOOL, IRI, {"name": "X"}), TOOL, "Test Editor", ORCID)
     for _ in range(3):
         copy = database.backup(keep=2)
     assert copy.exists()

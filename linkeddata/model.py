@@ -8,7 +8,6 @@ import requests
 import yaml
 from rdflib import Graph, Namespace, URIRef
 from rdflib.namespace import SH
-from rdfsolve.api import Client
 from rdfsolve.schema_models import MinedSchema
 
 MODEL_DIR = Path(__file__).parent / "model" / "v1"
@@ -68,10 +67,13 @@ def property_shapes(graph: Graph, kind: str) -> dict[str, list]:
 
 @cache
 def shapes() -> Graph:
-    """The checks of the model: the approved schema's value types of the fields the profile has, with the
-    profile's rules."""
+    """The checks of the model: the approved schema's value types of the fields the profile has, and the
+    application profile next to them. They are not merged, so that a recommendation of the profile
+    (sh:Warning) never makes a value of the wrong type a recommendation too."""
     schema = MinedSchema.from_json(MODEL_DIR / "schema.json")
-    return Graph().parse(data=schema.to_shacl(properties="profile"), format="turtle")
+    paths = [str(path) for path in profile().objects(None, SH.path) if isinstance(path, URIRef)]
+    generated = schema.model_copy(update={"shape_profile": None}).to_shacl(properties=paths)
+    return Graph().parse(data=generated, format="turtle") + profile()
 
 
 @cache
@@ -82,7 +84,3 @@ def ontology() -> Graph:
         graph.parse(path, format="json-ld" if path.suffix == ".jsonld" else "turtle")
     return graph
 
-
-def contract_client() -> Client:
-    """A client that checks every record it creates against the approved schema."""
-    return Client.open(MODEL_DIR / "schema.json", Graph(), contract=True)

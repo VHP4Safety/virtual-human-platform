@@ -17,6 +17,11 @@ STEP = "https://vhp4safety.github.io/glossary#VHP0000156"
 ORCID = "0000-0002-1825-0097"
 
 
+def record(iri: str, kind: str, source: str, fields: dict) -> dict:
+    """A row of the records table, with the document of these fields."""
+    return rdf.row(writes.document(kind, iri, fields), kind, source)
+
+
 @pytest.fixture
 def site(monkeypatch):
     import app as platform
@@ -29,10 +34,10 @@ def site(monkeypatch):
     monkeypatch.setattr(platform, "get_process_flow_steps", lambda: steps)
     with database.session() as db, db.begin():
         db.execute(insert(Record), [
-            rdf.row(BASE + "tools/t", TOOL, "platform", {"name": ["T"], "description": ["Does T."], "url": ["https://t.org/"], "about": [STEP]}),
-            rdf.row(BASE + "tools/old", TOOL, "platform", {"name": ["Old"]}),
-            rdf.row(BASE + "methods/m", "https://bioschemas.org/draft_terms/LabProtocol", "methods", {"name": ["M"]}),
-            rdf.row(STEP, "https://schema.org/DefinedTerm", "glossary", {"name": ["Toxicodynamics"]}),
+            record(BASE + "tools/t", TOOL, "platform", {"name": "T", "description": "Does T.", "url": "https://t.org/", "about": [STEP]}),
+            record(BASE + "tools/old", TOOL, "platform", {"name": "Old"}),
+            record(BASE + "methods/m", "https://bioschemas.org/draft_terms/LabProtocol", "methods", {"name": "M"}),
+            record(STEP, "https://schema.org/DefinedTerm", "glossary", {"name": "Toxicodynamics"}),
         ])
     writes.retire(BASE + "tools/old", "Test Editor", ORCID)
     return platform.app.test_client()

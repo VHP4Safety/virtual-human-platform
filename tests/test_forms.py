@@ -10,17 +10,17 @@ def test_the_form_of_tools():
         ("name", "Name", "text", True),
         ("description", "Description", "long text", True),
         ("url", "Website", "address", False),
-        ("install_url", "Where to use it", "address", False),
+        ("installUrl", "Where to use it", "address", False),
         ("image", "Logo or screenshot", "image", False),
         ("about", "Assessment steps and case-study questions", "links", False),
     ]
     by_name = {field["name"]: field for field in fields}
     assert by_name["maintainer"]["section"] == "Who is behind it"
-    assert by_name["software_help"]["entry"] == "details"
-    assert by_name["creative_work_status"]["entry"] == "select"
+    assert by_name["softwareHelp"]["entry"] == "details"
+    assert by_name["creativeWorkStatus"]["entry"] == "select"
     assert fields[0]["message"] == "Give the tool a name."
     assert by_name["citation"]["pattern"].startswith("^https://doi")
-    assert by_name["conforms_to"]["fixed"] == ["https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"]
+    assert by_name["dct:conformsTo"]["fixed"] == ["https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"]
     for field in fields:
         assert field["help"], field["name"]
 

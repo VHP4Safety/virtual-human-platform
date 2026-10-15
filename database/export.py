@@ -40,13 +40,17 @@ def latest_documents() -> dict[str, str]:
 def used_images() -> dict[str, Path]:
     """The images uploaded to the platform that records written on the platform use, by the path of their file."""
     base = settings()["base"]
-    statement = select(Record.image).where(Record.source == PLATFORM, Record.removed_at.is_(None), Record.image.startswith(base + "images/"))
+    statement = select(Record.document).where(Record.source == PLATFORM, Record.removed_at.is_(None))
     used = {}
     with database.session() as db:
-        for address in db.scalars(statement):
-            path = images.folder() / address.removeprefix(base + "images/")
-            if path.exists():
-                used[address.removeprefix(base)] = path
+        for document in db.scalars(statement):
+            image = document.get("image")
+            for item in image if isinstance(image, list) else [image]:
+                address = item.get("@id") if isinstance(item, dict) else item
+                if isinstance(address, str) and address.startswith(base + "images/"):
+                    path = images.folder() / address.removeprefix(base + "images/")
+                    if path.exists():
+                        used[address.removeprefix(base)] = path
     return used
 
 

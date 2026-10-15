@@ -8,6 +8,7 @@ from PIL import Image as Picture
 
 from admin import tokens
 from database import images, records
+from linkeddata import rdf
 from routes import api, changes
 from routes import images as image_routes
 
@@ -54,8 +55,8 @@ def test_writing_a_record(client):
     assert response.status_code == 201
     assert response.json["@id"] == BASE + "tools/aop-builder"
     record = records.get(BASE + "tools/aop-builder")
-    assert (record.name, record.url, record.source) == ("AOP Builder", "https://github.com/VHP4Safety/aop-builder", "platform")
-    assert record.conforms_to == ["https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"]
+    assert (record.name, rdf.values(record.document, "url"), record.source) == ("AOP Builder", ["https://github.com/VHP4Safety/aop-builder"], "platform")
+    assert rdf.values(record.document, "dct:conformsTo") == ["https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"]
     response = client.put("/api/tools/aop-builder", json={**TOOL, "name": "AOP-Builder"}, headers=headers)
     assert response.status_code == 200
     assert client.get(response.json["change"] + ".json").status_code == 401
@@ -68,10 +69,12 @@ def test_a_record_that_does_not_fit_the_model(client):
     headers = bearer("tools")
     response = client.put("/api/tools/x", json={"name": "X", "url": "not a link"}, headers=headers)
     assert response.status_code == 422
-    assert set(response.json["fields"]) == {"url"}
+    assert set(response.json["fields"]) == {"url", "description"}
     response = client.put("/api/tools/x", json={"name": "X"}, headers=headers)
     assert response.json["fields"] == {"description": ["Describe the tool in a few sentences."]}
     response = client.put("/api/tools/x", json={**TOOL, "url": "javascript:alert(1)"}, headers=headers)
+    assert response.json["fields"] == {"url": ["A text where a link (a web address) is expected."]}
+    response = client.put("/api/tools/x", json={**TOOL, "url": {"@id": "javascript:alert(1)"}}, headers=headers)
     assert response.json["fields"] == {"url": ["A web address starts with https:// or http://."]}
     assert client.put("/api/tools/x", json={**TOOL, "applicationCategory": "1"}, headers=headers).status_code == 422
     assert records.get(BASE + "tools/x") is None
@@ -85,7 +88,7 @@ def test_a_preview_saves_nothing(client):
     statuses = {(edge["label"], edge["status"]) for edge in response.json["edges"]}
     assert ("Description", "removed") in statuses and ("Name", "kept") in statuses
     assert set(response.json["fields"]) == {"description", "citation"}
-    assert records.get(BASE + "tools/x").description == TOOL["description"]
+    assert rdf.values(records.get(BASE + "tools/x").document, "description") == [TOOL["description"]]
     assert [revision.action for revision in records.history(5)] == ["Added"]
 
 
@@ -161,12 +164,12 @@ def test_moving_a_record(client):
     response = client.post("/api/tools/old-name/move", json={"to": "new-name"}, headers=headers)
     assert response.status_code == 200 and response.json["@id"] == BASE + "tools/new-name"
     moved = records.get(BASE + "tools/new-name")
-    assert (moved.name, moved.same_as) == (TOOL["name"], [BASE + "tools/old-name"])
+    assert (moved.name, rdf.values(moved.document, "sameAs")) == (TOOL["name"], [BASE + "tools/old-name"])
     assert records.get(BASE + "tools/old-name").moved_to == BASE + "tools/new-name"
     assert client.put("/api/tools/old-name", json=TOOL, headers=headers).status_code == 409
     client.post("/api/tools/new-name/move", json={"to": "newest-name"}, headers=headers)
     assert records.get(BASE + "tools/old-name").moved_to == BASE + "tools/newest-name"
-    assert set(records.get(BASE + "tools/newest-name").same_as) == {BASE + "tools/old-name", BASE + "tools/new-name"}
+    assert set(rdf.values(records.get(BASE + "tools/newest-name").document, "sameAs")) == {BASE + "tools/old-name", BASE + "tools/new-name"}
     back = client.post("/api/tools/newest-name/move", json={"to": "old-name"}, headers=headers)
     assert back.status_code == 200
     assert records.get(BASE + "tools/old-name").moved_to is None

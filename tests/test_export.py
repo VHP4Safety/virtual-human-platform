@@ -2,15 +2,14 @@
 
 from admin import writes
 from database import export
-from database.tables import PLATFORM
 
 ORCID = "0000-0002-1825-0097"
 IRI = "https://platform.vhp4safety.nl/tools/x"
+TOOL = "https://schema.org/SoftwareApplication"
 
 
 def test_export():
-    row = {"iri": IRI, "type": "https://schema.org/SoftwareApplication", "source": PLATFORM, "name": "X"}
-    writes.save(row, {"@id": IRI, "name": "X"}, "Test Editor", ORCID)
+    writes.save(writes.document(TOOL, IRI, {"name": "X"}), TOOL, "Test Editor", ORCID)
     assert export.export()
     assert '"name": "X"' in (export.RECORDS_DIR / "tools" / "x.jsonld").read_text()
     assert not export.export()
