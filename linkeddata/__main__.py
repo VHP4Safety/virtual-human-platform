@@ -1,7 +1,7 @@
 """The linked data of the platform.
 
     python -m linkeddata model                  generate the approved schema of the model and its tables
-    python -m linkeddata import [--offline]     import every source (or its last download) into the database
+    python -m linkeddata import                 import every source into the database
     python -m linkeddata export                 write the records made on the platform to the records repository
     python -m linkeddata push                   send the records repository to its remote
     python -m linkeddata backup                 copy the database to PLATFORM_STATE/backups (the latest 14 are kept)
@@ -23,14 +23,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m linkeddata", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("command", choices=["model", "import", "export", "push", "backup", "token"])
     parser.add_argument("arguments", nargs="*", help="token: the ORCID iD, the name, and the kinds it may write")
-    parser.add_argument("--offline", action="store_true", help="import the sources downloaded by the last import")
     parser.add_argument("--days", type=int, default=tokens.DEFAULT_DAYS, help="how long a new token is valid")
     args = parser.parse_args()
     if args.command == "model":
         print(f"Wrote {write_schema()}")
         print(f"Wrote {tables.generate()}")
     elif args.command == "import":
-        problems = import_all(args.offline)
+        problems = import_all()
         for problem in problems:
             print(f"Not imported: {problem}", file=sys.stderr)
         if problems:

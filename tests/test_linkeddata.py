@@ -37,15 +37,17 @@ def test_imports(monkeypatch, tmp_path):
     monkeypatch.setattr(imports, "SOURCES_DIR", tmp_path / "sources")
     (tmp_path / "sources").mkdir()
     (tmp_path / "sources" / "tools.yaml").write_text(rules)
-    folder = database.STATE_DIR / "downloads" / "tools"
-    folder.mkdir(parents=True)
     tools = {
         "aop-builder": {"id": "aop-builder", "service": "AOP-Builder", "description": "Builds AOPs.", "stage": STEP},
         "x": {"id": "x", "service": "X", "stage": "Other"},
     }
-    (folder / "tools").write_text(json.dumps(tools))
-    (folder / "aop-builder").write_text(json.dumps({"provider": {"name": "Example Institute", "contact": {"name": "Test Author"}}}))
-    assert imports.import_all(offline=True) == []
+    files = {
+        "https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/service_index.json": tools,
+        "https://cloud.vhp4safety.nl/service/aop-builder.json": {"provider": {"name": "Example Institute", "contact": {"name": "Test Author"}}},
+        "https://cloud.vhp4safety.nl/service/x.json": {},
+    }
+    monkeypatch.setattr(imports, "fetch", lambda url: json.dumps(files[url]).encode())
+    assert imports.import_all() == []
     tool = records.get(BASE + "tools/aop-builder")
     found = rdf.graph([BASE + "tools/aop-builder", BASE + "tools/x"])
     assert (tool.name, rdf.stored_values(found, tool.iri, "about")) == ("AOP-Builder", [STEP])

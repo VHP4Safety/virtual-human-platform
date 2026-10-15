@@ -174,5 +174,5 @@ tokens at `/account/tokens/`; the first token can be made with
 | `PLATFORM_EDITORS` | the ORCID iDs of the editors, separated by commas |
 | `ORCID_CLIENT_ID`, `ORCID_CLIENT_SECRET` | the platform's ORCID public API credentials; the redirect URI is `<platform>/orcid/callback/` |
 | `SECRET_KEY` | the key that signs login sessions |
-| `PLATFORM_STATE` | the folder of the database and of the sources' last downloads |
+| `PLATFORM_STATE` | the folder of the database |
 | `PLATFORM_RECORDS` | the records repository that `export` writes and `push` sends to its remote (for example `VHP4Safety/platform-data`) |

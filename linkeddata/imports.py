@@ -7,7 +7,6 @@ import hashlib
 import importlib
 import json
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pyoxigraph as ox
@@ -22,7 +21,7 @@ from rdflib.namespace import SH
 from sqlalchemy import delete, func, insert, select
 
 import database
-from database.tables import PLATFORM, Note, Record, Source
+from database.tables import PLATFORM, Note, Record, Source, now
 from linkeddata import rdf, tables
 from linkeddata.model import ontology, profile, settings, shapes
 
@@ -157,36 +156,27 @@ def files_of(spec: dict) -> dict[str, str]:
 ENTRY = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
-def download(spec: dict, offline: bool) -> dict[str, bytes]:
-    """The files of a source by name, fetched, or as the last import fetched them when *offline*. A source
-    with entries also has, by its key, the file of each entry of its index (a JSON object)."""
-    folder = database.STATE_DIR / "downloads" / spec["name"]
+def download(spec: dict) -> dict[str, bytes]:
+    """The files of a source by name. A source with entries also has, by its key, the file of each entry
+    of its index (a JSON object)."""
     contents = {}
     for name, url in files_of(spec).items():
-        path = folder / name
-        if not offline:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(fetch(url))
-        contents[name] = path.read_bytes()
+        contents[name] = fetch(url)
     if "entries" in spec:
         for key in json.loads(contents[spec["name"]]):
-            # The keys come from upstream and name files here, so only plain names are taken.
+            # The keys come from upstream and are put in addresses, so only plain names are taken.
             if not ENTRY.fullmatch(key) or key == spec["name"]:
                 continue
-            path = folder / key
-            if not offline:
-                try:
-                    path.write_bytes(fetch(spec["entries"].format(key=key)))
-                except requests.RequestException as problem:
-                    print(f"{spec['name']}: {key} not fetched ({problem})")
-            if path.exists():
-                contents[key] = path.read_bytes()
+            try:
+                contents[key] = fetch(spec["entries"].format(key=key))
+            except requests.RequestException as problem:
+                print(f"{spec['name']}: {key} not fetched ({problem})")
     return contents
 
 
-def import_source(spec: dict, offline: bool) -> None:
+def import_source(spec: dict) -> None:
     config = settings()
-    contents = download(spec, offline)
+    contents = download(spec)
     parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
     # A source of one file gives its parser the file; a source of several gives them by name.
     parsed = parser.parse(contents if "files" in spec or "entries" in spec else contents[spec["name"]])
@@ -196,11 +186,10 @@ def import_source(spec: dict, offline: bool) -> None:
     checksum = hashlib.sha256()
     for name in sorted(contents):
         checksum.update(contents[name])
-    folder = database.STATE_DIR / "downloads" / spec["name"]
     source = Source(
         name=spec["name"],
         url=" ".join(files_of(spec).values()),
-        fetched_at=datetime.fromtimestamp(folder.stat().st_mtime, timezone.utc).isoformat(timespec="seconds"),
+        fetched_at=now(),
         sha256=checksum.hexdigest(),
         queries="\n\n".join(queries),
     )
@@ -251,14 +240,13 @@ def note_problem(spec: dict, problem: Exception) -> None:
         source.problem = str(problem)
 
 
-def import_all(offline: bool = False) -> list[str]:
-    """Every source that is fetched is imported, with *offline* from its last download, and the records
-    written on the platform are checked again. The problems of the sources that could not be imported
-    are given back; their records are kept."""
+def import_all() -> list[str]:
+    """Every source that is fetched is imported, and the records written on the platform are checked
+    again. The problems of the sources that could not be imported are given back; their records are kept."""
     problems = []
     for spec in specs():
         try:
-            import_source(spec, offline)
+            import_source(spec)
         except (Refused, requests.RequestException, OSError, ValueError) as problem:
             note_problem(spec, problem)
             problems.append(f"{spec['name']}: {problem}")
