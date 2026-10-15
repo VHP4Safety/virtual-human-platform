@@ -11,7 +11,10 @@ from rdflib import RDF, Graph, Namespace, URIRef
 from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SH
 from rdfsolve.schema_models import MinedSchema
 
-MODEL_DIR = Path(__file__).parent / "model" / "v1"
+# The release of the model that the platform serves: its model is in model/<release>, and its tables in
+# database/<release>.
+RELEASE = "v1"
+MODEL_DIR = Path(__file__).parent / "model" / RELEASE
 # The vocabulary of SHACL forms, which the application profile uses to guide the editor.
 DASH = Namespace("http://datashapes.org/dash#")
 
