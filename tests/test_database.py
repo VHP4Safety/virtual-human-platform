@@ -17,7 +17,7 @@ TOOL = "https://schema.org/SoftwareApplication"
 
 def test_records():
     with database.session() as db, db.begin():
-        db.execute(insert(Record), [{"iri": BASE + "tools/x", "type": TOOL, "source": "tools", "name": "X", "document": {"@id": BASE + "tools/x"}}])
+        db.execute(insert(Record), [{"iri": BASE + "tools/x", "type": TOOL, "source": "tools", "name": "X"}])
     assert [record.name for record in records.of_kind("tools")] == ["X"]
     assert records.names([BASE + "tools/x"]) == {BASE + "tools/x": "X"}
     with database.engine().connect() as connection:

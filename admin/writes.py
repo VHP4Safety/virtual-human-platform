@@ -8,11 +8,13 @@ import json
 import re
 from datetime import datetime, timezone
 
+from rdflib import RDF, Graph, Literal, URIRef
+from rdflib.namespace import SDO
 from sqlalchemy import delete, insert, select
 
 import database
 from database.tables import PLATFORM, Record, Revision, now
-from linkeddata import forms, rdf
+from linkeddata import forms, rdf, tables
 from linkeddata.document import context
 from linkeddata.model import settings
 
@@ -92,11 +94,16 @@ def name_things(found: list[tuple[str, str, str]]) -> None:
         for kind, iri, name in found:
             thing = db.get(Record, iri)
             if thing is None:
-                document = {"@context": context(settings()), "@id": iri, "@type": rdf.term(kind), "name": name}
-                db.add(Record(iri=iri, type=kind, source=PLATFORM, name=name, document=document))
+                found = Graph()
+                found.add((URIRef(iri), RDF.type, URIRef(kind)))
+                found.add((URIRef(iri), SDO.name, Literal(name)))
+                tables.save(db, found, iri)
+                db.add(Record(iri=iri, type=kind, source=PLATFORM, name=name))
             elif thing.name != name:
+                found = tables.graph([iri])
+                found.set((URIRef(iri), SDO.name, Literal(name)))
+                tables.save(db, found, iri)
                 thing.name = name
-                thing.document = {**thing.document, "name": name}
                 thing.source = PLATFORM
                 thing.updated_at = version()
 
@@ -110,7 +117,9 @@ def save(document: dict, kind: str, name: str, orcid: str, replace: bool = True)
         created = db.get(Record, iri) is None
         if replace:
             db.execute(delete(Record).where(Record.iri == iri))
-        db.execute(insert(Record), [{**rdf.row(document, kind, PLATFORM), "updated_at": version()}])
+        found = rdf.statements(document)
+        tables.save(db, found, iri)
+        db.execute(insert(Record), [{**rdf.row(found, iri, kind, PLATFORM), "updated_at": version()}])
         revision = Revision(
             record_iri=iri,
             action="Added" if created else "Changed",
@@ -145,15 +154,15 @@ def move(old: str, new: str, name: str, orcid: str) -> Revision:
         moved = {}
         for column in Record.__table__.columns:
             moved[column.name] = getattr(record, column.name)
-        same_as = rdf.values(record.document, "sameAs")
-        if old not in same_as:
-            same_as.append(old)
-        if new in same_as:
-            same_as.remove(new)
-        document = {**record.document, "@id": new, "sameAs": [{"@id": address} for address in same_as]}
+        found = Graph()
+        for _, prop, value in tables.graph([old]).triples((URIRef(old), None, None)):
+            found.add((URIRef(new), prop, value))
+        found.add((URIRef(new), SDO.sameAs, URIRef(old)))
+        found.remove((URIRef(new), SDO.sameAs, URIRef(new)))
         # A record can move back to one of its earlier addresses; that address then stops forwarding.
         db.execute(delete(Record).where(Record.iri == new, Record.moved_to == old))
-        db.execute(insert(Record), [{**moved, "iri": new, "source": PLATFORM, "updated_at": version(), "document": document}])
+        tables.save(db, found, new)
+        db.execute(insert(Record), [{**moved, "iri": new, "source": PLATFORM, "updated_at": version()}])
         record.removed_at = now()
         record.moved_to = new
         record.source = PLATFORM
@@ -184,6 +193,7 @@ def remove(iri: str, name: str, orcid: str) -> Revision:
     """The record and its address are removed; its revisions are kept."""
     previous = rdf.document_of(iri)
     with database.session() as db, db.begin():
+        tables.delete(db, iri)
         db.execute(delete(Record).where(Record.iri == iri))
         revision = Revision(record_iri=iri, action="Removed permanently", previous=previous, name=name, orcid=orcid)
         db.add(revision)

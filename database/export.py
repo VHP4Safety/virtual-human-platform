@@ -5,6 +5,7 @@ as its latest revision wrote it, and the images these records use (images/<sha25
 the repository's remote; both are meant to run every night.
 """
 
+import json
 import os
 import shutil
 import subprocess
@@ -40,11 +41,11 @@ def latest_documents() -> dict[str, str]:
 def used_images() -> dict[str, Path]:
     """The images uploaded to the platform that records written on the platform use, by the path of their file."""
     base = settings()["base"]
-    statement = select(Record.document).where(Record.source == PLATFORM, Record.removed_at.is_(None))
     used = {}
-    with database.session() as db:
-        for document in db.scalars(statement):
-            image = document.get("image")
+    for text in latest_documents().values():
+        document = json.loads(text)
+        for node in document.get("@graph", [document]):
+            image = node.get("image")
             for item in image if isinstance(image, list) else [image]:
                 address = item.get("@id") if isinstance(item, dict) else item
                 if isinstance(address, str) and address.startswith(base + "images/"):

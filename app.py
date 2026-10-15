@@ -453,13 +453,15 @@ def linked_tools(catalogue: dict) -> dict:
         if tool_id not in removed:
             tools[tool_id] = dict(tool)
     stage_mapping = get_stage_mapping()
-    for record in records.of_kind("tools"):
+    listed = records.of_kind("tools")
+    statements = rdf.graph([record.iri for record in listed])
+    for record in listed:
         tool_id = record.iri.rsplit("/", 1)[-1]
         tool = tools.setdefault(tool_id, {"id": tool_id, "stage": "Unknown", "main_url": "no_url"})
-        descriptions = rdf.values(record.document, "description")
-        urls = rdf.values(record.document, "url")
-        images = rdf.values(record.document, "image")
-        about = rdf.values(record.document, "about")
+        descriptions = rdf.stored_values(statements, record.iri, "description")
+        urls = rdf.stored_values(statements, record.iri, "url")
+        images = rdf.stored_values(statements, record.iri, "image")
+        about = rdf.stored_values(statements, record.iri, "about")
         tool["service"] = record.name or tool_id
         tool["description"] = descriptions[0] if descriptions else ""
         tool["main_url"] = urls[0] if urls else "no_url"
@@ -485,10 +487,12 @@ def linked_methods() -> dict:
     stage_mapping = get_stage_mapping()
     cases = records.address("casestudies/")
     methods = {}
-    for record in records.of_kind("methods"):
+    listed = records.of_kind("methods")
+    statements = rdf.graph([record.iri for record in listed])
+    for record in listed:
         method_id = record.iri.rsplit("/", 1)[-1]
-        descriptions = rdf.values(record.document, "description")
-        urls = rdf.values(record.document, "url")
+        descriptions = rdf.stored_values(statements, record.iri, "description")
+        urls = rdf.stored_values(statements, record.iri, "url")
         method = {
             "id": method_id,
             "method": record.name or method_id,
@@ -496,7 +500,7 @@ def linked_methods() -> dict:
             "catalog_webpage_url": urls[0] if urls else "",
         }
         stages = []
-        for value in rdf.values(record.document, "about"):
+        for value in rdf.stored_values(statements, record.iri, "about"):
             if value.startswith(cases):
                 case, question = value.removeprefix(cases).split("/")[:2]
                 method["case_study"] = case
@@ -1576,7 +1580,7 @@ def method_page(methodid):
         abort(404)
     method = views.view(record, "methods/method")
     method_name = record.name or methodid
-    descriptions = rdf.values(record.document, "description")
+    descriptions = rdf.stored_values(rdf.graph([record.iri]), record.iri, "description")
     return render_template(
         "methods/method.html",
         method=method,

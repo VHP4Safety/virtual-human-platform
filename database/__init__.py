@@ -14,6 +14,8 @@ from sqlalchemy.orm import Session
 from database.tables import Base
 
 STATE_DIR = Path(os.environ.get("PLATFORM_STATE", "instance"))
+# The tables of the model's release, which `python -m linkeddata model` writes from its profile.
+TABLES = Path(__file__).parent / "v1" / "tables.sql"
 _engines = {}
 
 
@@ -25,6 +27,11 @@ def engine() -> Engine:
         made = create_engine(f"sqlite:///{path}", connect_args={"timeout": 30})
         event.listen(made, "connect", write_ahead_log)
         Base.metadata.create_all(made)
+        if TABLES.exists():
+            with made.begin() as connection:
+                for statement in TABLES.read_text(encoding="utf-8").split(";"):
+                    if statement.strip():
+                        connection.exec_driver_sql(statement)
         _engines[path] = made
     return _engines[path]
 

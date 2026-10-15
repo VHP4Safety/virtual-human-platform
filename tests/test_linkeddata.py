@@ -47,9 +47,10 @@ def test_imports(monkeypatch, tmp_path):
     (folder / "aop-builder").write_text(json.dumps({"provider": {"name": "Example Institute", "contact": {"name": "Test Author"}}}))
     assert imports.import_all(offline=True) == []
     tool = records.get(BASE + "tools/aop-builder")
-    assert (tool.name, rdf.values(tool.document, "about")) == ("AOP-Builder", [STEP])
+    found = rdf.graph([BASE + "tools/aop-builder", BASE + "tools/x"])
+    assert (tool.name, rdf.stored_values(found, tool.iri, "about")) == ("AOP-Builder", [STEP])
     assert records.get(BASE + "people/test-author").name == "Test Author"
     with database.session() as db:
         assert db.get(Source, "tools").queries.startswith("# title: tools: Tool")
         assert (BASE + "tools/x", "Other") in [(note.iri, note.value) for note in db.scalars(select(Note))]
-    assert rdf.values(records.get(BASE + "tools/x").document, "about") == ["Other"]
+    assert rdf.stored_values(found, BASE + "tools/x", "about") == ["Other"]

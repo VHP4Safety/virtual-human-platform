@@ -23,7 +23,7 @@ from sqlalchemy import delete, func, insert, select
 
 import database
 from database.tables import PLATFORM, Note, Record, Source
-from linkeddata import rdf
+from linkeddata import rdf, tables
 from linkeddata.lift import lift
 from linkeddata.model import ontology, profile, settings, shapes
 
@@ -90,15 +90,18 @@ def check(data: ox.Dataset) -> list[dict]:
     return notes
 
 
-def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[dict]:
-    """The rows of the records of each class in converted data, each with its JSON-LD document. Values
-    are kept as the source gives them; the checks note those that do not fit the model."""
+def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[tuple[dict, Graph]]:
+    """The records of each class in converted data: the row of each in the records table, and its own
+    statements. Values are kept as the source gives them; the checks note those that do not fit the model."""
     graph = Graph().parse(data=ox.serialize(data, format=ox.RdfFormat.N_QUADS), format="nt")
-    rows = []
+    found = []
     for kind in classes:
         for subject in sorted(set(graph.subjects(RDF.type, URIRef(kind)))):
-            rows.append(rdf.row(rdf.document(graph, str(subject)), kind, source))
-    return rows
+            own = Graph()
+            for statement in graph.triples((subject, None, None)):
+                own.add(statement)
+            found.append((rdf.row(own, str(subject), kind, source), own))
+    return found
 
 
 def known_types(source: str) -> list[ox.Quad]:
@@ -115,19 +118,22 @@ class Refused(Exception):
     """An import that would remove most of a source's records, which an upstream fault usually explains."""
 
 
-def store(source: Source, rows: list[dict], notes: list[dict]) -> None:
+def store(source: Source, found: list[tuple[dict, Graph]], notes: list[dict]) -> None:
     """The records of a source replace those it gave before, except the records written on the platform.
     An import that gives no records, or less than half of those it gave before, is refused."""
     with database.session() as db, db.begin():
         before = db.scalar(select(func.count()).select_from(Record).where(Record.source == source.name))
-        if not rows or (before >= 10 and len(rows) < before / 2):
-            raise Refused(f"the source gave {len(rows)} records where it gave {before} before; the records were kept")
+        if not found or (before >= 10 and len(found) < before / 2):
+            raise Refused(f"the source gave {len(found)} records where it gave {before} before; the records were kept")
         written = set(db.scalars(select(Record.iri).where(Record.source == PLATFORM)))
+        for iri in db.scalars(select(Record.iri).where(Record.source == source.name)):
+            tables.delete(db, iri)
         db.execute(delete(Record).where(Record.source == source.name))
         kept = {}
-        for row in rows:
+        for row, statements in found:
             if row["iri"] not in written:
                 kept[row["iri"]] = row
+                tables.save(db, statements, row["iri"])
         if kept:
             db.execute(insert(Record), list(kept.values()))
         db.execute(delete(Note).where(Note.source == source.name))
@@ -181,7 +187,7 @@ def import_source(spec: dict, offline: bool) -> None:
     parsed = parser.parse(contents if "files" in spec or "entries" in spec else contents[spec["name"]])
     data, queries = convert(spec, parsed, config["base"])
     notes = check(ox.Dataset([*data, *known_types(spec["name"])]))
-    rows = records_of(data, config["classes"], spec["name"])
+    found = records_of(data, config["classes"], spec["name"])
     checksum = hashlib.sha256()
     for name in sorted(contents):
         checksum.update(contents[name])
@@ -193,8 +199,8 @@ def import_source(spec: dict, offline: bool) -> None:
         sha256=checksum.hexdigest(),
         queries="\n\n".join(queries),
     )
-    store(source, rows, notes)
-    print(f"{spec['name']}: {len(rows)} records, {len(notes)} notes")
+    store(source, found, notes)
+    print(f"{spec['name']}: {len(found)} records, {len(notes)} notes")
 
 
 def specs() -> list[dict]:

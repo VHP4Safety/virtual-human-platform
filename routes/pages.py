@@ -117,19 +117,23 @@ def record_page(error):
     if "record" not in g:
         return error
     record = g.record
+    statements = rdf.graph([record.iri])
     shown = []
+    links = []
     for field in forms.form(record.type):
-        found = rdf.values(record.document, field["name"])
+        found = rdf.stored_values(statements, record.iri, field["name"])
         if found:
             shown.append({"name": field["name"], "label": field["label"], "values": found})
-    descriptions = rdf.values(record.document, "description")
-    images = rdf.values(record.document, "image")
+        if field["links"]:
+            links.extend(found)
+    descriptions = rdf.stored_values(statements, record.iri, "description")
+    images = rdf.stored_values(statements, record.iri, "image")
     name = record.name or record.iri
     return render_template(
         "records/record.html",
         record={"iri": record.iri, "name": record.name, "description": descriptions[0] if descriptions else None, "image": images[0] if images else None},
         fields=shown,
-        names=records.names(rdf.links(record.document)),
+        names=records.names(links),
         page_title=f"{name} — VHP4Safety",
         meta_description=(descriptions[0] if descriptions else "")[:160] or f"{name}, a record of the VHP4Safety Virtual Human Platform.",
     )

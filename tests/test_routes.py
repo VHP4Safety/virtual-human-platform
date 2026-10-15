@@ -5,12 +5,8 @@ import json
 from urllib.parse import parse_qs, urlparse
 
 from PIL import Image as Picture
-from sqlalchemy import insert
 
-import database
 from admin import tokens, writes
-from database.tables import Record
-from linkeddata import rdf
 from routes import account
 
 ORCID = "0000-0002-1825-0097"
@@ -21,9 +17,7 @@ FITTING = {"name": "T", "description": "Does T.", "url": "https://t.org/", "abou
 
 
 def add_records():
-    term = writes.document("https://schema.org/DefinedTerm", STEP, {"name": "Toxicodynamics"})
-    with database.session() as db, db.begin():
-        db.execute(insert(Record), [rdf.row(term, "https://schema.org/DefinedTerm", "glossary")])
+    writes.save(writes.document("https://schema.org/DefinedTerm", STEP, {"name": "Toxicodynamics"}), "https://schema.org/DefinedTerm", "Test Editor", ORCID)
     writes.save(writes.document(TOOL, BASE + "tools/t", FITTING), TOOL, "Test Editor", ORCID)
 
 

@@ -1,6 +1,6 @@
 """The linked data of the platform.
 
-    python -m linkeddata model                  generate the approved schema of the model
+    python -m linkeddata model                  generate the approved schema of the model and its tables
     python -m linkeddata import [--offline]     import every source (or its last download) into the database
     python -m linkeddata export                 write the records made on the platform to the records repository
     python -m linkeddata push                   send the records repository to its remote
@@ -14,6 +14,7 @@ import sys
 import database
 from admin import tokens
 from database import export
+from linkeddata import tables
 from linkeddata.imports import import_all
 from linkeddata.model import write_schema
 
@@ -27,6 +28,7 @@ def main() -> None:
     args = parser.parse_args()
     if args.command == "model":
         print(f"Wrote {write_schema()}")
+        print(f"Wrote {tables.generate()}")
     elif args.command == "import":
         problems = import_all(args.offline)
         for problem in problems:

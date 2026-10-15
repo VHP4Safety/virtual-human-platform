@@ -1,13 +1,12 @@
 """The tables of the database.
 
-The records table has one row per record: its address, class, source and dates, its name for lists
-and links, and the record itself as a compact JSON-LD document. A new field or kind of record needs no
-new column: the model's shapes say what a document holds.
+The records table has one row per record: its address, class, source and dates, and its name for lists
+and links. What a record says is kept in the tables of the model's release (v1/tables.sql), one for
+each class of the application profile, which `python -m linkeddata model` writes.
 """
 
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 PLATFORM = "platform"
@@ -35,8 +34,6 @@ class Record(Base):
     # The address the record moved to, when this address is an earlier one; it forwards there.
     moved_to: Mapped[str | None]
     name: Mapped[str | None]
-    # The record in JSON-LD, compacted with the platform's context (linkeddata/document.py).
-    document: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
 class Revision(Base):

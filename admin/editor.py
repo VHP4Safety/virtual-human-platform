@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 import database
 from database import records
 from database.tables import PLATFORM, Record
-from linkeddata import forms, rdf
+from linkeddata import forms, rdf, tables
 from linkeddata.imports import specs
 from linkeddata.model import curie, settings
 
@@ -16,9 +16,11 @@ def used_values(kind: str, field: str) -> list[str]:
     """The values that the records of a class have in a field, most used first."""
     counts = {}
     with database.session() as db:
-        for document in db.scalars(select(Record.document).where(Record.type == kind, Record.removed_at.is_(None))):
-            for value in rdf.values(document, field):
-                counts[value] = counts.get(value, 0) + 1
+        iris = list(db.scalars(select(Record.iri).where(Record.type == kind, Record.removed_at.is_(None))))
+    found = tables.graph(iris)
+    for iri in iris:
+        for value in rdf.stored_values(found, iri, field):
+            counts[value] = counts.get(value, 0) + 1
     return sorted(counts, key=lambda value: (-counts[value], value))
 
 
@@ -34,9 +36,9 @@ def linkable(kind: str, field: dict) -> list[Record]:
         return list(db.scalars(statement.order_by(Record.source, func.lower(Record.name))))
 
 
-def shown(document: dict, field: dict):
+def shown(statements, iri: str, field: dict):
     """The values of a field as the editor shows them: a list for a field with several values, else one value."""
-    found = rdf.values(document, field["name"])
+    found = rdf.stored_values(statements, iri, field["name"])
     if field["several"]:
         return found
     return found[0] if found else None
@@ -48,10 +50,15 @@ def page(kind: str) -> dict:
     writable = settings().get("writable", {})
     fields = forms.form(writable[kind])
     found = []
-    for record in records.of_kind(kind):
+    listed = records.of_kind(kind)
+    removed = []
+    for identifier in sorted(records.removed(kind)):
+        removed.append(records.get(records.address(f"{kind}/{identifier}")))
+    statements = tables.graph([record.iri for record in listed + removed])
+    for record in listed:
         values = {}
         for field in fields:
-            values[field["name"]] = shown(record.document, field)
+            values[field["name"]] = shown(statements, record.iri, field)
         found.append({
             "identifier": record.iri.rsplit("/", 1)[-1],
             "edited": record.source == PLATFORM,
@@ -59,12 +66,11 @@ def page(kind: str) -> dict:
             "version": record.updated_at,
             "values": values,
         })
-    for identifier in sorted(records.removed(kind)):
-        removed = records.get(records.address(f"{kind}/{identifier}"))
+    for record in removed:
         values = {}
         for field in fields:
-            values[field["name"]] = shown(removed.document, field)
-        found.append({"identifier": identifier, "edited": True, "removed": True, "version": removed.updated_at, "values": values})
+            values[field["name"]] = shown(statements, record.iri, field)
+        found.append({"identifier": record.iri.rsplit("/", 1)[-1], "edited": True, "removed": True, "version": record.updated_at, "values": values})
     titles = {}
     for spec in specs():
         titles[spec["name"]] = spec.get("title", spec["name"])
@@ -79,9 +85,11 @@ def page(kind: str) -> dict:
             used = used_values(writable[kind], field["name"])
             groups = {}
             rank = {}
-            for choice in linkable(writable[kind], field):
+            choices_of_field = linkable(writable[kind], field)
+            described = tables.graph([choice.iri for choice in choices_of_field])
+            for choice in choices_of_field:
                 title = titles.get(choice.source, choice.source)
-                descriptions = rdf.values(choice.document, "description")
+                descriptions = rdf.stored_values(described, choice.iri, "description")
                 groups.setdefault(title, []).append({"iri": choice.iri, "name": choice.name or choice.iri, "description": descriptions[0] if descriptions else ""})
                 if choice.iri in used:
                     rank[title] = min(rank.get(title, len(used)), used.index(choice.iri))

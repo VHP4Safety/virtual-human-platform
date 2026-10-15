@@ -28,4 +28,5 @@ static/js/j2s/**/*.js binary
 
 # Generated and pinned files of the linked data model, folded in GitHub diffs
 linkeddata/model/v1/schema.json linguist-generated=true
+database/v1/tables.sql linguist-generated=true
 linkeddata/model/v1/vocabularies/** linguist-vendored=true

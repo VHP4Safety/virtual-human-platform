@@ -1,18 +1,20 @@
 # Linked data of the platform
 
 The platform keeps its records (tools, methods, and the glossary terms they link to) in a SQLite
-database, through SQLAlchemy, each record as one JSON-LD document. The model's SHACL shapes say what a
-record holds, and pyshacl checks every record against them.
-[rdfsolve](https://github.com/jmillanacosta/rdfsolve) converts the sources into the model.
+database, in the tables of the model's release: one table for each class of the application profile,
+which `python -m linkeddata model` writes to `database/v1/tables.sql`. The model's SHACL shapes say
+what a record holds, and pyshacl checks every record against them.
+[rdfsolve](https://github.com/jmillanacosta/rdfsolve) converts the sources into the model, gives the
+statements of a record as the rows of those tables, and makes the statements again from the rows.
 
 ```
 source file ──parser──► clean rows ──lift──► RDF in the source's vocabulary
             ──rdfsolve rules──► RDF in the model ──pyshacl checks──► notes
-            ──► one JSON-LD document per record                              python -m linkeddata import
+            ──rdfsolve tables──► rows of the release's tables              python -m linkeddata import
 
-API request ──JSON-LD──pyshacl checks──► document and revision               PUT, POST, DELETE /api/...
+API request ──JSON-LD──pyshacl checks──► rows and revision                 PUT, POST, DELETE /api/...
 
-page ──document──► JSON-LD, Turtle, N-Triples
+page ──rows──rdfsolve from_tables──► JSON-LD, Turtle, N-Triples
 ```
 
 ## Run it
@@ -46,7 +48,8 @@ except that `database/` reads the base address of records from `linkeddata/model
 | | `export.py` | the records written on the platform, exported to a git repository |
 | `linkeddata/` | `model.py`, `model/v1/` | the model and the application profile |
 | | `parsers/`, `lift.py`, `sources/` | how each source becomes the model |
-| | `rdf.py` | records as JSON-LD documents and as linked data, and the checks of a record against the model's shapes |
+| | `tables.py` | the release's tables: written from the profile, and records written to them and read from them with rdfsolve |
+| | `rdf.py` | records as linked data and as JSON-LD, and the checks of a record against the model's shapes |
 | | `imports.py` | the sources: fetched, converted and checked with rdfsolve, and stored as records |
 | | `forms.py` | the editor's form of a class, read from the SHACL shapes and the application profile |
 | | `quality.py` | how complete the records are, what the checks found, and how each source becomes the model |
@@ -66,16 +69,19 @@ except that `database/` reads the base address of records from `linkeddata/model
 
 | Table | Holds |
 |---|---|
-| `records` | one row per record, by its address (`iri`), with its class, its source (or `platform`), its name, and the record as a JSON-LD document |
+| `records` | one row per record, by its address (`iri`), with its class, its source (or `platform`) and its name |
+| the release's tables | for each class of the profile, a table with a column for each field that takes one value and a column for its term (link, text, datatype or language); a table of the values of the fields that take several; and `statements`, for everything else |
 | `revisions` | every change made on the platform: the record in JSON-LD before and after, who made it (name and ORCID iD) and when |
 | `tokens` | the write tokens (only the hash of each secret) |
 | `images` | the images uploaded to the platform, by the SHA-256 of their file, with who uploaded them |
 | `sources` | for each source: its address, when it was fetched, its checksum, and the CONSTRUCT queries that convert it |
 | `notes` | the values of the sources that do not fit the model, found by the checks of the imports; the records keep them as the sources give them |
 
-A document is compacted with the platform's JSON-LD context: schema.org terms have no prefix
-(`name`), and the terms of other vocabularies keep theirs (`dct:conformsTo`). A new field or kind of
-record needs no change to the database: only its shapes in the model.
+The tables and their columns are named from the profile's CURIEs (`schema_software_application`,
+`schema_name`, `dct_conforms_to`), so a term that stays the same from one release to the next keeps
+its table or column. A value is kept as the source gives it, also when its kind does not fit the field,
+and the checks note it. JSON-LD is compacted with the platform's context: schema.org terms have no
+prefix (`name`), and the terms of other vocabularies keep theirs (`dct:conformsTo`).
 
 ## The application profile
 

@@ -1,7 +1,8 @@
-"""Records as linked data. Each record is kept as a JSON-LD document, compacted with the platform's
-context (document.py), so that its fields are named as in JSON-LD: https://schema.org/name is "name",
-and http://purl.org/dc/terms/conformsTo is "dct:conformsTo". pyshacl checks a record against the
-model's shapes before it is written.
+"""Records as linked data. A record is kept in the tables of the model's release (tables.py), and read
+from them as linked data; its JSON-LD is compacted with the platform's context (document.py),
+so that its fields are named as in JSON-LD: https://schema.org/name is "name", and
+http://purl.org/dc/terms/conformsTo is "dct:conformsTo". pyshacl checks a record against the model's
+shapes before it is written.
 """
 
 import json
@@ -13,6 +14,7 @@ from sqlalchemy import select
 
 import database
 from database.tables import Record
+from linkeddata import tables
 from linkeddata.document import compact
 from linkeddata.model import DASH, property_shapes, settings, shapes
 
@@ -55,6 +57,23 @@ def term(iri: str) -> str:
     return iri
 
 
+def expand(name: str) -> str:
+    """The property of a field: "name" is https://schema.org/name, "dct:conformsTo" the property of dct."""
+    prefixes = settings()["prefixes"]
+    prefix, _, local = name.partition(":")
+    if local and prefix in prefixes:
+        return prefixes[prefix] + local
+    return prefixes["schema"] + name
+
+
+def stored_values(found: Graph, iri: str, name: str) -> list[str]:
+    """The values of a field of the record at *iri* in *found*: the addresses of links, and texts."""
+    values = []
+    for value in found.objects(URIRef(iri), URIRef(expand(name))):
+        values.append(str(value))
+    return values
+
+
 def values(document: dict, name: str) -> list:
     """The values of a field of a document: the addresses of links, and texts or numbers."""
     given = document.get(name)
@@ -90,10 +109,10 @@ def document(found: Graph, iri: str | None = None) -> dict:
     return compact(own.serialize(format="nt"), settings())
 
 
-def row(document: dict, kind: str, source: str) -> dict:
-    """The row of the records table that keeps a document."""
-    names = values(document, "name")
-    return {"iri": document["@id"], "type": kind, "source": source, "name": names[0] if names else None, "document": document}
+def row(found: Graph, iri: str, kind: str, source: str) -> dict:
+    """The row of the records table of a record, whose statements are in the tables of its classes."""
+    names = stored_values(found, iri, "name")
+    return {"iri": iri, "type": kind, "source": source, "name": names[0] if names else None}
 
 
 def statements(document: dict) -> Graph:
@@ -102,10 +121,9 @@ def statements(document: dict) -> Graph:
 
 def graph(iris: list[str]) -> Graph:
     """The records at these addresses that are not removed, as linked data."""
-    found = Graph()
     with database.session() as db:
-        for record in db.scalars(select(Record).where(Record.iri.in_(iris), Record.removed_at.is_(None))):
-            found += statements(record.document)
+        kept = list(db.scalars(select(Record.iri).where(Record.iri.in_(iris), Record.removed_at.is_(None))))
+    found = tables.graph(kept)
     for prefix, namespace in settings()["prefixes"].items():
         found.bind(prefix, namespace)
     return found
@@ -113,7 +131,12 @@ def graph(iris: list[str]) -> Graph:
 
 def linked_graph(record: Record) -> Graph:
     """The record and the records it links to, such as the terms of the glossary, as linked data."""
-    return graph([record.iri, *links(record.document)])
+    found = graph([record.iri])
+    linked = []
+    for value in found.objects(URIRef(record.iri), None):
+        if isinstance(value, URIRef):
+            linked.append(str(value))
+    return found + graph(linked)
 
 
 def document_of(iri: str) -> str | None:
@@ -122,7 +145,7 @@ def document_of(iri: str) -> str | None:
         record = db.get(Record, iri)
     if record is None or record.removed_at:
         return None
-    return json.dumps(record.document, indent=2)
+    return json.dumps(document(tables.graph([iri])), indent=2)
 
 
 def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]]]:
@@ -179,12 +202,13 @@ def duplicates(new: dict, kind: str) -> dict[str, list[str]]:
     found = {}
     with database.session() as db:
         others = list(db.scalars(select(Record).where(Record.type == kind, Record.iri != new["@id"], Record.removed_at.is_(None))))
+    theirs = tables.graph([other.iri for other in others])
     for field in unique:
         given = values(new, field)
         if not given or not isinstance(given[0], str):
             continue
         for other in others:
-            if given[0].lower() in [str(value).lower() for value in values(other.document, field)]:
+            if given[0].lower() in [value.lower() for value in stored_values(theirs, other.iri, field)]:
                 path_of_other = "/" + other.iri.removeprefix(settings()["base"])
                 found.setdefault(field, []).append(f"{other.name or other.iri} ({path_of_other}) has the same value; check that this is not a duplicate.")
                 break
