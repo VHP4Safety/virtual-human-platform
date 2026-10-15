@@ -6,7 +6,31 @@
    {
     "subject_class": "https://schema.org/SoftwareApplication",
     "property_uri": "https://schema.org/about",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/SoftwareApplication",
+    "property_uri": "https://schema.org/about",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -4590,7 +4614,31 @@
    {
     "subject_class": "https://schema.org/SoftwareApplication",
     "property_uri": "https://schema.org/mainEntity",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/SoftwareApplication",
+    "property_uri": "https://schema.org/mainEntity",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -4950,7 +4998,31 @@
    {
     "subject_class": "https://schema.org/SoftwareApplication",
     "property_uri": "https://schema.org/mentions",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/SoftwareApplication",
+    "property_uri": "https://schema.org/mentions",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -7710,7 +7782,31 @@
    {
     "subject_class": "https://bioschemas.org/draft_terms/LabProtocol",
     "property_uri": "http://purl.org/dc/terms/conformsTo",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://bioschemas.org/draft_terms/LabProtocol",
+    "property_uri": "http://purl.org/dc/terms/conformsTo",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -8838,7 +8934,31 @@
    {
     "subject_class": "https://bioschemas.org/draft_terms/LabProtocol",
     "property_uri": "https://bioschemas.org/draft_terms/sample",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://bioschemas.org/draft_terms/LabProtocol",
+    "property_uri": "https://bioschemas.org/draft_terms/sample",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -8910,7 +9030,31 @@
    {
     "subject_class": "https://bioschemas.org/draft_terms/LabProtocol",
     "property_uri": "https://schema.org/about",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://bioschemas.org/draft_terms/LabProtocol",
+    "property_uri": "https://schema.org/about",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -13014,7 +13158,31 @@
    {
     "subject_class": "https://bioschemas.org/draft_terms/LabProtocol",
     "property_uri": "https://schema.org/mainEntity",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://bioschemas.org/draft_terms/LabProtocol",
+    "property_uri": "https://schema.org/mainEntity",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -13302,7 +13470,31 @@
    {
     "subject_class": "https://bioschemas.org/draft_terms/LabProtocol",
     "property_uri": "https://schema.org/mentions",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://bioschemas.org/draft_terms/LabProtocol",
+    "property_uri": "https://schema.org/mentions",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -15774,7 +15966,31 @@
    {
     "subject_class": "https://schema.org/DefinedTerm",
     "property_uri": "https://schema.org/about",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/DefinedTerm",
+    "property_uri": "https://schema.org/about",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -16662,7 +16878,31 @@
    {
     "subject_class": "https://schema.org/Question",
     "property_uri": "https://schema.org/about",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/Question",
+    "property_uri": "https://schema.org/about",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -20838,7 +21078,31 @@
    {
     "subject_class": "https://schema.org/Question",
     "property_uri": "https://schema.org/mainEntity",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/Question",
+    "property_uri": "https://schema.org/mainEntity",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -21126,7 +21390,31 @@
    {
     "subject_class": "https://schema.org/Question",
     "property_uri": "https://schema.org/mentions",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/Question",
+    "property_uri": "https://schema.org/mentions",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -25710,7 +25998,31 @@
    {
     "subject_class": "https://schema.org/Organization",
     "property_uri": "https://schema.org/knowsAbout",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/Organization",
+    "property_uri": "https://schema.org/knowsAbout",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -26694,7 +27006,31 @@
    {
     "subject_class": "https://schema.org/Organization",
     "property_uri": "https://schema.org/owns",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/Organization",
+    "property_uri": "https://schema.org/owns",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -29670,7 +30006,31 @@
    {
     "subject_class": "https://schema.org/Person",
     "property_uri": "https://schema.org/knowsAbout",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/Person",
+    "property_uri": "https://schema.org/knowsAbout",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -30174,7 +30534,31 @@
    {
     "subject_class": "https://schema.org/Person",
     "property_uri": "https://schema.org/owns",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/Person",
+    "property_uri": "https://schema.org/owns",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -31038,7 +31422,31 @@
    {
     "subject_class": "https://schema.org/CreativeWork",
     "property_uri": "https://schema.org/about",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/CreativeWork",
+    "property_uri": "https://schema.org/about",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -35070,7 +35478,31 @@
    {
     "subject_class": "https://schema.org/CreativeWork",
     "property_uri": "https://schema.org/mainEntity",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/CreativeWork",
+    "property_uri": "https://schema.org/mainEntity",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -35358,7 +35790,31 @@
    {
     "subject_class": "https://schema.org/CreativeWork",
     "property_uri": "https://schema.org/mentions",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/CreativeWork",
+    "property_uri": "https://schema.org/mentions",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -37326,7 +37782,31 @@
    {
     "subject_class": "https://schema.org/VideoObject",
     "property_uri": "https://schema.org/about",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/VideoObject",
+    "property_uri": "https://schema.org/about",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -42030,7 +42510,31 @@
    {
     "subject_class": "https://schema.org/VideoObject",
     "property_uri": "https://schema.org/mainEntity",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/VideoObject",
+    "property_uri": "https://schema.org/mainEntity",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -42318,7 +42822,31 @@
    {
     "subject_class": "https://schema.org/VideoObject",
     "property_uri": "https://schema.org/mentions",
-    "object_class": "https://schema.org/Thing",
+    "object_class": "Resource",
+    "subject_binding": "type",
+    "object_binding": "type",
+    "count": null,
+    "count_semantics": "unknown",
+    "count_bound": null,
+    "sampled": null,
+    "graphs": null,
+    "graph_distinct_subjects": null,
+    "graph_distinct_objects": null,
+    "datatype": null,
+    "blank_node_predicates": null,
+    "pattern_type": "unknown",
+    "distinct_subjects": null,
+    "distinct_objects": null,
+    "confidence": 1.0,
+    "evidence_source": "vocabulary",
+    "subject_label": null,
+    "property_label": null,
+    "object_label": null
+   },
+   {
+    "subject_class": "https://schema.org/VideoObject",
+    "property_uri": "https://schema.org/mentions",
+    "object_class": "BlankNode",
     "subject_binding": "type",
     "object_binding": "type",
     "count": null,
@@ -44954,30 +45482,6 @@
     "subject_label": null,
     "property_label": "Bioschemas profile",
     "object_label": null
-   },
-   {
-    "subject_class": "https://bioschemas.org/draft_terms/LabProtocol",
-    "property_uri": "http://purl.org/dc/terms/conformsTo",
-    "object_class": "Resource",
-    "subject_binding": "type",
-    "object_binding": "type",
-    "count": null,
-    "count_semantics": "unknown",
-    "count_bound": null,
-    "sampled": null,
-    "graphs": null,
-    "graph_distinct_subjects": null,
-    "graph_distinct_objects": null,
-    "datatype": null,
-    "blank_node_predicates": null,
-    "pattern_type": "unknown",
-    "distinct_subjects": null,
-    "distinct_objects": null,
-    "confidence": 1.0,
-    "evidence_source": "shacl",
-    "subject_label": null,
-    "property_label": "Bioschemas profile",
-    "object_label": null
    }
   ],
   "raw_patterns": null,
@@ -45817,16 +46321,6 @@
      "text": {
       "kind": "literal",
       "value": "A text file. The text can be unformatted or contain markup, html, etc.",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://schema.org/Thing",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
-     "text": {
-      "kind": "literal",
-      "value": "The most generic type of item.",
       "datatype": null,
       "language": null
      }
@@ -49874,16 +50368,6 @@
      }
     },
     {
-     "term_iri": "https://schema.org/Thing",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
-     "text": {
-      "kind": "literal",
-      "value": "Thing",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
      "term_iri": "https://schema.org/VideoObject",
      "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
      "text": {
@@ -53105,20 +53589,8 @@
    "https://bioschemas.org/draft_terms/LabProtocol": [
     "https://schema.org/CreativeWork"
    ],
-   "https://schema.org/DefinedTerm": [
-    "https://schema.org/Thing"
-   ],
    "https://schema.org/Question": [
     "https://schema.org/Comment"
-   ],
-   "https://schema.org/Organization": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/Person": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/CreativeWork": [
-    "https://schema.org/Thing"
    ],
    "https://schema.org/VideoObject": [
     "https://schema.org/MediaObject"
@@ -53126,17 +53598,11 @@
    "https://schema.org/AboutPage": [
     "https://schema.org/WebPage"
    ],
-   "https://schema.org/Action": [
-    "https://schema.org/Thing"
-   ],
    "https://schema.org/AdministrativeArea": [
     "https://schema.org/Place"
    ],
    "https://schema.org/AggregateRating": [
     "https://schema.org/Rating"
-   ],
-   "https://schema.org/AlignmentObject": [
-    "https://schema.org/Thing"
    ],
    "https://schema.org/Answer": [
     "https://schema.org/Comment"
@@ -53144,17 +53610,8 @@
    "https://schema.org/Article": [
     "https://schema.org/CreativeWork"
    ],
-   "https://schema.org/Audience": [
-    "https://schema.org/Thing"
-   ],
    "https://schema.org/AudioObject": [
     "https://schema.org/MediaObject"
-   ],
-   "https://schema.org/BioChemEntity": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/Brand": [
-    "https://schema.org/Thing"
    ],
    "https://schema.org/Certification": [
     "https://schema.org/CreativeWork"
@@ -53189,24 +53646,12 @@
    "https://schema.org/DefinedTermSet": [
     "https://schema.org/CreativeWork"
    ],
-   "https://schema.org/Demand": [
-    "https://schema.org/Thing"
-   ],
    "https://schema.org/EducationalOrganization": [
     "https://schema.org/Organization",
     "https://schema.org/Place"
    ],
-   "https://schema.org/Event": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/GenderType": [
-    "https://schema.org/Thing"
-   ],
    "https://schema.org/GeoShape": [
     "https://schema.org/StructuredValue"
-   ],
-   "https://schema.org/Grant": [
-    "https://schema.org/Thing"
    ],
    "https://schema.org/HowToSection": [
     "https://schema.org/CreativeWork",
@@ -53216,44 +53661,14 @@
     "https://schema.org/CreativeWork",
     "https://schema.org/ItemList"
    ],
-   "https://schema.org/HowToSupply": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/HowToTool": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/IPTCDigitalSourceEnumeration": [
-    "https://schema.org/Thing"
-   ],
    "https://schema.org/ImageObject": [
     "https://schema.org/MediaObject"
    ],
    "https://schema.org/InteractionCounter": [
     "https://schema.org/StructuredValue"
    ],
-   "https://schema.org/ItemList": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/Language": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/LoanOrCredit": [
-    "https://schema.org/Thing"
-   ],
    "https://schema.org/MediaObject": [
     "https://schema.org/CreativeWork"
-   ],
-   "https://schema.org/MediaSubscription": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/MemberProgram": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/MemberProgramTier": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/MerchantReturnPolicy": [
-    "https://schema.org/Thing"
    ],
    "https://schema.org/MolecularEntity": [
     "https://schema.org/BioChemEntity"
@@ -53270,44 +53685,20 @@
    "https://schema.org/NewsArticle": [
     "https://schema.org/Article"
    ],
-   "https://schema.org/NonprofitType": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/Occupation": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/Offer": [
-    "https://schema.org/Thing"
-   ],
    "https://schema.org/OfferCatalog": [
     "https://schema.org/ItemList"
    ],
    "https://schema.org/OperatingSystem": [
     "https://schema.org/SoftwareApplication"
    ],
-   "https://schema.org/PaymentMethod": [
-    "https://schema.org/Thing"
-   ],
    "https://schema.org/PerformingGroup": [
     "https://schema.org/Organization"
-   ],
-   "https://schema.org/Place": [
-    "https://schema.org/Thing"
    ],
    "https://schema.org/PostalAddress": [
     "https://schema.org/ContactPoint"
    ],
    "https://schema.org/PriceSpecification": [
     "https://schema.org/StructuredValue"
-   ],
-   "https://schema.org/Product": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/ProductReturnPolicy": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/ProgramMembership": [
-    "https://schema.org/Thing"
    ],
    "https://schema.org/PropertyValue": [
     "https://schema.org/StructuredValue"
@@ -53318,9 +53709,6 @@
    "https://schema.org/QuantitativeValue": [
     "https://schema.org/StructuredValue"
    ],
-   "https://schema.org/Rating": [
-    "https://schema.org/Thing"
-   ],
    "https://schema.org/Review": [
     "https://schema.org/CreativeWork"
    ],
@@ -53330,35 +53718,24 @@
    "https://schema.org/ShippingService": [
     "https://schema.org/StructuredValue"
    ],
-   "https://schema.org/SizeSpecification": [
-    "https://schema.org/Thing"
-   ],
    "https://schema.org/SoftwareSourceCode": [
     "https://schema.org/CreativeWork"
    ],
-   "https://schema.org/StructuredValue": [
-    "https://schema.org/Thing"
-   ],
-   "https://schema.org/Taxon": [
-    "https://schema.org/Thing"
-   ],
    "https://schema.org/TextObject": [
     "https://schema.org/MediaObject"
-   ],
-   "https://schema.org/VirtualLocation": [
-    "https://schema.org/Thing"
    ],
    "https://schema.org/WebPage": [
     "https://schema.org/CreativeWork"
    ]
   },
   "class_extensions": null,
+  "class_parts": null,
   "shapes": null,
   "about": {
-   "schema_id": "515a7de1-27f3-477b-a677-1e8dfa46f66d",
+   "schema_id": "7c9c8e63-559a-44c6-b020-cbc236e326ae",
    "schema_version": "",
    "snapshot_id": null,
-   "retrieved_at": "2026-10-14T15:12:31.893637+00:00",
+   "retrieved_at": "2026-10-15T10:47:11.653995+00:00",
    "content_sha256": null,
    "snapshot_identity_basis": null,
    "dataset_name": null,
@@ -53371,7 +53748,7 @@
    "discovered_graphs": null,
    "ontology_graph_uris": null,
    "generated_by": "rdfsolve 0.2.0-dev",
-   "generated_at": "2026-10-14T15:12:31.893637+00:00",
+   "generated_at": "2026-10-15T10:47:11.653995+00:00",
    "strategy": "unknown",
    "source_version": null,
    "source_version_iri": null,
@@ -53390,8 +53767,8 @@
    "total_duration_s": null,
    "class_entity_counts": {},
    "class_entity_count_states": {},
-   "pattern_count": 1874,
-   "class_count": 90,
+   "pattern_count": 1895,
+   "class_count": 89,
    "declared_class_count": 0,
    "used_type_count": 0,
    "property_count": 318,
@@ -53423,6 +53800,8 @@
    "xsd": "http://www.w3.org/2001/XMLSchema#",
    "bioschemas": "https://bioschemas.org/terms/",
    "bioschemas_draft": "https://bioschemas.org/draft_terms/"
-  }
+  },
+  "shape_profile": "@prefix bioschemas_draft: <https://bioschemas.org/draft_terms/> .\n@prefix dash: <http://datashapes.org/dash#> .\n@prefix dct: <http://purl.org/dc/terms/> .\n@prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n@prefix schema: <https://schema.org/> .\n@prefix sh: <http://www.w3.org/ns/shacl#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nform:elsewhere a sh:PropertyGroup ;\n    rdfs:label \"Elsewhere on the web\" ;\n    sh:order 5 .\n\nform:people a sh:PropertyGroup ;\n    rdfs:label \"Who is behind it\" ;\n    sh:order 2 .\n\nform:documentation a sh:PropertyGroup ;\n    rdfs:label \"Documentation and training\" ;\n    sh:order 3 .\n\nform:about a sh:PropertyGroup ;\n    rdfs:label \"About the tool\" ;\n    sh:order 1 .\n\nform:technical a sh:PropertyGroup ;\n    rdfs:label \"Technical details\" ;\n    sh:order 4 .\n\n[] a sh:NodeShape ;\n    rdfs:comment \"Tools state the Bioschemas profile they follow (ComputationalTool).\" ;\n    sh:property [ dash:editor dash:InstancesSelectEditor ;\n            sh:class schema:Organization ;\n            sh:description \"The organisations that offer the tool. VHP4Safety is one of them when the tool runs on the platform's own servers; its page then says that VHP4Safety hosts it.\" ;\n            sh:group form:people ;\n            sh:name \"Provided by\" ;\n            sh:order 1 ;\n            sh:path schema:provider ],\n        [ dash:editor dash:InstancesSelectEditor ;\n            sh:class schema:Organization ;\n            sh:description \"The organisations that developed the tool. Choose VHP4Safety when the project developed it.\" ;\n            sh:group form:people ;\n            sh:name \"Developed by\" ;\n            sh:order 2 ;\n            sh:path schema:creator ],\n        [ dash:editor dash:InstancesSelectEditor ;\n            sh:class schema:Person ;\n            sh:description \"The people to contact about the tool. Their names and email addresses are shown on the tool's support tab.\" ;\n            sh:group form:people ;\n            sh:name \"Contact people\" ;\n            sh:order 3 ;\n            sh:path schema:maintainer ],\n        [ dash:editor dash:DetailsEditor ;\n            sh:class schema:CreativeWork ;\n            sh:description \"Pages that explain the tool or show it at work: introductions, tutorials, demos and deployment guides, each with its title.\" ;\n            sh:group form:documentation ;\n            sh:name \"Guides and demos\" ;\n            sh:order 1 ;\n            sh:path schema:softwareHelp ],\n        [ dash:editor dash:DetailsEditor ;\n            sh:class schema:CreativeWork ;\n            sh:description \"The VHP4Safety workflows and tutorials that use the tool, each with its title.\" ;\n            sh:group form:documentation ;\n            sh:name \"Used in workflows\" ;\n            sh:order 2 ;\n            sh:path schema:subjectOf ],\n        [ dash:editor dash:DetailsEditor ;\n            sh:class schema:VideoObject ;\n            sh:description \"Videos about the tool that can be embedded on its page, such as PeerTube videos, each with its title.\" ;\n            sh:group form:documentation ;\n            sh:name \"Videos\" ;\n            sh:order 3 ;\n            sh:path schema:video ],\n        [ sh:description \"The DOI of the publication to cite when the tool is used, such as the article that describes it.\" ;\n            sh:group form:documentation ;\n            sh:maxCount 1 ;\n            sh:message \"Give the publication's DOI as a web address, starting with https://doi.org/10.\" ;\n            sh:name \"Publication to cite\" ;\n            sh:nodeKind sh:IRI ;\n            sh:order 4 ;\n            sh:path schema:citation ;\n            sh:pattern \"^https://doi\\\\.org/10\\\\.[0-9]{4,9}/\\\\S+$\" ],\n        [ sh:description \"The words that find training material about the tool on ELIXIR TeSS and Taxila. The tool's page shows what they find.\" ;\n            sh:group form:documentation ;\n            sh:maxCount 1 ;\n            sh:name \"Training search term\" ;\n            sh:order 5 ;\n            sh:path schema:keywords ],\n        [ dash:uniqueValueForClass schema:SoftwareApplication ;\n            sh:description \"The tool's name as its developers write it.\" ;\n            sh:group form:about ;\n            sh:maxCount 1 ;\n            sh:message \"Give the tool a name.\" ;\n            sh:minCount 1 ;\n            sh:name \"Name\" ;\n            sh:order 1 ;\n            sh:path schema:name ],\n        [ sh:description \"The version of the tool that the platform describes, as its developers number it.\" ;\n            sh:group form:technical ;\n            sh:maxCount 1 ;\n            sh:name \"Version\" ;\n            sh:order 1 ;\n            sh:path schema:softwareVersion ],\n        [ dash:editor dash:InstancesSelectEditor ;\n            sh:description \"The license under which the tool is shared.\" ;\n            sh:group form:technical ;\n            sh:maxCount 1 ;\n            sh:name \"License\" ;\n            sh:order 2 ;\n            sh:path schema:license ],\n        [ dash:editor dash:URIEditor ;\n            sh:description \"Where the tool's source code is kept, such as its GitHub repository.\" ;\n            sh:group form:technical ;\n            sh:name \"Source code\" ;\n            sh:nodeKind sh:IRI ;\n            sh:order 3 ;\n            sh:path schema:isBasedOn ],\n        [ dash:editor dash:URIEditor ;\n            sh:description \"Where the tool can be downloaded: its container image or its software packages.\" ;\n            sh:group form:technical ;\n            sh:name \"Downloads\" ;\n            sh:nodeKind sh:IRI ;\n            sh:order 4 ;\n            sh:path schema:downloadUrl ],\n        [ sh:description \"How mature the tool is, as a technology readiness level: from TRL 1 (basic principles observed) to TRL 9 (proven in its operational environment).\" ;\n            sh:group form:technical ;\n            sh:in ( \"TRL 1\" \"TRL 2\" \"TRL 3\" \"TRL 4\" \"TRL 5\" \"TRL 6\" \"TRL 7\" \"TRL 8\" \"TRL 9\" ) ;\n            sh:maxCount 1 ;\n            sh:message \"Choose a technology readiness level from TRL 1 to TRL 9.\" ;\n            sh:name \"Technology readiness\" ;\n            sh:order 5 ;\n            sh:path schema:creativeWorkStatus ],\n        [ dash:singleLine false ;\n            sh:description \"What the tool does and what it is used for, in two or three sentences. It is shown in the tool catalogue and on the tool's page.\" ;\n            sh:group form:about ;\n            sh:maxCount 1 ;\n            sh:message \"Describe the tool in a few sentences.\" ;\n            sh:minCount 1 ;\n            sh:name \"Description\" ;\n            sh:order 2 ;\n            sh:path schema:description ],\n        [ sh:description \"The address of the tool's release notes, or a short note about its latest release.\" ;\n            sh:group form:technical ;\n            sh:maxCount 1 ;\n            sh:name \"Release notes\" ;\n            sh:order 6 ;\n            sh:path schema:releaseNotes ],\n        [ dash:editor dash:URIEditor ;\n            sh:description \"Other web addresses of the tool, such as its pages on bio.tools, FAIRsharing, Wikipedia or the Research Software Directory. Its earlier addresses on the platform are kept here too, so that links to them still find it.\" ;\n            sh:group form:elsewhere ;\n            sh:name \"Other addresses\" ;\n            sh:nodeKind sh:IRI ;\n            sh:order 1 ;\n            sh:path schema:sameAs ],\n        [ sh:description \"Records of tools follow the ComputationalTool profile of Bioschemas, version 1.0, so that search engines and registries can read them.\" ;\n            sh:group form:elsewhere ;\n            sh:hasValue <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE> ;\n            sh:message \"A tool follows the ComputationalTool profile of Bioschemas, version 1.0-RELEASE.\" ;\n            sh:name \"Bioschemas profile\" ;\n            sh:nodeKind sh:IRI ;\n            sh:order 2 ;\n            sh:path dct:conformsTo ],\n        [ dash:uniqueValueForClass schema:SoftwareApplication ;\n            sh:description \"The tool's website or documentation.\" ;\n            sh:group form:about ;\n            sh:maxCount 1 ;\n            sh:message \"A website helps people find the tool; add it when the tool has one.\" ;\n            sh:minCount 1 ;\n            sh:name \"Website\" ;\n            sh:order 3 ;\n            sh:path schema:url ;\n            sh:severity sh:Warning ],\n        [ sh:description \"The address where the tool runs and can be used, when that is not its website. The tool's page links to it as \\\"Run the tool\\\".\" ;\n            sh:group form:about ;\n            sh:maxCount 1 ;\n            sh:name \"Where to use it\" ;\n            sh:nodeKind sh:IRI ;\n            sh:order 4 ;\n            sh:path schema:installUrl ],\n        [ sh:description \"Shown on the tool's card in the catalogue.\" ;\n            sh:group form:about ;\n            sh:maxCount 1 ;\n            sh:name \"Logo or screenshot\" ;\n            sh:order 5 ;\n            sh:path schema:image ],\n        [ dash:editor dash:InstancesSelectEditor ;\n            sh:description \"The steps of the safety assessment that the tool supports, and the case-study questions it helps to answer. The tool catalogue filters tools by them.\" ;\n            sh:group form:about ;\n            sh:message \"Choose the steps and questions from the lists; other links are kept but not shown in the catalogue's filters.\" ;\n            sh:name \"Assessment steps and case-study questions\" ;\n            sh:or ( [ sh:class schema:DefinedTerm ] [ sh:class schema:Question ] ) ;\n            sh:order 6 ;\n            sh:path schema:about ;\n            sh:severity sh:Warning ] ;\n    sh:targetClass schema:SoftwareApplication .\n\n[] a sh:NodeShape ;\n    sh:property [ sh:maxCount 1 ;\n            sh:message \"An organisation needs a name.\" ;\n            sh:minCount 1 ;\n            sh:name \"Name\" ;\n            sh:order 1 ;\n            sh:path schema:name ],\n        [ sh:maxCount 1 ;\n            sh:name \"Website\" ;\n            sh:order 2 ;\n            sh:path schema:url ] ;\n    sh:targetClass schema:Organization .\n\n[] a sh:NodeShape ;\n    sh:property [ sh:maxCount 1 ;\n            sh:message \"A person needs a name.\" ;\n            sh:minCount 1 ;\n            sh:name \"Name\" ;\n            sh:order 1 ;\n            sh:path schema:name ],\n        [ sh:maxCount 1 ;\n            sh:name \"Email address\" ;\n            sh:order 2 ;\n            sh:path schema:email ] ;\n    sh:targetClass schema:Person .\n\n[] a sh:NodeShape ;\n    rdfs:comment \"Methods state the Bioschemas profile they follow (LabProtocol).\" ;\n    sh:property [ sh:maxCount 1 ;\n            sh:message \"A method needs a name.\" ;\n            sh:minCount 1 ;\n            sh:name \"Name\" ;\n            sh:order 1 ;\n            sh:path schema:name ],\n        [ dash:singleLine false ;\n            sh:name \"Description\" ;\n            sh:order 2 ;\n            sh:path schema:description ],\n        [ sh:hasValue <https://bioschemas.org/profiles/LabProtocol/0.9-DRAFT> ;\n            sh:message \"A method follows the LabProtocol profile of Bioschemas, version 0.9-DRAFT.\" ;\n            sh:name \"Bioschemas profile\" ;\n            sh:nodeKind sh:IRI ;\n            sh:path dct:conformsTo ] ;\n    sh:targetClass bioschemas_draft:LabProtocol .\n\n",
+  "details": null
  }
 }
