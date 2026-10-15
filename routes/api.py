@@ -361,7 +361,7 @@ def put(kind: str, identifier: str):
     The record is checked against the model; one that does not fit is refused, with what is wrong with each
     field. Fields set by the platform are set as the model gives them."""
     if not IDENTIFIER.fullmatch(identifier):
-        return error("An identifier has lowercase letters, digits and hyphens.", 400)
+        return error("An identifier has lowercase letters, digits, hyphens and underscores.", 400)
     record = records.get(records.address(f"{kind}/{identifier}"))
     if record is not None and record.moved_to:
         return error(f"This record moved to {record.moved_to}; write it there.", 409)
@@ -447,7 +447,7 @@ def move(kind: str, identifier: str):
     body = request.get_json(silent=True)
     to = body.get("to") if isinstance(body, dict) else None
     if not isinstance(to, str) or not IDENTIFIER.fullmatch(to):
-        return error('The new address is given as {"to": "<identifier>"}, with lowercase letters, digits and hyphens.', 400)
+        return error('The new address is given as {"to": "<identifier>"}, with lowercase letters, digits, hyphens and underscores.', 400)
     target = records.get(records.address(f"{kind}/{to}"))
     if target is not None and target.moved_to != record.iri:
         return error("This address is taken by another record, or was one.", 409)

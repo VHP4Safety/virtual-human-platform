@@ -126,7 +126,7 @@
         problems[field.name] = ["Write the full address, starting with https:// (or http://)."];
       }
     }
-    if (identifier.value && !/^[a-z0-9][a-z0-9-]*$/.test(identifier.value)) {
+    if (identifier.value && !/^[a-z0-9][a-z0-9_-]*$/.test(identifier.value)) {
       problems.identifier = ["Use lowercase letters, digits and hyphens only."];
     }
     return problems;
@@ -914,7 +914,7 @@
   document.getElementById("move-confirm").addEventListener("click", async function () {
     const to = document.getElementById("move-to").value.trim();
     const problem = document.getElementById("move-problem");
-    if (!/^[a-z0-9][a-z0-9-]*$/.test(to) || to === selected.identifier) {
+    if (!/^[a-z0-9][a-z0-9_-]*$/.test(to) || to === selected.identifier) {
       problem.textContent = "Give a new address with lowercase letters, digits and hyphens.";
       problem.classList.remove("d-none");
       return;

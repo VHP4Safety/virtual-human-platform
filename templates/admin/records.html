@@ -134,10 +134,10 @@
             <label class="form-label fw-semibold" for="identifier">Page address</label>
             <div class="input-group">
               <span class="input-group-text text-secondary">{{ request.host }}/{{ kind }}/</span>
-              <input class="form-control" id="identifier" pattern="[a-z0-9][a-z0-9-]*" maxlength="80" autocomplete="off">
+              <input class="form-control" id="identifier" pattern="[a-z0-9][a-z0-9_-]*" maxlength="80" autocomplete="off">
               <button type="button" class="btn btn-outline-secondary d-none" id="identifier-change"><i class="bi bi-pencil"></i> Change address</button>
             </div>
-            <div class="form-text" id="identifier-help">Made from the name; you can shorten it. Lowercase letters, digits and hyphens.</div>
+            <div class="form-text" id="identifier-help">Made from the name; you can shorten it. Lowercase letters, digits, hyphens and underscores.</div>
             <div class="invalid-feedback d-block d-none" data-problem="identifier"></div>
           </div>
           {% endif %}
@@ -215,7 +215,7 @@
         <label class="form-label" for="move-to">New address</label>
         <div class="input-group">
           <span class="input-group-text text-secondary">{{ request.host }}/{{ kind }}/</span>
-          <input class="form-control" id="move-to" pattern="[a-z0-9][a-z0-9-]*" maxlength="80" autocomplete="off">
+          <input class="form-control" id="move-to" pattern="[a-z0-9][a-z0-9_-]*" maxlength="80" autocomplete="off">
         </div>
         <div class="invalid-feedback d-block d-none" id="move-problem"></div>
         <p class="small text-secondary mt-3 mb-0">The current address keeps working: it forwards visitors and programs to the new one, and the {{ one }} keeps it among its other addresses. The nightly import treats it as the same {{ one }}.</p>
