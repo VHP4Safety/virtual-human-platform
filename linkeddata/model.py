@@ -98,11 +98,13 @@ def vocabulary(path: Path) -> Graph:
 
 
 @cache
-def ontology() -> Graph:
-    """The vocabularies of the model, for the class hierarchy the checks need."""
+def hierarchy() -> Graph:
+    """The class hierarchy of the vocabularies (rdfs:subClassOf), which the checks need so that a link to a
+    record of a subclass fits a field that takes the class."""
     graph = Graph()
     for path in vocabularies(settings()):
-        graph += vocabulary(path)
+        for statement in vocabulary(path).triples((None, RDFS.subClassOf, None)):
+            graph.add(statement)
     return graph
 
 

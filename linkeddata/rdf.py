@@ -16,7 +16,7 @@ import database
 from database.tables import Record
 from linkeddata import tables
 from linkeddata.document import compact
-from linkeddata.model import DASH, property_shapes, settings, shapes
+from linkeddata.model import DASH, hierarchy, property_shapes, settings, shapes
 
 # What breaking each SHACL constraint means for a curator, by the name of the constraint.
 CONSTRAINTS = {
@@ -148,17 +148,59 @@ def document_of(iri: str) -> str | None:
     return json.dumps(document(tables.graph([iri])), indent=2)
 
 
+def validate(found: Graph) -> Graph:
+    """The results of the model's checks of some statements. Every record is checked in the same way: pyshacl
+    checks it against the model's shapes, with the class of each record it links to and the class hierarchy
+    of the vocabularies."""
+    validated = Graph() + found
+    linked = []
+    for value in found.objects():
+        if isinstance(value, URIRef):
+            linked.append(str(value))
+    with database.session() as db:
+        for iri, kind in db.execute(select(Record.iri, Record.type).where(Record.iri.in_(linked))):
+            validated.add((URIRef(iri), RDF.type, URIRef(kind)))
+    _, results, _ = pyshacl.validate(validated, shacl_graph=shapes(), ont_graph=hierarchy())
+    return results
+
+
+def notes(found: Graph) -> list[dict]:
+    """What the checks find in the records described in *found*, one note for each record, field, value and
+    constraint. The records they link to, given with their class only, are not reported."""
+    described = set()
+    for subject, predicate in found.subject_predicates():
+        if predicate != RDF.type:
+            described.add(subject)
+    every = shapes()
+    results = validate(found)
+    noted = {}
+    for result in results.subjects(RDF.type, SH.ValidationResult):
+        focus = results.value(result, SH.focusNode)
+        if focus not in described:
+            continue
+        messages = []
+        for message in results.objects(result, SH.resultMessage):
+            messages.append(str(message))
+        note = {
+            "iri": str(focus),
+            "field": str(results.value(result, SH.resultPath) or ""),
+            "value": str(results.value(result, SH.value) or ""),
+            "reason": " ".join(messages),
+            "component": str(results.value(result, SH.sourceConstraintComponent)),
+        }
+        key = (note["iri"], note["field"], note["value"], note["component"])
+        # A value can break the shapes of a class and of its superclass alike; the profile's message is kept.
+        if key not in noted or every.value(results.value(result, SH.sourceShape), SH.message) is not None:
+            noted[key] = note
+    return list(noted.values())
+
+
 def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]]]:
     """A record's document as linked data, what is wrong with each of its fields, and what is only
-    recommended. pyshacl checks it against the model's shapes, with the class of each record it links
-    to; results of sh:Warning severity are recommendations."""
+    recommended; results of sh:Warning severity are recommendations."""
     found = statements(new)
-    validated = Graph() + found
-    with database.session() as db:
-        for iri, kind in db.execute(select(Record.iri, Record.type).where(Record.iri.in_(links(new)))):
-            validated.add((URIRef(iri), RDF.type, URIRef(kind)))
     every = shapes()
-    _, results, _ = pyshacl.validate(validated, shacl_graph=every)
+    results = validate(found)
     problems = {}
     warnings = {}
     for result in results.subjects(RDF.type, SH.ValidationResult):

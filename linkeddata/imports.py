@@ -10,24 +10,21 @@ import re
 from pathlib import Path
 
 import pyoxigraph as ox
-import pyshacl
 import requests
 import yaml
 from rdfsolve import SchemaMiner
 from rdfsolve.api import Client
 from rdfsolve.conversion import Profile, Rule, write_query
 from rdflib import RDF, Graph, URIRef
-from rdflib.namespace import SH
 from sqlalchemy import delete, func, insert, select
 
 import database
 from database.tables import PLATFORM, Note, Record, Source, now
 from linkeddata import rdf, tables
-from linkeddata.model import ontology, profile, settings, shapes
+from linkeddata.model import settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
 TARGET = "VHP4Safety model v1"
-TYPE = ox.NamedNode("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
 
 
 def fetch(url: str) -> bytes:
@@ -67,33 +64,6 @@ def convert(spec: dict, data: list[dict], base: str) -> tuple[ox.Dataset, list[s
     return statements, queries
 
 
-def check(data: ox.Dataset) -> list[dict]:
-    """The records in converted data, checked with pyshacl against the model and the class hierarchy of its
-    vocabularies. The records of other sources that they link to are in the data with their class only,
-    and are not reported."""
-    graph = Graph().parse(data=ox.serialize(data, format=ox.RdfFormat.N_QUADS), format="nt")
-    described = set()
-    for subject, predicate in graph.subject_predicates():
-        if predicate != RDF.type:
-            described.add(subject)
-    _, results, _ = pyshacl.validate(graph, shacl_graph=shapes(), ont_graph=ontology())
-    notes = []
-    for result in results.subjects(RDF.type, SH.ValidationResult):
-        if results.value(result, SH.focusNode) not in described:
-            continue
-        messages = []
-        for message in results.objects(result, SH.resultMessage):
-            messages.append(str(message))
-        notes.append({
-            "iri": str(results.value(result, SH.focusNode)),
-            "field": str(results.value(result, SH.resultPath) or ""),
-            "value": str(results.value(result, SH.value) or ""),
-            "reason": " ".join(messages),
-            "component": str(results.value(result, SH.sourceConstraintComponent)),
-        })
-    return notes
-
-
 def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[tuple[dict, Graph]]:
     """The records of each class in converted data: the row of each in the records table, and its own
     statements. Values are kept as the source gives them; the checks note those that do not fit the model."""
@@ -106,16 +76,6 @@ def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[tuple[
                 own.add(statement)
             found.append((rdf.row(own, str(subject), kind, source), own))
     return found
-
-
-def known_types(source: str) -> list[ox.Quad]:
-    """The classes of the records of the other sources, so that links to them are checked against their class."""
-    with database.session() as db:
-        found = db.execute(select(Record.iri, Record.type).where(Record.source != source)).all()
-    quads = []
-    for iri, kind in found:
-        quads.append(ox.Quad(ox.NamedNode(iri), TYPE, ox.NamedNode(kind)))
-    return quads
 
 
 class Refused(Exception):
@@ -181,7 +141,7 @@ def import_source(spec: dict) -> None:
     # A source of one file gives its parser the file; a source of several gives them by name.
     parsed = parser.parse(contents if "files" in spec or "entries" in spec else contents[spec["name"]])
     data, queries = convert(spec, parsed, config["base"])
-    notes = check(ox.Dataset([*data, *known_types(spec["name"])]))
+    notes = rdf.notes(Graph().parse(data=ox.serialize(data, format=ox.RdfFormat.N_QUADS), format="nt"))
     found = records_of(data, config["classes"], spec["name"])
     checksum = hashlib.sha256()
     for name in sorted(contents):
@@ -208,24 +168,14 @@ def specs() -> list[dict]:
 
 
 def check_written() -> None:
-    """The records written on the platform are checked again against the application profile, which
-    may have changed since they were written; what no longer fits is noted for the data quality page."""
+    """The records written on the platform are checked again against the model, which may have changed
+    since they were written; what no longer fits is noted for the data quality page."""
     with database.session() as db:
         iris = list(db.scalars(select(Record.iri).where(Record.source == PLATFORM, Record.removed_at.is_(None))))
-    notes = {}
-    _, results, _ = pyshacl.validate(rdf.graph(iris), shacl_graph=profile())
-    for result in results.subjects(RDF.type, SH.ValidationResult):
-        note = {
-            "iri": str(results.value(result, SH.focusNode)),
-            "field": str(results.value(result, SH.resultPath)),
-            "value": str(results.value(result, SH.value) or ""),
-            "reason": str(results.value(result, SH.resultMessage)),
-            "component": str(results.value(result, SH.sourceConstraintComponent)),
-        }
-        notes[(note["iri"], note["field"], note["value"], note["reason"])] = note
+    notes = rdf.notes(rdf.graph(iris))
     with database.session() as db, db.begin():
         db.execute(delete(Note).where(Note.source == PLATFORM))
-        for note in notes.values():
+        for note in notes:
             db.add(Note(source=PLATFORM, **note))
     print(f"{PLATFORM}: {len(iris)} records, {len(notes)} notes")
 
