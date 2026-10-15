@@ -130,7 +130,7 @@ def graph(iris: list[str]) -> Graph:
 
 
 def linked_graph(record: Record) -> Graph:
-    """The record and the records it links to, such as the terms of the glossary, as linked data."""
+    """The record and the records it links to, as linked data."""
     found = graph([record.iri])
     linked = []
     for value in found.objects(URIRef(record.iri), None):

@@ -7,11 +7,11 @@ base: https://platform.vhp4safety.nl/
 vocabularies:
   schemaorg-30.1.ttl: https://schema.org/version/30.1/schemaorg-current-https.ttl
   bioschemas-draft-types-e5c27db.jsonld: https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/e5c27dbd2b1269a79fbe8f26e0173a9dc390aff0/pages/_types/bioschemas_draft_types.jsonld
+  vhp4safety-glossary-34f9389.ttl: https://raw.githubusercontent.com/VHP4Safety/glossary/34f9389a7f1f0073b67161e1ca6e6a6cf95c7371/glossary.owl
 
 classes:
   - https://schema.org/SoftwareApplication
   - https://bioschemas.org/draft_terms/LabProtocol
-  - https://schema.org/DefinedTerm
   - https://schema.org/Question
   - https://schema.org/Organization
   - https://schema.org/Person

@@ -71,9 +71,11 @@ def entry(known, fixed: list, single_line: bool, address: bool, editor: str | No
 
 def allowed(graph: Graph, nodes: list) -> dict:
     """The classes that the values of some shapes link to (their sh:class, else those in their sh:or),
-    and the kinds of their other values: datatypes, or "IRI" for web addresses."""
+    the terms of the vocabularies that their sh:or lists with sh:in, and the kinds of their other values:
+    datatypes, or "IRI" for web addresses."""
     direct = []
     alternatives = []
+    terms = []
     kinds = []
     for node in nodes:
         options = [node]
@@ -84,9 +86,13 @@ def allowed(graph: Graph, nodes: list) -> dict:
                 (direct if option == node else alternatives).append(str(value))
             for value in graph.objects(option, SH.datatype):
                 kinds.append(str(value))
+            if option != node:
+                for listed in graph.objects(option, SH["in"]):
+                    for value in Collection(graph, listed):
+                        terms.append(str(value))
             if graph.value(option, SH.nodeKind) in (SH.IRI, SH.BlankNodeOrIRI):
                 kinds.append("IRI")
-    return {"targets": direct or alternatives, "values": kinds}
+    return {"targets": direct or alternatives, "terms": terms, "values": kinds}
 
 
 @cache
@@ -128,7 +134,8 @@ def form(kind: str) -> list[dict]:
             "options": options,
             "class": known["targets"][0] if known["targets"] else "",
             "classes": known["targets"],
-            "links": bool(known["targets"]) or "IRI" in known["values"],
+            "terms": known["terms"],
+            "links": bool(known["targets"] or known["terms"]) or "IRI" in known["values"],
             "texts": any(value != "IRI" for value in known["values"]),
             "section": str(every.value(group, RDFS.label) or "More") if group is not None else "More",
             "section_order": int(every.value(group, SH.order) or 99) if group is not None else 99,

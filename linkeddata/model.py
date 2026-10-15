@@ -6,8 +6,8 @@ from pathlib import Path
 
 import requests
 import yaml
-from rdflib import Graph, Namespace, URIRef
-from rdflib.namespace import SH
+from rdflib import RDF, Graph, Namespace, URIRef
+from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SH
 from rdfsolve.schema_models import MinedSchema
 
 MODEL_DIR = Path(__file__).parent / "model" / "v1"
@@ -75,10 +75,33 @@ def shapes() -> Graph:
 
 
 @cache
+def vocabulary(path: Path) -> Graph:
+    return Graph().parse(path, format="json-ld" if path.suffix == ".jsonld" else "turtle")
+
+
+@cache
 def ontology() -> Graph:
     """The vocabularies of the model, for the class hierarchy the checks need."""
     graph = Graph()
     for path in vocabularies(settings()):
-        graph.parse(path, format="json-ld" if path.suffix == ".jsonld" else "turtle")
+        graph += vocabulary(path)
     return graph
+
+
+def terms(iris: list[str]) -> dict[str, dict]:
+    """The terms of the vocabularies at these addresses, such as the steps of the glossary, with their label,
+    their description, and the title of their vocabulary."""
+    found = {}
+    for path in vocabularies(settings()):
+        graph = vocabulary(path)
+        title = path.stem
+        for node in graph.subjects(RDF.type, OWL.Ontology):
+            title = str(graph.value(node, DCTERMS.title) or title)
+        for iri in iris:
+            label = graph.value(URIRef(iri), RDFS.label)
+            if label is None or iri in found:
+                continue
+            description = graph.value(URIRef(iri), DC.description) or graph.value(URIRef(iri), RDFS.comment)
+            found[iri] = {"name": str(label), "description": str(description or ""), "title": title}
+    return found
 

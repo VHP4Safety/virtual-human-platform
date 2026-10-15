@@ -1,6 +1,7 @@
 """The record editor's data: for each kind of record an editor may write, its records and a form built
 from the model (see linkeddata/forms.py). A field that links to things offers, as choices, the records
-of the classes that the other records link to in it, grouped by the source they come from."""
+of the classes that the other records link to in it, grouped by the source they come from, and the terms
+of the vocabularies that the model lists for it."""
 
 from sqlalchemy import func, select
 
@@ -9,7 +10,7 @@ from database import records
 from database.tables import PLATFORM, Record
 from linkeddata import forms, rdf, tables
 from linkeddata.imports import specs
-from linkeddata.model import curie, settings
+from linkeddata.model import curie, settings, terms
 
 
 def used_values(kind: str, field: str) -> list[str]:
@@ -87,12 +88,16 @@ def page(kind: str) -> dict:
             rank = {}
             choices_of_field = linkable(writable[kind], field)
             described = tables.graph([choice.iri for choice in choices_of_field])
+            options = []
             for choice in choices_of_field:
-                title = titles.get(choice.source, choice.source)
                 descriptions = rdf.stored_values(described, choice.iri, "description")
-                groups.setdefault(title, []).append({"iri": choice.iri, "name": choice.name or choice.iri, "description": descriptions[0] if descriptions else ""})
-                if choice.iri in used:
-                    rank[title] = min(rank.get(title, len(used)), used.index(choice.iri))
+                options.append((titles.get(choice.source, choice.source), {"iri": choice.iri, "name": choice.name or choice.iri, "description": descriptions[0] if descriptions else ""}))
+            for iri, term in terms(field["terms"]).items():
+                options.append((term["title"], {"iri": iri, "name": term["name"], "description": term["description"]}))
+            for title, option in options:
+                groups.setdefault(title, []).append(option)
+                if option["iri"] in used:
+                    rank[title] = min(rank.get(title, len(used)), used.index(option["iri"]))
             ordered = sorted(groups, key=lambda title: rank.get(title, len(used)))
             choices[field["name"]] = [{"title": title, "options": groups[title]} for title in ordered]
     return {

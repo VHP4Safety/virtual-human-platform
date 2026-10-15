@@ -1,6 +1,6 @@
 # Linked data of the platform
 
-The platform keeps its records (tools, methods, and the glossary terms they link to) in a SQLite
+The platform keeps its records (tools, methods, and the records they link to) in a SQLite
 database, in the tables of the model's release: one table for each class of the application profile,
 which `python -m linkeddata model` writes to `database/v1/tables.sql`. The model's SHACL shapes say
 what a record holds, and pyshacl checks every record against them.
@@ -95,7 +95,8 @@ with each field, in the words of the profile's `sh:message`.
 The same profile leads the editor's form (`forms.py`): `sh:order`, `sh:name` and `sh:description`
 place, name and explain each field, and `dash:singleLine false` asks for a longer text. What an
 editor enters follows from the model: a text, a web address, a choice of the records that a field
-links to (as checkboxes, grouped by the source of those records), or an image to upload. A field that
+links to (as checkboxes, grouped by the source of those records, and the terms of a vocabulary that
+the profile lists with `sh:in`), or an image to upload. A field that
 the profile does not describe is explained by the vocabulary. To change the form, change the profile.
 
 ## The parts of an import
@@ -112,7 +113,7 @@ the profile does not describe is explained by the vocabulary. To change the form
   the platform instead of fetched (`toxtemp.yaml`) has no `url` and no parser; its `kinds` name the
   kind of the objects under each key of its documents.
 - **`model/v1/`**: the model. `model.yaml` gives the base address of identifiers, the vocabularies
-  (schema.org and the Bioschemas types, pinned and kept in `vocabularies/`), the classes and the
+  (schema.org, the Bioschemas types and the VHP4Safety glossary, pinned and kept in `vocabularies/`), the classes and the
   prefixes; `profile.ttl` is what the platform adds to them; `schema.json` is the approved model,
   generated with `python -m linkeddata model` (review the change before committing it).
 

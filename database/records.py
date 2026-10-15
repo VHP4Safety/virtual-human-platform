@@ -4,7 +4,7 @@ from sqlalchemy import select
 
 import database
 from database.tables import Record, Revision
-from linkeddata.model import settings
+from linkeddata.model import settings, terms
 
 
 def address(path: str) -> str:
@@ -40,9 +40,16 @@ def moved(kind: str) -> set[str]:
 
 
 def names(iris: list[str]) -> dict[str, str]:
-    """The names of the records at these addresses."""
+    """The names of the records at these addresses, and the labels of the terms of the vocabularies."""
     with database.session() as db:
-        return dict(db.execute(select(Record.iri, Record.name).where(Record.iri.in_(iris))).all())
+        found = dict(db.execute(select(Record.iri, Record.name).where(Record.iri.in_(iris))).all())
+    others = []
+    for iri in iris:
+        if iri not in found:
+            others.append(iri)
+    for iri, term in terms(others).items():
+        found[iri] = term["name"]
+    return found
 
 
 def earlier_addresses(iri: str) -> list[str]:

@@ -17,7 +17,6 @@ FITTING = {"name": "T", "description": "Does T.", "url": "https://t.org/", "abou
 
 
 def add_records():
-    writes.save(writes.document("https://schema.org/DefinedTerm", STEP, {"name": "Toxicodynamics"}), "https://schema.org/DefinedTerm", "Test Editor", ORCID)
     writes.save(writes.document(TOOL, BASE + "tools/t", FITTING), TOOL, "Test Editor", ORCID)
 
 
@@ -48,10 +47,10 @@ def test_editor_and_changes(site):
     with site.session_transaction() as session:
         form_token = session["form_token"]
     data = json.loads(page.split('<script type="application/json" id="editor-data">')[1].split("</script>")[0])
-    assert data["choices"]["about"][0]["options"][0]["name"] == "Toxicodynamics"
+    assert {option["iri"]: option["name"] for option in data["choices"]["about"][0]["options"]}[STEP] == "Toxicodynamics (Process Flow Step)"
     answer = site.put("/api/tools/t", json={**FITTING, "about": []}, headers={"X-Form-Token": form_token}).json
     change = site.get(answer["change"] + ".json").json
-    assert [(edge["status"], edge["name"]) for edge in change["edges"] if edge["status"] != "kept"] == [("removed", "Toxicodynamics")]
+    assert [(edge["status"], edge["name"]) for edge in change["edges"] if edge["status"] != "kept"] == [("removed", "Toxicodynamics (Process Flow Step)")]
 
 
 def test_api(site):
@@ -75,8 +74,7 @@ def test_api(site):
 
 def test_pages(site):
     add_records()
-    nodes = {node["@id"]: node for node in json.loads(site.get("/tools/t.jsonld").data)["@graph"]}
-    assert nodes[STEP]["name"] == "Toxicodynamics"
+    assert json.loads(site.get("/tools/t.jsonld").data)["about"] == {"@id": STEP}
     assert b"schema:SoftwareApplication" in site.get("/tools/t", headers={"Accept": "text/turtle"}).data
     assert "Does T." in site.get("/tools").data.decode()
     writes.retire(BASE + "tools/t", "Test Editor", ORCID)
