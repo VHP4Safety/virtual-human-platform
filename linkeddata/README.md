@@ -47,7 +47,7 @@ except that `database/` reads the base address of records from `linkeddata/model
 | | `images.py` | uploaded images: checked and saved again as WebP |
 | | `export.py` | the records written on the platform, exported to a git repository |
 | `linkeddata/` | `model.py`, `model/v1/` | the model and the application profile |
-| | `parsers/`, `lift.py`, `sources/` | how each source becomes the model |
+| | `parsers/`, `sources/` | how each source becomes the model |
 | | `tables.py` | the release's tables: written from the profile, and records written to them and read from them with rdfsolve |
 | | `rdf.py` | records as linked data and as JSON-LD, and the checks of a record against the model's shapes |
 | | `imports.py` | the sources: fetched, converted and checked with rdfsolve, and stored as records |
@@ -105,13 +105,9 @@ the profile does not describe is explained by the vocabulary. To change the form
   values in one text, codes instead of addresses, placeholders). One parser per file cleans it and
   does nothing else. When the sources publish clean data, the parsers go. See `parsers/__init__.py`
   for what a parser returns.
-- **`lift.py`**: turns clean rows into RDF in the source's own vocabulary (a JSON-LD `@vocab`),
-  until rdfsolve reads JSON with a context itself.
 - **`sources/<name>.yaml`**: where a source comes from (a `url`, or several named `files`), its
   title, its parser, and its rules: how its rows become the model. The rules are the arguments of rdfsolve's `Rule.between`, one list per kind of
-  row; rdfsolve finds the fields by name and writes the CONSTRUCT queries. A source that is sent to
-  the platform instead of fetched (`toxtemp.yaml`) has no `url` and no parser; its `kinds` name the
-  kind of the objects under each key of its documents.
+  row; rdfsolve finds the fields by name and writes the CONSTRUCT queries.
 - **`model/v1/`**: the model. `model.yaml` gives the base address of identifiers, the vocabularies
   (schema.org, the Bioschemas types and the VHP4Safety glossary, pinned and kept in `vocabularies/`), the classes and the
   prefixes; `profile.ttl` is what the platform adds to them; `schema.json` is the approved model,

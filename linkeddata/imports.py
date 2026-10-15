@@ -24,7 +24,6 @@ from sqlalchemy import delete, func, insert, select
 import database
 from database.tables import PLATFORM, Note, Record, Source
 from linkeddata import rdf, tables
-from linkeddata.lift import lift
 from linkeddata.model import ontology, profile, settings, shapes
 
 SOURCES_DIR = Path(__file__).parent / "sources"
@@ -38,11 +37,17 @@ def fetch(url: str) -> bytes:
     return response.content
 
 
-def convert(spec: dict, data, base: str) -> tuple[ox.Dataset, list[str]]:
-    """The statements of one source's data (parsed rows, or a received document) in the model,
-    and the CONSTRUCT queries that made them."""
+def lift(rows: list[dict], vocabulary: str, base: str) -> ox.Dataset:
+    """Parsed rows as RDF, until rdfsolve reads JSON with a context itself: their fields become properties
+    in the source's own vocabulary, "@id" gives a row its address, and "@type" its kind."""
+    document = {"@context": {"@vocab": vocabulary, "@base": base}, "@graph": rows}
+    return ox.Dataset(ox.parse(json.dumps(document).encode(), format=ox.RdfFormat.JSON_LD))
+
+
+def convert(spec: dict, data: list[dict], base: str) -> tuple[ox.Dataset, list[str]]:
+    """The statements of one source's parsed rows in the model, and the CONSTRUCT queries that made them."""
     vocabulary = base + "sources/" + spec["name"] + "#"
-    rows = lift(data, vocabulary, base, spec.get("kinds"))
+    rows = lift(data, vocabulary, base)
     with SchemaMiner.from_graph(rows, delay=0) as miner:
         source = Client(miner.mine(dataset_name=spec["name"]), rows)
     statements = ox.Dataset()
