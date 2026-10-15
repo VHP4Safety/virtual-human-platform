@@ -77,6 +77,7 @@ def test_pages(site):
     assert json.loads(site.get("/tools/t.jsonld").data)["about"] == {"@id": STEP}
     assert b"schema:SoftwareApplication" in site.get("/tools/t", headers={"Accept": "text/turtle"}).data
     assert "Does T." in site.get("/tools").data.decode()
+    assert site.get("/api/tables/schema_software_application?schema_name=T").json[0]["iri"] == BASE + "tools/t"
     writes.retire(BASE + "tools/t", "Test Editor", ORCID)
     assert site.get("/tools/t").status_code == 410
 

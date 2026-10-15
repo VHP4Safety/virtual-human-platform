@@ -7,4 +7,6 @@ werkzeug>=3.0.6
 gunicorn>=23.0.0
 nh3>=0.3.0
 spectree==3.0.0
+flask-smorest==0.47.0
+marshmallow-sqlalchemy==1.5.0
 

@@ -69,7 +69,7 @@ except that `database/` reads the base address of records from `linkeddata/model
 | `routes/` | `record_pages.py` | the address of each record: its data, 410 Gone once removed, a general record page |
 | | `data_quality.py` | the `/data-quality` and `/sources` pages |
 | | `records_api.py` | the records API: records written in JSON-LD, and the addresses of the records |
-| | `tables_api.py` | the tables API: the rows of the release's tables and of the records, notes and sources tables |
+| | `tables_api.py` | the tables API (flask-smorest): the rows of the release's tables and of the records, notes and sources tables |
 | | `editor.py` | the record editor, a form that writes and removes records through the write API |
 | | `changes.py` | the `/changes` pages |
 | | `account.py` | the login of editors (ORCID, or a write token) and their tokens page |
@@ -155,9 +155,11 @@ and each record's schema carries its JSON-LD type and context (`x-jsonld-type`, 
 the OpenAPI extensions registry).
 
 `GET /api/tables/<table>` gives the rows of each table of the release, and of the records, notes and
-sources tables, a page at a time and filtered by any of their columns; its own document is at
-`/api/docs/tables/openapi.json`. Each row's schema carries the JSON-LD type and context that make the row
-linked data, so that `iri` is the node a row describes and each column of values is its property.
+sources tables, with flask-smorest: a page at a time (`page`, `page_size`, and the counts in the
+`X-Pagination` header), filtered by the value of any column. The framework writes its OpenAPI 3.1
+document, `/api/docs/tables/openapi.json`, shown at `/api/docs/tables/swagger/`, from schemas that
+marshmallow-sqlalchemy makes from the tables of `tables.sql`. Each row's schema carries the JSON-LD type
+and context that make the row linked data.
 
 ## Write records
 
