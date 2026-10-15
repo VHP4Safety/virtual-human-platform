@@ -68,8 +68,7 @@ except that `database/` reads the base address of records from `linkeddata/model
 | | `changes.py` | each change field by field, and as RDF statements |
 | `routes/` | `record_pages.py` | the address of each record: its data, 410 Gone once removed, a general record page |
 | | `data_quality.py` | the `/data-quality` and `/sources` pages |
-| | `records_api.py` | the API: records read a page at a time and filtered by their fields, and written |
-| | `openapi.py` | the API's OpenAPI document, made from its routes, the profile, the vocabularies and the records |
+| | `records_api.py` | the records API: records in JSON-LD, read a page at a time and filtered by their fields, and written |
 | | `editor.py` | the record editor, a form that writes and removes records through the write API |
 | | `changes.py` | the `/changes` pages |
 | | `account.py` | the login of editors (ORCID, or a write token) and their tokens page |
@@ -149,10 +148,13 @@ rules:
 `GET /api/<kind>` gives the records of each kind of `model.yaml` (tools, methods, questions,
 organizations, people, pages, videos) in JSON-LD, a page at a time as a Hydra collection. Every field of
 the kind is a query parameter, so `/api/tools?about=<step>&provider=<organisation>` gives the tools about
-a step and provided by an organisation. `/api/notes` gives what the checks found, and `/api/sources` where
-the records come from. `/api/openapi.json` describes the whole API in OpenAPI 3.1, and `/api/docs` shows
-it: the document is made from the routes, the profile, the vocabularies and the records when it is asked
-for, so it changes with them.
+a step and provided by an organisation. spectree writes the API's OpenAPI 3.1 document from its routes and
+their pydantic models, which are made from the profile: `/api/docs/records/openapi.json`, shown at
+`/api/docs/records/swagger/`, `/redoc/` and `/scalar/`. Each record's schema carries its JSON-LD type and
+context (`x-jsonld-type`, `x-jsonld-context`, from the OpenAPI extensions registry), and the document also
+gives the address of each kind of record, which answers in HTML, JSON-LD, Turtle or N-Triples as the
+Accept header asks. Every record's answer links the model's SHACL shapes (`/api/shapes.ttl`) with
+`rel="describedby"`.
 
 ## Write records
 

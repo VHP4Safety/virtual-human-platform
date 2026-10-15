@@ -6,4 +6,5 @@ werkzeug>=3.0.6
 #pyBiodatafuse @ git+https://github.com/BioDataFuse/pyBiodatafuse.git
 gunicorn>=23.0.0
 nh3>=0.3.0
+spectree==3.0.0
 

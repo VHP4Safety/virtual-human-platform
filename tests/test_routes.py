@@ -77,8 +77,8 @@ def test_reads(site):
     page = site.get(f"/api/tools?about={quote(STEP)}").json
     assert [member["@id"] for member in page["hydra:member"]] == [BASE + "tools/t"]
     assert page["hydra:member"][0]["about"] == [{"@id": STEP}]
-    assert site.get("/api/tools?nothing=1").status_code == 400
-    assert site.get("/api/openapi.json").json["paths"]["/api/tools/{identifier}"]["put"]["security"] == [{"token": []}]
+    assert site.get("/api/tools?nothing=1").status_code == 422
+    assert site.get("/api/docs/records/openapi.json").json["paths"]["/api/tools/{identifier}"]["put"]["security"] == [{"token": []}]
 
 
 def test_pages(site):

@@ -9,7 +9,7 @@ record page.
 
 import json
 
-from flask import Blueprint, Response, current_app, g, redirect, render_template, request
+from flask import Blueprint, Response, current_app, g, redirect, render_template, request, url_for
 
 from database import records
 from database.tables import Record
@@ -71,6 +71,8 @@ def link_data(response):
         links = []
         for ending, media in FORMATS.items():
             links.append(f'<{page_path(g.record)}{ending}>; rel="alternate"; type="{media}"')
+        # The shapes that say what the record's fields take (POWDER's describedby, as in Linked Data Platform).
+        links.append(f'<{url_for("api.model_shapes")}>; rel="describedby"; type="text/turtle"')
         response.headers["Link"] = ", ".join(links)
         response.headers["Vary"] = "Accept"
     return response
