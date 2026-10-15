@@ -21,12 +21,12 @@ import database
 from database.tables import Note, Record, Source
 from linkeddata import storage
 from linkeddata.model import RELEASE, TABLES, settings
-from routes import records_api
+from routes import limiter
 
 SH = "http://www.w3.org/ns/shacl#"
 
 blueprint = Blueprint("tables", __name__, url_prefix="/api/tables", description="The rows of the platform's tables.")
-blueprint.before_request(records_api.limit)
+limiter.limit("300 per minute")(blueprint)
 
 
 def release_tables() -> MetaData:
@@ -95,16 +95,16 @@ def view_of(table):
 def register(app) -> None:
     """The tables API and its OpenAPI document, at /api/docs/tables/."""
     app.config.update(
-        API_TITLE=f"{settings()['title']}: tables",
-        API_VERSION=RELEASE,
-        OPENAPI_VERSION="3.1.0",
-        OPENAPI_URL_PREFIX="/api/docs/tables",
-        OPENAPI_JSON_PATH="openapi.json",
-        OPENAPI_SWAGGER_UI_PATH="/swagger/",
-        OPENAPI_SWAGGER_UI_URL="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/",
-        API_SPEC_OPTIONS={"info": {"description": __doc__}},
+        TABLES_API_TITLE=f"{settings()['title']}: tables",
+        TABLES_API_VERSION=RELEASE,
+        TABLES_OPENAPI_VERSION="3.1.0",
+        TABLES_OPENAPI_URL_PREFIX="/api/docs/tables",
+        TABLES_OPENAPI_JSON_PATH="openapi.json",
+        TABLES_OPENAPI_SWAGGER_UI_PATH="/swagger/",
+        TABLES_OPENAPI_SWAGGER_UI_URL="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/",
+        TABLES_API_SPEC_OPTIONS={"info": {"description": __doc__}},
     )
-    api = Api(app)
+    api = Api(app, config_prefix="TABLES_")
     extensions = contexts()
     every = [*release_tables().sorted_tables, Record.__table__, Note.__table__, Source.__table__]
     for table in every:

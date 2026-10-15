@@ -10,6 +10,7 @@ record page.
 import json
 
 from flask import Blueprint, Response, current_app, g, redirect, render_template, request, url_for
+from rdflib import Graph
 
 from database import records
 from database.tables import Record
@@ -26,10 +27,10 @@ def page_path(record: Record) -> str:
     return "/" + record.iri.removeprefix(settings()["base"])
 
 
-def data(record: Record, media: str) -> Response:
-    found = storage.linked_graph(record)
+def data(found: Graph, media: str, iri: str | None = None) -> Response:
+    """Statements in JSON-LD (the document of the record at *iri*, when it is given), Turtle or N-Triples."""
     if media == "application/ld+json":
-        body = json.dumps(documents.document(found), indent=2)
+        body = json.dumps(documents.document(found, iri), indent=2)
     else:
         body = found.serialize(format=SERIALIZATIONS[media])
     return Response(body, mimetype=media, headers={"Vary": "Accept"})
@@ -60,7 +61,7 @@ def negotiate():
     if record.removed_at:
         return render_template("records/gone.html", record=record, page_title="Removed — VHP4Safety"), 410
     if media != "text/html":
-        return data(record, media)
+        return data(storage.linked_graph(record), media)
     g.record = record
     return None
 

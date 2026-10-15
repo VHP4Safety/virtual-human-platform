@@ -17,9 +17,7 @@ def folders(tmp_path, monkeypatch):
 @pytest.fixture
 def site(monkeypatch):
     import app as platform
-    from routes import records_api
 
-    records_api._requests.clear()
     monkeypatch.setattr(platform, "get_json_dict", lambda url, timeout=5: {})
     monkeypatch.setattr(platform, "get_service_detail", lambda tool_id, timeout=5: {})
     monkeypatch.setattr(platform, "get_repository_data", lambda *a, **k: ({}, {}))

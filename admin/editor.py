@@ -51,27 +51,21 @@ def page(kind: str) -> dict:
     kinds = settings()["kinds"]
     fields = forms.form(kinds[kind])
     found = []
-    listed = records.of_kind(kind)
-    removed = []
-    for identifier in sorted(records.removed(kind)):
-        removed.append(records.get(records.address(f"{kind}/{identifier}")))
-    statements = storage.read([record.iri for record in listed + removed])
+    with database.session() as db:
+        listed = list(db.scalars(select(Record).where(Record.type == kinds[kind], Record.moved_to.is_(None)).order_by(Record.iri)))
+    statements = storage.read([record.iri for record in listed])
     for record in listed:
         values = {}
         for field in fields:
             values[field["name"]] = shown(statements, record.iri, field)
         found.append({
-            "identifier": record.iri.rsplit("/", 1)[-1],
+            "iri": record.iri,
+            "identifier": record.iri.removeprefix(records.address(kind) + "/"),
             "edited": record.source == PLATFORM,
-            "removed": False,
+            "removed": bool(record.removed_at),
             "version": record.updated_at,
             "values": values,
         })
-    for record in removed:
-        values = {}
-        for field in fields:
-            values[field["name"]] = shown(statements, record.iri, field)
-        found.append({"identifier": record.iri.rsplit("/", 1)[-1], "edited": True, "removed": True, "version": record.updated_at, "values": values})
     titles = {}
     for spec in specs():
         titles[spec["name"]] = spec.get("title", spec["name"])

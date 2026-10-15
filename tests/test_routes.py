@@ -14,6 +14,7 @@ BASE = "https://platform.vhp4safety.nl/"
 TOOL = "https://schema.org/SoftwareApplication"
 STEP = "https://vhp4safety.github.io/glossary#VHP0000156"
 FITTING = {"name": "T", "description": "Does T.", "url": "https://t.org/", "about": [STEP]}
+NEW = "/api/records?graph=" + BASE + "tools/new"
 
 
 def add_records():
@@ -48,7 +49,7 @@ def test_editor_and_changes(site):
         form_token = session["form_token"]
     data = json.loads(page.split('<script type="application/json" id="editor-data">')[1].split("</script>")[0])
     assert {option["iri"]: option["name"] for option in data["choices"]["about"][0]["options"]}[STEP] == "Toxicodynamics (Process Flow Step)"
-    answer = site.put("/api/tools/t", json={**FITTING, "about": []}, headers={"X-Form-Token": form_token}).json
+    answer = site.put("/api/records?graph=" + BASE + "tools/t", json={**FITTING, "about": []}, headers={"X-Form-Token": form_token}).json
     change = site.get(answer["change"] + ".json").json
     assert [(edge["status"], edge["name"]) for edge in change["edges"] if edge["status"] != "kept"] == [("removed", "Toxicodynamics (Process Flow Step)")]
 
@@ -56,14 +57,14 @@ def test_editor_and_changes(site):
 def test_api(site):
     add_records()
     bearer = {"Authorization": "Bearer " + tokens.create(ORCID, "Test Editor", ["tools"])}
-    created = site.put("/api/tools/new", json=FITTING, headers=bearer)
-    assert created.status_code == 201
-    refused = site.put("/api/tools/new", json={"name": "N", "url": "not a link"}, headers=bearer)
-    assert refused.status_code == 422 and set(refused.json["fields"]) == {"url", "description"}
-    assert set(site.put("/api/tools/t?preview=true", json={"name": "Z"}, headers=bearer).json["fields"]) == {"description"}
+    created = site.put(NEW, json={"@type": "SoftwareApplication", **FITTING}, headers=bearer)
+    assert created.status_code == 201 and "Does T." in site.get(NEW, headers={"Accept": "text/turtle"}).data.decode()
+    refused = site.put(NEW, json={"name": "N", "url": "not a link"}, headers=bearer)
+    assert refused.status_code == 422 and set(refused.json["errors"]) == {"url", "description"}
+    assert set(site.put("/api/records?graph=" + BASE + "tools/t&preview=true", json={"name": "Z"}, headers=bearer).json["fields"]) == {"description"}
     stale = {**bearer, "If-Match": "an older version"}
-    assert site.put("/api/tools/new", json=FITTING, headers=stale).status_code == 412
-    assert site.post("/api/tools/new/move", json={"to": "renamed"}, headers=bearer).status_code == 200
+    assert site.put(NEW, json=FITTING, headers=stale).status_code == 412
+    assert site.post("/api/records/move?graph=" + BASE + "tools/new", json={"to": BASE + "tools/renamed"}, headers=bearer).status_code == 200
     assert site.get("/tools/new").status_code == 301
     picture = io.BytesIO()
     Picture.new("RGB", (30, 20)).save(picture, format="PNG")

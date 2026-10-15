@@ -38,6 +38,18 @@
     return address.startsWith(data.base) ? "/" + address.slice(data.base.length) : address;
   }
 
+  // A record is a graph of the platform's Graph Store (the W3C Graph Store HTTP Protocol), named by its address.
+  function graphOf(address, extra) {
+    return "/api/records?graph=" + encodeURIComponent(address) + (extra || "");
+  }
+
+  function addressOf(record) {
+    if (record) {
+      return record.iri;
+    }
+    return identifier.value.trim() ? data.base + data.kind + "/" + identifier.value.trim() : "";
+  }
+
   function fieldInput(name) {
     return form.querySelector('[data-field="' + name + '"]');
   }
@@ -519,7 +531,7 @@
     const result = await api("POST", "/api/images", payload);
     button.disabled = false;
     if (!result.ok) {
-      showProblem(name, result.answer.error || "The image could not be uploaded.");
+      showProblem(name, result.answer.message || "The image could not be uploaded.");
       return;
     }
     form.querySelector('[data-problem="' + name + '"]').classList.add("d-none");
@@ -584,10 +596,10 @@
     document.getElementById("removal-free").checked = removed;
     const view = document.getElementById("view");
     view.classList.toggle("d-none", !record || removed);
-    view.href = record ? "/" + data.kind + "/" + record.identifier : "#";
+    view.href = record ? pageLink(record.iri) : "#";
     const history = document.getElementById("history");
     history.classList.toggle("d-none", !record);
-    history.href = record ? "/changes?record=" + encodeURIComponent(data.base + data.kind + "/" + record.identifier) : "#";
+    history.href = record ? "/changes?record=" + encodeURIComponent(record.iri) : "#";
     setUnsaved(false);
     renderList();
     renderCompleteness();
@@ -650,33 +662,33 @@
       showProblems(problems);
       return;
     }
-    const body = values();
-    const address = identifier.value.trim();
+    const body = Object.assign({ "@type": data.type }, values());
+    const address = addressOf(selected);
     const save = document.getElementById("save");
     save.disabled = true;
     const result = address
-      ? await api("PUT", "/api/" + data.kind + "/" + encodeURIComponent(address), body, selected ? selected.version : null)
-      : await api("POST", "/api/" + data.kind, body);
+      ? await api("PUT", graphOf(address), body, selected ? selected.version : null)
+      : await api("POST", "/api/records", body);
     save.disabled = false;
     if (!result.ok) {
       if (result.status === 412) {
-        showProblems({}, result.answer.error);
+        showProblems({}, result.answer.message);
       } else if (result.status === 409) {
         showProblems({ identifier: ["This address belonged to a removed " + one + ". Choose another one."] });
       } else {
-        showProblems(result.answer.fields || {}, result.answer.error || "The " + one + " could not be saved.");
+        showProblems(result.answer.errors || {}, result.answer.message || "The " + one + " could not be saved.");
       }
       return;
     }
-    const saved = result.answer["@id"].split("/").pop();
+    const saved = result.answer["@id"];
     let record = null;
     for (const known of data.records) {
-      if (known.identifier === saved) {
+      if (known.iri === saved) {
         record = known;
       }
     }
     if (!record) {
-      record = { identifier: saved };
+      record = { iri: saved, identifier: saved.replace(data.base + data.kind + "/", "") };
       data.records.unshift(record);
     }
     record.values = body;
@@ -703,10 +715,10 @@
     const permanently = document.getElementById("removal-free").checked;
     const record = selected;
     const name = record.values.name || record.identifier;
-    const result = await api("DELETE", "/api/" + data.kind + "/" + encodeURIComponent(record.identifier) + (permanently ? "?permanent=true" : ""), null, record.version);
+    const result = await api("DELETE", graphOf(record.iri, permanently ? "&permanent=true" : ""), null, record.version);
     bootstrap.Modal.getOrCreateInstance(document.getElementById("remove-dialog")).hide();
     if (!result.ok) {
-      toast(result.answer.error || "The " + one + " could not be removed.", false);
+      toast(result.answer.message || "The " + one + " could not be removed.", false);
       return;
     }
     setUnsaved(false);
@@ -780,19 +792,19 @@
     }
     const request = new AbortController();
     previewRequest = request;
-    const address = identifier.value.trim() || (selected ? selected.identifier : "");
+    const address = addressOf(selected);
     if (!address) {
       clearPreview("Fill in the name to see the linked data.");
       return;
     }
     let result;
     try {
-      const response = await fetch("/api/" + data.kind + "/" + encodeURIComponent(address) + "?preview=true", {
+      const response = await fetch(graphOf(address, "&preview=true"), {
         method: "PUT",
         credentials: "same-origin",
         signal: request.signal,
         headers: { "X-Form-Token": form.dataset.formToken, "Content-Type": "application/json" },
-        body: JSON.stringify(values()),
+        body: JSON.stringify(Object.assign({ "@type": data.type }, values())),
       });
       result = { ok: response.ok, answer: await response.json().catch(function () { return {}; }) };
     } catch (error) {
@@ -802,7 +814,7 @@
       return;
     }
     if (!result.ok) {
-      clearPreview(result.answer.error || "The linked data could not be built.");
+      clearPreview(result.answer.message || "The linked data could not be built.");
       return;
     }
     const graph = result.answer;
@@ -837,9 +849,9 @@
 
   function loadSaved() {
     const raw = document.getElementById("rdf-raw");
-    raw.classList.toggle("d-none", !selected || selected.removed);
+    raw.classList.toggle("d-none", !selected || selected.removed || !selected.iri.startsWith(data.base));
     if (selected && !selected.removed) {
-      raw.href = "/" + data.kind + "/" + encodeURIComponent(selected.identifier) + ".ttl";
+      raw.href = pageLink(selected.iri) + ".ttl";
     }
     renderPreview();
   }
@@ -920,14 +932,15 @@
       return;
     }
     const record = selected;
-    const old = data.base + data.kind + "/" + record.identifier;
-    const result = await api("POST", "/api/" + data.kind + "/" + encodeURIComponent(record.identifier) + "/move", { to: to }, record.version);
+    const old = record.iri;
+    const result = await api("POST", "/api/records/move?graph=" + encodeURIComponent(record.iri), { to: data.base + data.kind + "/" + to }, record.version);
     if (!result.ok) {
-      problem.textContent = result.answer.error || "The address could not be changed.";
+      problem.textContent = result.answer.message || "The address could not be changed.";
       problem.classList.remove("d-none");
       return;
     }
     bootstrap.Modal.getOrCreateInstance(document.getElementById("move-dialog")).hide();
+    record.iri = data.base + data.kind + "/" + to;
     record.identifier = to;
     record.version = result.answer.version;
     const others = (record.values.sameAs || []).filter(function (value) { return value !== result.answer["@id"]; });
@@ -957,9 +970,9 @@
   document.getElementById("remove-confirm").addEventListener("click", remove);
   document.getElementById("restore").addEventListener("click", async function () {
     const record = selected;
-    const result = await api("POST", "/api/" + data.kind + "/" + encodeURIComponent(record.identifier) + "/restore");
+    const result = await api("POST", "/api/records/restore?graph=" + encodeURIComponent(record.iri));
     if (!result.ok) {
-      toast(result.answer.error || "The " + one + " could not be restored.", false);
+      toast(result.answer.message || "The " + one + " could not be restored.", false);
       return;
     }
     record.removed = false;

@@ -68,7 +68,7 @@ except that `database/` reads the base address of records from `linkeddata/model
 | | `changes.py` | each change field by field, and as RDF statements |
 | `routes/` | `record_pages.py` | the address of each record: its data, 410 Gone once removed, a general record page |
 | | `data_quality.py` | the `/data-quality` and `/sources` pages |
-| | `records_api.py` | the records API: records written in JSON-LD, and the addresses of the records |
+| | `records_api.py` | the records API (flask-smorest): each record a graph of the W3C Graph Store Protocol |
 | | `tables_api.py` | the tables API (flask-smorest): the rows of the release's tables and of the records, notes and sources tables |
 | | `editor.py` | the record editor, a form that writes and removes records through the write API |
 | | `changes.py` | the `/changes` pages |
@@ -144,15 +144,17 @@ rules:
 
 3. Run the import, and check its records and notes on the `/sources` and `/data-quality` pages.
 
-## Read records
+## Read and write records
 
-The address of each record answers in HTML, JSON-LD, Turtle or N-Triples, as the Accept header asks (or
-the endings `.jsonld`, `.ttl` and `.nt`), and links the model's SHACL shapes (`/api/shapes.ttl`) with
-`rel="describedby"`. spectree writes the OpenAPI 3.1 document of the records API from its routes and
-their pydantic models, which are made from the profile: `/api/docs/records/openapi.json`, shown at
-`/api/docs/records/swagger/`, `/redoc/` and `/scalar/`. It also gives the address of each kind of record,
-and each record's schema carries its JSON-LD type and context (`x-jsonld-type`, `x-jsonld-context`, from
-the OpenAPI extensions registry).
+Each record is a graph of the W3C SPARQL 1.1 Graph Store HTTP Protocol, named by its address:
+`GET /api/records?graph=<address>` gives it in JSON-LD, Turtle or N-Triples, `PUT` adds or replaces it,
+`POST /api/records` adds a record at an address made from its kind and name, and `DELETE` removes it.
+Writes are checked against the model's SHACL shapes (`/api/shapes.ttl`), need a write token or an editor's
+login, and are refused with `412` when If-Match does not give the record's version (its ETag). The address
+of each record also answers in HTML, JSON-LD, Turtle or N-Triples, as the Accept header asks. flask-smorest
+writes the API's OpenAPI 3.1 document, `/api/docs/records/openapi.json`, shown at
+`/api/docs/records/swagger/`; the record's schema carries the JSON-LD context (`x-jsonld-context`, from the
+OpenAPI extensions registry).
 
 `GET /api/tables/<table>` gives the rows of each table of the release, and of the records, notes and
 sources tables, with flask-smorest: a page at a time (`page`, `page_size`, and the counts in the
@@ -169,27 +171,16 @@ model and the application profile, and the record and its revision are saved at 
 shows it straight away. Every answer gives the address of the record and of its change.
 
 ```
-PUT    /api/tools/aop-builder                  create or replace (the whole record)
-POST   /api/tools                              create; the identifier is made from the name
-DELETE /api/tools/aop-builder                  remove; the address answers 410 Gone and is not given again
-DELETE /api/tools/aop-builder?permanent=true   remove the record and its address
-POST   /api/images                             upload an image (form field "image"); gives its address
-```
-
-```
-curl -X PUT https://platform.vhp4safety.nl/api/tools/aop-builder \
-     -H "Authorization: Bearer vhp_..." -H "Content-Type: application/json" \
-     -d '{"name": "AOP-Builder", "description": "Builds AOPs from the literature.",
+curl -X PUT "https://platform.vhp4safety.nl/api/records?graph=https://platform.vhp4safety.nl/tools/aop-builder" \
+     -H "Authorization: Bearer vhp_..." -H "Content-Type: application/ld+json" \
+     -d '{"@type": "SoftwareApplication", "name": "AOP-Builder", "description": "Builds AOPs from the literature.",
           "url": {"@id": "https://github.com/VHP4Safety/aop-builder"}}'
 ```
 
-A refused record is answered with `422` and what is wrong with each field:
-`{"error": "...", "fields": {"url": ["Add the address of the tool's website."]}}`. Only web addresses
-(`https://` or `http://`) are kept as links. An uploaded image is read in full, made at most 2000
-pixels wide, and saved again as WebP; other files are refused.
-
-The record's data is at its address: `/tools/aop-builder.jsonld`, `.ttl` or `.nt`, or with the
-`Accept` header. Its changes are at `/changes?record=<address>`.
+A refused record is answered with `422`, flask-smorest's message, and what is wrong with each field in
+`errors`. Only web addresses (`https://` or `http://`) are kept as links. An uploaded image
+(`POST /api/images`, form field `image`) is read in full, made at most 2000 pixels wide, and saved again as
+WebP; other files are refused. A record's changes are at `/changes?record=<address>`.
 
 The record editor, `/admin/`, writes with a form through the same API. Editors log in at `/login/`,
 with ORCID or with a write token; the editor's requests carry the session's form token in the

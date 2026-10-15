@@ -23,8 +23,7 @@ from data.mapping import normalize_all, scrub_draft
 from database import records
 from linkeddata import documents, storage
 from routes.account import blueprint as account_blueprint
-from routes.records_api import blueprint as api_blueprint
-from routes import tables_api
+from routes import limiter, records_api, tables_api
 from routes.changes import blueprint as changes_blueprint
 from routes.data_quality import blueprint as dashboards_blueprint
 from routes.editor import blueprint as admin_blueprint
@@ -136,7 +135,8 @@ app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLASK_DEBUG") != "1"
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.register_blueprint(account_blueprint)
 app.register_blueprint(admin_blueprint)
-app.register_blueprint(api_blueprint)
+limiter.init_app(app)
+records_api.register(app)
 tables_api.register(app)
 app.register_blueprint(pages_blueprint)
 app.register_blueprint(dashboards_blueprint)
