@@ -1,6 +1,6 @@
 """Parser of the cloud catalogue (a workaround, see linkeddata/parsers). service_index.json lists the
 tools, and the detail file of each tool (cloud.vhp4safety.nl/service/<id>.json) describes it. Besides
-the tools, the rows are the organisations, people, help pages, videos and licenses that tools link to.
+the tools, the rows are the organisations, people, help pages and videos that tools link to.
 """
 
 import json
@@ -21,25 +21,6 @@ QUESTIONS = {
 PLACEHOLDER_LOGO = "https://github.com/VHP4Safety/ui-design/blob/main/static/images/logo.png"
 LOGOS = "https://raw.githubusercontent.com/VHP4Safety/cloud/main/docs/service/"
 VHP4SAFETY = "organizations/vhp4safety"
-# License names as the catalogue writes them, and their SPDX identifiers.
-LICENSES = {
-    "mit": "MIT",
-    "mit license": "MIT",
-    "apache-2.0": "Apache-2.0",
-    "apache-2.0 license": "Apache-2.0",
-    "apache 2.0 license": "Apache-2.0",
-    "gpl-3.0": "GPL-3.0-only",
-    "gnu general public license v3.0": "GPL-3.0-only",
-    "gpl-2.0-only": "GPL-2.0-only",
-    "gnu affero general public license v3.0": "AGPL-3.0-only",
-    "lgpl 2.1": "LGPL-2.1-only",
-    "bsd-3-clause license": "BSD-3-Clause",
-    "cc-by-4.0": "CC-BY-4.0",
-    "cc-by 4.0 international": "CC-BY-4.0",
-    "cc-by nc 4.0": "CC-BY-NC-4.0",
-    "cc0": "CC0-1.0",
-}
-MARKDOWN_LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
 
 def pairs(entry) -> list[tuple[str, str]]:
@@ -54,26 +35,6 @@ def pairs(entry) -> list[tuple[str, str]]:
         if address.strip().startswith(("http://", "https://")):
             found.append((title or address.strip(), address.strip()))
     return found
-
-
-def license_of(text: str) -> tuple[dict | str, dict | None]:
-    """The license of a tool: a link to its SPDX page, or to the page the catalogue links, with the
-    row of that license; text the parser cannot read is passed on."""
-    written = MARKDOWN_LINK.match(text.strip())
-    name = written.group(1) if written else text.strip()
-    identifier = LICENSES.get(name.lower())
-    if identifier:
-        address = f"https://spdx.org/licenses/{identifier}"
-        return link(address), {"@id": address, "@type": "License", "name": identifier}
-    if written and written.group(2).startswith(("http://", "https://")):
-        return link(written.group(2)), {"@id": written.group(2), "@type": "License", "name": name}
-    return text, None
-
-
-def readiness(text: str) -> str:
-    """A technology readiness level written as "TRL 4"; other text is passed on."""
-    number = re.match(r"^(?:TRL\s*)?(\d)\b", text.strip())
-    return f"TRL {number.group(1)}" if number else text
 
 
 def parse(contents: dict[str, bytes]) -> list[dict]:
@@ -133,9 +94,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         notes = detail.get("notes") if isinstance(detail.get("notes"), dict) else {}
         written_license = instance.get("license") or detail.get("license") or notes.get("license")
         if present(written_license):
-            row["license"], license_row = license_of(str(written_license))
-            if license_row:
-                others[license_row["@id"]] = license_row
+            row["license"] = web_link(written_license)
         sources = []
         for address in (instance.get("source"), detail.get("source")):
             if present(address) and web_link(address) not in sources:
@@ -153,7 +112,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         if downloads:
             row["downloads"] = downloads
         if present(instance.get("TRL")):
-            row["trl"] = readiness(str(instance["TRL"]))
+            row["trl"] = str(instance["TRL"])
         if present(detail.get("release_notes")):
             row["release_notes"] = detail["release_notes"]
         help_pages = pairs(detail.get("intro")) + pairs(detail.get("demo"))
