@@ -4,6 +4,7 @@ The tables are in tables.py; the file and its tables are made when it is first u
 
 import os
 import sqlite3
+import threading
 from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,6 +17,8 @@ from linkeddata.model import RELEASE, TABLES
 
 STATE_DIR = Path(os.environ.get("PLATFORM_STATE", "instance"))
 _engines = {}
+# The engine is made once, by the first request of any thread.
+_making = threading.Lock()
 
 
 def columns(connection: sqlite3.Connection) -> dict[str, list[str]]:
@@ -47,21 +50,21 @@ def engine() -> Engine:
     """The engine of the database; the file and its tables are made on first use. A database whose tables
     are not those of the model's release is refused."""
     path = STATE_DIR / "platform.sqlite"
-    if path not in _engines:
-        if path.exists():
-            problems = differences(path)
-            if problems:
-                raise RuntimeError(" ".join(problems))
-        STATE_DIR.mkdir(parents=True, exist_ok=True)
-        made = create_engine(f"sqlite:///{path}", connect_args={"timeout": 30})
-        event.listen(made, "connect", write_ahead_log)
-        Base.metadata.create_all(made)
-        if TABLES.exists():
+    with _making:
+        if path not in _engines:
+            if path.exists():
+                problems = differences(path)
+                if problems:
+                    raise RuntimeError(" ".join(problems))
+            STATE_DIR.mkdir(parents=True, exist_ok=True)
+            made = create_engine(f"sqlite:///{path}", connect_args={"timeout": 30})
+            event.listen(made, "connect", write_ahead_log)
+            Base.metadata.create_all(made)
             with made.begin() as connection:
                 for statement in TABLES.read_text(encoding="utf-8").split(";"):
                     if statement.strip():
                         connection.exec_driver_sql(statement)
-        _engines[path] = made
+            _engines[path] = made
     return _engines[path]
 
 
