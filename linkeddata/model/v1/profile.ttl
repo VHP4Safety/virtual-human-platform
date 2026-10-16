@@ -25,6 +25,7 @@
 @prefix dash: <http://datashapes.org/dash#> .
 @prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
 @prefix glossary: <https://vhp4safety.github.io/glossary#> .
+@prefix wd: <http://www.wikidata.org/entity/> .
 
 form:about a sh:PropertyGroup ; sh:order 1 ; rdfs:label "About the tool" .
 form:method a sh:PropertyGroup ; sh:order 1 ; rdfs:label "About the method" .
@@ -123,9 +124,10 @@ form:SoftwareApplication a sh:NodeShape ;
         sh:description "Where the tool can be downloaded: its container image or its software packages." ] ;
     sh:property [
         sh:path schema:creativeWorkStatus ; sh:group form:technical ; sh:order 5 ; sh:name "Technology readiness" ; sh:maxCount 1 ;
-        sh:datatype xsd:string ; sh:in ( "TRL 1" "TRL 2" "TRL 3" "TRL 4" "TRL 5" "TRL 6" "TRL 7" "TRL 8" "TRL 9" ) ;
+        sh:severity sh:Warning ; sh:nodeKind sh:IRI ;
+        sh:in ( wd:Q120669280 wd:Q120669304 wd:Q120669316 wd:Q120669327 wd:Q120669340 wd:Q120669350 wd:Q120669358 wd:Q120669370 wd:Q120669377 ) ;
         sh:description "How mature the tool is, as a technology readiness level: from TRL 1 (basic principles observed) to TRL 9 (proven in its operational environment)." ;
-        sh:message "Choose a technology readiness level from TRL 1 to TRL 9." ] ;
+        sh:message "Choose a technology readiness level from TRL 1 to TRL 9; a level given as text is kept." ] ;
     sh:property [
         sh:path schema:releaseNotes ; sh:group form:technical ; sh:order 6 ; sh:name "Release notes" ; sh:maxCount 1 ; sh:datatype xsd:string ;
         sh:description "The address of the tool's release notes, or a short note about its latest release." ] ;

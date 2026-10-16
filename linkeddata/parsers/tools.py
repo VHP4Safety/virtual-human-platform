@@ -5,6 +5,7 @@ and videos of a tool are parts of its row.
 """
 
 import json
+import re
 
 from linkeddata.parsers import QUESTIONS, link, present, publication, slug, term, web_link
 
@@ -102,8 +103,10 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 downloads.append(web_link(address))
         if downloads:
             row["downloads"] = downloads
+        # A level of technology readiness is written as TRL 4, TRL4, "TRL 8 - <its meaning>" or its number.
         if present(instance.get("TRL")):
-            row["trl"] = str(instance["TRL"])
+            level = re.match(r"(?:TRL[\s-]*)?([1-9])\b", str(instance["TRL"]).strip(), re.IGNORECASE)
+            row["trl"] = term("TRL " + level.group(1), "trl") if level else str(instance["TRL"])
         if present(detail.get("release_notes")):
             row["release_notes"] = detail["release_notes"]
         help_pages = pairs(detail.get("intro")) + pairs(detail.get("demo"))

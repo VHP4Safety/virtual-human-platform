@@ -26,13 +26,15 @@ def settings() -> dict:
 
 
 def vocabularies(config: dict) -> list[Path]:
-    """The vocabulary files, kept in the model folder; only `python -m linkeddata model` downloads them."""
+    """The vocabulary files in RDF, kept in the model folder; only `python -m linkeddata model` downloads
+    them. A pinned file of another format, such as a list of licences in JSON, is read by its source only."""
     files = []
     for name in config["vocabularies"]:
         path = MODEL_DIR / "vocabularies" / name
         if not path.exists():
             raise FileNotFoundError(f"The vocabulary {path} is missing: run python -m linkeddata model.")
-        files.append(path)
+        if path.suffix in (".ttl", ".jsonld"):
+            files.append(path)
     return files
 
 
