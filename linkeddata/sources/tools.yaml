@@ -1,11 +1,11 @@
 name: tools
 title: Tool catalogue
 url: https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/service_index.json
-# The detail file of each tool, by the tool's key in the index.
+# Each tool's detail file, by its key in the index.
 entries: https://cloud.vhp4safety.nl/service/{key}.json
 parser: tools
 
-# How the parsed rows become the model: the arguments of rdfsolve's Rule.between, for each kind of row.
+# The rules of each kind of row: the arguments of rdfsolve's Rule.between.
 rules:
   Tool:
     - {predicate: a, value: "https://schema.org/SoftwareApplication"}

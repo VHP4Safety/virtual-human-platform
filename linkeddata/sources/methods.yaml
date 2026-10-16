@@ -1,11 +1,11 @@
 name: methods
 title: Method catalogue
 url: https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/methods_index.json
-# The detail file of each method, by the method's key in the index.
+# Each method's detail file, by its key in the index.
 entries: https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/docs/methods/{key}.json
 parser: methods
 
-# How the parsed rows become the model: the arguments of rdfsolve's Rule.between, for each kind of row.
+# The rules of each kind of row: the arguments of rdfsolve's Rule.between.
 rules:
   Method:
     - {predicate: a, value: "https://bioschemas.org/draft_terms/LabProtocol"}

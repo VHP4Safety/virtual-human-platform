@@ -1,5 +1,4 @@
-"""What the pages about the data show: how complete the records are, what the checks of the imports
-found, and where the records come from and how each source becomes the model."""
+"""What the data pages show: record completeness, the checks' notes, and how each source becomes the model."""
 
 from sqlalchemy import func, select
 
@@ -11,7 +10,7 @@ from linkeddata.imports import files_of, specs
 from linkeddata.model import settings
 
 def field_labels() -> dict[tuple[str, str], str]:
-    """The name of each field on the platform, by its class and the address of its property."""
+    """Each field's label, by class and property."""
     labels = {}
     for kind in settings()["kinds"].values():
         for field in fields.of(kind):
@@ -20,7 +19,7 @@ def field_labels() -> dict[tuple[str, str], str]:
 
 
 def report() -> dict:
-    """How complete the records of each class are, and the notes of the checks grouped by field and constraint."""
+    """The completeness of each class's records, and the checks' notes by field and constraint."""
     with database.session() as db:
         kept = list(db.scalars(select(Record).where(Record.removed_at.is_(None))))
         notes = list(db.scalars(select(Note).order_by(Note.field, Note.reason, Note.iri)))
@@ -60,7 +59,7 @@ def report() -> dict:
 
 
 def mapping(spec: dict, labels: dict) -> list[dict]:
-    """How a source becomes the model, read from its rules: each field of the source and the field it fills."""
+    """How a source becomes the model, from its rules: each source field and the field it fills."""
     rows = []
     for kind, arguments in spec["rules"].items():
         target = ""
@@ -78,8 +77,7 @@ def mapping(spec: dict, labels: dict) -> list[dict]:
 
 
 def sources() -> tuple[list[dict], int]:
-    """Each source with its files, when it was fetched, its records and notes, and how it becomes the model;
-    and how many records were written on the platform."""
+    """Each source with its files, fetch, records, notes and mapping; and the count of platform records."""
     with database.session() as db:
         fetched = {source.name: source for source in db.scalars(select(Source))}
         counts = dict(db.execute(select(Record.source, func.count()).where(Record.removed_at.is_(None)).group_by(Record.source)).all())

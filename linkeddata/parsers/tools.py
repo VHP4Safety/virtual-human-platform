@@ -1,7 +1,6 @@
 """Parser of the cloud catalogue (a workaround, see linkeddata/parsers). service_index.json lists the
-tools, and the detail file of each tool (cloud.vhp4safety.nl/service/<id>.json) describes it. Besides
-the tools, the rows are the organisations, people and publications that tools link to; the help pages
-and videos of a tool are parts of its row.
+tools, and cloud.vhp4safety.nl/service/<id>.json describes each. Rows are the tools and the organisations,
+people and publications they link to; a tool's help pages and videos are parts of its row.
 """
 
 import json
@@ -46,12 +45,12 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         logo = entry.get("png_file_name")
         if present(logo) and logo != PLACEHOLDER_LOGO:
             row["logo"] = link(LOGOS + logo)
-        # The catalogue's stage is a process flow step, and its substage a term of what the tool deals with.
+        # The stage is a process flow step, and the substage a topic.
         if present(detail.get("stage") or entry.get("stage")):
             row["step"] = web_link(detail.get("stage") or entry["stage"])
         if present(detail.get("substage")):
             row["topic"] = term(detail["substage"], "glossary")
-        # The catalogue marks the regulatory questions of a tool with yes/no flags, named by their codes.
+        # Regulatory questions are yes/no flags named by their codes.
         questions = []
         for flag, question in QUESTIONS.items():
             if str(entry.get(flag)).lower() == "true":
@@ -103,7 +102,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 downloads.append(web_link(address))
         if downloads:
             row["downloads"] = downloads
-        # A level of technology readiness is written as TRL 4, TRL4, "TRL 8 - <its meaning>" or its number.
+        # A readiness level is written as TRL 4, TRL4, "TRL 8 - <meaning>" or a number.
         if present(instance.get("TRL")):
             level = re.match(r"(?:TRL[\s-]*)?([1-9])\b", str(instance["TRL"]).strip(), re.IGNORECASE)
             row["trl"] = term("TRL " + level.group(1), "trl") if level else str(instance["TRL"])
@@ -127,8 +126,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 organization["url"] = web_link(provider["url"])
             others.setdefault(identifier, organization)
             providers.append(link(identifier))
-        # A tool is hosted by VHP4Safety when the catalogue says that it runs on the platform's development
-        # servers; "External" and "independent" are hosted elsewhere.
+        # "development" means hosted by VHP4Safety; "External" and "independent" mean hosted elsewhere.
         if str(instance.get("vhp-platform") or "").strip().lower() == "development":
             providers.append(link(VHP4SAFETY))
         if providers:
@@ -144,7 +142,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         for person in contacts:
             if not present(person.get("name")):
                 continue
-            # A contact can name several people, and their emails, separated by ";".
+            # Several people and emails can be given, separated by ";".
             names = str(person["name"]).split(";")
             emails = str(person.get("email") or "").split(";")
             for position, name in enumerate(names):

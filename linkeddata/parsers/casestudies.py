@@ -1,19 +1,18 @@
-"""Parser of ui-casestudy-config (a workaround, see linkeddata/parsers). Its RO-Crate describes each case
-study, and the content file of a case study holds the pages of its interface, one level after the other:
-the case study with its regulatory questions (step1Contents), the page of each question with its process
-flow steps (step2Contents), and the steps and their parts below (step3Contents and on). Each page has a
-title, a summary, a text in sections, and a list of items: the pages one level down, at addresses under its
-own, and the tools, methods and data it uses, which are linked by the id of their record on the platform
-(an item without one is kept as its label)."""
+"""Parser of ui-casestudy-config (a workaround, see linkeddata/parsers). Its RO-Crate describes the case
+studies; each one's content file holds its pages level by level: the case study with its questions
+(step1Contents), each question's page with its process flow steps (step2Contents), and the steps and their
+parts below (step3Contents on). Each page has a title, a summary, a text in sections, and items: the pages
+one level down, under its address, and the tools, methods and data it uses, linked by their platform id (or
+kept as a label without one)."""
 
 import json
 import re
 
 from linkeddata.parsers import link, marked, present, slug, term, web_link
 
-# The kinds of the items of a page that are pages one level down; tools and data are not.
+# The item kinds that are pages one level down.
 PAGES = {"process-flow-step", "workflow step", "workflow-step", "workflow substep"}
-# Some texts were written with typographic quotes around the values of the attributes of their tags.
+# Some tags have typographic quotes around their attribute values.
 TAG = re.compile(r"<[a-zA-Z][^>]*>")
 STRAIGHT = str.maketrans({"\u201c": '"', "\u201d": '"', "\u2018": "'", "\u2019": "'"})
 
@@ -23,12 +22,12 @@ def straight(tag) -> str:
 
 
 def html(value):
-    """A text in HTML as it is written, with straight quotes in its tags, typed as HTML when it has tags."""
+    """An HTML text with straight quotes in its tags, typed as HTML when it has tags."""
     return marked(TAG.sub(straight, str(value)))
 
 
 def text(row: dict, content) -> None:
-    """The text of a page: in HTML, or in sections, each with its heading and its text in HTML."""
+    """A page's text: in HTML, or in sections, each with a heading and an HTML text."""
     if isinstance(content, str) and present(content):
         row["content"] = html(content)
     elif isinstance(content, list):
@@ -41,7 +40,7 @@ def text(row: dict, content) -> None:
 
 
 def item_link(item: dict) -> dict | None:
-    """The page on the platform of a tool, a method or a dataset that an item names by its id."""
+    """The platform page of the tool, method or dataset an item names by its id."""
     if not present(item.get("id")):
         return None
     route = "data" if item.get("type") == "data" else item.get("route") or "tools"
@@ -57,7 +56,7 @@ def at(levels: list[dict], depth: int, path: list[str]) -> dict:
 
 
 def step(levels: list[dict], depth: int, path: list[str], item: dict, address: str, position: int, made: set) -> list[dict]:
-    """The page of a step that an item leads to, at *path* of the content's levels, and the pages below it."""
+    """The page an item leads to, at *path* of the levels, and the pages below it."""
     node = at(levels, depth, path)
     row = {"@id": address, "@type": "Workflow", "title": node.get("navTitle") or item.get("label"), "position": position}
     if present(item.get("state")):
@@ -68,9 +67,9 @@ def step(levels: list[dict], depth: int, path: list[str], item: dict, address: s
 
 
 def fill(row: dict, node: dict, levels: list[dict], depth: int, path: list[str], made: set) -> list[dict]:
-    """The summary, text and items of a page from its node of the content: the pages one level down, at
-    addresses under its own, and the tools and data it lists. Gives the rows of the pages below. A page that
-    two items lead to is one page, made once (*made*), with the title and position of the first."""
+    """A page's summary, text and items from its node: the pages one level down, under its address, and the
+    tools and data it lists. The rows of the pages below are given back. A page that two items lead to is
+    made once (*made*), with the first one's title and position."""
     if present(node.get("navDescription")):
         row["summary"] = node["navDescription"]
     text(row, node.get("content"))

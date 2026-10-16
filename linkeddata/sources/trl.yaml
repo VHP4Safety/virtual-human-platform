@@ -1,7 +1,7 @@
 name: trl
 title: Technology readiness levels (Wikidata)
-# The vocabulary of the model that the source is: the levels, as Wikidata's items for them.
+# The model's pinned levels, as Wikidata items.
 vocabulary: wikidata-technology-readiness-levels.json
 parser: wikidata
-# The levels and their vocabulary are registered as the glossary's terms and the glossary are.
+# Levels and their vocabulary take the glossary's rules.
 uses: [glossary]

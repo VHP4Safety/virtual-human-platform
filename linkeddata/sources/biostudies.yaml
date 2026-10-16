@@ -1,11 +1,11 @@
 name: biostudies
 title: BioStudies collection VHP4Safety
 url: https://www.ebi.ac.uk/biostudies/api/v1/VHP4Safety/search?pageSize=100
-# The file of each study, by its accession in the search.
+# Each study's file, by its accession.
 entries: https://www.ebi.ac.uk/biostudies/api/v1/studies/{key}
 parser: biostudies
 
-# How the parsed rows become the model: the arguments of rdfsolve's Rule.between, for each kind of row.
+# The rules of each kind of row: the arguments of rdfsolve's Rule.between.
 rules:
   Dataset:
     - {predicate: a, value: "https://schema.org/Dataset"}

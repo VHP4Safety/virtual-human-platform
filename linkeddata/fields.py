@@ -1,6 +1,5 @@
-"""The fields of the records, as the application profile gives them: the property shapes of the node shape
-of a class, with those of the shapes it builds on (sh:node), by their section (sh:group) and order. The
-vocabularies' shapes only check values; the fields, their names and their order are the profile's."""
+"""Record fields as the application profile gives them: the property shapes of a class's node shape and of
+the shapes it builds on (sh:node), by section (sh:group) and order. The vocabularies' shapes only check values."""
 
 from functools import cache
 
@@ -18,13 +17,14 @@ def shape_of(kind: str) -> URIRef | None:
 
 @cache
 def of(kind: str) -> list[dict]:
-    """Each field of a class: its name in JSON-LD, property, label and description, whether it is required,
-    whether it takes one value (sh:maxCount 1), what its values are (the values of sh:in, the classes of
-    sh:class and sh:or, the datatype, or web addresses), whether they are IRIs rather than literals or nodes
-    without an address, and the pattern they match, whether a value that
-    does not fit, or no value, is only a warning (sh:Warning), the profile's message, the values the model fixes, whether its values are parts of the record that holds them (the values of a class without a
-    kind of its own that fit its shape, sh:node, or nodes without an address, sh:nodeKind sh:BlankNode), and
-    whether those parts have addresses of their own (sh:nodeKind sh:IRI)."""
+    """Each field of a class:
+    - name (in JSON-LD), iri, label, description and message;
+    - single (sh:maxCount 1), required, and warning or recommended (sh:Warning);
+    - values (sh:in), classes (sh:class, sh:or), datatype, address (web addresses), pattern and fixed
+      (sh:hasValue); iris when the values are IRIs, not literals or nodes without an address;
+    - part when the values are parts of the record (sh:node of a class without a kind, or sh:nodeKind
+      sh:BlankNode), and addressed when parts have addresses (sh:nodeKind sh:IRI);
+    - position: section and order."""
     graph = profile()
     kinds = set(settings()["kinds"].values())
     shape = shape_of(kind)

@@ -1,14 +1,14 @@
 name: casestudies
 title: Case studies
 parser: casestudies
-# The RO-Crate that describes the case studies, and the content file of each, by the case study's identifier.
+# The case studies' RO-Crate, and each one's content file, by identifier.
 files:
   crate: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/ro-crate-metadata.json
   kidney: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/kidney_content.json
   parkinson: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/parkinson_content.json
   thyroid: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/thyroid_content.json
 
-# How the parsed rows become the model: the arguments of rdfsolve's Rule.between, for each kind of row.
+# The rules of each kind of row: the arguments of rdfsolve's Rule.between.
 rules:
   CaseStudy:
     - {predicate: a, value: "https://schema.org/ResearchProject"}

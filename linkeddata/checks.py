@@ -1,7 +1,6 @@
-"""The checks of records against the model: pyshacl checks every record in the same way, with the model's
-shapes, the class of each record it links to, and the class hierarchy of the vocabularies. A record
-written on the platform is refused when it does not fit; the values of the sources that do not fit are
-kept and noted."""
+"""Checks of records against the model with pyshacl: the model's shapes, the class of each linked record,
+and the vocabularies' class hierarchy. A record written on the platform is refused when it does not fit;
+misfitting source values are kept and noted."""
 
 import pyshacl
 from rdflib import RDF, Graph, URIRef
@@ -24,7 +23,7 @@ CONSTRAINTS = {
 
 
 class NotFitting(ValueError):
-    """A record that does not fit the model, with what is wrong with each of its fields."""
+    """A record that does not fit the model, with the problems of each field."""
 
     def __init__(self, problems: dict[str, list[str]]):
         self.problems = problems
@@ -41,17 +40,16 @@ def meaning(component: str | None) -> str:
 
 
 def validate(found: Graph) -> Graph:
-    """The results of the model's checks of some statements, with the class (and name) of the records they
-    link to, so that a link is checked against the class of the record it names."""
+    """The model's check results for some statements, with the class and name of the records they link to,
+    so a link is checked against its record's class."""
     validated = storage.with_names(found)
     _, results, _ = pyshacl.validate(validated, shacl_graph=shapes(), ont_graph=hierarchy())
     return results
 
 
 def notes(found: Graph) -> list[dict]:
-    """What the checks find in the records described in *found*, one note for each record, field and value:
-    the profile's message, when the value breaks a constraint of the profile and of the vocabularies alike.
-    The records they link to, given with their class only, are not reported."""
+    """The checks' notes on the records in *found*, one per record, field and value. Linked records, given
+    with their class only, are not reported."""
     described = set()
     for subject, predicate in found.subject_predicates():
         if predicate != RDF.type:
@@ -74,17 +72,16 @@ def notes(found: Graph) -> list[dict]:
             "component": str(results.value(result, SH.sourceConstraintComponent)),
         }
         key = (note["iri"], note["field"], note["value"])
-        # A value can break the profile's shape and the vocabularies' alike; the profile's message is kept.
+        # The profile's message is kept over a vocabulary's.
         if key not in noted or every.value(results.value(result, SH.sourceShape), SH.message) is not None:
             noted[key] = note
     return list(noted.values())
 
 
 def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]]]:
-    """A record's document as linked data, what is wrong with each of its fields, and what is only
-    recommended. The profile decides for each field: a value that breaks the checks of a field of sh:Warning
-    severity is a recommendation, whichever shape it breaks, and the profile's message says what to do. A
-    field of a part of the record is named by the fields that lead to it (regulatoryQuestion > step > name)."""
+    """A record's document as linked data, its problems by field, and its recommendations. Any value that
+    breaks a field of sh:Warning severity is a recommendation, with the profile's message. A part's field is
+    named by the fields that lead to it (regulatoryQuestion > step > name)."""
     found = documents.statements(new)
     record = URIRef(new["@id"])
     results = validate(found)
@@ -114,7 +111,7 @@ def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]
         found_in = warnings if warning else problems
         if message not in found_in.setdefault(field, []):
             found_in[field].append(message)
-    # Only web addresses are kept, so that a link on a page never runs a script (javascript:) or opens a file.
+    # Only web addresses are taken, so a link never runs a script (javascript:) or opens a file.
     for _, predicate, value in found:
         if isinstance(value, URIRef) and predicate != RDF.type and not str(value).startswith(("https://", "http://")):
             field = documents.term(str(predicate))
@@ -124,9 +121,8 @@ def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]
 
 
 def named(of_class: str, path: str) -> str:
-    """A field of a record or of one of its parts, as the names that the profile gives the fields that lead
-    to it (Regulatory questions › Process flow steps › Title), from its JSON-LD names (regulatoryQuestion >
-    step > name)."""
+    """A field's labels (Regulatory questions › Process flow steps › Title) from its JSON-LD names
+    (regulatoryQuestion > step > name)."""
     names = []
     for term in path.split(" > "):
         found = None
@@ -143,7 +139,7 @@ def named(of_class: str, path: str) -> str:
 
 
 def check(new: dict) -> Graph:
-    """A record's document as linked data; NotFitting tells what is wrong with each field when it does not fit."""
+    """A record's document as linked data; NotFitting is raised with each field's problems."""
     found, problems, _ = checked(new)
     if problems:
         raise NotFitting(problems)

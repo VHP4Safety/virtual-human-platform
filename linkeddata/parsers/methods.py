@@ -1,6 +1,5 @@
-"""Parser of the cloud catalogue's methods (a workaround, see linkeddata/parsers): methods_index.json
-lists the methods, and the detail file of each method (docs/methods/<id>.json) describes it. Values
-are passed on as the catalogue writes them; the checks of the import note those that do not fit."""
+"""Parser of the cloud catalogue's methods (a workaround, see linkeddata/parsers): methods_index.json lists
+them, and docs/methods/<id>.json describes each. Values are passed on as written; misfits are noted by the checks."""
 
 import json
 import re
@@ -10,12 +9,12 @@ from linkeddata.parsers import link, present, publication, slug, term, web_link
 AOPS = "relevant_aop_wiki_adverse_outcome_pathway(s)_to_the_assay_content"
 KEY_EVENTS = "relevant_aop_wiki_key_event(s)_to_the_assay_content"
 ISSUES = "https://github.com/VHP4Safety/cloud/issues/"
-# The codes of AOP-Wiki's key events (KE1825) and pathways (AOP464), and the addresses that they stand for.
+# The address bases of AOP-Wiki key event (KE1825) and pathway (AOP464) codes.
 AOP_WIKI = {"KE": "https://identifiers.org/aop.events/", "AOP": "https://identifiers.org/aop/"}
 
 
 def parts(value) -> list[str]:
-    """The values of a text that lists several, separated by commas."""
+    """The comma-separated values of a text."""
     if not present(value):
         return []
     found = []
@@ -66,7 +65,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 types.append(web_link(detail[given]))
         if types:
             row["types"] = types
-        # A method answers the regulatory question of a case study, at the address of the question's page.
+        # The question is linked at its page's address.
         if present(detail.get("case_study_content")) and present(detail.get("regulatory_question_content")):
             row["question"] = link(f"casestudies/{detail['case_study_content']}/{detail['regulatory_question_content']}")
         if about:

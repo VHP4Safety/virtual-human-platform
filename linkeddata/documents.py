@@ -1,6 +1,5 @@
-"""Records as JSON-LD documents, compacted with the platform's context, so that their fields are named as
-in JSON-LD: https://schema.org/name is "name", and http://purl.org/dc/terms/conformsTo is "dct:conformsTo".
-A page template reads a record with the keys of its own JSON-LD context."""
+"""Records as JSON-LD documents, compacted with the platform's context: https://schema.org/name is "name",
+and http://purl.org/dc/terms/conformsTo is "dct:conformsTo". Page templates use their own contexts."""
 
 import json
 from functools import cache
@@ -18,8 +17,8 @@ TEMPLATES = Path(__file__).parent.parent / "templates"
 
 
 def context(config: dict) -> dict:
-    """The JSON-LD context: schema.org terms without a prefix, other vocabularies with theirs, and the names
-    of the properties that the glossary defines."""
+    """The JSON-LD context: schema.org terms unprefixed, other vocabularies prefixed, and names for the
+    glossary's properties."""
     terms = {"@vocab": config["prefixes"]["schema"]}
     for prefix, namespace in config["prefixes"].items():
         if prefix != "schema":
@@ -53,7 +52,7 @@ def expand(name: str) -> str:
 
 
 def stored_values(found: Graph, iri: str, name: str) -> list[str]:
-    """The values of a field of the record at *iri* in *found*: the addresses of links, and texts."""
+    """The values of a field of the record at *iri* in *found*: link addresses and texts."""
     values = []
     for value in found.objects(URIRef(iri), URIRef(expand(name))):
         values.append(str(value))
@@ -61,7 +60,7 @@ def stored_values(found: Graph, iri: str, name: str) -> list[str]:
 
 
 def values(document: dict, name: str) -> list:
-    """The values of a field of a document: the addresses of links, and texts or numbers."""
+    """The values of a field of a document: link addresses, texts and numbers."""
     given = document.get(name)
     found = []
     for item in given if isinstance(given, list) else [] if given is None else [given]:
@@ -89,8 +88,8 @@ def statements(document: dict) -> Graph:
 
 
 def document(found: Graph, iri: str | None = None) -> dict:
-    """The JSON-LD document of the record at *iri*, with the nodes it holds without an address in it; without
-    *iri*, of all the statements, such as those of a record and the records it links to."""
+    """The JSON-LD document of the record at *iri*, with its nodes without an address; without *iri*, of all
+    the statements."""
     if iri is None:
         expanded = jsonld.from_rdf(found.serialize(format="nt"), {"format": "application/n-quads"})
         return jsonld.compact(expanded, context(settings()))
@@ -102,7 +101,7 @@ def document(found: Graph, iri: str | None = None) -> dict:
 
 
 def document_of(iri: str) -> str | None:
-    """The record at this address in JSON-LD as it is now; None when there is none."""
+    """The current JSON-LD of the record at this address; None when there is none."""
     with database.session() as db:
         record = db.get(Record, iri)
     if record is None or record.removed_at:
@@ -113,13 +112,12 @@ def document_of(iri: str) -> str | None:
 @cache
 def template_context(template: str) -> dict:
     """The JSON-LD context of a page template, in a file next to it (methods/method.context.jsonld for
-    methods/method.html), which names the properties of a record with the keys that the template uses."""
+    methods/method.html), with the keys the template uses."""
     return json.loads((TEMPLATES / f"{template}.context.jsonld").read_text(encoding="utf-8"))
 
 
 def view(record: Record, template: str) -> dict:
-    """The record with the keys of *template*, and the records it links to embedded in it, so that their
-    names can be shown."""
+    """The record with the keys of *template*, with its linked records embedded so their names can be shown."""
     statements = storage.linked_graph(record).serialize(format="nt")
     expanded = jsonld.from_rdf(statements, {"format": "application/n-quads"})
     framed = jsonld.frame(expanded, {"@context": template_context(template), "@id": record.iri, "@embed": "@always"})

@@ -1,7 +1,6 @@
-"""Parser of the SPDX License List (a workaround, see linkeddata/parsers): its licences, each at its address
-in the list (https://spdx.org/licenses/<identifier>), with its name, its identifier as its code, and the
-addresses of its text elsewhere, such as at Creative Commons or the Open Source Initiative, so that a licence
-that a source gives by any of them is found."""
+"""Parser of the SPDX License List (a workaround, see linkeddata/parsers): each licence at
+https://spdx.org/licenses/<identifier>, with its name, its identifier as code, and other addresses of its
+text (such as at Creative Commons or the Open Source Initiative), so a licence given by any of them is found."""
 
 import json
 

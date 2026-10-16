@@ -1,15 +1,14 @@
 """The linked data of the platform.
 
-    python -m linkeddata model                  generate the approved schema of the model and its tables
-    python -m linkeddata check                  check that the generated files, the vocabularies and the
-                                                database are those of the model's release
+    python -m linkeddata model                  write the model's schema and tables
+    python -m linkeddata check                  check the generated files, vocabularies and database against
+                                                the model's release
     python -m linkeddata import                 import every source into the database
-    python -m linkeddata launch                 make the corrections of launch.yaml, when the platform first
-                                                goes live, after its first import
-    python -m linkeddata export                 write the records made on the platform to the records repository
-    python -m linkeddata push                   send the records repository to its remote
+    python -m linkeddata launch                 make the corrections of launch.yaml, once, after the first import
+    python -m linkeddata export                 write the platform's records to the records repository
+    python -m linkeddata push                   push the records repository to its remote
     python -m linkeddata backup                 copy the database to PLATFORM_STATE/backups (the latest 14 are kept)
-    python -m linkeddata token ORCID NAME KIND  create a write token, for example the first one
+    python -m linkeddata token ORCID NAME KIND  create a write token, such as the first one
 """
 
 import argparse
@@ -26,8 +25,8 @@ from linkeddata.model import RELEASE, download_vocabularies, pinned_problems, sc
 def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m linkeddata", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("command", choices=["model", "check", "import", "launch", "export", "push", "backup", "token"])
-    parser.add_argument("arguments", nargs="*", help="token: the ORCID iD, the name, and the kinds it may write")
-    parser.add_argument("--days", type=int, default=tokens.DEFAULT_DAYS, help="how long a new token is valid")
+    parser.add_argument("arguments", nargs="*", help="token: ORCID iD, name and kinds")
+    parser.add_argument("--days", type=int, default=tokens.DEFAULT_DAYS, help="days a new token is valid")
     args = parser.parse_args()
     if args.command == "model":
         problems = download_vocabularies()
@@ -47,7 +46,7 @@ def main() -> None:
             print(problem, file=sys.stderr)
         if problems:
             sys.exit(1)
-        print(f"The vocabularies, the generated files and the database are those of release {RELEASE}.")
+        print(f"Vocabularies, generated files and database match release {RELEASE}.")
     elif args.command == "import":
         problems = import_all()
         for problem in problems:
@@ -68,7 +67,7 @@ def main() -> None:
         print(f"Wrote {database.backup()}")
     else:
         if len(args.arguments) < 3:
-            parser.error("token needs an ORCID iD, a name, and at least one kind")
+            parser.error("token needs an ORCID iD, a name and a kind")
         orcid, name, *kinds = args.arguments
         print(tokens.create(orcid, name, kinds, args.days))
 

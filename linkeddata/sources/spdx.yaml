@@ -1,7 +1,7 @@
 name: spdx
 title: SPDX License List
-# The vocabulary of the model that the source is: the licences of the SPDX License List.
+# The model's pinned SPDX License List.
 vocabulary: spdx-licenses-3.27.0.json
 parser: spdx
-# The licences and their list are registered as the glossary's terms and the glossary are.
+# Licences and their list take the glossary's rules.
 uses: [glossary]

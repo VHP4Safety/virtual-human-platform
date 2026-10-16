@@ -1,8 +1,7 @@
-"""Where records are kept: their statements as rows of the tables of the model's release
-(database/v1/tables.sql). rdfsolve gives the rows of a graph, which pandas writes, and makes the graph
-again from them (rdfsolve.client.sql_tables). Every row names the record it belongs to, its parts
-included (the nodes without an address that it holds, and those at addresses under its own), so a record
-is read and removed by its address."""
+"""Record storage: statements as rows of the release's tables (database/v1/tables.sql), converted both
+ways by rdfsolve (rdfsolve.client.sql_tables) and written by pandas. Each row names its record, parts
+included (nodes without an address, and addresses under the record's), so a record is read and removed by
+its address."""
 
 from functools import cache
 
@@ -19,7 +18,7 @@ from linkeddata.model import MODEL_DIR, settings
 
 @cache
 def profile() -> str:
-    """The application profile, whose prefixes name the tables and their columns."""
+    """The application profile, whose prefixes name the tables and columns."""
     return (MODEL_DIR / "profile.ttl").read_text(encoding="utf-8")
 
 
@@ -29,7 +28,7 @@ def names() -> list[str]:
 
 @cache
 def reading() -> dict:
-    """For each table of the release, the select of the rows of some records."""
+    """For each table of the release, the select of some records' rows."""
     found = {}
     for name, columns in layout(profile()).columns().items():
         of_table = table(name, *[column(name_of_column) for name_of_column in columns])
@@ -38,8 +37,7 @@ def reading() -> dict:
 
 
 def read(records: list[str]) -> Graph:
-    """The statements of these records, made from their rows; only the tables that have rows of them are
-    given to rdfsolve."""
+    """The statements of these records, from their rows; only tables with rows are given to rdfsolve."""
     if not records:
         return Graph()
     found = {}
@@ -53,14 +51,13 @@ def read(records: list[str]) -> Graph:
 
 
 def delete(db, record: str) -> None:
-    """The rows of a record are removed in the session *db*."""
+    """A record's rows are removed in the session *db*."""
     for name in names():
         db.execute(text(f'DELETE FROM "{name}" WHERE record = :record'), {"record": record})
 
 
 def save(db, found: Graph, record: str) -> None:
-    """The statements of a record and of its parts are written in the session *db*, in place of the rows it
-    had; every row names the record."""
+    """A record's statements, its parts' included, replace its rows in the session *db*."""
     delete(db, record)
     for name, frame in tables(found, profile()).items():
         if len(frame):
@@ -69,9 +66,8 @@ def save(db, found: Graph, record: str) -> None:
 
 
 def described(found: Graph, iri: str | BNode) -> Graph:
-    """The statements of the record at *iri* (or of a node without an address) in *found*, with those of
-    its parts at any depth: the nodes without an address that it holds, and those at addresses under its
-    own (casestudies/kidney/Q1 is part of casestudies/kidney)."""
+    """The statements of the record at *iri* (or of a node without an address), with its parts' at any
+    depth: nodes without an address, and addresses under its own (casestudies/kidney/Q1)."""
     own = Graph()
     nodes = [iri if isinstance(iri, BNode) else URIRef(iri)]
     seen = set()
@@ -89,8 +85,7 @@ def described(found: Graph, iri: str | BNode) -> Graph:
 
 
 def rows(found: Graph, iri: str, kind: str, source: str) -> list[dict]:
-    """The rows of a record and of its parts with addresses in the records table, which lists each with its
-    class and name."""
+    """The records table's rows of a record and its addressed parts, each with its class and name."""
     listed = {iri: kind}
     for subject in described(found, iri).subjects():
         if isinstance(subject, URIRef) and str(subject) not in listed and found.value(subject, RDF.type) is not None:
@@ -104,8 +99,7 @@ def rows(found: Graph, iri: str, kind: str, source: str) -> list[dict]:
 
 
 def graph(iris: list[str]) -> Graph:
-    """The records at these addresses that are not removed, as linked data; a part of a record is read from
-    the record that holds it."""
+    """The records at these addresses that are not removed, as linked data; parts are read from their records."""
     with database.session() as db:
         kept = list(db.execute(select(Record.iri, Record.part_of).where(Record.iri.in_(iris), Record.removed_at.is_(None))))
     held = read(sorted({part_of or iri for iri, part_of in kept}))
@@ -118,8 +112,7 @@ def graph(iris: list[str]) -> Graph:
 
 
 def with_names(found: Graph) -> Graph:
-    """Some statements, with the class and name of the records they link to, so that a document of them
-    names what its links point to."""
+    """The statements with the class and name of the records they link to, so the links are named."""
     linked = set()
     for value in found.objects():
         if isinstance(value, URIRef) and (value, None, None) not in found:

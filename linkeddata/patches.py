@@ -1,6 +1,5 @@
-"""Stand-ins for calls that rdfsolve does not have yet. Each has the name and the signature that its
-rdfsolve proposal gives the call, and is called where the platform calls rdfsolve once rdfsolve has it;
-then the stand-in goes, and its caller calls rdfsolve."""
+"""Stand-ins for calls that rdfsolve does not have yet, with the names and signatures of their rdfsolve
+proposals. Each is replaced by its rdfsolve call once that exists."""
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -13,8 +12,8 @@ from rdfsolve.ontology.service import Ontologies
 
 @dataclass
 class Merged:
-    """A record with the statements of another source merged into it: the statements that were added, and
-    the values that the record kept where the other source gives another (subject, property, kept, offered)."""
+    """A record merged with another source's statements: the statements added, and the values kept where
+    the other source gives others (subject, property, kept, offered)."""
 
     graph: Graph
     added: list = field(default_factory=list)
@@ -22,7 +21,7 @@ class Merged:
 
 
 def key(graph: Graph, node) -> str:
-    """A value as merging compares it: a node without an address by the values that it holds."""
+    """A value as merging compares it: a node without an address by the values it holds."""
     if not isinstance(node, BNode):
         return str(node)
     held = []
@@ -33,7 +32,7 @@ def key(graph: Graph, node) -> str:
 
 
 def described(graph: Graph, node: BNode) -> list:
-    """The statements of a node without an address, and of the nodes without an address that it holds."""
+    """The statements of a node without an address, and of such nodes it holds."""
     found = []
     nodes = [node]
     seen = set()
@@ -51,9 +50,9 @@ def described(graph: Graph, node: BNode) -> list:
 
 # rdfsolve proposal P5: rdfsolve.client.sql_tables.merge(current, added, profile) -> Merged
 def merge(current: Graph, added: Graph, profile) -> Merged:
-    """*current* with the statements of *added* about its subjects that have an address. A field that takes
-    one value (sh:maxCount 1 in *profile*) keeps the value it has, and a different value is a conflict; a part
-    that *current* holds with the same values is not added again, so that merging twice adds nothing."""
+    """*current* with the statements of *added* about its subjects with an address. A single-valued field
+    (sh:maxCount 1 in *profile*) keeps its value, and a different one is a conflict; a part already held with
+    the same values is not added again, so a second merge adds nothing."""
     classes = layout(profile).classes
     merged = Merged(Graph())
     merged.graph += current
@@ -84,13 +83,12 @@ def merge(current: Graph, added: Graph, profile) -> Merged:
 
 OBO = "http://purl.obolibrary.org/obo/"
 ENTITY = "http://www.wikidata.org/entity/"
-# The registries of vocabularies, by the name that rdfsolve gives their service.
+# Vocabulary registries, by rdfsolve's service name.
 REGISTRIES = {"ols": "Ontology Lookup Service (EMBL-EBI)", "ontobee": "Ontobee", "wikidata": "Wikidata"}
 
 
 def listed(registry: str, cache: Path) -> list[dict]:
-    """Every vocabulary of a registry: its identifier, title, the namespace of its terms, its description,
-    and the prefix of the codes of its terms."""
+    """Every vocabulary of a registry: identifier, title, term namespace, description and code prefix."""
     if registry == "wikidata":
         return [{"id": "wikidata", "title": "Wikidata", "namespace": ENTITY, "description": "The items of Wikidata.", "prefix": ""}]
     provider = Ontologies(registry, cache=cache)
@@ -129,8 +127,7 @@ def vocabularies(registry: str, text: str, cache: Path) -> list[dict]:
 
 # rdfsolve issue 11: Vocabulary(namespace, service=Service(<registry>)).search(text)
 def terms(registry: str, text: str, namespace: str, cache: Path) -> list[dict]:
-    """The terms of the vocabulary at a namespace that a registry finds by a text in their names: their
-    address, label, definition and code."""
+    """The terms at a namespace that a registry finds by name: address, label, definition and code."""
     found = []
     if registry == "wikidata":
         answer = requests.get("https://www.wikidata.org/w/api.php", timeout=8, headers={"User-Agent": "VHP4Safety platform"},

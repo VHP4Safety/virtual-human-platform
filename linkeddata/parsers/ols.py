@@ -1,7 +1,6 @@
-"""Parser of the answers of the Ontology Lookup Service (a workaround, see linkeddata/parsers): the list of
-its ontologies, and the answer for each term that the records are about, by the term's address. Its rows are
-the terms, each with its label, definition and code as the ontology that defines the term gives them, and
-those ontologies, as vocabularies, with their title, description and the namespace of their terms."""
+"""Parser of Ontology Lookup Service answers (a workaround, see linkeddata/parsers): the ontologies, and
+one answer per term the records are about, by its address. Rows are the terms, with label, definition and
+code from their defining ontology, and those ontologies as vocabularies, with title, description and namespace."""
 
 import json
 import re
@@ -10,8 +9,8 @@ from linkeddata.parsers import link, present
 
 
 def namespace_of(iri: str, ontology: dict) -> str:
-    """The namespace of a term: the base address of its ontology that it starts with, or else its address
-    without its local name."""
+    """A term's namespace: the base address of its ontology that it starts with, or else its address
+    without the local name."""
     for base in ontology.get("baseUris") or []:
         if iri.startswith(base):
             return base

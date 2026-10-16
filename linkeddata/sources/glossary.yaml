@@ -1,13 +1,12 @@
 name: glossary
 title: VHP4Safety glossary
-# The glossary's terms, from its main branch every night; the model keeps the pinned file (vocabulary), from
-# which the profile and the parsers' links to terms are made, and the checks note the terms of the profile
-# that main drops or renames.
+# The glossary's main branch, read nightly; the profile and the parsers use the pinned file (vocabulary).
+# The profile's terms that main drops or renames are noted.
 url: https://raw.githubusercontent.com/VHP4Safety/glossary/main/glossary.owl
 vocabulary: vhp4safety-glossary-34f9389.ttl
 parser: glossary
 
-# How the parsed rows become the model: the arguments of rdfsolve's Rule.between, for each kind of row.
+# The rules of each kind of row: the arguments of rdfsolve's Rule.between.
 rules:
   Term:
     - {predicate: a, value: "https://schema.org/DefinedTerm"}

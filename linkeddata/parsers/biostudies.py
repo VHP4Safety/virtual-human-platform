@@ -1,9 +1,8 @@
-"""Parser of the BioStudies collection VHP4Safety (a workaround, see linkeddata/parsers). The search of the
-collection lists its studies, and the file of each study (api/v1/studies/<accession>) describes it in
-sections of attributes, whose qualifiers (valqual) give the address of a value or its ontology term. Terms
-given by their identifier (NCBITaxon_9606) are linked at their address, and the Ontology Lookup Service
-gives their labels and ontologies (sources/ols.yaml); the authors and organisations of a study are the rows
-of people and organisations it links to."""
+"""Parser of the BioStudies collection VHP4Safety (a workaround, see linkeddata/parsers). The search lists
+the studies; each study's file (api/v1/studies/<accession>) has sections of attributes, whose qualifiers
+(valqual) give a value's address or ontology term. Term identifiers (NCBITaxon_9606) are linked at their
+address, with labels from the Ontology Lookup Service (sources/ols.yaml). Authors and organisations are
+rows of their own."""
 
 import json
 import re
@@ -18,22 +17,22 @@ ONTOLOGIES = {"BAO": "http://www.bioassayontology.org/bao#"}
 
 
 def keys(index: bytes) -> list[str]:
-    """The accessions of the studies that the search lists, which gives one page of them."""
+    """The accessions of the studies on the search's one page."""
     found = json.loads(index)
     if found.get("totalHits", 0) > len(found.get("hits", [])):
-        raise ValueError("the collection has more studies than one page of its search")
+        raise ValueError("more studies than one search page")
     return [hit["accession"] for hit in found["hits"]]
 
 
 def value_of(attribute: dict):
-    """An attribute's value: the address its qualifiers give (its URL, or its ontology term), or its text."""
+    """An attribute's value: the address from its qualifiers (URL or ontology term), or its text."""
     qualifiers = {}
     for qualifier in attribute.get("valqual") or []:
         if present(qualifier.get("value")):
             qualifiers[qualifier.get("name")] = qualifier["value"]
     if "URL" in qualifiers:
         return web_link(qualifiers["URL"])
-    # A term identifier is an ontology's prefix and a code (NCBITaxon_9606, OBI:0001271); others are kept as text.
+    # A term identifier is a prefix and a code (NCBITaxon_9606, OBI:0001271); others are kept as text.
     found = re.fullmatch(r"([A-Za-z]+)[_:](\w+)", qualifiers.get("TermId", ""))
     if found:
         prefix, code = found.groups()
@@ -82,7 +81,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             elif name == "DOI":
                 row["doi"] = link("https://doi.org/" + attribute["value"])
             elif name == "Regulatory Question":
-                # The question's code names it; the address next to it is sometimes that of its case study.
+                # The code names the question; the address next to it is sometimes the case study's.
                 code = attribute["value"]
                 row.setdefault("questions", []).append(link(QUESTIONS[code]) if code in QUESTIONS else value_of(attribute))
             elif name == "Case study":
@@ -96,7 +95,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 row["license"] = licence(stated["@id"] if isinstance(stated, dict) else stated)
             elif name == "Bioassay":
                 found = value_of(attribute)
-                # An assay is a method of the platform when it links to the method's page.
+                # An assay that links to a method's page is that method.
                 if isinstance(found, dict) and found["@id"].startswith(PLATFORM + "methods/"):
                     row.setdefault("methods", []).append(link(found["@id"].removeprefix(PLATFORM)))
                 else:

@@ -1,6 +1,5 @@
 """Parser of the VHP4Safety glossary (a workaround, see linkeddata/parsers): an OWL file whose classes are
-the glossary's terms, each with its label and its definition. Its rows are the glossary, as a vocabulary,
-and its terms at their own addresses."""
+its terms, with labels and definitions. Rows are the glossary, as a vocabulary, and its terms."""
 
 from rdflib import RDF, RDFS, Graph
 from rdflib.namespace import DC, OWL, SKOS

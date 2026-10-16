@@ -1,12 +1,12 @@
 # Version 1 of the platform's data model.
 
-# The name of the platform, as its API gives it.
+# The platform's name in its API.
 title: VHP4Safety Virtual Human Platform
 
-# Every record that has a page on the platform is identified by its page address.
+# A record with a page is identified by the page's address.
 base: https://platform.vhp4safety.nl/
 
-# Vocabularies are pinned to exact versions, and kept in vocabularies/ with the SHA-256 of their content.
+# Vocabularies are pinned to exact versions and kept in vocabularies/, with their SHA-256.
 vocabularies:
   schemaorg-30.1.ttl:
     url: https://schema.org/version/30.1/schemaorg-current-https.ttl
@@ -17,7 +17,7 @@ vocabularies:
   vhp4safety-glossary-34f9389.ttl:
     url: https://raw.githubusercontent.com/VHP4Safety/glossary/34f9389a7f1f0073b67161e1ca6e6a6cf95c7371/glossary.owl
     sha256: 88e9c00b8de4c2c69d9b3120525530dbff9536f0e3cebcef7a41cbec1745feff
-  # Files that are not RDF are read by the parser of their source only.
+  # Files that are not RDF are read by their source's parser only.
   wikidata-technology-readiness-levels.json:
     url: https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q1478071|Q120669280|Q120669304|Q120669316|Q120669327|Q120669340|Q120669350|Q120669358|Q120669370|Q120669377&props=labels|descriptions|aliases&languages=en&format=json
     sha256: 4cbfbf529f38c1951a01d4d708f30650d805c41c23f3e12a349bc3509dd67146
@@ -25,9 +25,9 @@ vocabularies:
     url: https://raw.githubusercontent.com/spdx/license-list-data/v3.27.0/json/licenses.json
     sha256: 157789ba91984aecba5c67b84168dbbd41a235b910a7569aa64bf42a88b24290
 
-# The classes of the records, by the name of their kind; records of every kind are written on the platform.
-# A node of one of these classes is a record of its own, with its own address; a node of another class that
-# the profile has a shape for, such as a section of a page, is part of the record that holds it.
+# The record classes, by kind; records of every kind can be written on the platform. A node of these classes
+# is a record with its own address; a node of another class of the profile, such as a page section, is part
+# of the record that holds it.
 kinds:
   tools: https://schema.org/SoftwareApplication
   methods: https://bioschemas.org/draft_terms/LabProtocol
@@ -46,7 +46,7 @@ prefixes:
   bioschemas_draft: https://bioschemas.org/draft_terms/
   dct: http://purl.org/dc/terms/
 
-# Names in the JSON-LD documents for the properties that the glossary defines.
+# JSON-LD names of the glossary's properties.
 terms:
   processFlowStep: https://vhp4safety.github.io/glossary#VHP0000152
   regulatoryQuestion: https://vhp4safety.github.io/glossary#VHP0000151

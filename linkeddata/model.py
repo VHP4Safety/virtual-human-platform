@@ -12,11 +12,10 @@ from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SH
 from rdfsolve.client.sql_tables import layout
 from rdfsolve.schema_models import MinedSchema
 
-# The release of the model that the platform serves: its model is in model/<release>, and its tables in
-# database/<release>.
+# The served release: its model is in model/<release>, its tables in database/<release>.
 RELEASE = "v1"
 MODEL_DIR = Path(__file__).parent / "model" / RELEASE
-# The tables of the release, which `python -m linkeddata model` writes from its profile.
+# The release's tables, written from its profile by `python -m linkeddata model`.
 TABLES = Path(__file__).parent.parent / "database" / RELEASE / "tables.sql"
 
 
@@ -26,25 +25,25 @@ def settings() -> dict:
 
 
 def vocabularies(config: dict) -> list[Path]:
-    """The vocabulary files in RDF, kept in the model folder; only `python -m linkeddata model` downloads
-    them. A pinned file of another format, such as a list of licences in JSON, is read by its source only."""
+    """The RDF vocabulary files of the model folder; only `python -m linkeddata model` downloads them. A pinned
+    file of another format, such as a JSON licence list, is read by its source only."""
     files = []
     for name in config["vocabularies"]:
         path = MODEL_DIR / "vocabularies" / name
         if not path.exists():
-            raise FileNotFoundError(f"The vocabulary {path} is missing: run python -m linkeddata model.")
+            raise FileNotFoundError(f"{path} is missing: run python -m linkeddata model.")
         if path.suffix in (".ttl", ".jsonld"):
             files.append(path)
     return files
 
 
 def pinned_problems() -> list[str]:
-    """The vocabulary files that are missing, or that do not match their SHA-256 in model.yaml."""
+    """The vocabulary files that are missing or do not match their SHA-256 in model.yaml."""
     problems = []
     for name, pinned in settings()["vocabularies"].items():
         path = MODEL_DIR / "vocabularies" / name
         if not path.exists():
-            problems.append(f"The vocabulary {path} is missing: run python -m linkeddata model.")
+            problems.append(f"{path} is missing: run python -m linkeddata model.")
             continue
         found = hashlib.sha256(path.read_bytes()).hexdigest()
         if found != pinned.get("sha256"):
@@ -53,8 +52,7 @@ def pinned_problems() -> list[str]:
 
 
 def download_vocabularies() -> list[str]:
-    """The missing vocabulary files are downloaded from their pinned addresses; what does not match its
-    SHA-256 in model.yaml is given back."""
+    """Missing vocabulary files are downloaded from their pinned addresses; mismatches are given back."""
     for name, pinned in settings()["vocabularies"].items():
         path = MODEL_DIR / "vocabularies" / name
         if not path.exists():
@@ -66,8 +64,7 @@ def download_vocabularies() -> list[str]:
 
 
 def approved_schema() -> dict:
-    """The approved schema, as the vocabularies and the profile give it, for the classes that the profile has
-    shapes for."""
+    """The approved schema of the profile's classes, from the vocabularies and the profile."""
     config = settings()
     classes = sorted({str(kind) for kind in profile().objects(None, SH.targetClass)})
     return MinedSchema.from_vocabulary(vocabularies(config), classes, profile=MODEL_DIR / "profile.ttl").to_dict()
@@ -80,9 +77,9 @@ def write_schema() -> Path:
 
 
 def schema_problems() -> list[str]:
-    """Whether schema.json is the approved schema that the vocabularies and the profile give."""
+    """Whether schema.json is the approved schema."""
     if (MODEL_DIR / "schema.json").read_text(encoding="utf-8") != json.dumps(approved_schema(), indent=1) + "\n":
-        return [f"{MODEL_DIR / 'schema.json'} is not what the vocabularies and profile.ttl give: run python -m linkeddata model, review the change and commit it."]
+        return [f"{MODEL_DIR / 'schema.json'} is out of date: run python -m linkeddata model, review and commit it."]
     return []
 
 
@@ -99,20 +96,19 @@ def write_tables() -> Path:
 def tables_problems() -> list[str]:
     """Whether the release's SQL is what the profile gives."""
     if not TABLES.exists() or TABLES.read_text(encoding="utf-8") != tables_sql():
-        return [f"{TABLES} is not what profile.ttl gives: run python -m linkeddata model, review the change and commit it."]
+        return [f"{TABLES} is out of date: run python -m linkeddata model, review and commit it."]
     return []
 
 
 @cache
 def profile() -> Graph:
-    """The application profile: required, fixed and single values, and the guidance of the editor's form."""
+    """The application profile: required, fixed and single values, and the form's guidance."""
     return Graph().parse(MODEL_DIR / "profile.ttl", format="turtle")
 
 
 @cache
 def shapes() -> Graph:
-    """The checks of the model: the approved schema's value types of the fields the profile has, with the
-    profile's rules."""
+    """The model's checks: the approved schema's value types of the profile's fields, with its rules."""
     schema = MinedSchema.from_json(MODEL_DIR / "schema.json")
     return Graph().parse(data=schema.to_shacl(properties="profile"), format="turtle")
 
@@ -124,8 +120,7 @@ def vocabulary(path: Path) -> Graph:
 
 @cache
 def hierarchy() -> Graph:
-    """The class hierarchy of the vocabularies (rdfs:subClassOf), which the checks need so that a link to a
-    record of a subclass fits a field that takes the class."""
+    """The vocabularies' class hierarchy (rdfs:subClassOf), so a link to a subclass's record fits."""
     graph = Graph()
     for path in vocabularies(settings()):
         for statement in vocabulary(path).triples((None, RDFS.subClassOf, None)):
@@ -134,8 +129,8 @@ def hierarchy() -> Graph:
 
 
 def terms(iris: list[str]) -> dict[str, dict]:
-    """The terms of the vocabularies at these addresses, such as the steps of the glossary, with their label,
-    their description, and the title of their vocabulary."""
+    """The vocabulary terms at these addresses, such as the glossary's steps, with label, description and
+    vocabulary title."""
     found = {}
     if not iris:
         return found

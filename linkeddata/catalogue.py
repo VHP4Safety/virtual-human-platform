@@ -1,9 +1,7 @@
-"""The records of a kind in SQL, for the API's catalogue of each kind: a page of the records that have some
-values of their fields and whose name has a text, by name, and how many of them have each value of the
-fields that the catalogue is browsed by (facets). The queries are made from rdfsolve's layout of the
-application profile, in which every field of a class has its place: a column of the class's table for a
-field that takes one value, a table of its own for a field that takes several, and the statements table for
-the rest, which also holds the values of a field that takes one value when a node has several of them."""
+"""The records of a kind in SQL, for the API's catalogues: a page of records filtered by field values and by
+name, and the count of each value of the browsable fields (facets). The queries follow rdfsolve's layout of
+the profile: a single-valued field is a column of its class's table, a multi-valued field has its own table,
+and the rest, with extra values of single-valued fields, is in the statements table."""
 
 from functools import cache
 
@@ -19,7 +17,7 @@ RECORDS = Record.__table__
 
 @cache
 def tables() -> dict:
-    """The tables of the release by name, with their columns, as rdfsolve's layout of the profile gives them."""
+    """The release's tables by name, with their columns, from rdfsolve's layout of the profile."""
     found = {}
     for name, columns in layout(storage.profile()).columns().items():
         found[name] = table(name, *[column(name_of_column) for name_of_column in columns])
@@ -27,9 +25,8 @@ def tables() -> dict:
 
 
 def sources(of_class: str, path: str) -> list[dict]:
-    """Where the values of a field of a class are: the field's own table, or its column of the class's table
-    and the statements table; each with its value column, the column of its term (an IRI's is "@id"), and
-    the condition its rows meet."""
+    """Where a field's values are: its own table, or its column of the class's table and the statements
+    table; each with its value column, term column (an IRI's is "@id") and row condition."""
     of_layout = layout(storage.profile()).classes[of_class]
     rest = tables()[STATEMENTS]
     in_statements = {"table": rest, "value": rest.c.value, "term": rest.c.term, "where": rest.c.property == path}
@@ -57,8 +54,8 @@ def holders(of_class: str, path: str, wanted: list[str]):
 
 
 def chosen(of_class: str, filters: dict, search: str = ""):
-    """The select of the records of a class that are not removed, moved or parts of others, whose name or
-    address has *search*, and that have one of the values of each field of *filters* (property: values)."""
+    """The select of a class's records that are not removed, moved or parts, whose name or address has
+    *search*, and that have a value of each field of *filters* (property: values)."""
     statement = select(RECORDS.c.iri, RECORDS.c.name).where(
         RECORDS.c.type == of_class, RECORDS.c.removed_at.is_(None), RECORDS.c.moved_to.is_(None), RECORDS.c.part_of.is_(None))
     if search:
@@ -69,7 +66,7 @@ def chosen(of_class: str, filters: dict, search: str = ""):
 
 
 def page(of_class: str, filters: dict, search: str, first: int, size: int) -> tuple[int, list[str]]:
-    """How many records *filters* and *search* find, and the addresses of a page of them, by name."""
+    """The count of records that *filters* and *search* find, and the addresses of a page of them, by name."""
     statement = chosen(of_class, filters, search).add_columns(func.count().over().label("total"))
     statement = statement.order_by(func.lower(RECORDS.c.name).nulls_last(), RECORDS.c.iri).limit(size).offset(first)
     found = []
@@ -85,10 +82,9 @@ def page(of_class: str, filters: dict, search: str, first: int, size: int) -> tu
 
 
 def facets(of_class: str, paths: list[str], filters: dict, search: str = "") -> dict[str, dict[tuple[str, bool], int]]:
-    """For each field of *paths*, how many of the records found have each of its values, by the value and
-    whether it is an IRI. A field's own filter is left out of its counts, so that they say how many records
-    each other value of it would find."""
-    # The records are found once for every field that reads them (MATERIALIZED), not once for each.
+    """For each field of *paths*, the count of found records per value, by the value and whether it is an
+    IRI. A field's own filter is left out of its counts, so each count is what that value would find."""
+    # The records are found once (MATERIALIZED), not once per field.
     every = chosen(of_class, filters, search).with_only_columns(RECORDS.c.iri).cte("chosen").prefix_with("MATERIALIZED")
     branches = []
     for number, path in enumerate(paths):
@@ -100,7 +96,7 @@ def facets(of_class: str, paths: list[str], filters: dict, search: str = "") -> 
                     others[other] = wanted
             records = chosen(of_class, others, search).with_only_columns(RECORDS.c.iri).cte(f"chosen_but_{number}").prefix_with("MATERIALIZED")
         for source in sources(of_class, path):
-            # A node has a value once in each place (the keys of the tables), so its rows are counted.
+            # A node has a value once per place (the tables' keys), so its rows are counted.
             iri = (source["term"] == "@id").label("iri")
             found = (select(literal(path).label("path"), source["value"].label("value"), iri, func.count().label("records"))
                      .where(source["table"].c.iri.in_(select(records.c.iri))).group_by(source["value"], iri))

@@ -1,7 +1,6 @@
 name: doi
 title: DOI registration agencies (Crossref, DataCite)
-# The publications, each by its DOI (the address in its sameAs that starts with https://doi.org/), with the
-# citation that doi.org gives for it, as Crossref or DataCite registered it.
+# Publications are enriched with doi.org's citation of their DOI (the sameAs under https://doi.org/).
 enriches: publications
 identifier: https://doi.org/
 keys: ^10\.\d{4,9}/\S+$
@@ -9,7 +8,7 @@ answer: https://doi.org/{key}
 accept: application/vnd.citationstyles.csl+json
 parser: doi
 
-# How the parsed rows become the model: the arguments of rdfsolve's Rule.between, for each kind of row.
+# The rules of each kind of row: the arguments of rdfsolve's Rule.between.
 rules:
   Publication:
     - {predicate: a, value: "https://schema.org/ScholarlyArticle"}

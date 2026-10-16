@@ -3,5 +3,5 @@ title: Zenodo community vhp4safety
 url: https://zenodo.org/api/records?communities=vhp4safety&type=dataset&size=25&sort=newest
 parser: zenodo
 
-# The parsed rows are those of the BioStudies collection, and become the model as its rules say.
+# The rows are shaped as BioStudies' and take its rules.
 uses: [biostudies]

@@ -1,7 +1,6 @@
-"""Parser of the Zenodo community vhp4safety (a workaround, see linkeddata/parsers): the search of the
-community's datasets gives the metadata of each record. A creator written "Last, First" is written
-"First Last", as the other sources write people; the codes of DOIs, ORCID iDs and licenses are put at their
-addresses, and so are the creators' affiliations, as organisations."""
+"""Parser of the Zenodo community vhp4safety (a workaround, see linkeddata/parsers): the dataset search
+gives each record's metadata. "Last, First" creators are written "First Last", as in other sources; DOIs,
+ORCID iDs, licenses and affiliations (as organisations) are linked at their addresses."""
 
 import json
 
@@ -14,7 +13,7 @@ LICENSES = "https://zenodo.org/api/vocabularies/licenses/"
 def parse(content: bytes) -> list[dict]:
     found = json.loads(content)["hits"]
     if found["total"] > len(found["hits"]):
-        raise ValueError("the community has more datasets than one page of its search")
+        raise ValueError("more datasets than one search page")
     rows = []
     others = {}
     for hit in found["hits"]:
