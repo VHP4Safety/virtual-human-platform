@@ -4,8 +4,9 @@
 (function () {
   const editor = JSON.parse(document.getElementById("editor").textContent);
   const message = document.getElementById("message");
-  const path = editor.graph.slice(editor.base.length);
-  const graph = "/api/" + path;
+  // A record elsewhere, such as a term of an ontology, is at its whole address under /api/.
+  const path = editor.graph.startsWith(editor.base) ? editor.graph.slice(editor.base.length) : editor.graph;
+  const graph = "/api/" + encodeURI(path).replace(/#/g, "%23");
   const form = document.querySelector("shacl-form");
   const showRdf = document.getElementById("show-rdf");
   const SCHEMA = "https://schema.org/";

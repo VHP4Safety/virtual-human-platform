@@ -1,5 +1,7 @@
 """The records, as the pages and the editor read them."""
 
+import re
+
 from rdflib import RDFS, URIRef
 from sqlalchemy import func, select
 
@@ -9,6 +11,12 @@ from linkeddata.model import hierarchy, settings, terms
 
 
 def address(path: str) -> str:
+    """The address of a record from the path of its page: a path under the platform's base address, or the
+    whole address of a record elsewhere, such as a term of an ontology, whose two slashes a path may give as
+    one (https:/...)."""
+    whole = re.fullmatch(r"(https?):/+(.*)", path)
+    if whole:
+        return whole.group(1) + "://" + whole.group(2)
     return settings()["base"] + path.strip("/")
 
 
