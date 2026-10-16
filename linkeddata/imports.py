@@ -1,7 +1,8 @@
 """The imports: each source is fetched and cleaned by its parser, converted to the model with rdfsolve,
 and stored as records in place of those the source gave before. Records written on the platform are left
-as they are. Once every source is stored, the records of each are checked against the model, with the
-records they link to as the database holds them. `python -m linkeddata import` runs every import, for
+as they are. The sources of terms (terms) come last, as they ask for the terms that the records of the
+other sources are about. Once every source is stored, the records of each are checked against the model,
+with the records they link to as the database holds them. `python -m linkeddata import` runs every import, for
 example every night."""
 
 import hashlib
@@ -9,6 +10,7 @@ import importlib
 import json
 import re
 from pathlib import Path
+from urllib.parse import quote
 
 import pyoxigraph as ox
 import requests
@@ -17,12 +19,13 @@ from rdfsolve import SchemaMiner
 from rdfsolve.api import Client
 from rdfsolve.conversion import Profile, Rule, write_query
 from rdflib import RDF, Graph, URIRef
+from rdflib.namespace import SDO, SH
 from sqlalchemy import delete, func, insert, select
 
 import database
 from database.tables import PLATFORM, Note, Record, Source, now
 from linkeddata import checks, storage
-from linkeddata.model import MODEL_DIR, RELEASE, settings
+from linkeddata.model import MODEL_DIR, RELEASE, profile, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
 TARGET = f"VHP4Safety model {RELEASE}"
@@ -120,6 +123,34 @@ def files_of(spec: dict) -> dict[str, str]:
 ENTRY = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
+def linked_terms() -> list[str]:
+    """The addresses that the records give in the fields of terms (sh:class schema:DefinedTerm, or one of
+    sh:or), at any depth of their parts, but for the terms that the vocabularies of the model give."""
+    graph = profile()
+    paths = set()
+    for field in graph.objects(None, SH.property):
+        classes = set(graph.objects(field, SH["class"]))
+        for alternatives in graph.objects(field, SH["or"]):
+            for alternative in graph.items(alternatives):
+                classes.update(graph.objects(alternative, SH["class"]))
+        if SDO.DefinedTerm in classes:
+            paths.add(graph.value(field, SH.path))
+    vocabularies = []
+    for spec in specs():
+        if "vocabulary" in spec:
+            vocabularies.append(spec["name"])
+    with database.session() as db:
+        iris = list(db.scalars(select(Record.iri).where(Record.part_of.is_(None), Record.removed_at.is_(None))))
+        given = set(db.scalars(select(Record.iri).where(Record.source.in_(vocabularies))))
+    found = storage.graph(iris)
+    terms = set()
+    for path in paths:
+        for value in found.objects(None, path):
+            if isinstance(value, URIRef) and str(value) not in given:
+                terms.add(str(value))
+    return sorted(terms)
+
+
 def download(spec: dict, parser) -> dict[str, bytes]:
     """The files of a source by name. A source with entries also has, by its key, the file of each entry
     of its index: the keys of the index (a JSON object), or those its parser reads from it (keys)."""
@@ -137,6 +168,13 @@ def download(spec: dict, parser) -> dict[str, bytes]:
                 contents[key] = fetch(spec["entries"].format(key=key))
             except requests.RequestException as problem:
                 print(f"{spec['name']}: {key} not fetched ({problem})")
+    # A source of terms also has the answer for each term that the records are about, by its address.
+    if "terms" in spec:
+        for iri in linked_terms():
+            try:
+                contents[iri] = fetch(spec["terms"].format(iri=quote(iri, safe="")))
+            except requests.RequestException as problem:
+                print(f"{spec['name']}: {iri} not fetched ({problem})")
     return contents
 
 
@@ -145,7 +183,7 @@ def import_source(spec: dict) -> None:
     parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
     contents = download(spec, parser)
     # A source of one file gives its parser the file; a source of several gives them by name.
-    parsed = parser.parse(contents if "files" in spec or "entries" in spec else contents[spec["name"]])
+    parsed = parser.parse(contents if "files" in spec or "entries" in spec or "terms" in spec else contents[spec["name"]])
     data, queries = convert(spec, parsed, config["base"])
     found = records_of(data, list(config["kinds"].values()), spec["name"])
     checksum = hashlib.sha256()
@@ -212,7 +250,11 @@ def import_all() -> list[str]:
     are checked. The problems of the sources that could not be imported are given back; their records are
     kept."""
     problems = []
-    every = specs()
+    every = []
+    for terms in (False, True):
+        for spec in specs():
+            if ("terms" in spec) == terms:
+                every.append(spec)
     for spec in every:
         try:
             import_source(spec)

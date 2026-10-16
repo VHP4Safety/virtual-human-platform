@@ -1,9 +1,9 @@
 """Parser of the BioStudies collection VHP4Safety (a workaround, see linkeddata/parsers). The search of the
 collection lists its studies, and the file of each study (api/v1/studies/<accession>) describes it in
 sections of attributes, whose qualifiers (valqual) give the address of a value or its ontology term. Terms
-given by their identifier (NCBITaxon_9606) are put at their address, and are rows of terms, with the text
-of the attribute as their label and their ontology as their vocabulary; the authors and organisations of a
-study are the rows of people and organisations it links to."""
+given by their identifier (NCBITaxon_9606) are linked at their address, and the Ontology Lookup Service
+gives their labels and ontologies (sources/ols.yaml); the authors and organisations of a study are the rows
+of people and organisations it links to."""
 
 import json
 import re
@@ -25,9 +25,8 @@ def keys(index: bytes) -> list[str]:
     return [hit["accession"] for hit in found["hits"]]
 
 
-def value_of(attribute: dict, others: dict):
-    """An attribute's value: the address its qualifiers give (its URL, or its ontology term, which is noted in
-    *others* with its label and its ontology), or its text."""
+def value_of(attribute: dict):
+    """An attribute's value: the address its qualifiers give (its URL, or its ontology term), or its text."""
     qualifiers = {}
     for qualifier in attribute.get("valqual") or []:
         if present(qualifier.get("value")):
@@ -38,11 +37,7 @@ def value_of(attribute: dict, others: dict):
     found = re.fullmatch(r"([A-Za-z]+)[_:](\w+)", qualifiers.get("TermId", ""))
     if found:
         prefix, code = found.groups()
-        namespace = ONTOLOGIES.get(prefix, "http://purl.obolibrary.org/obo/") + prefix + "_"
-        vocabulary = "vocabularies/" + slug(prefix)
-        others.setdefault(vocabulary, {"@id": vocabulary, "@type": "Vocabulary", "name": qualifiers.get("Ontology") or prefix, "namespace": link(namespace)})
-        others.setdefault(namespace + code, {"@id": namespace + code, "@type": "Term", "label": attribute["value"], "code": prefix + "_" + code, "vocabulary": link(vocabulary)})
-        return link(namespace + code)
+        return link(ONTOLOGIES.get(prefix, "http://purl.obolibrary.org/obo/") + prefix + "_" + code)
     return attribute["value"]
 
 
@@ -89,17 +84,17 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             elif name == "Regulatory Question":
                 # The question's code names it; the address next to it is sometimes that of its case study.
                 code = attribute["value"]
-                row.setdefault("questions", []).append(link(QUESTIONS[code]) if code in QUESTIONS else value_of(attribute, others))
+                row.setdefault("questions", []).append(link(QUESTIONS[code]) if code in QUESTIONS else value_of(attribute))
             elif name == "Case study":
-                row.setdefault("cases", []).append(value_of(attribute, others))
+                row.setdefault("cases", []).append(value_of(attribute))
             elif name == "Process Flow Step":
-                row.setdefault("steps", []).append(value_of(attribute, others))
+                row.setdefault("steps", []).append(value_of(attribute))
             elif name == "Organism":
-                row.setdefault("topics", []).append(value_of(attribute, others))
+                row.setdefault("topics", []).append(value_of(attribute))
             elif name == "License":
-                row["license"] = value_of(attribute, others)
+                row["license"] = value_of(attribute)
             elif name == "Bioassay":
-                found = value_of(attribute, others)
+                found = value_of(attribute)
                 # An assay is a method of the platform when it links to the method's page.
                 if isinstance(found, dict) and found["@id"].startswith(PLATFORM + "methods/"):
                     row.setdefault("methods", []).append(link(found["@id"].removeprefix(PLATFORM)))

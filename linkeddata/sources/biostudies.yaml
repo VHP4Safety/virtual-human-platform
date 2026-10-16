@@ -4,8 +4,6 @@ url: https://www.ebi.ac.uk/biostudies/api/v1/VHP4Safety/search?pageSize=100
 # The file of each study, by its accession in the search.
 entries: https://www.ebi.ac.uk/biostudies/api/v1/studies/{key}
 parser: biostudies
-# The terms of ontologies that the studies name are registered as the glossary's are.
-uses: [glossary]
 
 # How the parsed rows become the model: the arguments of rdfsolve's Rule.between, for each kind of row.
 rules:

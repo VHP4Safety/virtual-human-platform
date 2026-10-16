@@ -1,0 +1,10 @@
+name: ols
+title: Ontology Lookup Service (EMBL-EBI)
+# The list of the ontologies, with the title and the namespace of each.
+url: https://www.ebi.ac.uk/ols4/api/ontologies?size=1000
+# Each term that the records of the other sources are about, by its address; the terms of the vocabularies of
+# the model are read from their own files.
+terms: https://www.ebi.ac.uk/ols4/api/terms?iri={iri}
+parser: ols
+# The terms and the ontologies are registered as the glossary's terms and the glossary are.
+uses: [glossary]

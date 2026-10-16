@@ -16,3 +16,4 @@ rules:
     - {predicate: a, value: "https://schema.org/DefinedTermSet"}
     - {predicate: "https://schema.org/name", object: name}
     - {predicate: "https://schema.org/url", object: namespace}
+    - {predicate: "https://schema.org/description", object: description}
