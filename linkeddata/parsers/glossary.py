@@ -3,7 +3,7 @@ the glossary's terms, each with its label and its definition. Its rows are the g
 and its terms at their own addresses."""
 
 from rdflib import RDF, RDFS, Graph
-from rdflib.namespace import DC, OWL
+from rdflib.namespace import DC, OWL, SKOS
 
 from linkeddata.parsers import link, present
 
@@ -24,5 +24,12 @@ def parse(content: bytes) -> list[dict]:
         definition = graph.value(term, DC.description)
         if present(definition):
             row["definition"] = str(definition)
+        # A short label, such as Exposure for Exposure (Process Flow Step), is another name of the term.
+        alternates = []
+        for alternate in sorted(graph.objects(term, SKOS.altLabel)):
+            if present(alternate):
+                alternates.append(str(alternate))
+        if alternates:
+            row["alternate"] = alternates
         rows.append(row)
     return rows
