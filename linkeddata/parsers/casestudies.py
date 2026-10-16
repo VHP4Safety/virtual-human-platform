@@ -1,9 +1,9 @@
 """Parser of ui-casestudy-config (a workaround, see linkeddata/parsers). Its RO-Crate describes each case
 study, and the content file of a case study holds the pages of its interface, one level after the other:
-the case study with its regulatory questions (step1Contents), the process flow steps of each question
-(step2Contents), and the steps and their parts below (step3Contents and on). Each page has a title, a
-summary, a text in sections, and a list of items: the pages one level down, the tools it uses, and the data
-it uses."""
+the case study with its regulatory questions (step1Contents), the page of each question with its process
+flow steps (step2Contents), and the steps and their parts below (step3Contents and on). Each page has a
+title, a summary, a text in sections, and a list of items: the pages one level down, at addresses under its
+own, the tools it uses, and the data it uses."""
 
 import json
 
@@ -32,25 +32,37 @@ def item_link(item: dict) -> dict | None:
     return link(f"{route}/{item['id']}")
 
 
-def pages(levels: list[dict], depth: int, path: list[str], item: dict, address: str, parent: str) -> list[dict]:
-    """The page that an item leads to, at *path* of the content's levels, and the pages below it."""
+def at(levels: list[dict], depth: int, path: list[str]) -> dict:
+    """The node of a page at *path* of the content's levels."""
     node = levels[depth] if depth < len(levels) else {}
     for key in path:
         node = node.get(key, {}) if isinstance(node, dict) else {}
-    node = node if isinstance(node, dict) else {}
-    row = {"@id": address, "@type": "Workflow", "parent": link(parent), "title": node.get("navTitle") or item.get("label")}
-    for field, given in (("summary", node.get("navDescription")), ("status", item.get("state"))):
-        if present(given):
-            row[field] = given
-    text(row, node.get("content"))
+    return node if isinstance(node, dict) else {}
+
+
+def step(levels: list[dict], depth: int, path: list[str], item: dict, address: str, position: int) -> list[dict]:
+    """The page of a step that an item leads to, at *path* of the content's levels, and the pages below it."""
+    node = at(levels, depth, path)
+    row = {"@id": address, "@type": "Workflow", "title": node.get("navTitle") or item.get("label"), "position": position}
+    if present(item.get("state")):
+        row["status"] = item["state"]
     if present(item.get("glossaryUrl")):
         row["about"] = link(item["glossaryUrl"])
-    rows = [row]
+    return [row] + fill(row, node, levels, depth, path)
+
+
+def fill(row: dict, node: dict, levels: list[dict], depth: int, path: list[str]) -> list[dict]:
+    """The summary, text and items of a page from its node of the content: the pages one level down, at
+    addresses under its own, and the tools and data it lists. Gives the rows of the pages below."""
+    if present(node.get("navDescription")):
+        row["summary"] = node["navDescription"]
+    text(row, node.get("content"))
+    rows = []
     for entry in (node.get("steps") or []) + (node.get("tools") or []):
         if entry.get("type") in PAGES and present(entry.get("value")):
-            child = f"{address}/{slug(entry['value'])}"
+            child = f"{row['@id']}/{slug(entry['value'])}"
             row.setdefault("steps", []).append(link(child))
-            rows.extend(pages(levels, depth + 1, path + [entry["value"]], entry, child, address))
+            rows.extend(step(levels, depth + 1, path + [entry["value"]], entry, child, len(row["steps"])))
             continue
         used = {"@type": "Data" if entry.get("type") == "data" else "Tool", "label": entry.get("label")}
         if present(entry.get("description")):
@@ -95,12 +107,14 @@ def parse(files: dict[str, bytes]) -> list[dict]:
             if question.get("type") != "regulatory-question" or not present(question.get("value")):
                 continue
             here = f"{address}/{question['value']}"
-            found = {"@id": here, "@type": "Question", "label": question.get("label"), "case": link(address)}
+            found = {"@id": here, "@type": "Question", "label": question.get("label")}
             if present(question.get("description")):
                 found["text"] = question["description"]
-            if levels and question["value"] in levels[0]:
-                found["workflow"] = link(f"{here}/workflow")
-                rows.extend(pages(levels, 0, [question["value"]], {}, f"{here}/workflow", here))
+            node = at(levels, 0, [question["value"]])
+            if present(node.get("navTitle")):
+                found["headline"] = node["navTitle"]
+            row.setdefault("questions", []).append(link(here))
             rows.append(found)
+            rows.extend(fill(found, node, levels, 0, [question["value"]]))
         rows.append(row)
     return rows

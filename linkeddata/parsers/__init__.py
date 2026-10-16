@@ -34,6 +34,15 @@ def web_link(value: str):
     return text
 
 
+def publication(value) -> dict | None:
+    """The row of the publication that a DOI names (10.1234/x, or https://doi.org/10.1234/x), at
+    publications/<DOI>, with the DOI's address; None for any other text."""
+    doi = str(value).strip().removeprefix("https://doi.org/")
+    if not doi.startswith("10."):
+        return None
+    return {"@id": "publications/" + slug(doi), "@type": "Publication", "doi": link("https://doi.org/" + doi)}
+
+
 def slug(text: str) -> str:
     """An identifier made from a name, with accents left out: "Café" is "cafe"."""
     plain = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()

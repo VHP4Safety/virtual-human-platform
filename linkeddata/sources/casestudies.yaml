@@ -19,12 +19,17 @@ rules:
     - {predicate: "https://schema.org/abstract", object: intro}
     - {predicate: "https://schema.org/text", object: content}
     - {predicate: "https://schema.org/hasPart", object: sections}
+    - {predicate: "https://vhp4safety.github.io/glossary#VHP0000151", object: questions}
   Question:
     - {predicate: a, value: "https://schema.org/Question"}
     - {predicate: "https://schema.org/name", object: label}
     - {predicate: "https://schema.org/text", object: text}
-    - {predicate: "https://schema.org/isPartOf", object: case}
-    - {predicate: "https://schema.org/hasPart", object: workflow}
+    - {predicate: "https://schema.org/headline", object: headline}
+    - {predicate: "https://schema.org/description", object: summary}
+    - {predicate: "https://schema.org/hasPart", object: sections}
+    - {predicate: "https://schema.org/step", object: steps}
+    - {predicate: "https://schema.org/tool", object: tools}
+    - {predicate: "https://schema.org/supply", object: supplies}
   Workflow:
     - {predicate: a, value: "https://schema.org/HowToSection"}
     - {predicate: "https://schema.org/name", object: title}
@@ -32,7 +37,7 @@ rules:
     - {predicate: "https://schema.org/text", object: content}
     - {predicate: "https://schema.org/about", object: about}
     - {predicate: "https://schema.org/creativeWorkStatus", object: status}
-    - {predicate: "https://schema.org/isPartOf", object: parent}
+    - {predicate: "https://schema.org/position", object: position}
     - {predicate: "https://schema.org/step", object: steps}
     - {predicate: "https://schema.org/tool", object: tools}
     - {predicate: "https://schema.org/supply", object: supplies}

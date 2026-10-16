@@ -14,8 +14,9 @@ rules:
     - {predicate: "https://schema.org/url", object: main_url}
     - {predicate: "https://schema.org/installUrl", object: instance_url}
     - {predicate: "https://schema.org/image", object: logo}
-    - {predicate: "https://schema.org/about", object: stage}
-    - {predicate: "https://schema.org/about", object: questions}
+    - {predicate: "https://vhp4safety.github.io/glossary#VHP0000152", object: step}
+    - {predicate: "https://vhp4safety.github.io/glossary#VHP0000151", object: questions}
+    - {predicate: "https://schema.org/about", object: topic}
     - {predicate: "https://schema.org/provider", object: provider}
     - {predicate: "https://schema.org/creator", object: creator}
     - {predicate: "https://schema.org/maintainer", object: maintainer}
@@ -43,8 +44,11 @@ rules:
   Page:
     - {predicate: a, value: "https://schema.org/WebPage"}
     - {predicate: "https://schema.org/name", object: title}
+    - {predicate: "https://schema.org/url", object: url}
   Video:
     - {predicate: a, value: "https://schema.org/VideoObject"}
     - {predicate: "https://schema.org/name", object: title}
+    - {predicate: "https://schema.org/url", object: url}
   Publication:
     - {predicate: a, value: "https://schema.org/ScholarlyArticle"}
+    - {predicate: "https://schema.org/sameAs", object: doi}

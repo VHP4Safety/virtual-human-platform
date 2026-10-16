@@ -22,7 +22,9 @@ class Base(DeclarativeBase):
 
 class Record(Base):
     """A thing the platform knows by its address, such as a tool, a method or the organisations and
-    people they link to, with its class and its name for lists and links."""
+    people they link to, with its class and its name for lists and links. The parts of a record that have
+    addresses of their own, such as the questions of a case study, are listed too, with the record that
+    holds them; they are written with it."""
 
     __tablename__ = "records"
     iri: Mapped[str] = mapped_column(primary_key=True, doc="The record's address.")
@@ -32,6 +34,7 @@ class Record(Base):
     removed_at: Mapped[str | None] = mapped_column(doc="When the record was removed.")
     moved_to: Mapped[str | None] = mapped_column(doc="The address the record moved to, when this address is an earlier one; it forwards there.")
     name: Mapped[str | None] = mapped_column(doc="The record's name.")
+    part_of: Mapped[str | None] = mapped_column(index=True, doc="The record that holds this one as a part, such as the case study of a question.")
 
 
 class Revision(Base):

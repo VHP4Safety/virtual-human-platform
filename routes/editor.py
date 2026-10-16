@@ -2,7 +2,7 @@
 builds from the model's shapes, which writes and removes records through the records API with the
 editor's login."""
 
-from flask import Blueprint, Response, abort, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, jsonify, redirect, render_template, request, url_for
 
 from admin import editor
 from database import records
@@ -64,7 +64,18 @@ def edit(kind: str):
 
 @blueprint.get("/admin/form.ttl")
 def form():
-    """The graph from which the forms are built: the model's shapes and what their fields can link to."""
+    """The graph from which the forms are built: the profile and the names of the terms its fields list."""
     if logged_in() is None:
         abort(401)
     return Response(editor.form_graph().serialize(format="turtle"), mimetype="text/turtle")
+
+
+@blueprint.get("/admin/linkable")
+def linkable():
+    """The records that a field can link to, for each node shape (shape=...), as shacl-form's link provider
+    asks for them; with record=..., those records with their class and name."""
+    if logged_in() is None:
+        abort(401)
+    if request.args.getlist("record"):
+        return jsonify(editor.resources(request.args.getlist("record")))
+    return jsonify(editor.linkable(request.args.getlist("shape")))

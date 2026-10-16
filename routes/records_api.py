@@ -114,6 +114,12 @@ def unchanged(address: str) -> None:
         abort(412, message="Someone else changed this record since you opened it. Open it again to see their change, then make yours.")
 
 
+def whole(record) -> None:
+    """A part of a record, such as a question of a case study, is written with the record that holds it."""
+    if record is not None and record.part_of:
+        abort(409, message=f"This address is a part of the record at {record.part_of}, and is written with it.")
+
+
 def store(address: str, body: dict, preview: bool = False):
     """The record of a request's body is checked and saved at *address*."""
     kind = kind_of(address, body)
@@ -124,15 +130,23 @@ def store(address: str, body: dict, preview: bool = False):
         body = documents.document(Graph().parse(data=json.dumps(body), format="json-ld"), address)
     kind = settings()["kinds"][kind]
     try:
-        found, problems, warnings = checks.checked(writes.document(kind, address, body))
+        found = documents.statements(writes.document(kind, address, body))
     except ValueError as problem:
         abort(422, message=str(problem))
+    writes.addressed(found)
+    found, problems, warnings = checks.checked(documents.document(found, address))
     if preview:
         before = changes.statements(documents.document_of(address))
         return jsonify({**changes.edges(before, found, URIRef(address)), "fields": problems, "warnings": warnings})
     unchanged(address)
     if problems:
         abort(422, message=str(checks.NotFitting(problems)), errors=problems)
+    created = writes.separate(found)
+    # A record added in another record's form, such as a person, is written by those who may write its kind.
+    for _, of_kind, _ in created:
+        writer(kind_of(None, {"@type": of_kind}))
+    for iri, of_kind, own in created:
+        writes.save(documents.document(own, iri), of_kind, who.name, who.orcid)
     revision = writes.save(documents.document(found, address), kind, who.name, who.orcid)
     return done(address, revision, 201 if revision.action == "Added" else 200, warnings)
 
@@ -154,7 +168,7 @@ def read(given):
     if record.removed_at:
         abort(410, message="This record was removed.")
     media = request.accept_mimetypes.best_match(["application/ld+json", *SERIALIZATIONS]) or "application/ld+json"
-    answer = data(storage.read([record.iri]), media, record.iri)
+    answer = data(storage.graph([record.iri]), media, record.iri)
     answer.headers["ETag"] = f'"{record.updated_at}"'
     return answer
 
@@ -168,6 +182,7 @@ def read(given):
 def replace(given, body):
     """Add or replace the record at this address, given in JSON-LD or in Turtle."""
     record = records.get(given["graph"])
+    whole(record)
     if record is not None and (record.moved_to or record.removed_at):
         abort(409, message="This address belongs to a record that moved or was removed, and is not written again.")
     if request.mimetype == "text/turtle":
@@ -187,6 +202,7 @@ def remove(given):
     record = records.get(given["graph"])
     if record is None or (record.removed_at and not given["permanent"]):
         abort(404, message="There is no record at this address.")
+    whole(record)
     who = writer(kind_of(record.iri, {}))
     unchanged(record.iri)
     if given["permanent"]:
@@ -204,6 +220,7 @@ def move(given, body):
     record = records.get(given["graph"])
     if record is None or record.removed_at:
         abort(404, message="There is no record at this address.")
+    whole(record)
     who = writer(kind_of(record.iri, {}))
     target = records.get(body["to"])
     if target is not None and target.moved_to != record.iri:

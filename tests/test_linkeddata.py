@@ -22,8 +22,8 @@ def test_rdf():
     found = checks.check(fitting)
     assert documents.document(found, BASE + "tools/t")["url"] == {"@id": "https://t.org/"}
     with pytest.raises(checks.NotFitting) as problem:
-        checks.check(writes.document(TOOL, BASE + "tools/t", {"name": "T", "url": "not a link"}))
-    assert set(problem.value.problems) == {"url", "description"}
+        checks.check(writes.document(TOOL, BASE + "tools/t", {"name": "T", "installUrl": "not a link"}))
+    assert set(problem.value.problems) == {"installUrl", "description"}
 
 
 def test_fields():
@@ -51,9 +51,9 @@ def test_imports(monkeypatch, tmp_path):
     assert imports.import_all() == []
     tool = records.get(BASE + "tools/aop-builder")
     found = storage.graph([BASE + "tools/aop-builder", BASE + "tools/x"])
-    assert (tool.name, documents.stored_values(found, tool.iri, "about")) == ("AOP-Builder", [STEP])
+    assert (tool.name, documents.stored_values(found, tool.iri, "processFlowStep")) == ("AOP-Builder", [STEP])
     assert records.get(BASE + "people/test-author").name == "Test Author"
     with database.session() as db:
         assert db.get(Source, "tools").queries.startswith("# title: tools: Tool")
         assert (BASE + "tools/x", "Other") in [(note.iri, note.value) for note in db.scalars(select(Note))]
-    assert documents.stored_values(found, BASE + "tools/x", "about") == ["Other"]
+    assert documents.stored_values(found, BASE + "tools/x", "processFlowStep") == ["Other"]

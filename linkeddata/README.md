@@ -60,7 +60,7 @@ except that `database/` reads the base address of records from `linkeddata/model
 | | `documents.py` | records as JSON-LD documents, and as the dictionaries that page templates read |
 | | `checks.py` | the checks of records against the model's shapes |
 | | `imports.py` | the sources: fetched, converted and checked with rdfsolve, and stored as records |
-| | `fields.py` | the fields of a class, read from the SHACL shapes and the application profile |
+| | `fields.py` | the fields of a class, read from its shape in the application profile |
 | | `quality.py` | how complete the records are, what the checks found, and how each source becomes the model |
 | `admin/` | `accounts.py`, `tokens.py` | editors, and their write tokens |
 | | `writes.py` | records written on the platform, each change with its revision |
@@ -79,8 +79,8 @@ except that `database/` reads the base address of records from `linkeddata/model
 
 | Table | Holds |
 |---|---|
-| `records` | one row per record, by its address (`iri`), with its class, its source (or `platform`) and its name |
-| the release's tables | for each class of the profile, a table with a column for each field that takes one value and a column for its term (link, text, datatype or language); a table of the values of the fields that take several; and `statements`, for everything else |
+| `records` | one row per record, by its address (`iri`), with its class, its source (or `platform`) and its name; and one per part of a record that has an address of its own, such as a question of a case study, with the record that holds it (`part_of`) |
+| the release's tables | for each class of the profile, a table with a column for each field that takes one value and a column for its term (link, text, datatype or language); a table of the values of the fields that take several; and `statements`, for everything else. Every row names the record it belongs to (`record`), the rows of its parts too |
 | `revisions` | every change made on the platform: the record in JSON-LD before and after, who made it (name and ORCID iD) and when |
 | `tokens` | the write tokens (only the hash of each secret) |
 | `images` | the images uploaded to the platform, by the SHA-256 of their file, with who uploaded them |
@@ -95,16 +95,27 @@ prefix (`name`), and the terms of other vocabularies keep theirs (`dct:conformsT
 
 ## The application profile
 
-`model/v1/profile.ttl` is the platform's application profile, written in SHACL. It says what the
-platform asks of its records beyond schema.org and Bioschemas: which fields are required
-(`sh:minCount`), which take one value (`sh:maxCount`), and which value the platform sets itself
-(`sh:hasValue`, such as the Bioschemas profile of tools). Each write is checked against it with
-pyshacl, after rdfsolve has checked the type of each value, and a refused write says what is wrong
-with each field, in the words of the profile's `sh:message`.
+`model/v1/profile.ttl` is the platform's application profile, written in SHACL: one node shape for
+each class, named after it (`form:SoftwareApplication`), whose property shapes are the fields of its
+records. It says what each field takes (`sh:datatype`, `sh:nodeKind`, `sh:in`, `sh:class`, `sh:or`),
+which fields are required (`sh:minCount`), which take one value (`sh:maxCount`), which value the
+platform sets itself (`sh:hasValue`, such as the Bioschemas profile of tools), and which values only
+warn when they do not fit (`sh:severity sh:Warning`). Each write is checked against it with pyshacl,
+together with the type checks that rdfsolve gives from the vocabularies, and a refused write says what
+is wrong with each field, in the words of the profile's `sh:message`.
 
-The editor's forms are built by shacl-form (`@ulb-darmstadt/shacl-form`) from the model's shapes:
-`sh:group`, `sh:order`, `sh:name` and `sh:description` place, name and explain each field, and a field
-that links to a class offers the records of that class. To change the form, change the profile.
+The classes of `model.yaml`'s `kinds` are those of records, each with its own address and page. A node
+of another class that a record holds through a field with `sh:node` is part of that record and is
+written with it: a section of a page has no address (`sh:nodeKind sh:BlankNode`), and a question of a
+case study, or a step of its workflow, has one under the record's (`sh:nodeKind sh:IRI`,
+`/casestudies/kidney/Q1/exposure`). A person or an organisation added in a field of a form becomes a
+record of its own. The properties that the VHP4Safety glossary defines (Process Flow Step, Regulatory
+Question) are named in JSON-LD as `model.yaml`'s `terms` say.
+
+The editor's forms are built by shacl-form (`@ulb-darmstadt/shacl-form`) from the profile alone:
+`sh:group`, `sh:order`, `sh:name` and `sh:description` place, name and explain each field, a field of
+`sh:class` offers the records of that class, and a field of `sh:node` adds a part, or a record, in place,
+or links an existing one. To change the form, change the profile.
 
 ## The parts of an import
 

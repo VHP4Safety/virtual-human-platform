@@ -13,7 +13,7 @@ ORCID = "0000-0002-1825-0097"
 BASE = "https://platform.vhp4safety.nl/"
 TOOL = "https://schema.org/SoftwareApplication"
 STEP = "https://vhp4safety.github.io/glossary#VHP0000156"
-FITTING = {"name": "T", "description": "Does T.", "url": {"@id": "https://t.org/"}, "about": [{"@id": STEP}]}
+FITTING = {"name": "T", "description": "Does T.", "url": {"@id": "https://t.org/"}, "processFlowStep": [{"@id": STEP}]}
 NEW = "/api/records?graph=" + BASE + "tools/new"
 
 
@@ -60,8 +60,8 @@ def test_api(site):
     bearer = {"Authorization": "Bearer " + tokens.create(ORCID, "Test Editor", ["tools"])}
     created = site.put(NEW, json={"@type": "SoftwareApplication", **FITTING}, headers=bearer)
     assert created.status_code == 201 and "Does T." in site.get(NEW, headers={"Accept": "text/turtle"}).data.decode()
-    refused = site.put(NEW, json={"name": "N", "url": "not a link"}, headers=bearer)
-    assert refused.status_code == 422 and set(refused.json["errors"]) == {"url", "description"}
+    refused = site.put(NEW, json={"name": "N", "installUrl": "not a link"}, headers=bearer)
+    assert refused.status_code == 422 and set(refused.json["errors"]) == {"installUrl", "description"}
     stale = {**bearer, "If-Match": "an older version"}
     assert site.put(NEW, json=FITTING, headers=stale).status_code == 412
     assert site.post("/api/records/move?graph=" + BASE + "tools/new", json={"to": BASE + "tools/renamed"}, headers=bearer).status_code == 200
@@ -75,7 +75,7 @@ def test_api(site):
 
 def test_pages(site):
     add_records()
-    assert json.loads(site.get("/tools/t.jsonld").data)["about"] == {"@id": STEP}
+    assert json.loads(site.get("/tools/t.jsonld").data)["processFlowStep"] == {"@id": STEP}
     assert b"schema:SoftwareApplication" in site.get("/tools/t", headers={"Accept": "text/turtle"}).data
     assert "Does T." in site.get("/tools").data.decode()
     assert site.get("/api/tables/schema_software_application?schema_name=T").json[0]["iri"] == BASE + "tools/t"

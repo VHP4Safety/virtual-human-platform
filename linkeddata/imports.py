@@ -20,7 +20,7 @@ from sqlalchemy import delete, func, insert, select
 
 import database
 from database.tables import PLATFORM, Note, Record, Source, now
-from linkeddata import checks, documents, storage
+from linkeddata import checks, storage
 from linkeddata.model import RELEASE, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
@@ -64,15 +64,18 @@ def convert(spec: dict, data: list[dict], base: str) -> tuple[ox.Dataset, list[s
     return statements, queries
 
 
-def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[tuple[dict, Graph]]:
-    """The records of each class in converted data: the row of each in the records table, and its own
-    statements. Values are kept as the source gives them; the checks note those that do not fit the model."""
+def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[tuple[list[dict], Graph]]:
+    """The records of each class in converted data: the rows of each and of its parts in the records table,
+    and its own statements with its parts'. Values are kept as the source gives them; the checks note those
+    that do not fit the model."""
     graph = Graph().parse(data=ox.serialize(data, format=ox.RdfFormat.N_QUADS), format="nt")
     found = []
     for kind in classes:
         for subject in sorted(set(graph.subjects(RDF.type, URIRef(kind)))):
-            own = documents.described(graph, str(subject))
-            found.append((storage.row(own, str(subject), kind, source), own))
+            if not isinstance(subject, URIRef):
+                continue
+            own = storage.described(graph, str(subject))
+            found.append((storage.rows(own, str(subject), kind, source), own))
     return found
 
 
@@ -80,22 +83,23 @@ class Refused(Exception):
     """An import that would remove most of a source's records, which an upstream fault usually explains."""
 
 
-def store(source: Source, found: list[tuple[dict, Graph]], notes: list[dict]) -> None:
+def store(source: Source, found: list[tuple[list[dict], Graph]], notes: list[dict]) -> None:
     """The records of a source replace those it gave before, except the records written on the platform.
     An import that gives no records, or less than half of those it gave before, is refused."""
     with database.session() as db, db.begin():
-        before = db.scalar(select(func.count()).select_from(Record).where(Record.source == source.name))
+        before = db.scalar(select(func.count()).select_from(Record).where(Record.source == source.name, Record.part_of.is_(None)))
         if not found or (before >= 10 and len(found) < before / 2):
             raise Refused(f"the source gave {len(found)} records where it gave {before} before; the records were kept")
         written = set(db.scalars(select(Record.iri).where(Record.source == PLATFORM)))
-        for iri in db.scalars(select(Record.iri).where(Record.source == source.name)):
+        for iri in db.scalars(select(Record.iri).where(Record.source == source.name, Record.part_of.is_(None))):
             storage.delete(db, iri)
         db.execute(delete(Record).where(Record.source == source.name))
         kept = {}
-        for row, statements in found:
-            if row["iri"] not in written:
-                kept[row["iri"]] = row
-                storage.save(db, statements, row["iri"])
+        for listed, statements in found:
+            if listed[0]["iri"] not in written:
+                for row in listed:
+                    kept[row["iri"]] = row
+                storage.save(db, statements, listed[0]["iri"])
         if kept:
             db.execute(insert(Record), list(kept.values()))
         db.execute(delete(Note).where(Note.source == source.name))

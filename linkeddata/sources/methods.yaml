@@ -11,6 +11,8 @@ rules:
     - {predicate: a, value: "https://bioschemas.org/draft_terms/LabProtocol"}
     - {predicate: "https://schema.org/name", object: method}
     - {predicate: "https://schema.org/description", object: description}
+    - {predicate: "https://vhp4safety.github.io/glossary#VHP0000152", object: steps}
+    - {predicate: "https://vhp4safety.github.io/glossary#VHP0000151", object: question}
     - {predicate: "https://schema.org/about", object: about}
     - {predicate: "https://schema.org/additionalType", object: types}
     - {predicate: "https://bioschemas.org/draft_terms/reagent", object: assay}
@@ -25,3 +27,6 @@ rules:
   Organization:
     - {predicate: a, value: "https://schema.org/Organization"}
     - {predicate: "https://schema.org/name", object: name}
+  Publication:
+    - {predicate: a, value: "https://schema.org/ScholarlyArticle"}
+    - {predicate: "https://schema.org/sameAs", object: doi}

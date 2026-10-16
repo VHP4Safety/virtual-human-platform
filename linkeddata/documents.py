@@ -7,7 +7,7 @@ from functools import cache
 from pathlib import Path
 
 from pyld import jsonld
-from rdflib import BNode, Graph, URIRef
+from rdflib import Graph, URIRef
 
 import database
 from database.tables import Record
@@ -18,16 +18,21 @@ TEMPLATES = Path(__file__).parent.parent / "templates"
 
 
 def context(config: dict) -> dict:
-    """The JSON-LD context: schema.org terms without a prefix, other vocabularies with theirs."""
+    """The JSON-LD context: schema.org terms without a prefix, other vocabularies with theirs, and the names
+    of the properties that the glossary defines."""
     terms = {"@vocab": config["prefixes"]["schema"]}
     for prefix, namespace in config["prefixes"].items():
         if prefix != "schema":
             terms[prefix] = namespace
+    terms.update(config.get("terms", {}))
     return terms
 
 
 def term(iri: str) -> str:
     """The name of a property or class in the platform's JSON-LD."""
+    for name, named in settings().get("terms", {}).items():
+        if iri == named:
+            return name
     for prefix, namespace in settings()["prefixes"].items():
         if iri.startswith(namespace):
             if prefix == "schema":
@@ -38,6 +43,8 @@ def term(iri: str) -> str:
 
 def expand(name: str) -> str:
     """The property of a field: "name" is https://schema.org/name, "dct:conformsTo" the property of dct."""
+    if name in settings().get("terms", {}):
+        return settings()["terms"][name]
     prefixes = settings()["prefixes"]
     prefix, _, local = name.partition(":")
     if local and prefix in prefixes:
@@ -81,31 +88,13 @@ def statements(document: dict) -> Graph:
     return Graph().parse(data=json.dumps(document), format="json-ld")
 
 
-def described(found: Graph, iri: str) -> Graph:
-    """The statements of the record at *iri* in *found*, with those of the nodes without an address (blank
-    nodes) that it holds, at any depth."""
-    own = Graph()
-    nodes = [URIRef(iri)]
-    seen = set()
-    while nodes:
-        node = nodes.pop()
-        if node in seen:
-            continue
-        seen.add(node)
-        for statement in found.triples((node, None, None)):
-            own.add(statement)
-            if isinstance(statement[2], BNode):
-                nodes.append(statement[2])
-    return own
-
-
 def document(found: Graph, iri: str | None = None) -> dict:
     """The JSON-LD document of the record at *iri*, with the nodes it holds without an address in it; without
     *iri*, of all the statements, such as those of a record and the records it links to."""
     if iri is None:
         expanded = jsonld.from_rdf(found.serialize(format="nt"), {"format": "application/n-quads"})
         return jsonld.compact(expanded, context(settings()))
-    expanded = jsonld.from_rdf(described(found, iri).serialize(format="nt"), {"format": "application/n-quads"})
+    expanded = jsonld.from_rdf(storage.described(found, iri).serialize(format="nt"), {"format": "application/n-quads"})
     framed = jsonld.frame(expanded, {"@context": context(settings()), "@id": iri})
     if "@graph" in framed:
         return {"@context": framed["@context"], **framed["@graph"][0]} if framed["@graph"] else {"@context": framed["@context"]}

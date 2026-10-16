@@ -1,11 +1,12 @@
 """Parser of the cloud catalogue (a workaround, see linkeddata/parsers). service_index.json lists the
 tools, and the detail file of each tool (cloud.vhp4safety.nl/service/<id>.json) describes it. Besides
-the tools, the rows are the organisations, people, help pages and videos that tools link to.
+the tools, the rows are the organisations, people and publications that tools link to; the help pages
+and videos of a tool are parts of its row.
 """
 
 import json
 
-from linkeddata.parsers import link, present, slug, web_link
+from linkeddata.parsers import link, present, publication, slug, web_link
 
 # The catalogue marks the regulatory questions of a tool with yes/no flags.
 QUESTIONS = {
@@ -53,12 +54,11 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         logo = entry.get("png_file_name")
         if present(logo) and logo != PLACEHOLDER_LOGO:
             row["logo"] = link(LOGOS + logo)
-        steps = []
-        for stage in (detail.get("stage") or entry.get("stage"), detail.get("substage")):
-            if present(stage):
-                steps.append(web_link(stage))
-        if steps:
-            row["stage"] = steps
+        # The catalogue's stage is a process flow step, and its substage a term of what the tool deals with.
+        if present(detail.get("stage") or entry.get("stage")):
+            row["step"] = web_link(detail.get("stage") or entry["stage"])
+        if present(detail.get("substage")):
+            row["topic"] = web_link(detail["substage"])
         questions = []
         for flag, question in QUESTIONS.items():
             if str(entry.get(flag)).lower() == "true":
@@ -66,10 +66,10 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         if questions:
             row["questions"] = questions
         if present(detail.get("doi")):
-            doi = str(detail["doi"]).strip().removeprefix("https://doi.org/")
-            if doi.startswith("10."):
-                row["doi"] = link("https://doi.org/" + doi)
-                others.setdefault("https://doi.org/" + doi, {"@id": "https://doi.org/" + doi, "@type": "Publication"})
+            cited = publication(detail["doi"])
+            if cited:
+                others.setdefault(cited["@id"], cited)
+                row["doi"] = link(cited["@id"])
             else:
                 row["doi"] = detail["doi"]
         elsewhere = []
@@ -122,9 +122,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                                    ("Page", "workflows", pairs(detail.get("workflow")) + pairs(detail.get("workflow2"))),
                                    ("Video", "videos", pairs(detail.get("peertube")))):
             if found:
-                row[field] = [link(address) for _, address in found]
-                for title, address in found:
-                    others.setdefault(address, {"@id": address, "@type": kind, "title": title})
+                row[field] = [{"@type": kind, "title": title, "url": link(address)} for title, address in found]
         provider = detail.get("provider") if isinstance(detail.get("provider"), dict) else {}
         providers = []
         if present(provider.get("name")):

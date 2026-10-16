@@ -173,7 +173,26 @@
   showRdf.addEventListener("change", showPreview);
   showPreview();
 
+  // A field that links to records lists them from the platform when it is opened: the records of the class
+  // of each shape that the field takes, and the class and name of the records that the record links to.
+  async function linkable(query) {
+    return (await fetch("/admin/linkable?" + query, { credentials: "same-origin" })).json();
+  }
+
+  const links = {
+    lazyLoad: true,
+    listConformingResources: function (shapes) {
+      return linkable(shapes.map(function (shape) { return "shape=" + encodeURIComponent(shape); }).join("&"));
+    },
+    loadResources: function (ids) {
+      return linkable(ids.map(function (id) { return "record=" + encodeURIComponent(id); }).join("&"));
+    },
+  };
+
   if (form) {
+    customElements.whenDefined("shacl-form").then(function () {
+      form.setResourceLinkProvider(links);
+    });
     form.addEventListener("change", function () {
       edited = true;
       schedulePreview();

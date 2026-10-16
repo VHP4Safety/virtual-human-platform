@@ -19,21 +19,25 @@ vocabularies:
     sha256: 88e9c00b8de4c2c69d9b3120525530dbff9536f0e3cebcef7a41cbec1745feff
 
 # The classes of the records, by the name of their kind; records of every kind are written on the platform.
+# A node of one of these classes is a record of its own, with its own address; a node of another class that
+# the profile has a shape for, such as a section of a page, is part of the record that holds it.
 kinds:
   tools: https://schema.org/SoftwareApplication
   methods: https://bioschemas.org/draft_terms/LabProtocol
   casestudies: https://schema.org/ResearchProject
-  questions: https://schema.org/Question
-  workflows: https://schema.org/HowToSection
   publications: https://schema.org/ScholarlyArticle
-  datasets: https://schema.org/Dataset
+  data: https://schema.org/Dataset
   organizations: https://schema.org/Organization
   people: https://schema.org/Person
   pages: https://schema.org/WebPage
-  videos: https://schema.org/VideoObject
 
 # Used for short names in the YAML mappings and in the JSON-LD documents.
 prefixes:
   schema: https://schema.org/
   bioschemas_draft: https://bioschemas.org/draft_terms/
   dct: http://purl.org/dc/terms/
+
+# Names in the JSON-LD documents for the properties that the glossary defines.
+terms:
+  processFlowStep: https://vhp4safety.github.io/glossary#VHP0000152
+  regulatoryQuestion: https://vhp4safety.github.io/glossary#VHP0000151
