@@ -168,3 +168,8 @@ body.editor {
 .record-dialog::backdrop {
   background: rgba(0, 0, 0, 0.4);
 }
+
+.record-dialog-results {
+  max-height: 22rem;
+  overflow-y: auto;
+}

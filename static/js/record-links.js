@@ -104,19 +104,43 @@ class Text extends Plugin {
   }
 }
 
-// A new record of a class, in a form of its own made from the shape of the class, in a dialog. It is added
-// through the API, and then given to *added* with its address and name.
-function addRecord(of_class, label, name, store, added) {
-  const shape = store.getSubjects(TARGET, of_class, null)[0];
-  const subject = "urn:uuid:" + crypto.randomUUID();
+// A dialog with a title, a place for what the platform refuses, and a body; closing it removes it.
+function opened(title) {
   const dialog = make("dialog", "record-dialog");
   const top = make("div", "d-flex align-items-center gap-2 border-bottom px-3 py-2");
   const close = make("button", "btn-close");
   close.type = "button";
   close.setAttribute("aria-label", "Close");
   close.addEventListener("click", function () { dialog.close(); });
-  top.append(make("h2", "h5 mb-0 me-auto", "New " + label.toLowerCase()), close);
+  top.append(make("h2", "h5 mb-0 me-auto", title), close);
   const refused = make("div", "alert alert-danger small mx-3 mt-3 mb-0 d-none");
+  const body = make("div", "p-3");
+  dialog.append(top, refused, body);
+  dialog.addEventListener("close", function () { dialog.remove(); });
+  document.body.append(dialog);
+  dialog.showModal();
+  return {
+    dialog: dialog,
+    body: body,
+    refuse: function (text) {
+      refused.textContent = text;
+      refused.classList.remove("d-none");
+    },
+  };
+}
+
+function labelled(text, input) {
+  const label = make("label", "form-label small mb-1 d-block", text);
+  label.append(input);
+  return label;
+}
+
+// A new record of a class, in a form of its own made from the shape of the class, in a dialog. It is added
+// through the API, and then given to *added* with its address and name.
+function addRecord(of_class, label, name, store, added) {
+  const shape = store.getSubjects(TARGET, of_class, null)[0];
+  const subject = "urn:uuid:" + crypto.randomUUID();
+  const shown = opened("New " + label.toLowerCase());
   const form = document.createElement("shacl-form");
   form.dataset.shapesUrl = document.querySelector("shacl-form").dataset.shapesUrl;
   form.dataset.shapeSubject = shape ? shape.value : "";
@@ -136,22 +160,122 @@ function addRecord(of_class, label, name, store, added) {
     });
     const answer = await response.json().catch(function () { return {}; });
     if (!response.ok) {
-      refused.textContent = answer.message || response.statusText;
-      refused.classList.remove("d-none");
+      shown.refuse(answer.message || response.statusText);
       return;
     }
     const record = await api("GET", "/api" + local(answer["@id"]));
-    dialog.close();
+    shown.dialog.close();
     added(answer["@id"], record.name || name);
   });
-  const body = make("div", "p-3");
   const bar = make("div", "editor-save mt-3");
   bar.append(add);
-  body.append(form, bar);
-  dialog.append(top, refused, body);
-  dialog.addEventListener("close", function () { dialog.remove(); });
-  document.body.append(dialog);
-  dialog.showModal();
+  shown.body.append(form, bar);
+}
+
+// A vocabulary that is added to the platform, from a registry of vocabularies (the Ontology Lookup Service,
+// Ontobee, Wikidata), where it is found by its name, with its title, the namespace of its terms and its
+// description; or one given by hand. One that the platform has, at the same namespace, is chosen instead.
+async function addVocabulary(platform, added) {
+  const shown = opened("Add a vocabulary");
+  const registry = make("select", "form-select form-select-sm");
+  for (const [name, title] of Object.entries(await api("GET", "/api/registries"))) {
+    registry.append(new Option(title, name));
+  }
+  registry.append(new Option("By hand", ""));
+  const text = make("input", "form-control form-control-sm");
+  text.placeholder = "Find a vocabulary by its name, such as assay or BAO";
+  const results = make("div", "list-group list-group-flush border rounded small record-dialog-results");
+  const name = make("input", "form-control form-control-sm");
+  name.placeholder = "Its name, such as NCBI Taxonomy";
+  const namespace = make("input", "form-control form-control-sm");
+  namespace.placeholder = "The start of the addresses of its terms, such as http://purl.obolibrary.org/obo/NCBITaxon_";
+  const add = make("button", "btn btn-success btn-sm mt-2", "Add the vocabulary");
+  add.type = "button";
+  const finding = make("div", "");
+  finding.append(labelled("Its name", text), results);
+  const writing = make("div", "d-none");
+  writing.append(labelled("Its name", name), labelled("Its namespace", namespace), add);
+  shown.body.append(labelled("Where it is found", registry), finding, writing);
+
+  async function keep(found) {
+    for (const vocabulary of platform) {
+      if (vocabulary.url && vocabulary.url["@id"] === found.namespace) {
+        shown.dialog.close();
+        added(vocabulary["@id"]);
+        return;
+      }
+    }
+    try {
+      const body = { name: found.title, url: { "@id": found.namespace } };
+      if (found.description) {
+        body.description = found.description;
+      }
+      const answer = await api("POST", "/api/vocabularies", body);
+      shown.dialog.close();
+      added(answer["@id"]);
+    } catch (error) {
+      shown.refuse(error.message);
+    }
+  }
+
+  let timer = null;
+  let asked = 0;
+  async function find() {
+    finding.classList.toggle("d-none", !registry.value);
+    writing.classList.toggle("d-none", Boolean(registry.value));
+    results.replaceChildren();
+    if (!registry.value) {
+      return;
+    }
+    // Only the answer to the latest search is shown.
+    asked += 1;
+    const question = asked;
+    try {
+      const answer = await api("GET", "/api/registries/" + registry.value + "/vocabularies?" + query({ text: text.value.trim() }));
+      if (question !== asked) {
+        return;
+      }
+      for (const found of answer) {
+        const item = make("button", "list-group-item list-group-item-action");
+        item.type = "button";
+        item.append(make("b", "", found.title), make("div", "text-secondary", found.id + " · " + found.namespace));
+        item.addEventListener("click", function () { keep(found); });
+        results.append(item);
+      }
+    } catch (error) {
+      shown.refuse(error.message);
+    }
+  }
+  registry.addEventListener("change", find);
+  text.addEventListener("input", function () {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(find, 300);
+  });
+  add.addEventListener("click", function () {
+    keep({ title: name.value.trim(), namespace: namespace.value.trim() });
+  });
+  find();
+}
+
+// A term that is registered by hand, with its label and its address, in a vocabulary of the platform.
+function registerTerm(text, vocabulary, added) {
+  const shown = opened("Register a term of " + vocabulary.name);
+  const label = make("input", "form-control form-control-sm");
+  label.value = text;
+  const address = make("input", "form-control form-control-sm");
+  address.value = vocabulary.url ? vocabulary.url["@id"] : "";
+  const add = make("button", "btn btn-success btn-sm mt-2", "Register the term");
+  add.type = "button";
+  add.addEventListener("click", async function () {
+    try {
+      const answer = await api("POST", "/api/terms", { "@id": address.value.trim(), name: label.value.trim(), inDefinedTermSet: { "@id": vocabulary["@id"] } });
+      shown.dialog.close();
+      added(answer["@id"], label.value.trim());
+    } catch (error) {
+      shown.refuse(error.message);
+    }
+  });
+  shown.body.append(labelled("Its label", label), labelled("Its address", address), add);
 }
 
 class RecordLink extends Plugin {
@@ -273,7 +397,7 @@ class RecordLink extends Plugin {
         for (const found of listed) {
           vocabularies.append(new Option(found.name, found["@id"], false, found["@id"] === selected));
         }
-        vocabularies.append(new Option("Another vocabulary…", ""));
+        vocabularies.append(new Option("Add a vocabulary…", ""));
         // A term that the field has already is shown in its vocabulary, the one whose namespace starts its
         // address; a field whose terms are of one vocabulary (sh:pattern ^<namespace>) shows that one only.
         const only = template.pattern && template.pattern.startsWith("^") ? template.pattern.slice(1).replace(/\\(.)/g, "$1") : "";
@@ -295,14 +419,9 @@ class RecordLink extends Plugin {
         if (vocabularies.value) {
           return;
         }
-        const name = window.prompt("The name of the vocabulary, such as NCBI Taxonomy");
-        const namespace = name && window.prompt("The start of the addresses of its terms, such as http://purl.obolibrary.org/obo/NCBITaxon_");
-        if (namespace) {
-          attempt(async function () {
-            const added = await api("POST", "/api/vocabularies", { name: name, url: { "@id": namespace } });
-            await fill(added["@id"]);
-          });
-        }
+        attempt(function () {
+          return addVocabulary(listed, function (iri) { attempt(function () { return fill(iri); }); });
+        });
       });
       attempt(function () { return fill(null); });
     }
@@ -323,22 +442,41 @@ class RecordLink extends Plugin {
             return;
           }
           const within = vocabulary && vocabulary.url ? vocabulary.url["@id"] : "";
+          const seen = new Set();
           for (const of_class of Object.keys(classes)) {
             const found = await api("GET", "/api/search?" + query({ text: text, class: of_class, within: within }));
             for (const record of found["@graph"]) {
+              seen.add(record["@id"]);
               option([make("span", "record-link-kind", classes[of_class]), record.name], function () { choose(record["@id"], record.name); });
+            }
+          }
+          // The terms of the vocabulary that its registry has and the platform does not have yet, which are
+          // registered with their label, definition and code when they are chosen.
+          if (classes[TERM] && within) {
+            const matched = await api("GET", "/api/registries/terms?" + query({ text: text, namespace: within }));
+            for (const found of matched.terms) {
+              if (seen.has(found["@id"])) {
+                continue;
+              }
+              option([make("span", "record-link-kind text", "＋ " + matched.title), found.name + (found.code ? " · " + found.code : "")], function () {
+                attempt(async function () {
+                  const body = { "@id": found["@id"], name: found.name, termCode: found.code, inDefinedTermSet: { "@id": vocabulary["@id"] } };
+                  if (found.description) {
+                    body.description = found.description;
+                  }
+                  const added = await api("POST", "/api/terms", body);
+                  await known(added["@id"], found.name, TERM);
+                });
+              });
             }
           }
           for (const of_class of Object.keys(classes)) {
             if (of_class === TERM && vocabulary) {
-              option(["＋ Register “" + text + "” as a term of " + vocabulary.name], function () {
-                const iri = window.prompt("The address of the term " + text, within);
-                if (iri) {
-                  attempt(async function () {
-                    const added = await api("POST", "/api/terms", { "@id": iri, name: text, inDefinedTermSet: { "@id": vocabulary["@id"] } });
-                    await known(added["@id"], text, TERM);
-                  });
-                }
+              option(["＋ Register “" + text + "” as a term of " + vocabulary.name + " by hand…"], function () {
+                options.replaceChildren();
+                registerTerm(text, vocabulary, function (iri, name) {
+                  attempt(function () { return known(iri, name, TERM); });
+                });
               }, "record-link-new");
             } else if (of_class !== TERM && editor.classes[of_class]) {
               option(["＋ New " + classes[of_class].toLowerCase() + " “" + text + "”…"], function () {
