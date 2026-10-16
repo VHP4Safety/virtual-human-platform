@@ -7,21 +7,36 @@ own, and the tools, methods and data it uses, which are linked by the id of thei
 (an item without one is kept as its label)."""
 
 import json
+import re
 
 from linkeddata.parsers import link, marked, present, slug, term, web_link
 
 # The kinds of the items of a page that are pages one level down; tools and data are not.
 PAGES = {"process-flow-step", "workflow step", "workflow-step", "workflow substep"}
+# Some texts were written with typographic quotes around the values of the attributes of their tags.
+TAG = re.compile(r"<[a-zA-Z][^>]*>")
+STRAIGHT = str.maketrans({"\u201c": '"', "\u201d": '"', "\u2018": "'", "\u2019": "'"})
+
+
+def straight(tag) -> str:
+    return tag.group(0).translate(STRAIGHT)
+
+
+def html(value):
+    """A text in HTML as it is written, with straight quotes in its tags, typed as HTML when it has tags."""
+    return marked(TAG.sub(straight, str(value)))
+
+
 def text(row: dict, content) -> None:
     """The text of a page: in HTML, or in sections, each with its heading and its text in HTML."""
     if isinstance(content, str) and present(content):
-        row["content"] = marked(content)
+        row["content"] = html(content)
     elif isinstance(content, list):
         for position, section in enumerate(content, start=1):
             if isinstance(section, dict):
                 found = {"@type": "Section", "position": position, "title": section.get("section")}
                 if present(section.get("description")):
-                    found["text"] = marked(section["description"])
+                    found["text"] = html(section["description"])
                 row.setdefault("sections", []).append(found)
 
 
@@ -92,7 +107,7 @@ def parse(files: dict[str, bytes]) -> list[dict]:
         row = {"@id": address, "@type": "CaseStudy", "name": about.get("name") or first.get("navTitle")}
         for field, given in (("description", about.get("description")), ("intro", first.get("navDescription"))):
             if present(given):
-                row[field] = marked(given)
+                row[field] = html(given)
         keywords = about.get("keywords") or []
         for keyword in keywords if isinstance(keywords, list) else str(keywords).split(","):
             if present(keyword):
@@ -112,7 +127,7 @@ def parse(files: dict[str, bytes]) -> list[dict]:
             row.setdefault("questions", []).append(link(here))
             found = {"@id": here, "@type": "Question", "label": question.get("label"), "position": len(row["questions"])}
             if present(question.get("description")):
-                found["text"] = marked(question["description"])
+                found["text"] = html(question["description"])
             node = at(levels, 0, [question["value"]])
             if present(node.get("navTitle")):
                 found["headline"] = node["navTitle"]
