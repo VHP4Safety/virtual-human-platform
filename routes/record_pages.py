@@ -1,8 +1,9 @@
 """The records on the platform's pages.
 
 The address of a record answers with its data when JSON-LD, Turtle or N-Triples is asked for, with
-the Accept header or with a .jsonld, .ttl or .nt ending (/tools/pathvisio.ttl), and its page links
-to that data. The address of a removed record answers 410 Gone, and an earlier address of a record
+the Accept header or with a .jsonld, .ttl or .nt ending (/tools/pathvisio.ttl). Its page links to
+that data as FAIR Signposting does (Link headers): the record's address to cite (cite-as), its class
+(type), its data (describedby), and the shapes that its data is checked with (ldp:constrainedBy). The address of a removed record answers 410 Gone, and an earlier address of a record
 that moved forwards to its address (301). A record with no page of its own is shown on a general
 record page.
 """
@@ -72,11 +73,10 @@ def negotiate():
 @blueprint.after_app_request
 def link_data(response):
     if "record" in g:
-        links = []
+        links = [f'<{g.record.iri}>; rel="cite-as"', f'<{g.record.type}>; rel="type"']
         for ending, media in FORMATS.items():
-            links.append(f'<{page_path(g.record)}{ending}>; rel="alternate"; type="{media}"')
-        # The shapes that say what the record's fields take (POWDER's describedby, as in Linked Data Platform).
-        links.append(f'<{url_for("api.model_shapes")}>; rel="describedby"; type="text/turtle"')
+            links.append(f'<{page_path(g.record)}{ending}>; rel="describedby"; type="{media}"')
+        links.append(f'<{url_for("api.model_shapes")}>; rel="http://www.w3.org/ns/ldp#constrainedBy"; type="text/turtle"')
         response.headers["Link"] = ", ".join(links)
         response.headers["Vary"] = "Accept"
     return response

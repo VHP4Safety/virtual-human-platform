@@ -12,7 +12,7 @@
     <meta name="description" content="{{ meta_description }}" />
     <link rel="canonical" href="{{ canonical_url }}" />
     {% for media, href in (record_formats or {}).items() %}
-    <link rel="alternate" type="{{ media }}" href="{{ href }}" />
+    <link rel="describedby" type="{{ media }}" href="{{ href }}" />
     {% endfor %}
 
     <!-- Open Graph / Twitter Card for link previews (and minor search signal) -->
