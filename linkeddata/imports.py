@@ -1,8 +1,9 @@
 """The imports: each source is fetched and cleaned by its parser, converted to the model with rdfsolve,
 and stored as records in place of those the source gave before. Records written on the platform are left
-as they are. The sources of terms (terms) come last, as they ask for the terms that the records of the
-other sources are about. Once every source is stored, the records of each are checked against the model,
-with the records they link to as the database holds them. `python -m linkeddata import` runs every import, for
+as they are. The sources of terms (terms) come next, as they ask for the terms that the records of the
+other sources are about, and the sources that enrich records (enriches) last: what they give is merged into
+the records of the other sources. Once every source is stored, the records of each are checked against the
+model, with the records they link to as the database holds them. `python -m linkeddata import` runs every import, for
 example every night."""
 
 import hashlib
@@ -23,16 +24,19 @@ from rdflib.namespace import SDO, SH
 from sqlalchemy import delete, func, insert, select
 
 import database
-from database.tables import PLATFORM, Note, Record, Source, now
-from linkeddata import checks, storage
+from database.tables import PLATFORM, Note, Record, Revision, Source, now
+from linkeddata import checks, documents, patches, storage
 from linkeddata.model import MODEL_DIR, RELEASE, profile, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
 TARGET = f"VHP4Safety model {RELEASE}"
 
 
-def fetch(url: str) -> bytes:
-    response = requests.get(url, timeout=60, headers={"User-Agent": "VHP4Safety platform build"})
+def fetch(url: str, accept: str | None = None) -> bytes:
+    headers = {"User-Agent": "VHP4Safety platform build"}
+    if accept:
+        headers["Accept"] = accept
+    response = requests.get(url, timeout=60, headers=headers)
     response.raise_for_status()
     return response.content
 
@@ -115,6 +119,8 @@ def files_of(spec: dict) -> dict[str, str]:
     vocabulary of the model that it names."""
     if "files" in spec:
         return dict(spec["files"])
+    if "enriches" in spec:
+        return {}
     if "vocabulary" in spec:
         return {spec["name"]: settings()["vocabularies"][spec["vocabulary"]]["url"]}
     return {spec["name"]: spec["url"]}
@@ -151,6 +157,24 @@ def linked_terms() -> list[str]:
     return sorted(terms)
 
 
+def identified(spec: dict) -> list[tuple[str, str]]:
+    """The records of the kind that a source enriches, but those written on the platform, with the key of
+    each one's identifier: the rest of the address in its sameAs that starts with the source's identifier,
+    when it is one of the keys that the source takes."""
+    with database.session() as db:
+        iris = list(db.scalars(select(Record.iri).where(
+            Record.type == settings()["kinds"][spec["enriches"]], Record.part_of.is_(None), Record.removed_at.is_(None), Record.source != PLATFORM)))
+    found = storage.read(iris)
+    keys = []
+    for iri in iris:
+        for value in sorted(found.objects(URIRef(iri), SDO.sameAs)):
+            key = str(value).removeprefix(spec["identifier"])
+            if str(value).startswith(spec["identifier"]) and re.fullmatch(spec["keys"], key):
+                keys.append((iri, key))
+                break
+    return keys
+
+
 def download(spec: dict, parser) -> dict[str, bytes]:
     """The files of a source by name. A source with entries also has, by its key, the file of each entry
     of its index: the keys of the index (a JSON object), or those its parser reads from it (keys)."""
@@ -168,6 +192,14 @@ def download(spec: dict, parser) -> dict[str, bytes]:
                 contents[key] = fetch(spec["entries"].format(key=key))
             except requests.RequestException as problem:
                 print(f"{spec['name']}: {key} not fetched ({problem})")
+    # A source that enriches records has the answer for each record that has an identifier of the source, by
+    # the record's address.
+    if "enriches" in spec:
+        for iri, key in identified(spec):
+            try:
+                contents[iri] = fetch(spec["answer"].format(key=quote(key, safe="/")), spec.get("accept"))
+            except requests.RequestException as problem:
+                print(f"{spec['name']}: {iri} not fetched ({problem})")
     # A source of terms also has the answer for each term that the records are about, by its address.
     if "terms" in spec:
         for iri in linked_terms():
@@ -200,6 +232,43 @@ def import_source(spec: dict) -> None:
     print(f"{spec['name']}: {len(found)} records")
 
 
+def enrich(spec: dict) -> None:
+    """What a source gives about the records of other sources is merged into them as the profile allows: a
+    field that takes one value keeps the value that the record has, and a different one is noted. The first
+    change of a record by an enrichment is the record's first revision, which tells where its values came
+    from."""
+    parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
+    contents = download(spec, parser)
+    data, queries = convert(spec, parser.parse(contents), settings()["base"])
+    given = Graph().parse(data=ox.serialize(data, format=ox.RdfFormat.N_QUADS), format="nt")
+    notes = []
+    with database.session() as db, db.begin():
+        for iri in sorted(contents):
+            record = db.get(Record, iri)
+            current = storage.read([iri])
+            merged = patches.merge(current, storage.described(given, iri), storage.profile())
+            for subject, predicate, kept, offered in merged.conflicts:
+                notes.append(Note(source=spec["name"], iri=subject, field=predicate, value=offered, component="enrichment",
+                                  reason=f"{spec['title']} gives {offered}; the record keeps {kept}."))
+            if not merged.added:
+                continue
+            storage.save(db, merged.graph, iri)
+            if merged.graph.value(URIRef(iri), SDO.name) is not None:
+                record.name = str(merged.graph.value(URIRef(iri), SDO.name))
+            record.updated_at = now()
+            if db.scalar(select(func.count()).select_from(Revision).where(Revision.record_iri == iri)) == 0:
+                db.add(Revision(record_iri=iri, action="Enriched", name=spec["title"], orcid="",
+                                previous=json.dumps(documents.document(current, iri), indent=2),
+                                document=json.dumps(documents.document(merged.graph, iri), indent=2)))
+        db.execute(delete(Note).where(Note.source == spec["name"]))
+        db.add_all(notes)
+        checksum = hashlib.sha256()
+        for name in sorted(contents):
+            checksum.update(contents[name])
+        db.merge(Source(name=spec["name"], url=spec["answer"], fetched_at=now(), sha256=checksum.hexdigest(), queries="\n\n".join(queries)))
+    print(f"{spec['name']}: {len(contents)} records asked for, {len(notes)} values kept where it gives others")
+
+
 def spec_of(name: str) -> dict:
     """A source as its file in sources/ describes it. A source whose rows are also those of other sources
     names them (uses), and has their rules too."""
@@ -216,7 +285,7 @@ def specs() -> list[dict]:
     found = []
     for path in sorted(SOURCES_DIR.glob("*.yaml")):
         spec = spec_of(path.stem)
-        if "url" in spec or "files" in spec or "vocabulary" in spec:
+        if "url" in spec or "files" in spec or "vocabulary" in spec or "enriches" in spec:
             found.append(spec)
     return found
 
@@ -251,17 +320,23 @@ def import_all() -> list[str]:
     kept."""
     problems = []
     every = []
-    for terms in (False, True):
+    for step in ("records", "terms", "enriches"):
         for spec in specs():
-            if ("terms" in spec) == terms:
+            if ("terms" in spec) == (step == "terms") and ("enriches" in spec) == (step == "enriches"):
                 every.append(spec)
     for spec in every:
         try:
-            import_source(spec)
+            if "enriches" in spec:
+                enrich(spec)
+            else:
+                import_source(spec)
         except (Refused, requests.RequestException, OSError, ValueError) as problem:
             note_problem(spec, problem)
             problems.append(f"{spec['name']}: {problem}")
+    # The records of a source are checked with what the enrichments added to them; a source that enriches
+    # has no records of its own, and its notes are the values that the records kept.
     for spec in every:
-        check(spec["name"])
+        if "enriches" not in spec:
+            check(spec["name"])
     check(PLATFORM)
     return problems

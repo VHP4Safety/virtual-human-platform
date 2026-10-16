@@ -128,7 +128,8 @@ the profile.
   for what a parser returns.
 - **`sources/<name>.yaml`**: where a source comes from (a `url`, with `entries` for the file of each key
   of its index, or `terms` for the answer for each term that the records are about; several named
-  `files`; or a pinned `vocabulary` of the model), its title, its parser, and
+  `files`; a pinned `vocabulary` of the model; or, for a source that `enriches` the records of a kind,
+  the `answer` for each record's `identifier`), its title, its parser, and
   its rules: how its rows become the model. The rules are the arguments of rdfsolve's `Rule.between`, one
   list per kind of row; rdfsolve finds the fields by name and writes the CONSTRUCT queries. A source whose
   rows are also those of other sources names them (`uses`), and has their rules too.
@@ -139,7 +140,10 @@ the profile.
   generated with `python -m linkeddata model` (review the change before committing it).
 
 An import replaces the records a source gave before with those it gives now; the sources of terms come
-after the others. Records written on
+after the others, and the sources that enrich records last. What an enrichment gives is merged into the
+records of the other sources: a field that takes one value keeps the value it has, and a different value is
+noted; the first change of a record by an enrichment is its first revision. Where rdfsolve does not have a
+call yet, `patches.py` stands in for it, under the name of its rdfsolve proposal. Records written on
 the platform are left as they are, also when the source has a record at the same address, and so are
 those that another source gives, such as a person whom two sources name. Once every source is stored,
 the records of each are checked against the model, with the records they link to as the database holds
@@ -148,7 +152,8 @@ them; what does not fit is noted, and kept as the source gives it.
 The sources: the tool and method catalogues of the cloud repository, the case studies of
 ui-casestudy-config, the VHP4Safety glossary (its pinned file), the datasets of the BioStudies
 collection VHP4Safety and of the Zenodo community vhp4safety, and the terms of ontologies that the records
-are about, with their ontologies, from the Ontology Lookup Service.
+are about, with their ontologies, from the Ontology Lookup Service. The publications are enriched with
+their citations from the DOI registration agencies (Crossref, DataCite), through doi.org.
 
 ## Add a source
 
