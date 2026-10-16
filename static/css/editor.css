@@ -71,6 +71,15 @@ body.editor {
   overflow-y: auto;
 }
 
+/* The form's Save button stays in view while the form scrolls, above the case study's page when that is
+   docked at the bottom of the window */
+shacl-form::part(submit-button) {
+  position: sticky;
+  bottom: calc(var(--case-study-dock, 0px) + 1rem);
+  z-index: 1;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.25);
+}
+
 /* A record's statements as a diagram: the record, and an arrow from each field to its value */
 .graph-node {
   display: inline-flex;
