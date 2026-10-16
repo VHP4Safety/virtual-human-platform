@@ -14,6 +14,7 @@ const TARGET = "http://www.w3.org/ns/shacl#targetClass";
 const NAME = "https://schema.org/name";
 const TERM = "https://schema.org/DefinedTerm";
 const STRING = "http://www.w3.org/2001/XMLSchema#string";
+const XSD = "http://www.w3.org/2001/XMLSchema#";
 const editor = JSON.parse(document.getElementById("editor").textContent);
 
 // The form is in a shadow root, which the page's styles do not reach. The inputs that show a value which
@@ -35,6 +36,7 @@ textarea.shown { resize: vertical; }
 .record-link-options .record-link-new { font-weight: 600; color: #29235c; }
 .record-link-problem { padding: 4px 8px; color: #b02a37; }
 .record-link-vocabulary { margin-bottom: 4px; font: inherit; }
+.value-type { align-self: center; margin-left: 4px; padding: 0 4px; border: 1px solid #ced4da; border-radius: 3px; color: #6c757d; font: 0.7em monospace; white-space: nowrap; }
 `;
 
 async function api(method, address, body) {
@@ -366,17 +368,52 @@ function pick(within) {
   }
 }
 
+// The kind of value of a field, as its shape gives it: an address (IRI), when the field links to a class or
+// takes addresses (sh:class, sh:nodeKind sh:IRI), or else the datatype of its literals (sh:datatype).
+function typeOf(instance) {
+  const editors = instance.querySelectorAll(".editor, .shown");
+  for (const element of editors) {
+    if (element.dataset.class || (element.dataset.nodeKind || "").endsWith("#IRI")) {
+      return { name: "IRI", title: "An address (IRI)" };
+    }
+  }
+  for (const element of editors) {
+    if (element.shaclDatatype) {
+      return { name: element.shaclDatatype.value.replace(XSD, ""), title: element.shaclDatatype.value };
+    }
+  }
+  return null;
+}
+
+// Each field that holds values, not parts, is marked with the kind of its values.
+function tag(within) {
+  const found = within.matches && within.matches(".property-instance") ? [within] : within.querySelectorAll(".property-instance");
+  for (const instance of found) {
+    if (instance.querySelector(":scope > .value-type, :scope > shacl-node")) {
+      continue;
+    }
+    const type = typeOf(instance);
+    if (type) {
+      const marked = make("span", "value-type", type.name);
+      marked.title = type.title;
+      instance.insertBefore(marked, instance.querySelector(":scope > .remove-button-wrapper"));
+    }
+  }
+}
+
 function watch(form) {
   if (!form.shadowRoot || watched.has(form)) {
     return;
   }
   watched.add(form);
   pick(form.shadowRoot);
+  tag(form.shadowRoot);
   new MutationObserver(function (changes) {
     for (const change of changes) {
       for (const node of change.addedNodes) {
         if (node.nodeType === Node.ELEMENT_NODE) {
           pick(node);
+          tag(node);
         }
       }
     }
