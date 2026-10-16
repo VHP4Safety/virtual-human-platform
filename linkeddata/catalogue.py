@@ -8,11 +8,11 @@ the rest, which also holds the values of a field that takes one value when a nod
 from functools import cache
 
 from rdfsolve.client.sql_tables import STATEMENTS, TERM_SUFFIX, layout
-from sqlalchemy import and_, column, func, literal, or_, select, table, union_all
+from sqlalchemy import column, func, literal, or_, select, table, union_all
 
 import database
 from database.tables import Record
-from linkeddata import fields as model_fields, storage
+from linkeddata import storage
 
 RECORDS = Record.__table__
 
@@ -28,8 +28,8 @@ def tables() -> dict:
 
 def sources(of_class: str, path: str) -> list[dict]:
     """Where the values of a field of a class are: the field's own table, or its column of the class's table
-    and the statements table; each with its value column, and the condition its rows meet. Of a field whose
-    values are IRIs, only the IRIs are found, not a text kept in place of one."""
+    and the statements table; each with its value column, the column of its term (an IRI's is "@id"), and
+    the condition its rows meet."""
     of_layout = layout(storage.profile()).classes[of_class]
     rest = tables()[STATEMENTS]
     in_statements = {"table": rest, "value": rest.c.value, "term": rest.c.term, "where": rest.c.property == path}
@@ -42,14 +42,6 @@ def sources(of_class: str, path: str) -> list[dict]:
         found = [{"table": own, "value": own.c[name], "term": own.c[name + TERM_SUFFIX], "where": own.c[name].is_not(None)}, in_statements]
     else:
         found = [in_statements]
-    for field in model_fields.of(of_class):
-        if field["iri"] == path and field["iris"]:
-            for source in found:
-                # The term of an IRI in rdfsolve's tables is "@id".
-                if source["where"] is None:
-                    source["where"] = source["term"] == "@id"
-                else:
-                    source["where"] = and_(source["where"], source["term"] == "@id")
     return found
 
 
@@ -92,9 +84,10 @@ def page(of_class: str, filters: dict, search: str, first: int, size: int) -> tu
     return total, found
 
 
-def facets(of_class: str, paths: list[str], filters: dict, search: str = "") -> dict[str, dict[str, int]]:
-    """For each field of *paths*, how many of the records found have each of its values. A field's own filter
-    is left out of its counts, so that they say how many records each other value of it would find."""
+def facets(of_class: str, paths: list[str], filters: dict, search: str = "") -> dict[str, dict[tuple[str, bool], int]]:
+    """For each field of *paths*, how many of the records found have each of its values, by the value and
+    whether it is an IRI. A field's own filter is left out of its counts, so that they say how many records
+    each other value of it would find."""
     # The records are found once for every field that reads them (MATERIALIZED), not once for each.
     every = chosen(of_class, filters, search).with_only_columns(RECORDS.c.iri).cte("chosen").prefix_with("MATERIALIZED")
     branches = []
@@ -108,8 +101,9 @@ def facets(of_class: str, paths: list[str], filters: dict, search: str = "") -> 
             records = chosen(of_class, others, search).with_only_columns(RECORDS.c.iri).cte(f"chosen_but_{number}").prefix_with("MATERIALIZED")
         for source in sources(of_class, path):
             # A node has a value once in each place (the keys of the tables), so its rows are counted.
-            found = (select(literal(path).label("path"), source["value"].label("value"), func.count().label("records"))
-                     .where(source["table"].c.iri.in_(select(records.c.iri))).group_by(source["value"]))
+            iri = (source["term"] == "@id").label("iri")
+            found = (select(literal(path).label("path"), source["value"].label("value"), iri, func.count().label("records"))
+                     .where(source["table"].c.iri.in_(select(records.c.iri))).group_by(source["value"], iri))
             if source["where"] is not None:
                 found = found.where(source["where"])
             branches.append(found)
@@ -119,6 +113,6 @@ def facets(of_class: str, paths: list[str], filters: dict, search: str = "") -> 
     if not branches:
         return counted
     with database.engine().connect() as connection:
-        for path, value, records in connection.execute(union_all(*branches)):
-            counted[path][value] = counted[path].get(value, 0) + records
+        for path, value, iri, records in connection.execute(union_all(*branches)):
+            counted[path][(value, bool(iri))] = counted[path].get((value, bool(iri)), 0) + records
     return counted

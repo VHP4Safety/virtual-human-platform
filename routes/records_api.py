@@ -25,7 +25,7 @@ from urllib.parse import quote
 
 from flask import Response, jsonify, redirect, request, url_for
 from flask_smorest import Api, Blueprint, abort
-from marshmallow import INCLUDE, Schema, fields, validate
+from marshmallow import INCLUDE, Schema, fields
 from rdflib import RDF, Graph, Literal, URIRef
 from rdflib.namespace import SDO, XSD
 from werkzeug.exceptions import RequestEntityTooLarge
@@ -249,6 +249,7 @@ class FacetValue(Schema):
     value = fields.String(metadata={"description": "The value, as the rows and the query give it: an IRI for a field of IRIs, or a text of a list."})
     name = fields.String(metadata={"description": "Its name: the name of the record, or the label of the term."})
     count = fields.Integer(metadata={"description": "How many of the records found have it."})
+    fits = fields.Boolean(metadata={"description": "Whether the profile takes it: false for a text where an IRI belongs, or a value that is not one of the field's list."})
 
 
 # The JSON types of the datatypes of literals that JSON has; a literal of another datatype is a text.
@@ -300,17 +301,18 @@ def described(field: dict) -> str:
 def value_field(field: dict, allow_none: bool = False) -> fields.Field:
     """One value of a field, as the profile types it: an IRI as a text of the format iri, a literal of a
     datatype that JSON has in its JSON type, a value of a list (sh:in) as one of an enum, matching the
-    field's pattern."""
-    validators = []
+    field's pattern. The list and the pattern are said, not enforced, so that a query also finds the values
+    that do not fit, which the facets count apart."""
+    metadata = {}
     if field["values"]:
-        validators.append(validate.OneOf(field["values"]))
+        metadata["enum"] = list(field["values"])
     if field["pattern"]:
-        validators.append(validate.Regexp(field["pattern"]))
+        metadata["pattern"] = field["pattern"]
     if field["iris"]:
-        return fields.String(validate=validators, allow_none=allow_none, metadata={"format": "iri"})
+        return fields.String(allow_none=allow_none, metadata={"format": "iri", **metadata})
     if field["datatype"] in JSON_TYPES:
-        return fields.Raw(validate=validators, allow_none=allow_none, metadata=dict(JSON_TYPES[field["datatype"]]))
-    return fields.String(validate=validators, allow_none=allow_none)
+        return fields.Raw(allow_none=allow_none, metadata={**JSON_TYPES[field["datatype"]], **metadata})
+    return fields.String(allow_none=allow_none, metadata=metadata)
 
 
 def query_schema(of_class: str, in_use: dict) -> type[Schema]:
@@ -324,7 +326,7 @@ def query_schema(of_class: str, in_use: dict) -> type[Schema]:
         listed = []
         examples = []
         for item in in_use[field["name"]]:
-            if item["count"] and len(examples) < 10:
+            if item["count"] and item["fits"] and len(examples) < 10:
                 named = item["value"] if item["name"] == item["value"] else f"{item['name']} ({item['value']})"
                 listed.append(f"{named}: {item['count']}")
                 examples.append([item["value"]])
@@ -412,22 +414,25 @@ def faceting(of_class: str):
         counts = catalogue.facets(of_class, [field["iri"] for field in browsed_fields], filters_of(of_class, given), given["search"])
         every = []
         for field in browsed_fields:
-            # Only IRIs have names; a text of a list is its own name.
-            if field["iris"]:
-                every.extend(field["values"])
-                every.extend(counts[field["iri"]])
+            every.extend(field["values"])
+            for value, iri in counts[field["iri"]]:
+                if iri:
+                    every.append(value)
         names = records.names(every)
         found = {}
         for field in browsed_fields:
-            values = dict.fromkeys(field["values"], 0)
-            for value, count in counts[field["iri"]].items():
-                # A field of a list (sh:in) is browsed by the values of the list only.
-                if value in values or not field["values"]:
-                    values[value] = count
+            # The values of a field's list are counted even when no record has them.
+            values = {}
+            for value in field["values"]:
+                values[(value, field["iris"])] = 0
+            for key, count in counts[field["iri"]].items():
+                values[key] = values.get(key, 0) + count
             listed = []
-            for value, count in values.items():
-                listed.append({"value": value, "name": names.get(value) or value, "count": count})
-            listed.sort(key=lambda item: (-item["count"], item["name"]))
+            for (value, iri), count in values.items():
+                # A value fits when the profile takes it: an IRI where IRIs belong, and one of the field's list.
+                fits = iri == field["iris"] and (value in field["values"] or not field["values"])
+                listed.append({"value": value, "name": (names.get(value) if iri else None) or value, "count": count, "fits": fits})
+            listed.sort(key=lambda item: (not item["fits"], -item["count"], item["name"]))
             found[field["name"]] = listed
         return found
 
