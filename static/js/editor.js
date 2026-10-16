@@ -8,6 +8,7 @@
   const graph = "/api/" + path;
   const form = document.querySelector("shacl-form");
   const showRdf = document.getElementById("show-rdf");
+  const SCHEMA = "https://schema.org/";
   let previewTimer = null;
   let previewRequest = null;
 
@@ -128,6 +129,42 @@
     document.getElementById("case-study-caption").textContent = edited ? "With the form's changes, not saved yet" : "As published";
   }
 
+  // The field that the form is on is marked in the case study's page, on the page of the nearest node of the
+  // form that has an address. A node without one, reached from that page by its sections (schema:hasPart),
+  // is a section, known by its position and name.
+  function term(path) {
+    return path.split(/[/#]/).pop();
+  }
+
+  function valueOf(node, path) {
+    const field = node.querySelector('.property-instance[data-path="' + path + '"]');
+    const input = field && (field.querySelector(".shown") || field.querySelector(".editor"));
+    return input ? input.value : "";
+  }
+
+  function markCaseStudy(event) {
+    if (!caseStudyComponent) {
+      return;
+    }
+    const found = event.composedPath().filter(function (node) {
+      return node instanceof HTMLElement && (node.tagName === "SHACL-NODE" || node.classList.contains("property-instance"));
+    });
+    const at = found.findIndex(function (node) {
+      return node.tagName === "SHACL-NODE" && !node.dataset.nodeId.startsWith("_:");
+    });
+    if (at < 1) {
+      return;
+    }
+    const reached = found[at - 1].dataset.path;
+    const part = found[at - 2];
+    if (reached === SCHEMA + "hasPart" && part && part.tagName === "SHACL-NODE") {
+      const section = { position: valueOf(part, SCHEMA + "position"), name: valueOf(part, SCHEMA + "name") };
+      caseStudyComponent.markField(caseStudy, found[at].dataset.nodeId, at > 2 ? term(found[0].dataset.path) : "", section);
+    } else {
+      caseStudyComponent.markField(caseStudy, found[at].dataset.nodeId, term(reached), null);
+    }
+  }
+
   async function showPublishedCaseStudy() {
     const response = await fetch(graph, { credentials: "same-origin", headers: { Accept: "application/ld+json" } });
     if (response.ok && !edited) {
@@ -214,6 +251,13 @@
       edited = true;
       schedulePreview();
     });
+    // The focus that moves within the form reaches its shadow root, not the form itself.
+    if (caseStudy) {
+      form.addEventListener("focusin", function (event) {
+        form.shadowRoot.addEventListener("focusin", markCaseStudy);
+        markCaseStudy(event);
+      }, { once: true });
+    }
     form.addEventListener("submit", async function () {
       if (await send("PUT", graph, form.serialize("text/turtle"), "text/turtle")) {
         reopen(editor.graph);

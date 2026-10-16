@@ -18,6 +18,9 @@
 //   linkTarget   where links open, such as "_blank" in the editor, so that it is not left
 //   openDisabled true opens the pages whose buttons the website shows greyed out, to preview them
 //   onNavigate   a function called with the address of the page in view, after a click opens another
+//
+// markField(container, address, field, section) marks what shows a field of a page, such as an editor's
+// form is on, and opens that page.
 
 // The colour of the heading of a page, by its level: the case study, a question, a process flow step, a
 // step of one, and the steps below.
@@ -33,7 +36,7 @@ const UNSAFE = "script, style, iframe, frame, frameset, object, embed, link, met
 const DEEPEST = 20;
 
 // What each container shows: the document, the addresses of the pages from the case study to the one
-// in view, and the sections that are open.
+// in view, the sections that are open, and the field that is marked.
 const states = new WeakMap();
 let containers = 0;
 
@@ -213,6 +216,7 @@ function breadcrumbs(container, state, found) {
     const name = first(found[level], "name") || "(no name)";
     if (level === found.length - 1) {
       const here = make("li", "breadcrumb-item active text-vhppink-distinct", name);
+      here.dataset.field = "name";
       here.setAttribute("aria-current", "page");
       list.append(here);
     } else {
@@ -268,11 +272,11 @@ function items(state, page) {
     for (const value of all(page, name)) {
       if (value && typeof value === "object" && value["@id"]) {
         const record = state.nodes.get(value["@id"]) || value;
-        listed.push({ name: first(record, "name") || value["@id"].split("/").pop(), address: value["@id"] });
+        listed.push({ name: first(record, "name") || value["@id"].split("/").pop(), address: value["@id"], field: name });
       } else if (value && typeof value === "object") {
-        listed.push({ name: first(value, "@value"), address: "" });
+        listed.push({ name: first(value, "@value"), address: "", field: name });
       } else {
-        listed.push({ name: String(value), address: "" });
+        listed.push({ name: String(value), address: "", field: name });
       }
     }
     listed.sort(function (one, other) {
@@ -322,6 +326,7 @@ function buttons(container, state, page, level) {
   }
   for (const item of items(state, page)) {
     const button = make(item.address ? "a" : "button", "btn w-100 text-white " + ITEMS);
+    button.dataset.field = item.field;
     if (item.address) {
       button.href = local(item.address, state.options);
       opens(button, state.options);
@@ -346,9 +351,12 @@ function sections(state, page) {
     const open = state.open.has(key) ? state.open.get(key) : count === 0;
     const id = state.id + "-section-" + count;
     const item = make("div", "accordion-item");
+    item.dataset.position = first(found[count], "position");
+    item.dataset.name = first(found[count], "name");
     const header = make("h2", "accordion-header");
     const toggle = make("button", "accordion-button" + (open ? "" : " collapsed"), first(found[count], "name") || "Section " + (count + 1));
     toggle.type = "button";
+    toggle.dataset.field = "name";
     toggle.dataset.bsToggle = "collapse";
     toggle.dataset.bsTarget = "#" + id;
     toggle.setAttribute("aria-expanded", open ? "true" : "false");
@@ -359,6 +367,7 @@ function sections(state, page) {
     body.dataset.key = key;
     body.dataset.bsParent = "#" + accordion.id;
     const text = make("div", "accordion-body");
+    text.dataset.field = "text";
     text.append(safeHtml(first(found[count], "text"), state.options));
     body.append(text);
     item.append(header, body);
@@ -380,9 +389,13 @@ function view(container, state, page, level, direction) {
   } else if (level === 1) {
     heading = first(page, "headline") || heading;
   }
-  top.append(make("h1", HEADINGS[Math.min(level, HEADINGS.length - 1)], heading || "(no name)"));
+  const title = make("h1", HEADINGS[Math.min(level, HEADINGS.length - 1)], heading || "(no name)");
+  title.dataset.field = level === 1 ? "headline name" : "name";
+  top.append(title);
   if (summary) {
-    top.append(make("p", "text-secondary fs-5", summary));
+    const introduction = make("p", "text-secondary fs-5", summary);
+    introduction.dataset.field = level === 0 ? "abstract description" : "description";
+    top.append(introduction);
   }
   const row = buttons(container, state, page, level);
   if (row.children.length) {
@@ -391,6 +404,7 @@ function view(container, state, page, level, direction) {
   const bottom = make("div", "container");
   if (first(page, "text")) {
     const text = make("div", "case-study-text mb-4");
+    text.dataset.field = "text";
     text.append(safeHtml(first(page, "text"), state.options));
     bottom.append(text);
   }
@@ -406,6 +420,68 @@ function rememberOpen(container, state) {
   }
 }
 
+// The section of the page in view that is the one of the form: the one at its position and with its name,
+// else the one at its position, else the one with its name.
+function sectionOf(container, section) {
+  let found = null;
+  let fit = 0;
+  for (const item of container.querySelectorAll(".accordion-item")) {
+    const fits = (parseFloat(item.dataset.position) === parseFloat(section.position) ? 2 : 0) + (item.dataset.name === section.name ? 1 : 0);
+    if (fits > fit) {
+      found = item;
+      fit = fits;
+    }
+  }
+  return found;
+}
+
+// The elements that show the marked field, when the page in view is the one that has it. A section's field
+// is marked in its section, which is opened; a field that the page does not show marks the whole section.
+function mark(container, state) {
+  for (const marked of container.querySelectorAll(".case-study-mark")) {
+    marked.classList.remove("case-study-mark");
+  }
+  const here = state.path.length ? state.path[state.path.length - 1] : state.document["@id"];
+  if (!state.mark || state.mark.address !== here) {
+    return;
+  }
+  let section = null;
+  if (state.mark.section) {
+    section = sectionOf(container, state.mark.section);
+    if (!section) {
+      return;
+    }
+    const body = section.querySelector(".accordion-collapse");
+    const toggle = section.querySelector(".accordion-button");
+    body.classList.add("show");
+    toggle.classList.remove("collapsed");
+    toggle.setAttribute("aria-expanded", "true");
+  }
+  let marked = 0;
+  for (const element of container.querySelectorAll("[data-field]")) {
+    if (element.dataset.field.split(" ").includes(state.mark.field) && element.closest(".accordion-item") === section) {
+      element.classList.add("case-study-mark");
+      marked += 1;
+    }
+  }
+  if (section && !marked) {
+    section.classList.add("case-study-mark");
+  }
+}
+
+// The container scrolls to what is marked, when that is out of its view; the window does not move.
+function reveal(container) {
+  const marked = container.querySelector(".case-study-mark");
+  if (!marked) {
+    return;
+  }
+  const box = container.getBoundingClientRect();
+  const at = marked.getBoundingClientRect();
+  if (at.top < box.top || at.bottom > box.bottom) {
+    container.scrollTop += at.top - box.top - 16;
+  }
+}
+
 function draw(container, direction) {
   const state = states.get(container);
   rememberOpen(container, state);
@@ -414,6 +490,7 @@ function draw(container, direction) {
   const shown = make("div", "case-study");
   shown.append(breadcrumbs(container, state, found), processFlow(container, state, level), view(container, state, found[level], level, direction));
   container.replaceChildren(shown);
+  mark(container, state);
 }
 
 function navigate(container, path) {
@@ -447,4 +524,21 @@ export function renderCaseStudy(container, caseStudy, options) {
     state.path = pathTo(state, state.document, 0, state.options.at) || [];
   }
   draw(container, "");
+}
+
+// Marks what shows a field of the page at an address, or of one of its sections, given by its position and
+// name ({position, name}), and opens that page. The mark stays when the container is drawn again.
+export function markField(container, address, field, section) {
+  const state = states.get(container);
+  if (!state) {
+    return;
+  }
+  state.mark = { address: address, field: field, section: section };
+  const path = address === state.document["@id"] ? [] : pathTo(state, state.document, 0, address);
+  if (path && path.join(" ") !== state.path.join(" ")) {
+    navigate(container, path);
+  } else {
+    mark(container, state);
+  }
+  reveal(container);
 }

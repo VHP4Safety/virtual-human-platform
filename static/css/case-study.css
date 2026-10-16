@@ -127,3 +127,10 @@ body.editor {
   min-height: 0;
   overflow-y: auto;
 }
+
+/* What shows the field that the editor's form is on */
+.case-study-mark {
+  outline: 3px solid var(--bs-vhppink);
+  outline-offset: 4px;
+  border-radius: 0.25rem;
+}
