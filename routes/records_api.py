@@ -19,7 +19,9 @@ answers with the statements about the record before and after it, and what is wr
 """
 
 import json
+import re
 from functools import cache
+from urllib.parse import quote
 
 from flask import Response, jsonify, redirect, request, url_for
 from flask_smorest import Api, Blueprint, abort
@@ -214,6 +216,41 @@ def browsed(field: dict) -> bool:
     return bool(field["values"] or field["classes"]) and not field["part"] and not field["fixed"]
 
 
+def resource(of_class: str) -> str:
+    """The API's resource that lists the records of a class: that of its kind, or the search for the class."""
+    for kind, of_kind in settings()["kinds"].items():
+        if of_kind == of_class:
+            return f"{blueprint.url_prefix}/{kind}"
+    return f"{blueprint.url_prefix}/search?class={quote(of_class, safe=':/')}"
+
+
+def described(field: dict) -> str:
+    """The description of a field: its label and description, and what its values are, as the profile says."""
+    text = f"{field['label']}. {field['description']}".strip()
+    if field["part"]:
+        return text
+    if field["values"] and field["iris"]:
+        names = records.names(field["values"])
+        listed = []
+        for value in field["values"]:
+            listed.append(f"{names.get(value, value)} ({value})")
+        text += " Each value is one of these IRIs: " + "; ".join(listed) + "."
+    elif field["classes"]:
+        listed = []
+        for of_class in field["classes"]:
+            listed.append(f"{documents.term(of_class)} ({of_class}, at {resource(of_class)})")
+        text += " Each value is the IRI of a record of " + " or ".join(listed) + "."
+    elif field["iris"]:
+        text += " Each value is an IRI."
+    # The terms of one vocabulary are kept by a pattern on its namespace, such as ^https://vhp4safety\.github\.io/glossary#.
+    namespace = re.sub(r"\\(.)", r"\1", field["pattern"].removeprefix("^"))
+    if field["pattern"].startswith("^") and re.match(field["pattern"], namespace):
+        text += f" Only those in the namespace {namespace}."
+    if field["fixed"]:
+        text += " Its values include " + ", ".join(field["fixed"]) + "."
+    return text
+
+
 def value_field(field: dict, allow_none: bool = False) -> fields.Field:
     """One value of a field, as the profile types it: an IRI as a text of the format iri, a literal of a
     datatype that JSON has in its JSON type, a value of a list (sh:in) as one of an enum, matching the
@@ -230,19 +267,26 @@ def value_field(field: dict, allow_none: bool = False) -> fields.Field:
     return fields.String(validate=validators, allow_none=allow_none)
 
 
-def query_schema(of_class: str, examples: dict) -> type[Schema]:
-    """The query of a kind's catalogue: a text, and the values of each field it is browsed by."""
+def query_schema(of_class: str, in_use: dict) -> type[Schema]:
+    """The query of a kind's catalogue: a text, and the values of each field it is browsed by, with the
+    values most in use as examples."""
     found = {"search": fields.String(load_default="", metadata={"description": "Text that the record's name or address has, in any case."})}
     for field in model_fields.of(of_class):
         if not browsed(field):
             continue
-        text = f"{field['label']}. {field['description']}".strip()
-        if not field["values"]:
-            classes = ", ".join(documents.term(of_field) for of_field in field["classes"])
-            text += f" The address of a record or term of {classes}; /facets lists them."
+        text = described(field) + f" {resource(of_class)}/facets counts the records that have each value."
+        listed = []
+        examples = []
+        for item in in_use[field["name"]]:
+            if item["count"] and len(examples) < 10:
+                named = item["value"] if item["name"] == item["value"] else f"{item['name']} ({item['value']})"
+                listed.append(f"{named}: {item['count']}")
+                examples.append([item["value"]])
+        if listed and not field["values"]:
+            text += " The values most in use, with how many records have each: " + "; ".join(listed) + "."
         metadata = {"description": text}
-        if field["iri"] in examples:
-            metadata["examples"] = [[examples[field["iri"]]]]
+        if examples:
+            metadata["examples"] = examples
         found[field["name"]] = fields.List(value_field(field), metadata=metadata)
     return Schema.from_dict(found, name=documents.term(of_class).replace(":", "_") + "Query")
 
@@ -260,7 +304,7 @@ def row_schema(of_class: str) -> type[Schema]:
             value = value_field(field, field["single"])
         if not field["single"]:
             value = fields.List(value)
-        value.metadata["description"] = f"{field['label']}. {field['description']}".strip()
+        value.metadata["description"] = described(field)
         found[field["name"]] = value
     return Schema.from_dict(found, name=documents.term(of_class).replace(":", "_"))
 
@@ -347,12 +391,7 @@ def resources() -> None:
     """The catalogue of each kind of record, its facets, and a new record added to it."""
     for kind, of_class in settings()["kinds"].items():
         browsed_fields = [field for field in model_fields.of(of_class) if browsed(field)]
-        # The examples of the query are the most common value of each field among the records.
-        examples = {}
-        for path, counts in catalogue.facets(of_class, [field["iri"] for field in browsed_fields], {}).items():
-            if counts:
-                examples[path] = max(counts, key=counts.get)
-        query = query_schema(of_class, examples)
+        query = query_schema(of_class, faceting(of_class)({"search": ""}))
 
         listed = listing(of_class)
         listed.__doc__ = (f"The {kind}, a page at a time, found by name and by the values of their fields.\n\n"
@@ -367,7 +406,7 @@ def resources() -> None:
         counted = faceting(of_class)
         counted.__doc__ = (f"How many of the {kind} found have each value of each field that the catalogue is browsed by.\n\n"
                            "A field's own values are left out of its counts, so that they say how many records each other value would find.")
-        facet_schema = Schema.from_dict({field["name"]: fields.List(fields.Nested(FacetValue), metadata={"description": field["label"]}) for field in browsed_fields},
+        facet_schema = Schema.from_dict({field["name"]: fields.List(fields.Nested(FacetValue), metadata={"description": described(field)}) for field in browsed_fields},
                                         name=documents.term(of_class).replace(":", "_") + "Facets")
         view = blueprint.response(200, facet_schema)(blueprint.arguments(query, location="query")(counted))
         blueprint.route(f"/{kind}/facets", endpoint=f"facets_{kind}", methods=["GET"], tags=[kind])(view)
