@@ -3,9 +3,12 @@ rdfsolve proposal gives the call, and is called where the platform calls rdfsolv
 then the stand-in goes, and its caller calls rdfsolve."""
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
+import requests
 from rdflib import RDF, BNode, Graph, URIRef
 from rdfsolve.client.sql_tables import layout
+from rdfsolve.ontology.service import Ontologies
 
 
 @dataclass
@@ -77,3 +80,86 @@ def merge(current: Graph, added: Graph, profile) -> Merged:
             merged.graph.add((subject, predicate, value))
             merged.added.append((subject, predicate, value))
     return merged
+
+
+OBO = "http://purl.obolibrary.org/obo/"
+ENTITY = "http://www.wikidata.org/entity/"
+# The registries of vocabularies, by the name that rdfsolve gives their service.
+REGISTRIES = {"ols": "Ontology Lookup Service (EMBL-EBI)", "ontobee": "Ontobee", "wikidata": "Wikidata"}
+
+
+def listed(registry: str, cache: Path) -> list[dict]:
+    """Every vocabulary of a registry: its identifier, title, the namespace of its terms, its description,
+    and the prefix of the codes of its terms."""
+    if registry == "wikidata":
+        return [{"id": "wikidata", "title": "Wikidata", "namespace": ENTITY, "description": "The items of Wikidata.", "prefix": ""}]
+    provider = Ontologies(registry, cache=cache)
+    found = []
+    try:
+        if registry == "ols":
+            def read():
+                return provider._json("/ontologies", size=1000)["_embedded"]["ontologies"]
+            for ontology in provider._request("vocabularies", registry, read) or []:
+                config = ontology.get("config") or {}
+                prefix = config.get("preferredPrefix") or ontology["ontologyId"].upper()
+                bases = config.get("baseUris") or [OBO + prefix + "_"]
+                found.append({"id": ontology["ontologyId"], "title": config.get("title") or prefix, "namespace": bases[0],
+                              "description": config.get("description") or "", "prefix": prefix})
+        else:
+            def read():
+                return provider._sparql("PREFIX owl: <http://www.w3.org/2002/07/owl#> PREFIX dc: <http://purl.org/dc/elements/1.1/> "
+                                        "SELECT DISTINCT ?graph ?title WHERE { GRAPH ?graph { ?o a owl:Ontology . OPTIONAL { ?o dc:title ?title } } }")
+            for row in provider._request("vocabularies", registry, read) or []:
+                prefix = row["graph"]["value"].rstrip("/").split("/")[-1]
+                found.append({"id": prefix, "title": row.get("title", {}).get("value") or prefix, "namespace": OBO + prefix + "_", "description": "", "prefix": prefix})
+    finally:
+        provider.close()
+    return found
+
+
+# rdfsolve issue 11 (P6): Service(<registry>).vocabularies(text)
+def vocabularies(registry: str, text: str, cache: Path) -> list[dict]:
+    """The vocabularies of a registry (ols, ontobee or wikidata) whose identifier or title has the text."""
+    found = []
+    for vocabulary in listed(registry, cache):
+        if text.casefold() in (vocabulary["id"] + " " + vocabulary["title"]).casefold():
+            found.append(vocabulary)
+    return found
+
+
+# rdfsolve issue 11: Vocabulary(namespace, service=Service(<registry>)).search(text)
+def terms(registry: str, text: str, namespace: str, cache: Path) -> list[dict]:
+    """The terms of the vocabulary at a namespace that a registry finds by a text in their names: their
+    address, label, definition and code."""
+    found = []
+    if registry == "wikidata":
+        answer = requests.get("https://www.wikidata.org/w/api.php", timeout=8, headers={"User-Agent": "VHP4Safety platform"},
+                              params={"action": "wbsearchentities", "search": text, "language": "en", "limit": 12, "format": "json"})
+        answer.raise_for_status()
+        for item in answer.json().get("search", []):
+            found.append({"@id": ENTITY + item["id"], "name": item.get("label") or item["id"], "description": item.get("description") or "", "code": item["id"]})
+        return found
+    ontology = None
+    prefix = ""
+    for vocabulary in listed(registry, cache):
+        if vocabulary["namespace"] == namespace:
+            ontology = vocabulary["id"]
+            prefix = vocabulary["prefix"] + ":"
+    provider = Ontologies(registry, cache=cache)
+    try:
+        for term in provider.search(text, ontology=ontology if registry == "ols" else None, exact=False):
+            if term["iri"].startswith(namespace):
+                found.append({"@id": term["iri"], "name": term.get("label") or term["iri"], "description": " ".join(term.get("description") or []),
+                              "code": prefix + term["iri"].removeprefix(namespace)})
+    finally:
+        provider.close()
+    return found
+
+
+def serving(namespace: str, cache: Path) -> str | None:
+    """The registry that has the vocabulary at a namespace: OLS, else Wikidata, else Ontobee."""
+    for registry in ("ols", "wikidata", "ontobee"):
+        for vocabulary in listed(registry, cache):
+            if vocabulary["namespace"] == namespace:
+                return registry
+    return None

@@ -30,9 +30,10 @@ from rdflib import RDF, Graph, Literal, URIRef
 from rdflib.namespace import SDO, XSD
 from werkzeug.exceptions import RequestEntityTooLarge
 
+import database
 from admin import changes, tokens, writes
 from database import images, records
-from linkeddata import catalogue, checks, documents, fields as model_fields, storage
+from linkeddata import catalogue, checks, documents, fields as model_fields, patches, storage
 from linkeddata.model import RELEASE, settings, shapes
 from routes import account, limiter
 from routes.record_pages import SERIALIZATIONS, data
@@ -182,6 +183,48 @@ class Search(Schema):
     of_class = fields.List(fields.Url(metadata={"format": "iri"}), data_key="class", load_default=list, metadata={"description": "The IRIs of the classes of the records (or of the terms), with their subclasses."})
     within = fields.String(load_default="", metadata={"description": "The start of the addresses, such as the namespace of a vocabulary."})
     limit = fields.Integer(load_default=20, validate=lambda number: 1 <= number <= 200)
+
+
+class Registry(Schema):
+    text = fields.String(load_default="", metadata={"description": "Text that the name of a vocabulary or of a term has."})
+    namespace = fields.String(load_default="", metadata={"description": "The namespace of the vocabulary whose terms are found."})
+
+
+def registered() -> None:
+    """The registries of vocabularies answer editors only, as they are asked on the editor's behalf."""
+    if account.current_editor() is None:
+        abort(401, message="An editor's login is needed.")
+
+
+@blueprint.get("/registries")
+def registries():
+    """The registries of vocabularies that the editor finds vocabularies and their terms in."""
+    registered()
+    return jsonify(patches.REGISTRIES)
+
+
+@blueprint.get("/registries/<registry>/vocabularies")
+@blueprint.arguments(Registry, location="query")
+def registry_vocabularies(given, registry):
+    """The vocabularies of a registry whose identifier or title has the text: their title, the namespace of
+    their terms, and their description."""
+    registered()
+    if registry not in patches.REGISTRIES:
+        abort(404, message="There is no such registry.")
+    return jsonify(patches.vocabularies(registry, given["text"], database.STATE_DIR / "registries.json")[:50])
+
+
+@blueprint.get("/registries/terms")
+@blueprint.arguments(Registry, location="query")
+def registry_terms(given):
+    """The terms of the vocabulary at a namespace whose names have the text, as the registry that has the
+    vocabulary finds them: their address, label, definition and code."""
+    registered()
+    if not given["text"].strip() or not given["namespace"]:
+        return jsonify({"registry": None, "terms": []})
+    registry = patches.serving(given["namespace"], database.STATE_DIR / "registries.json")
+    found = patches.terms(registry, given["text"], given["namespace"], database.STATE_DIR / "registries.json") if registry else []
+    return jsonify({"registry": registry, "title": patches.REGISTRIES.get(registry), "terms": found})
 
 
 @blueprint.get("/search")
