@@ -4,7 +4,7 @@
   <div class="pb-2">
     <h1><span class="text-vhpblue">Sources</span></h1>
     <p class="text-secondary fs-5">Where the records of the platform come from.</p>
-    <p>Most records are imported every night from the sources below: each source is read, its fields are put into the platform's model, and the result is checked (see the <a class="link-vhpblue" href="{{ url_for('dashboards.data_quality') }}">quality of the data</a>). Editors also write records on the platform: {{ written }} records come from them, and each of their changes is kept with the editor's name. A record written on the platform replaces what a source gives for the same address.</p>
+    <p>Most records are imported every night from the sources below: each source is read, its fields are put into the platform's model, and the result is checked (see the <a class="link-vhpblue" href="{{ url_for('admin.data_quality') }}">quality of the data</a>). Editors also write records on the platform: {{ written }} records come from them, and each of their changes is kept with the editor's name. A record written on the platform replaces what a source gives for the same address.</p>
   </div>
 
   {% for source in sources %}
@@ -12,7 +12,7 @@
     <div class="card-header bg-white d-flex flex-wrap align-items-center gap-2 py-3">
       <h2 class="h5 mb-0 text-vhpblue">{{ source.title }}</h2>
       <span class="badge text-bg-vhplight-blue">{{ source.records }} records</span>
-      {% if source.notes %}<a class="badge text-bg-vhporange text-decoration-none" href="{{ url_for('dashboards.data_quality') }}">{{ source.notes }} values that do not fit</a>{% endif %}
+      {% if source.notes %}<a class="badge text-bg-vhporange text-decoration-none" href="{{ url_for('admin.data_quality') }}">{{ source.notes }} values that do not fit</a>{% endif %}
     </div>
     <div class="card-body">
       {% if source.fetched and source.fetched.problem %}

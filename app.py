@@ -25,7 +25,7 @@ from linkeddata import documents, storage
 from routes.account import blueprint as account_blueprint
 from routes import limiter, records_api, tables_api
 from routes.changes import blueprint as changes_blueprint
-from routes.data_quality import blueprint as dashboards_blueprint
+from routes.sources import blueprint as sources_blueprint
 from routes.editor import blueprint as admin_blueprint
 from routes.images import blueprint as images_blueprint
 from routes.record_pages import blueprint as pages_blueprint
@@ -139,7 +139,7 @@ limiter.init_app(app)
 records_api.register(app)
 tables_api.register(app)
 app.register_blueprint(pages_blueprint)
-app.register_blueprint(dashboards_blueprint)
+app.register_blueprint(sources_blueprint)
 app.register_blueprint(changes_blueprint)
 app.register_blueprint(images_blueprint)
 # Google Search Console verification token (rendered as a <meta> tag in

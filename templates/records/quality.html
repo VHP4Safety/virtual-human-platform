@@ -1,10 +1,10 @@
-{% extends "base.html" %}
+{% extends "editor/base.html" %}
 {% block content %}
-<section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
+<section class="container-fluid px-lg-4 py-4">
   <div class="pb-2">
     <h1><span class="text-vhpblue">Data quality</span></h1>
     <p class="text-secondary fs-5">How complete the records of the platform are, and what the checks of the model found.</p>
-    <p>The records follow the platform's model, built on <a class="link-vhpblue" href="https://schema.org">schema.org</a> and <a class="link-vhpblue" href="https://bioschemas.org">Bioschemas</a>. Every import checks its source against the model with <a class="link-vhpblue" href="https://github.com/jmillanacosta/rdfsolve">rdfsolve</a>, and every record written on the platform is checked before it is saved. See also <a class="link-vhpblue" href="{{ url_for('dashboards.sources') }}">where the records come from</a>.</p>
+    <p>The records follow the platform's model, built on <a class="link-vhpblue" href="https://schema.org">schema.org</a> and <a class="link-vhpblue" href="https://bioschemas.org">Bioschemas</a>. Every import checks its source against the model with <a class="link-vhpblue" href="https://github.com/jmillanacosta/rdfsolve">rdfsolve</a>, and every record written on the platform is checked before it is saved. See also <a class="link-vhpblue" href="{{ url_for('sources.sources') }}">where the records come from</a>.</p>
   </div>
 
   <h2 class="h4 mt-3">Completeness</h2>
@@ -53,7 +53,7 @@
               <tr>
                 <td class="ps-3"><a class="link-vhpblue text-break" href="{{ note.iri|page_link }}">{{ names.get(note.iri) or note.iri|page_link }}</a></td>
                 <td class="text-break"><code>{{ note.value or "(empty)" }}</code></td>
-                <td>{% if note.source == written %}<a class="link-vhpblue" href="{{ url_for('changes.changes', record=note.iri) }}">written on the platform</a>{% else %}<a class="link-vhpblue" href="{{ url_for('dashboards.sources') }}#{{ note.source }}">{{ note.source }}</a>{% endif %}</td>
+                <td>{% if note.source == written %}<a class="link-vhpblue" href="{{ url_for('changes.changes', record=note.iri) }}">written on the platform</a>{% else %}<a class="link-vhpblue" href="{{ url_for('sources.sources') }}#{{ note.source }}">{{ note.source }}</a>{% endif %}</td>
               </tr>
               {% endfor %}
             </tbody>

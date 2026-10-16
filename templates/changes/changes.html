@@ -5,7 +5,7 @@
   {% if record %}
   <p class="text-secondary">The changes made to <a class="link-vhpblue" href="{{ record|page_link }}">{{ names.get(record) or record|page_link }}</a>. <a class="link-vhpblue" href="{{ url_for('changes.changes') }}">All changes</a></p>
   {% else %}
-  <p class="text-secondary">What editors changed in the records of the platform, newest first. Records that come from the nightly import are listed on the <a class="link-vhpblue" href="{{ url_for('dashboards.sources') }}">sources page</a>.</p>
+  <p class="text-secondary">What editors changed in the records of the platform, newest first. Records that come from the nightly import are listed on the <a class="link-vhpblue" href="{{ url_for('sources.sources') }}">sources page</a>.</p>
   {% endif %}
 
   <div class="card">

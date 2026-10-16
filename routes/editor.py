@@ -6,6 +6,8 @@ from flask import Blueprint, Response, abort, redirect, render_template, request
 
 from admin import editor
 from database import records
+from database.tables import PLATFORM
+from linkeddata import quality
 from linkeddata.model import settings
 from routes.account import current_editor, form_token
 
@@ -25,6 +27,14 @@ def admin():
     if logged_in() is None:
         return redirect(url_for("account.login", next=request.path))
     return render_template("admin/kinds.html", kinds=editor.counts(), page_title="VHP4Safety editor")
+
+
+@blueprint.get("/admin/quality")
+def data_quality():
+    """How complete the records are, and what the checks of the imports and of the written records found."""
+    if logged_in() is None:
+        return redirect(url_for("account.login", next=request.path))
+    return render_template("records/quality.html", **quality.report(), written=PLATFORM, page_title="Data quality — VHP4Safety editor")
 
 
 @blueprint.get("/admin/<kind>/")

@@ -67,7 +67,7 @@ except that `database/` reads the base address of records from `linkeddata/model
 | | `editor.py` | what the record editor shows: the records of each kind, and the graph its forms are built from |
 | | `changes.py` | each change field by field, and as RDF statements |
 | `routes/` | `record_pages.py` | the address of each record: its data, 410 Gone once removed, a general record page |
-| | `data_quality.py` | the `/data-quality` and `/sources` pages |
+| | `sources.py` | the `/sources` page |
 | | `records_api.py` | the records API (flask-smorest): each record a graph of the W3C Graph Store Protocol |
 | | `tables_api.py` | the tables API (flask-smorest): the rows of the release's tables and of the records, notes and sources tables |
 | | `editor.py` | the record editor: shacl-form builds each form from the shapes, and writes through the records API |
@@ -139,7 +139,7 @@ rules:
     - {predicate: "https://schema.org/name", object: service}   # the rows' "service" field
 ```
 
-3. Run the import, and check its records and notes on the `/sources` and `/data-quality` pages.
+3. Run the import, and check its records and notes on the `/sources` page and on the editor's data quality page (`/admin/quality`).
 
 ## Read and write records
 
