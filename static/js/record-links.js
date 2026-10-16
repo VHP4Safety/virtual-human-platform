@@ -153,6 +153,8 @@ class RecordLink extends Plugin {
         });
         if (current && !selected) {
           vocabularies.value = current["@id"];
+        } else if (value && !selected) {
+          vocabularies.prepend(new Option("Not in a vocabulary of the platform", "none", true, true));
         }
         vocabularies.disabled = Boolean(only && current);
         vocabulary = listed.find(function (found) { return found["@id"] === vocabularies.value; }) || null;
