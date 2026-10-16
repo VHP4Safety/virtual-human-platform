@@ -20,8 +20,8 @@ def shape_of(kind: str) -> URIRef | None:
 def of(kind: str) -> list[dict]:
     """Each field of a class: its name in JSON-LD, property, label and description, whether it is required,
     whether it takes one value (sh:maxCount 1), what its values are (the values of sh:in, the classes of
-    sh:class and sh:or, the datatype, or web addresses), whether a value that does not fit is only a warning
-    (sh:Warning), the profile's message, the values the model fixes, whether its values are parts of the record that holds them (the values of a class without a
+    sh:class and sh:or, the datatype, or web addresses) and the pattern they match, whether a value that
+    does not fit, or no value, is only a warning (sh:Warning), the profile's message, the values the model fixes, whether its values are parts of the record that holds them (the values of a class without a
     kind of its own that fit its shape, sh:node, or nodes without an address, sh:nodeKind sh:BlankNode), and
     whether those parts have addresses of their own (sh:nodeKind sh:IRI)."""
     graph = profile()
@@ -58,8 +58,10 @@ def of(kind: str) -> list[dict]:
                 "classes": classes,
                 "datatype": str(graph.value(field, SH.datatype) or ""),
                 "address": graph.value(field, SH.nodeKind) == SH.IRI,
+                "pattern": str(graph.value(field, SH.pattern) or ""),
                 "required": graph.value(field, SH.minCount) is not None and graph.value(field, SH.severity) != SH.Warning,
                 "warning": graph.value(field, SH.severity) == SH.Warning,
+                "recommended": graph.value(field, SH.minCount) is not None and graph.value(field, SH.severity) == SH.Warning,
                 "message": str(graph.value(field, SH.message) or ""),
                 "fixed": fixed,
                 "part": graph.value(field, SH.nodeKind) == SH.BlankNode or (
