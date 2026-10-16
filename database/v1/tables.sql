@@ -322,6 +322,24 @@ CREATE TABLE IF NOT EXISTS "schema_organization__schema_same_as" (
   FOREIGN KEY ("iri") REFERENCES "schema_organization" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_organization__schema_same_as__record" ON "schema_organization__schema_same_as" ("record");
+CREATE TABLE IF NOT EXISTS "schema_periodical" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_periodical__record" ON "schema_periodical" ("record");
+CREATE TABLE IF NOT EXISTS "schema_periodical__schema_issn" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_periodical" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_periodical__schema_issn__record" ON "schema_periodical__schema_issn" ("record");
 CREATE TABLE IF NOT EXISTS "schema_person" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -461,6 +479,8 @@ CREATE TABLE IF NOT EXISTS "schema_scholarly_article" (
   "type" TEXT,
   "schema_date_published" TEXT,
   "schema_date_published__term" TEXT,
+  "schema_is_part_of" TEXT,
+  "schema_is_part_of__term" TEXT,
   "schema_name" TEXT,
   "schema_name__term" TEXT,
   PRIMARY KEY ("iri")

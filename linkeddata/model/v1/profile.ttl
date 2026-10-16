@@ -303,6 +303,13 @@ form:WebPageElement a sh:NodeShape ;
     sh:property [ sh:path schema:position ; sh:order 3 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ] ;
     sh:property [ sh:path schema:identifier ; sh:order 4 ; sh:name "Anchor" ; sh:maxCount 1 ; sh:datatype xsd:string ] .
 
+# The journal of a publication, with its ISSNs; it is part of the record of the publication.
+form:Periodical a sh:NodeShape ;
+    sh:targetClass schema:Periodical ;
+    rdfs:label "Journal" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A journal needs one name." ] ;
+    sh:property [ sh:path schema:issn ; sh:order 2 ; sh:name "ISSN" ; sh:datatype xsd:string ; sh:pattern "^[0-9]{4}-[0-9]{3}[0-9X]$" ] .
+
 # A publication, at /publications/<DOI>, with the DOI's address in sameAs.
 form:ScholarlyArticle a sh:NodeShape ;
     sh:targetClass schema:ScholarlyArticle ;
@@ -310,8 +317,12 @@ form:ScholarlyArticle a sh:NodeShape ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:author ; sh:order 2 ; sh:name "Authors" ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ] ;
-    sh:property [ sh:path schema:datePublished ; sh:order 3 ; sh:name "Published" ; sh:maxCount 1 ; sh:datatype xsd:date ] ;
-    sh:property [ sh:path schema:sameAs ; sh:order 4 ; sh:name "DOI and other addresses" ; sh:minCount 1 ; sh:nodeKind sh:IRI ;
+    sh:property [ sh:path schema:datePublished ; sh:order 3 ; sh:name "Published" ; sh:maxCount 1 ;
+        sh:or ( [ sh:datatype xsd:date ; rdfs:label "Date" ] [ sh:datatype xsd:gYearMonth ; rdfs:label "Month" ] [ sh:datatype xsd:gYear ; rdfs:label "Year" ] ) ;
+        sh:description "The date of publication, as precise as the publisher gives it: a date, a month or a year." ] ;
+    sh:property [ sh:path schema:isPartOf ; sh:order 4 ; sh:name "Journal" ; sh:maxCount 1 ;
+        sh:class schema:Periodical ; sh:node form:Periodical ; sh:nodeKind sh:BlankNode ] ;
+    sh:property [ sh:path schema:sameAs ; sh:order 5 ; sh:name "DOI and other addresses" ; sh:minCount 1 ; sh:nodeKind sh:IRI ;
         sh:message "A publication needs its DOI, as a web address starting with https://doi.org/10." ;
         sh:description "The publication's DOI, as a web address, its item in Wikidata, and its other addresses." ] .
 
