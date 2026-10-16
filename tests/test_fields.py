@@ -173,11 +173,11 @@ def difference(intended: Graph, found: Graph) -> dict:
 
 def answered(plan: list, answer: dict, baseline: dict) -> list:
     """The checks that do not answer as the shapes say: each change's field among the problems (a
-    violation) or the warnings, or among neither when it fits; a part's field is told on the field that
-    holds the part."""
+    violation) or the warnings, or among neither when it fits; a part's field is named by the fields that
+    lead to it."""
     found = []
     for item in plan:
-        top = item["field"].split(" > ")[0]
+        top = item["field"]
         told = "violation" if top in answer["fields"] else "warning" if top in answer["warnings"] else "accepted"
         known = top in baseline["fields"] or top in baseline["warnings"]
         if told != item["expect"] and not (item["expect"] == "accepted" and known):

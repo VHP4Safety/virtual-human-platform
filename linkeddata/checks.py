@@ -83,19 +83,32 @@ def notes(found: Graph) -> list[dict]:
 def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]]]:
     """A record's document as linked data, what is wrong with each of its fields, and what is only
     recommended. The profile decides for each field: a value that breaks the checks of a field of sh:Warning
-    severity is a recommendation, whichever shape it breaks, and the profile's message says what to do."""
+    severity is a recommendation, whichever shape it breaks, and the profile's message says what to do. A
+    field of a part of the record is named by the fields that lead to it (regulatoryQuestion > step > name)."""
     found = documents.statements(new)
+    record = URIRef(new["@id"])
     results = validate(found)
-    form = {}
-    for field in fields.of(str(found.value(URIRef(new["@id"]), RDF.type))):
-        form[field["iri"]] = field
+    holders = {}
+    for holder, predicate, node in found:
+        if node != record and node not in holders and (node, None, None) in found:
+            holders[node] = (holder, predicate)
     problems = {}
     warnings = {}
     for result in results.subjects(RDF.type, SH.ValidationResult):
-        if results.value(result, SH.focusNode) != URIRef(new["@id"]):
+        focus = results.value(result, SH.focusNode)
+        trail = []
+        node = focus
+        while node != record and node in holders and len(trail) < len(holders):
+            holder, predicate = holders[node]
+            trail.insert(0, documents.term(str(predicate)))
+            node = holder
+        if node != record:
             continue
+        form = {}
+        for field in fields.of(str(found.value(focus, RDF.type))):
+            form[field["iri"]] = field
         path = str(results.value(result, SH.resultPath))
-        field = documents.term(path)
+        field = " > ".join(trail + [documents.term(path)])
         message = form[path]["message"] if path in form and form[path]["message"] else meaning(str(results.value(result, SH.sourceConstraintComponent)))
         warning = form[path]["warning"] if path in form else results.value(result, SH.resultSeverity) != SH.Violation
         found_in = warnings if warning else problems
