@@ -41,13 +41,9 @@ def meaning(component: str | None) -> str:
 
 
 def validate(found: Graph) -> Graph:
-    """The results of the model's checks of some statements, with the records they link to as they are kept,
-    so that a link is checked against the record it names."""
-    linked = []
-    for value in found.objects():
-        if isinstance(value, URIRef) and (value, None, None) not in found:
-            linked.append(str(value))
-    validated = Graph() + found + storage.graph(linked)
+    """The results of the model's checks of some statements, with the class (and name) of the records they
+    link to, so that a link is checked against the class of the record it names."""
+    validated = storage.with_names(found)
     _, results, _ = pyshacl.validate(validated, shacl_graph=shapes(), ont_graph=hierarchy())
     return results
 
