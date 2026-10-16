@@ -1,8 +1,8 @@
-/* A case study as the website shows it (static/js/case-study.js), next to casestudies.css, and the panel
-   of the record editor that shows it under the form. */
+/* A case study as the website shows it (static/js/case-study.js), beside casestudies.css, and the
+   editor's panel that shows it under the form. */
 
-/* What the website's pages take from base.css: the colours of the accordion, links in the colour of the
-   text, and rows of six buttons or more wrapped three to a row. */
+/* Taken from the website's base.css: accordion colours, links in the text colour, and rows of six or
+   more buttons wrapped three to a row. */
 .case-study .accordion-button {
   background-color: var(--bs-white);
   color: var(--bs-body-color);
@@ -67,8 +67,8 @@
   }
 }
 
-/* The record editor's panel: docked at the bottom of the window, over the page, which leaves room for it
-   (--case-study-dock is its height, set by the page). Its bar folds it; its top edge resizes it. */
+/* The editor's panel, docked at the bottom of the window over the page, which leaves room for it
+   (--case-study-dock, its height, is set by the page). Its bar folds it; its top edge resizes it. */
 body.editor {
   padding-bottom: var(--case-study-dock, 0px);
 }
@@ -128,7 +128,7 @@ body.editor {
   overflow-y: auto;
 }
 
-/* What shows the field that the editor's form is on */
+/* The mark of the field the editor's form is on */
 .case-study-mark {
   outline: 3px solid var(--bs-vhppink);
   outline-offset: 4px;
