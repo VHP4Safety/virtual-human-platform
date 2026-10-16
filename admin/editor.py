@@ -103,18 +103,20 @@ def form_graph() -> Graph:
 def links() -> dict[str, dict[str, str]]:
     """The properties of the fields that link to records (those of sh:class, or of sh:or of classes, whose
     values are not parts), each with the classes of their records by their name: the label of the class's
-    choice in sh:or, or else its name in the vocabulary."""
+    choice in sh:or, or else the label of the class's shape, or else its name in the vocabulary."""
     graph = profile()
     found = {}
     for field in graph.objects(None, SH.property):
         if graph.value(field, SH.node) is not None or graph.value(field, SH.nodeKind) == SH.BlankNode:
             continue
-        path = str(graph.value(field, SH.path))
+        named = []
         for of_class in graph.objects(field, SH["class"]):
-            found.setdefault(path, {}).setdefault(str(of_class), documents.term(str(of_class)).split(":")[-1])
+            named.append((of_class, None))
         for alternatives in graph.objects(field, SH["or"]):
             for alternative in graph.items(alternatives):
                 for of_class in graph.objects(alternative, SH["class"]):
-                    label = graph.value(alternative, RDFS.label) or documents.term(str(of_class)).split(":")[-1]
-                    found.setdefault(path, {}).setdefault(str(of_class), str(label))
+                    named.append((of_class, graph.value(alternative, RDFS.label)))
+        for of_class, label in named:
+            label = label or graph.value(graph.value(None, SH.targetClass, of_class), RDFS.label) or documents.term(str(of_class)).split(":")[-1]
+            found.setdefault(str(graph.value(field, SH.path)), {}).setdefault(str(of_class), str(label))
     return found

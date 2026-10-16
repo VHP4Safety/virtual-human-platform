@@ -40,6 +40,7 @@ form:parts a sh:PropertyGroup ; sh:order 2 ; rdfs:label "Its parts" .
 
 form:SoftwareApplication a sh:NodeShape ;
     sh:targetClass schema:SoftwareApplication ;
+    rdfs:label "Tool" ;
     rdfs:comment "Tools state the Bioschemas profile they follow (ComputationalTool)." ;
     sh:property [
         sh:path schema:name ; sh:group form:about ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ;
@@ -139,6 +140,7 @@ form:SoftwareApplication a sh:NodeShape ;
 
 form:Organization a sh:NodeShape ;
     sh:targetClass schema:Organization ;
+    rdfs:label "Organisation" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "An organisation needs one name." ] ;
     sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Website" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 3 ; sh:name "Elsewhere" ; sh:nodeKind sh:IRI ;
@@ -146,6 +148,7 @@ form:Organization a sh:NodeShape ;
 
 form:Person a sh:NodeShape ;
     sh:targetClass schema:Person ;
+    rdfs:label "Person" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A person needs one name." ] ;
     sh:property [ sh:path schema:email ; sh:order 2 ; sh:name "Email address" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 3 ; sh:name "Elsewhere" ; sh:nodeKind sh:IRI ;
@@ -154,6 +157,7 @@ form:Person a sh:NodeShape ;
 
 form:LabProtocol a sh:NodeShape ;
     sh:targetClass bioschemas_draft:LabProtocol ;
+    rdfs:label "Method" ;
     rdfs:comment "Methods state the Bioschemas profile they follow (LabProtocol)." ;
     sh:property [
         sh:path schema:name ; sh:group form:method ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ;
@@ -216,6 +220,7 @@ form:LabProtocol a sh:NodeShape ;
 # A case study, at /casestudies/<case>: the page of its regulatory questions.
 form:ResearchProject a sh:NodeShape ;
     sh:targetClass schema:ResearchProject ;
+    rdfs:label "Case study" ;
     sh:property [ sh:path schema:name ; sh:group form:casestudy ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A case study needs one name." ] ;
     sh:property [ sh:path schema:description ; sh:group form:casestudy ; sh:order 2 ; sh:name "Aim" ; sh:maxCount 1 ; sh:datatype xsd:string ;
         sh:description "What the case study studies, in one sentence." ] ;
@@ -238,6 +243,7 @@ form:ResearchProject a sh:NodeShape ;
 # the process flow steps that answer it. It is part of the record of its case study.
 form:Question a sh:NodeShape ;
     sh:targetClass schema:Question ;
+    rdfs:label "Regulatory question" ;
     sh:property [ sh:path schema:name ; sh:group form:question ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A question needs one title." ] ;
     sh:property [ sh:path schema:text ; sh:group form:question ; sh:order 2 ; sh:name "The question" ; sh:maxCount 1 ; sh:datatype xsd:string ; dash:singleLine false ] ;
     sh:property [ sh:path schema:headline ; sh:group form:question ; sh:order 3 ; sh:name "Heading of its page" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
@@ -261,6 +267,7 @@ form:Question a sh:NodeShape ;
 # data and text. It is part of the record of its case study, at an address under the page that holds it.
 form:HowToSection a sh:NodeShape ;
     sh:targetClass schema:HowToSection ;
+    rdfs:label "Workflow page" ;
     sh:property [ sh:path schema:name ; sh:group form:workflow ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A page of a workflow needs one title." ] ;
     sh:property [ sh:path schema:description ; sh:group form:workflow ; sh:order 2 ; sh:name "Summary" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:text ; sh:group form:workflow ; sh:order 3 ; sh:name "Text" ; sh:maxCount 1 ; sh:datatype xsd:string ; dash:singleLine false ;
@@ -290,6 +297,7 @@ form:HowToSection a sh:NodeShape ;
 # to it (#contact-section). It is part of the record of its page.
 form:WebPageElement a sh:NodeShape ;
     sh:targetClass schema:WebPageElement ;
+    rdfs:label "Section" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Heading" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:text ; sh:order 2 ; sh:name "Text" ; sh:maxCount 1 ; sh:datatype xsd:string ; dash:singleLine false ] ;
     sh:property [ sh:path schema:position ; sh:order 3 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ] ;
@@ -298,6 +306,7 @@ form:WebPageElement a sh:NodeShape ;
 # A publication, at /publications/<DOI>, with the DOI's address in sameAs.
 form:ScholarlyArticle a sh:NodeShape ;
     sh:targetClass schema:ScholarlyArticle ;
+    rdfs:label "Publication" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:author ; sh:order 2 ; sh:name "Authors" ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ] ;
@@ -310,6 +319,7 @@ form:ScholarlyArticle a sh:NodeShape ;
 # elsewhere on the web, such as the guide of a tool, which is part of the record of the tool.
 form:WebPage a sh:NodeShape ;
     sh:targetClass schema:WebPage ;
+    rdfs:label "Page" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:url ; sh:order 3 ; sh:name "Address elsewhere" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
@@ -319,12 +329,14 @@ form:WebPage a sh:NodeShape ;
 # A video, such as one on PeerTube; it is part of the record of the tool that it shows.
 form:VideoObject a sh:NodeShape ;
     sh:targetClass schema:VideoObject ;
+    rdfs:label "Video" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Address" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] .
 
 # A dataset, at /data/<identifier>: a study in BioStudies or a record in Zenodo.
 form:Dataset a sh:NodeShape ;
     sh:targetClass schema:Dataset ;
+    rdfs:label "Dataset" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A dataset needs one title." ] ;
     sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ; dash:singleLine false ] ;
     sh:property [ sh:path schema:creator ; sh:order 3 ; sh:name "Authors" ;
@@ -357,6 +369,7 @@ form:Dataset a sh:NodeShape ;
 # the platform knows its label and its vocabulary, so that records can be about it.
 form:DefinedTerm a sh:NodeShape ;
     sh:targetClass schema:DefinedTerm ;
+    rdfs:label "Term" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Label" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A term needs one label." ] ;
     sh:property [ sh:path schema:inDefinedTermSet ; sh:order 2 ; sh:name "Vocabulary" ; sh:minCount 1 ; sh:maxCount 1 ; sh:class schema:DefinedTermSet ;
         sh:message "A term belongs to one vocabulary." ] ;
@@ -367,6 +380,7 @@ form:DefinedTerm a sh:NodeShape ;
 # its terms start with its namespace.
 form:DefinedTermSet a sh:NodeShape ;
     sh:targetClass schema:DefinedTermSet ;
+    rdfs:label "Vocabulary" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A vocabulary needs one name." ] ;
     sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Namespace" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
         sh:message "Give the namespace of the vocabulary's terms, such as http://purl.obolibrary.org/obo/NCBITaxon_." ;
