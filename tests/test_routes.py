@@ -14,7 +14,7 @@ BASE = "https://platform.vhp4safety.nl/"
 TOOL = "https://schema.org/SoftwareApplication"
 STEP = "https://vhp4safety.github.io/glossary#VHP0000156"
 FITTING = {"name": "T", "description": "Does T.", "url": {"@id": "https://t.org/"}, "processFlowStep": [{"@id": STEP}]}
-NEW = "/api/records?graph=" + BASE + "tools/new"
+NEW = "/api/tools/new"
 
 
 def add_records():
@@ -50,7 +50,7 @@ def test_editor_and_changes(site):
     with site.session_transaction() as session:
         form_token = session["form_token"]
     turtle = f'<{BASE}tools/t> a <{TOOL}> ; <https://schema.org/name> "T" ; <https://schema.org/description> "Does T." .'
-    answer = site.put("/api/records?graph=" + BASE + "tools/t", data=turtle, content_type="text/turtle", headers={"X-Form-Token": form_token}).json
+    answer = site.put("/api/tools/t", data=turtle, content_type="text/turtle", headers={"X-Form-Token": form_token}).json
     change = site.get(answer["change"] + ".json").json
     assert ("removed", "Toxicodynamics (Process Flow Step)") in [(edge["status"], edge["name"]) for edge in change["edges"]]
 
@@ -64,7 +64,7 @@ def test_api(site):
     assert refused.status_code == 422 and set(refused.json["errors"]) == {"installUrl", "description"}
     stale = {**bearer, "If-Match": "an older version"}
     assert site.put(NEW, json=FITTING, headers=stale).status_code == 412
-    assert site.post("/api/records/move?graph=" + BASE + "tools/new", json={"to": BASE + "tools/renamed"}, headers=bearer).status_code == 200
+    assert site.post("/api/move", json={"record": "tools/new", "to": "tools/renamed"}, headers=bearer).status_code == 200
     assert site.get("/tools/new").status_code == 301
     picture = io.BytesIO()
     Picture.new("RGB", (30, 20)).save(picture, format="PNG")
@@ -79,6 +79,7 @@ def test_pages(site):
     assert b"schema:SoftwareApplication" in site.get("/tools/t", headers={"Accept": "text/turtle"}).data
     assert "Does T." in site.get("/tools").data.decode()
     assert site.get("/api/tables/schema_software_application?schema_name=T").json[0]["iri"] == BASE + "tools/t"
+    assert site.get("/api/tools", query_string={"processFlowStep": STEP}).json["@graph"][0]["name"] == "T"
     writes.retire(BASE + "tools/t", "Test Editor", ORCID)
     assert site.get("/tools/t").status_code == 410
 

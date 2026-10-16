@@ -1,10 +1,11 @@
 """The records, as the pages and the editor read them."""
 
-from sqlalchemy import select
+from rdflib import RDFS, URIRef
+from sqlalchemy import func, select
 
 import database
 from database.tables import Record
-from linkeddata.model import settings, terms
+from linkeddata.model import hierarchy, settings, terms
 
 
 def address(path: str) -> str:
@@ -37,6 +38,24 @@ def moved(kind: str) -> set[str]:
     statement = select(Record.iri).where(Record.iri.startswith(prefix), Record.moved_to.is_not(None))
     with database.session() as db:
         return {iri.removeprefix(prefix) for iri in db.scalars(statement)}
+
+
+def search(text: str, classes: list[str], within: str = "", parts: bool = True, limit: int | None = 20) -> list[Record]:
+    """The records of these classes or of their subclasses (and their parts, unless *parts* is false) whose
+    name or address has a text, and whose address starts with *within*, such as the namespace of a
+    vocabulary; by name."""
+    every = set(classes)
+    for of_class in classes:
+        every |= {str(sub) for sub in hierarchy().transitive_subjects(RDFS.subClassOf, URIRef(of_class))}
+    statement = select(Record).where(Record.type.in_(every), Record.removed_at.is_(None), Record.moved_to.is_(None))
+    if text:
+        statement = statement.where(func.lower(Record.name).contains(text.lower()) | Record.iri.contains(text))
+    if within:
+        statement = statement.where(Record.iri.startswith(within))
+    if not parts:
+        statement = statement.where(Record.part_of.is_(None))
+    with database.session() as db:
+        return list(db.scalars(statement.order_by(func.lower(Record.name), Record.iri).limit(limit)))
 
 
 def names(iris: list[str]) -> dict[str, str]:

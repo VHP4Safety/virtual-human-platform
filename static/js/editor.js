@@ -4,7 +4,8 @@
 (function () {
   const editor = JSON.parse(document.getElementById("editor").textContent);
   const message = document.getElementById("message");
-  const graph = "/api/records?graph=" + encodeURIComponent(editor.graph);
+  const path = editor.graph.slice(editor.base.length);
+  const graph = "/api/" + path;
   const form = document.querySelector("shacl-form");
   const showRdf = document.getElementById("show-rdf");
   let previewTimer = null;
@@ -121,7 +122,7 @@
     previewRequest = request;
     let answer;
     try {
-      const response = await fetch(graph + "&preview=true", {
+      const response = await fetch(graph + "?preview=true", {
         method: "PUT",
         credentials: "same-origin",
         signal: request.signal,
@@ -211,14 +212,14 @@
       }
     },
     restore: async function () {
-      if (await send("POST", "/api/records/restore?graph=" + encodeURIComponent(editor.graph))) {
+      if (await send("POST", "/api/restore", JSON.stringify({ record: path }), "application/json")) {
         reopen(editor.graph);
       }
     },
     move: async function () {
-      const to = window.prompt("The record's new address; the old one will forward to it.", editor.graph);
-      if (to && to !== editor.graph && await send("POST", "/api/records/move?graph=" + encodeURIComponent(editor.graph), JSON.stringify({ to: to }), "application/json")) {
-        reopen(to);
+      const to = window.prompt("The record's new address; the old one will forward to it.", path);
+      if (to && to !== path && await send("POST", "/api/move", JSON.stringify({ record: path, to: to }), "application/json")) {
+        reopen(editor.base + to);
       }
     },
   };

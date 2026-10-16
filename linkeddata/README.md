@@ -108,14 +108,17 @@ The classes of `model.yaml`'s `kinds` are those of records, each with its own ad
 of another class that a record holds through a field with `sh:node` is part of that record and is
 written with it: a section of a page has no address (`sh:nodeKind sh:BlankNode`), and a question of a
 case study, or a step of its workflow, has one under the record's (`sh:nodeKind sh:IRI`,
-`/casestudies/kidney/Q1/exposure`). A person or an organisation added in a field of a form becomes a
-record of its own. The properties that the VHP4Safety glossary defines (Process Flow Step, Regulatory
-Question) are named in JSON-LD as `model.yaml`'s `terms` say.
+`/casestudies/kidney/Q1/exposure`). The terms of vocabularies, such as the VHP4Safety glossary's, are
+records at their own addresses (`schema:DefinedTerm`, in a `schema:DefinedTermSet` at
+`/vocabularies/<name>`), so that records link to them. The properties that the glossary defines (Process
+Flow Step, Regulatory Question) are named in JSON-LD as `model.yaml`'s `terms` say.
 
 The editor's forms are built by shacl-form (`@ulb-darmstadt/shacl-form`) from the profile alone:
-`sh:group`, `sh:order`, `sh:name` and `sh:description` place, name and explain each field, a field of
-`sh:class` offers the records of that class, and a field of `sh:node` adds a part, or a record, in place,
-or links an existing one. To change the form, change the profile.
+`sh:group`, `sh:order`, `sh:name` and `sh:description` place, name and explain each field, and a field of
+`sh:node` holds parts of the record. A field that links to records or terms (`sh:class`, or `sh:or` of
+classes) finds them by name with the API's search (`static/js/record-links.js`, a shacl-form plugin), or
+adds a new record (a person, an organisation) or registers a new term, at once. To change the form, change
+the profile.
 
 ## The parts of an import
 
@@ -123,9 +126,11 @@ or links an existing one. To change the form, change the profile.
   values in one text, codes instead of addresses, placeholders). One parser per file cleans it and
   does nothing else. When the sources publish clean data, the parsers go. See `parsers/__init__.py`
   for what a parser returns.
-- **`sources/<name>.yaml`**: where a source comes from (a `url`, or several named `files`), its
-  title, its parser, and its rules: how its rows become the model. The rules are the arguments of rdfsolve's `Rule.between`, one list per kind of
-  row; rdfsolve finds the fields by name and writes the CONSTRUCT queries.
+- **`sources/<name>.yaml`**: where a source comes from (a `url`, with `entries` for the file of each key
+  of its index; several named `files`; or a pinned `vocabulary` of the model), its title, its parser, and
+  its rules: how its rows become the model. The rules are the arguments of rdfsolve's `Rule.between`, one
+  list per kind of row; rdfsolve finds the fields by name and writes the CONSTRUCT queries. A source whose
+  rows are also those of other sources names them (`uses`), and has their rules too.
 - **`model/v1/`**: the model. `model.yaml` gives the base address of identifiers, the vocabularies
   (schema.org, the Bioschemas types and the VHP4Safety glossary, pinned with their SHA-256 and kept in
   `vocabularies/`), the classes by the name of their kind and the
@@ -133,7 +138,14 @@ or links an existing one. To change the form, change the profile.
   generated with `python -m linkeddata model` (review the change before committing it).
 
 An import replaces the records a source gave before with those it gives now. Records written on
-the platform are left as they are, also when the source has a record at the same address.
+the platform are left as they are, also when the source has a record at the same address, and so are
+those that another source gives, such as a person whom two sources name. Once every source is stored,
+the records of each are checked against the model, with the records they link to as the database holds
+them; what does not fit is noted, and kept as the source gives it.
+
+The sources: the tool and method catalogues of the cloud repository, the case studies of
+ui-casestudy-config, the VHP4Safety glossary (its pinned file), and the datasets of the BioStudies
+collection VHP4Safety and of the Zenodo community vhp4safety.
 
 ## Add a source
 
@@ -154,22 +166,26 @@ rules:
 
 ## Read and write records
 
-Each record is a graph of the W3C SPARQL 1.1 Graph Store HTTP Protocol, named by its address:
-`GET /api/records?graph=<address>` gives it in JSON-LD, Turtle or N-Triples, `PUT` adds or replaces it,
-and `DELETE` removes it.
+The API is documented at `/api/docs/` (OpenAPI 3.1, written by flask-smorest; the record's schema carries
+the JSON-LD context as `x-jsonld-context`). Each kind of record has a resource:
+
+- `GET /api/<kind>` lists its records, found by name (`search`) or by the value of any of their fields
+  (`/api/tools?processFlowStep=<address>`), a page at a time (`page`, `page_size`; `X-Total-Count`), in
+  JSON-LD (`@graph`) or Turtle, as Accept asks; `POST /api/<kind>` adds a record, at an address made from
+  its name (a term of a vocabulary is at its own address, given as `@id`).
+- `GET`, `PUT` and `DELETE /api/<address of its page>` (`/api/tools/aop-builder`,
+  `/api/casestudies/kidney/Q1`) read a record in JSON-LD, Turtle or N-Triples, add or replace it, and
+  remove it; `POST /api/move` and `POST /api/restore` move and restore one. A part of a record, such as a
+  question of a case study, is read at its own address and written with the record that holds it.
+- `GET /api/search?text=&class=&within=` finds records, their parts and the terms of vocabularies by name
+  or address, for the editor and the pages.
+- `GET /api/tables/<table>` gives the rows of the tables of the release, and of the records, notes and
+  sources tables, a page at a time, filtered by the value of any column.
+
 Writes are checked against the model's SHACL shapes (`/api/shapes.ttl`), need a write token or an editor's
 login, and are refused with `412` when If-Match does not give the record's version (its ETag). The address
-of each record also answers in HTML, JSON-LD, Turtle or N-Triples, as the Accept header asks. flask-smorest
-writes the API's OpenAPI 3.1 document, `/api/docs/records/openapi.json`, shown at
-`/api/docs/records/swagger/`; the record's schema carries the JSON-LD context (`x-jsonld-context`, from the
-OpenAPI extensions registry).
-
-`GET /api/tables/<table>` gives the rows of each table of the release, and of the records, notes and
-sources tables, with flask-smorest: a page at a time (`page`, `page_size`, and the counts in the
-`X-Pagination` header), filtered by the value of any column. The framework writes its OpenAPI 3.1
-document, `/api/docs/tables/openapi.json`, shown at `/api/docs/tables/swagger/`, from schemas that
-marshmallow-sqlalchemy makes from the tables of `tables.sql`. Each row's schema carries the JSON-LD type
-and context that make the row linked data.
+of each record's page also answers in HTML, JSON-LD, Turtle or N-Triples, as the Accept header asks, and
+links to its data, its class and its shapes with FAIR Signposting (Link headers).
 
 ## Write records
 
@@ -179,7 +195,7 @@ model and the application profile, and the record and its revision are saved at 
 shows it straight away. Every answer gives the address of the record and of its change.
 
 ```
-curl -X PUT "https://platform.vhp4safety.nl/api/records?graph=https://platform.vhp4safety.nl/tools/aop-builder" \
+curl -X PUT "https://platform.vhp4safety.nl/api/tools/aop-builder" \
      -H "Authorization: Bearer vhp_..." -H "Content-Type: application/ld+json" \
      -d '{"@type": "SoftwareApplication", "name": "AOP-Builder", "description": "Builds AOPs from the literature.",
           "url": {"@id": "https://github.com/VHP4Safety/aop-builder"}}'

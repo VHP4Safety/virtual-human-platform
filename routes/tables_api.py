@@ -11,7 +11,7 @@ property, and the column "iri" to the node it describes.
 
 import re
 
-from flask_smorest import Api, Blueprint
+from flask_smorest import Blueprint
 from marshmallow import EXCLUDE
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from rdfsolve.client.sql_tables import layout
@@ -20,7 +20,7 @@ from sqlalchemy import MetaData, create_engine, func, select
 import database
 from database.tables import Note, Record, Source
 from linkeddata import storage
-from linkeddata.model import RELEASE, TABLES, settings
+from linkeddata.model import TABLES
 from routes import limiter
 
 SH = "http://www.w3.org/ns/shacl#"
@@ -92,19 +92,8 @@ def view_of(table):
     return rows
 
 
-def register(app) -> None:
-    """The tables API and its OpenAPI document, at /api/docs/tables/."""
-    app.config.update(
-        TABLES_API_TITLE=f"{settings()['title']}: tables",
-        TABLES_API_VERSION=RELEASE,
-        TABLES_OPENAPI_VERSION="3.1.0",
-        TABLES_OPENAPI_URL_PREFIX="/api/docs/tables",
-        TABLES_OPENAPI_JSON_PATH="openapi.json",
-        TABLES_OPENAPI_SWAGGER_UI_PATH="/swagger/",
-        TABLES_OPENAPI_SWAGGER_UI_URL="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/",
-        TABLES_API_SPEC_OPTIONS={"info": {"description": __doc__}},
-    )
-    api = Api(app, config_prefix="TABLES_")
+def register(api) -> None:
+    """The rows of the tables, in the platform's API."""
     extensions = contexts()
     every = [*release_tables().sorted_tables, Record.__table__, Note.__table__, Source.__table__]
     for table in every:

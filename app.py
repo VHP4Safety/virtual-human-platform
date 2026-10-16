@@ -23,7 +23,7 @@ from data.mapping import normalize_all, scrub_draft
 from database import records
 from linkeddata import documents, storage
 from routes.account import blueprint as account_blueprint
-from routes import limiter, records_api, tables_api
+from routes import limiter, records_api
 from routes.changes import blueprint as changes_blueprint
 from routes.sources import blueprint as sources_blueprint
 from routes.editor import blueprint as admin_blueprint
@@ -137,7 +137,6 @@ app.register_blueprint(account_blueprint)
 app.register_blueprint(admin_blueprint)
 limiter.init_app(app)
 records_api.register(app)
-tables_api.register(app)
 app.register_blueprint(pages_blueprint)
 app.register_blueprint(sources_blueprint)
 app.register_blueprint(changes_blueprint)

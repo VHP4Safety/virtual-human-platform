@@ -56,7 +56,7 @@
       {% if not record or not record.removed_at %}
       <div class="card"><div class="card-body">
         <shacl-form data-shapes-url="{{ url_for('admin.form') }}" data-shape-subject="{{ shape }}"
-                    {% if record %}data-values-url="{{ url_for('api.read', graph=selected) }}"{% endif %}
+                    {% if record %}data-values-url="{{ url_for('api.read', path=selected.removeprefix(base)) }}"{% endif %}
                     data-values-subject="{{ selected }}" data-generate-node-shape-reference="" data-collapse="open"
                     data-submit-button="Save"></shacl-form>
       </div></div>
@@ -77,7 +77,7 @@
           <div class="alert alert-warning small py-2 d-none"><div class="fw-semibold mb-1">Check before saving</div><ul class="mb-0 ps-3" id="rdf-warnings"></ul></div>
           <div id="rdf-graph"></div>
           <p class="small text-secondary mb-0 mt-3">Each arrow is a statement that the platform publishes about this record. Green ones are added when you save, red ones removed.
-            {% if record and not record.removed_at %}<a class="link-secondary" href="{{ url_for('api.read', graph=selected) }}" target="_blank" rel="noopener">The published data</a>{% endif %}</p>
+            {% if record and not record.removed_at %}<a class="link-secondary" href="{{ url_for('api.read', path=selected.removeprefix(base)) }}" target="_blank" rel="noopener">The published data</a>{% endif %}</p>
         </div>
       </div>
     </aside>
