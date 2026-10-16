@@ -275,6 +275,8 @@ class RecordLink extends Plugin {
           vocabularies.value = current["@id"];
         } else if (value && !selected) {
           vocabularies.prepend(new Option("Not in a vocabulary of the platform", "none", true, true));
+        } else if (!selected) {
+          vocabularies.prepend(new Option("Any vocabulary", "any", true, true));
         }
         vocabularies.disabled = Boolean(only && current);
         vocabulary = listed.find(function (found) { return found["@id"] === vocabularies.value; }) || null;
@@ -350,27 +352,31 @@ class RecordLink extends Plugin {
 // sh:or, which shacl-form asks for first when a value is added, is made at once.
 const watched = new WeakSet();
 
+function pick(within) {
+  const found = within.matches && within.matches(".shacl-or-constraint") ? [within] : within.querySelectorAll(".shacl-or-constraint");
+  for (const constraint of found) {
+    const choice = constraint.querySelector(".editor");
+    if (editor.links[constraint.dataset.path] && choice && choice.onchange) {
+      // The choice is made once the form has drawn it.
+      window.requestAnimationFrame(function () {
+        choice.value = "0";
+        choice.onchange();
+      });
+    }
+  }
+}
+
 function watch(form) {
   if (!form.shadowRoot || watched.has(form)) {
     return;
   }
   watched.add(form);
+  pick(form.shadowRoot);
   new MutationObserver(function (changes) {
     for (const change of changes) {
       for (const node of change.addedNodes) {
-        if (node.nodeType !== Node.ELEMENT_NODE) {
-          continue;
-        }
-        const found = node.matches(".shacl-or-constraint") ? [node] : node.querySelectorAll(".shacl-or-constraint");
-        for (const constraint of found) {
-          const choice = constraint.querySelector(".editor");
-          if (editor.links[constraint.dataset.path] && choice && choice.onchange) {
-            // The choice is made once the form has drawn it.
-            window.requestAnimationFrame(function () {
-              choice.value = "0";
-              choice.onchange();
-            });
-          }
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          pick(node);
         }
       }
     }

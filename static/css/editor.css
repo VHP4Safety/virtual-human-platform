@@ -73,7 +73,7 @@ body.editor {
 
 /* The form's Save button stays in view while the form scrolls, above the case study's page when that is
    docked at the bottom of the window */
-shacl-form::part(submit-button) {
+#main-column shacl-form::part(submit-button) {
   position: sticky;
   bottom: calc(var(--case-study-dock, 0px) + 1rem);
   z-index: 1;
@@ -156,6 +156,12 @@ shacl-form::part(submit-button) {
   border: 0;
   border-radius: 0.5rem;
   box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.3);
+}
+
+.record-dialog shacl-form::part(submit-button) {
+  position: sticky;
+  bottom: 1rem;
+  z-index: 1;
 }
 
 .record-dialog::backdrop {
