@@ -333,7 +333,8 @@ form:VideoObject a sh:NodeShape ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Address" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] .
 
-# A dataset, at /data/<identifier>: a study in BioStudies or a record in Zenodo.
+# A dataset, at /data/<identifier>: the platform's representation of a study in BioStudies or a record in
+# Zenodo, which it is based on (schema:isBasedOn).
 form:Dataset a sh:NodeShape ;
     sh:targetClass schema:Dataset ;
     rdfs:label "Dataset" ;
@@ -359,8 +360,8 @@ form:Dataset a sh:NodeShape ;
     sh:property [ sh:path schema:citation ; sh:order 10 ; sh:name "Publications" ; sh:class schema:ScholarlyArticle ] ;
     sh:property [ sh:path schema:license ; sh:order 11 ; sh:name "License" ; sh:maxCount 1 ; sh:severity sh:Warning ; sh:nodeKind sh:IRI ;
         sh:message "Give the license as a web address." ] ;
-    sh:property [ sh:path schema:url ; sh:order 12 ; sh:name "Address" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
-        sh:description "The dataset's page in BioStudies or Zenodo." ] ;
+    sh:property [ sh:path schema:isBasedOn ; sh:order 12 ; sh:name "Source record" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+        sh:description "The record in BioStudies or Zenodo that this record represents on the platform, made from it every night." ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 13 ; sh:name "DOI and other addresses" ; sh:nodeKind sh:IRI ] ;
     sh:property [ sh:path schema:keywords ; sh:order 14 ; sh:name "Keywords" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
         sh:message "Choose a term of a vocabulary, or register the term; a keyword given as text is kept until then." ] .

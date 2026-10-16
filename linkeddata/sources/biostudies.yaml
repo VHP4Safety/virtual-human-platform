@@ -13,7 +13,7 @@ rules:
     - {predicate: "https://schema.org/description", object: description}
     - {predicate: "https://schema.org/datePublished", object: published}
     - {predicate: "https://schema.org/sameAs", object: doi}
-    - {predicate: "https://schema.org/url", object: page}
+    - {predicate: "https://schema.org/isBasedOn", object: page}
     - {predicate: "https://vhp4safety.github.io/glossary#VHP0000152", object: steps}
     - {predicate: "https://vhp4safety.github.io/glossary#VHP0000151", object: questions}
     - {predicate: "https://schema.org/sourceOrganization", object: cases}

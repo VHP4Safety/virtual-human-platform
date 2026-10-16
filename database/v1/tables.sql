@@ -113,12 +113,12 @@ CREATE TABLE IF NOT EXISTS "schema_dataset" (
   "schema_date_published__term" TEXT,
   "schema_description" TEXT,
   "schema_description__term" TEXT,
+  "schema_is_based_on" TEXT,
+  "schema_is_based_on__term" TEXT,
   "schema_license" TEXT,
   "schema_license__term" TEXT,
   "schema_name" TEXT,
   "schema_name__term" TEXT,
-  "schema_url" TEXT,
-  "schema_url__term" TEXT,
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_dataset__record" ON "schema_dataset" ("record");
