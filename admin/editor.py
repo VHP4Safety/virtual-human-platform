@@ -3,7 +3,7 @@ records of a kind, and the graph from which shacl-form builds the form of a kind
 with the class hierarchy of the vocabularies, and the records and vocabulary terms that a field lists, with
 their names."""
 
-from rdflib import RDF, RDFS, Graph, Literal, URIRef
+from rdflib import RDF, RDFS, XSD, BNode, Graph, Literal, URIRef
 from rdflib.collection import Collection
 from rdflib.namespace import SH
 from sqlalchemy import func, select
@@ -66,8 +66,21 @@ def root_shape(kind: str) -> str:
 
 
 def form_graph() -> Graph:
-    """The profile, the class hierarchy, and every record and listed term (sh:in) with its name."""
+    """The profile, the class hierarchy, and every record and listed term (sh:in) with its name. A field
+    whose values are of one of some classes (sh:or) takes a text too, so that the form shows and keeps a
+    value that is a name only; the profile's checks still tell about it."""
     found = Graph() + profile() + hierarchy()
+    for alternatives in list(found.objects(None, SH["or"])):
+        listed = Collection(found, alternatives)
+        classes = 0
+        for alternative in listed:
+            if found.value(alternative, SH["class"]) is not None:
+                classes += 1
+        if classes == len(listed):
+            text = BNode()
+            found.add((text, SH.datatype, XSD.string))
+            found.add((text, RDFS.label, Literal("Text")))
+            listed.append(text)
     with database.session() as db:
         for iri, kind, name in db.execute(select(Record.iri, Record.type, Record.name).where(Record.removed_at.is_(None), Record.moved_to.is_(None))):
             found.add((URIRef(iri), RDF.type, URIRef(kind)))
