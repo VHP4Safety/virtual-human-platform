@@ -17,53 +17,83 @@ def statements(document: str | None) -> Graph:
     return graph
 
 
-def shown(graph: Graph, value) -> str:
-    """A value as it is compared and shown. A blank node, such as a section of a page, is given by its own
-    values, so that a part with the same values is the same value before and after a change."""
+def key(graph: Graph, value) -> str:
+    """A value as it is compared: a link or a text, so that "X" and "X"^^xsd:string are the same value, and
+    a part (a node without an address) by the values it holds, so that a part with the same values is the
+    same part before and after a change."""
     if not isinstance(value, BNode):
-        return str(value)
-    parts = []
+        return ("link " if isinstance(value, URIRef) else "text ") + str(value)
+    held = []
     for predicate, given in graph.predicate_objects(value):
-        if predicate != RDF.type:
-            parts.append(f"{documents.term(str(predicate))}: {shown(graph, given)}")
-    return "; ".join(sorted(parts))
+        held.append(f"{predicate} {key(graph, given)}")
+    return "part " + " ".join(sorted(held))
 
 
-def edges(before: Graph, after: Graph, record: URIRef) -> dict:
-    """The statements about a record before and after a change, as edges from the record to each value:
-    added, removed, or kept. Each edge is named by the field of the record's form."""
-    kind = after.value(record, RDF.type) or before.value(record, RDF.type)
-    form = fields.of(str(kind)) if kind is not None else []
+def compared(before: Graph, after: Graph, old, new, kind: str | None) -> list[dict]:
+    """The edges from a node to its values before (*old* in *before*) and after (*new* in *after*) a change:
+    added, removed, or kept, each named by the field of the node's class in the profile. A part is shown
+    with its own edges: a part without an address is added, removed or kept with them, and the edges of a
+    part at an address under the node's are compared in the same way."""
+    form = fields.of(kind) if kind is not None else []
     labels = {}
     order = {}
     for position, field in enumerate(form):
         labels[field["iri"]] = field["label"]
         order[field["iri"]] = position
-    # A value is compared as a link or a text, so that "X" and "X"^^xsd:string are the same value.
-    old = set()
-    for predicate, value in before.predicate_objects(record):
-        old.add((predicate, isinstance(value, URIRef), shown(before, value)))
-    new = set()
-    for predicate, value in after.predicate_objects(record):
-        new.add((predicate, isinstance(value, URIRef), shown(after, value)))
-    found = []
-    for predicate, link, value in old | new:
-        if predicate == RDF.type:
+    values = {}
+    for graph, node, status in ((before, old, "removed"), (after, new, "added")):
+        if node is None:
             continue
-        status = "kept" if (predicate, link, value) in old and (predicate, link, value) in new else ("added" if (predicate, link, value) in new else "removed")
-        found.append({
+        for predicate, value in graph.predicate_objects(node):
+            if predicate != RDF.type:
+                found = (predicate, key(graph, value))
+                values[found] = ("kept" if found in values else status, graph, value)
+    edges = []
+    for (predicate, _), (status, graph, value) in values.items():
+        edge = {
             "label": labels.get(str(predicate), documents.term(str(predicate))),
             "property": documents.term(str(predicate)),
-            "value": value,
-            "link": link,
+            "value": str(value),
+            "link": isinstance(value, URIRef),
             "status": status,
             "order": order.get(str(predicate), len(form)),
-        })
-    found.sort(key=lambda edge: (edge["order"], edge["status"] != "removed", edge["value"]))
-    values = [edge["value"] for edge in found if edge["link"]]
-    names = records.names(values + [str(record)])
-    for edge in found:
+        }
+        if isinstance(value, BNode) or str(value).startswith(f"{old or new}/"):
+            part = graph.value(value, RDF.type)
+            edge["value"] = str(graph.value(value, SDO.name) or "")
+            edge["type"] = documents.term(str(part)) if part is not None else ""
+            edge["link"] = False
+            if isinstance(value, BNode):
+                edge["parts"] = compared(graph, graph, value if status != "added" else None, value if status != "removed" else None, str(part) if part is not None else None)
+            else:
+                edge["parts"] = compared(before, after, value if (value, None, None) in before else None, value if (value, None, None) in after else None, str(part) if part is not None else None)
+        edges.append(edge)
+    edges.sort(key=lambda edge: (edge["order"], edge["status"] != "removed", edge["value"]))
+    return edges
+
+
+def linked(edges: list[dict]) -> list[str]:
+    """The addresses that some edges and their parts link to."""
+    found = []
+    for edge in edges:
+        if edge["link"]:
+            found.append(edge["value"])
+        found.extend(linked(edge.get("parts", [])))
+    return found
+
+
+def named(edges: list[dict], names: dict[str, str]) -> None:
+    for edge in edges:
         edge["name"] = names.get(edge["value"]) if edge["link"] else None
+        named(edge.get("parts", []), names)
+
+
+def edges(before: Graph, after: Graph, record: URIRef) -> dict:
+    """The statements about a record before and after a change, as edges from the record to each value."""
+    kind = after.value(record, RDF.type) or before.value(record, RDF.type)
+    found = compared(before, after, record, record, str(kind) if kind is not None else None)
+    names = records.names(linked(found) + [str(record)])
+    named(found, names)
     name = after.value(record, SDO.name) or before.value(record, SDO.name) or names.get(str(record))
     return {
         "record": str(record),

@@ -52,20 +52,17 @@
   }
 
   // The record's statements as a diagram: an arrow from the record to each value, green when saving adds
-  // it, red when saving removes it.
-  function renderGraph(box, found) {
-    box.replaceChildren();
-    const node = make("div", "graph-node");
-    const record = make("a", "fw-semibold link-vhppurple", found.record_name);
-    record.href = pageLink(found.record);
-    node.append(make("i", "bi bi-box text-vhppurple"), record, make("span", "small text-secondary", found.type + " · " + pageLink(found.record)));
+  // it, red when saving removes it. A part of the record (a section, a listed tool) has its own arrows.
+  function renderEdges(found) {
     const edges = make("ul", "graph-edges");
-    for (const edge of found.edges) {
+    for (const edge of found) {
       const item = make("li", "graph-edge graph-" + edge.status);
       const property = make("span", "graph-property", edge.label + " ");
       property.append(make("code", "small", edge.property));
       const value = make("span", "graph-value");
-      if (edge.link) {
+      if (edge.parts) {
+        value.append(make("i", "bi bi-box text-secondary"), document.createTextNode(" " + edge.type + (edge.value ? ": " + edge.value : "")));
+      } else if (edge.link) {
         const link = make("a", "link-vhpblue", edge.name || edge.value);
         link.href = pageLink(edge.value);
         value.append(link);
@@ -76,9 +73,21 @@
       if (edge.status !== "kept") {
         item.append(make("span", "badge " + (edge.status === "added" ? "text-bg-success" : "text-bg-danger"), edge.status));
       }
+      if (edge.parts) {
+        item.append(renderEdges(edge.parts));
+      }
       edges.append(item);
     }
-    box.append(node, edges);
+    return edges;
+  }
+
+  function renderGraph(box, found) {
+    box.replaceChildren();
+    const node = make("div", "graph-node");
+    const record = make("a", "fw-semibold link-vhppurple", found.record_name);
+    record.href = pageLink(found.record);
+    node.append(make("i", "bi bi-box text-vhppurple"), record, make("span", "small text-secondary", found.type + " · " + pageLink(found.record)));
+    box.append(node, renderEdges(found.edges));
   }
 
   function listMessages(id, messages) {
