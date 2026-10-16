@@ -8,7 +8,7 @@ own, and the tools, methods and data it uses, which are linked by the id of thei
 
 import json
 
-from linkeddata.parsers import link, present, slug
+from linkeddata.parsers import link, present, slug, term, web_link
 
 # The kinds of the items of a page that are pages one level down; tools and data are not.
 PAGES = {"process-flow-step", "workflow step", "workflow-step", "workflow substep"}
@@ -48,7 +48,7 @@ def step(levels: list[dict], depth: int, path: list[str], item: dict, address: s
     if present(item.get("state")):
         row["status"] = item["state"]
     if present(item.get("glossaryUrl")):
-        row["about"] = link(item["glossaryUrl"])
+        row["about"] = web_link(item["glossaryUrl"])
     return [row] + fill(row, node, levels, depth, path)
 
 
@@ -90,9 +90,13 @@ def parse(files: dict[str, bytes]) -> list[dict]:
         address = f"casestudies/{case}"
         first = data.get("step1Contents") or {}
         row = {"@id": address, "@type": "CaseStudy", "name": about.get("name") or first.get("navTitle")}
-        for field, given in (("description", about.get("description")), ("keywords", about.get("keywords")), ("intro", first.get("navDescription"))):
+        for field, given in (("description", about.get("description")), ("intro", first.get("navDescription"))):
             if present(given):
                 row[field] = given
+        keywords = about.get("keywords") or []
+        for keyword in keywords if isinstance(keywords, list) else str(keywords).split(","):
+            if present(keyword):
+                row.setdefault("keywords", []).append(term(keyword, "glossary"))
         text(row, first.get("content"))
         condition = (about.get("about") or {}).get("@id", "")
         prefix, _, local = condition.partition(":")

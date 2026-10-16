@@ -6,7 +6,7 @@ and videos of a tool are parts of its row.
 
 import json
 
-from linkeddata.parsers import QUESTIONS, link, present, publication, slug, web_link
+from linkeddata.parsers import QUESTIONS, link, present, publication, slug, term, web_link
 
 # The catalogue gives this logo to tools that have none.
 PLACEHOLDER_LOGO = "https://github.com/VHP4Safety/ui-design/blob/main/static/images/logo.png"
@@ -49,7 +49,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         if present(detail.get("stage") or entry.get("stage")):
             row["step"] = web_link(detail.get("stage") or entry["stage"])
         if present(detail.get("substage")):
-            row["topic"] = web_link(detail["substage"])
+            row["topic"] = term(detail["substage"], "glossary")
         # The catalogue marks the regulatory questions of a tool with yes/no flags, named by their codes.
         questions = []
         for flag, question in QUESTIONS.items():

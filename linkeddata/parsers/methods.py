@@ -3,12 +3,15 @@ lists the methods, and the detail file of each method (docs/methods/<id>.json) d
 are passed on as the catalogue writes them; the checks of the import note those that do not fit."""
 
 import json
+import re
 
-from linkeddata.parsers import link, present, publication, slug, web_link
+from linkeddata.parsers import link, present, publication, slug, term, web_link
 
 AOPS = "relevant_aop_wiki_adverse_outcome_pathway(s)_to_the_assay_content"
 KEY_EVENTS = "relevant_aop_wiki_key_event(s)_to_the_assay_content"
 ISSUES = "https://github.com/VHP4Safety/cloud/issues/"
+# The codes of AOP-Wiki's key events (KE1825) and pathways (AOP464), and the addresses that they stand for.
+AOP_WIKI = {"KE": "https://identifiers.org/aop.events/", "AOP": "https://identifiers.org/aop/"}
 
 
 def parts(value) -> list[str]:
@@ -29,9 +32,13 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         detail = {**entry, **(json.loads(contents[key]) if key in contents else {})}
         row = {"@id": "methods/" + entry["id"], "@type": "Method"}
         for field, given in (("method", "method"), ("description", "method_description_content"), ("assay", "assay_name_content"),
-                             ("catalog_number", "catalog_number_content"), ("data_producer", "data_producer_content")):
+                             ("catalog_number", "catalog_number_content")):
             if present(detail.get(given)):
                 row[field] = detail[given]
+        if present(detail.get("data_producer_content")):
+            person = "people/" + slug(detail["data_producer_content"])
+            others.setdefault(person, {"@id": person, "@type": "Person", "name": str(detail["data_producer_content"]).strip()})
+            row["data_producer"] = link(person)
         if present(detail.get("citation_content")):
             cited = publication(detail["citation_content"])
             if cited:
@@ -44,12 +51,15 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 row[field] = web_link(detail[given])
         steps = []
         for part in parts(detail.get("vhp4safety_workflow_stage_content")):
-            steps.append(web_link(part))
+            steps.append(term(part, "glossary", "Process Flow Step"))
         if steps:
             row["steps"] = steps
         about = []
-        for part in parts(detail.get("workflow_substage_content")) + parts(detail.get(KEY_EVENTS)) + parts(detail.get(AOPS)):
-            about.append(web_link(part))
+        for part in parts(detail.get("workflow_substage_content")):
+            about.append(term(part, "glossary"))
+        for part in parts(detail.get(KEY_EVENTS)) + parts(detail.get(AOPS)):
+            code = re.fullmatch(r"(KE|AOP)\s*(\d+)", part)
+            about.append(link(AOP_WIKI[code.group(1)] + code.group(2)) if code else web_link(part))
         types = []
         for given in ("type_url", "ontology_term_url", "ontology_term_content"):
             if present(detail.get(given)):

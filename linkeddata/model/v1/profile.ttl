@@ -5,7 +5,8 @@
 # alone, while the vocabularies' value types only check the values. sh:group, sh:order and sh:name place
 # and name each field, and sh:description explains it. Each field states what its values are, so that the
 # form gives the right input: sh:datatype a text, a number or a date (xsd:date is picked in a calendar),
-# sh:nodeKind sh:IRI a web address, sh:in one of a list, sh:class a link to a record of a class, and sh:or
+# sh:nodeKind sh:IRI a web address, sh:in one of a list, sh:class a link to a record of a class (with
+# sh:pattern on a namespace, a term of that vocabulary only), and sh:or
 # a choice between classes; the form finds the records of the class by their name, or adds a new one. With
 # sh:node, the values are parts of the record that holds them, written with it and fitting the shape of
 # their class: without an address (sh:nodeKind sh:BlankNode), such as the sections of a page, or at an
@@ -177,7 +178,8 @@ form:LabProtocol a sh:NodeShape ;
         sh:message "Choose a key event, a pathway or a topic in a vocabulary, such as AOP-Wiki, or register the term." ;
         sh:description "The AOP-Wiki key events and adverse outcome pathways that the method measures, and terms of the glossary." ] ;
     sh:property [
-        sh:path schema:additionalType ; sh:group form:method ; sh:order 6 ; sh:name "Kind of assay" ; sh:nodeKind sh:IRI ;
+        sh:path schema:additionalType ; sh:group form:method ; sh:order 6 ; sh:name "Kind of assay" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
+        sh:message "Choose the kind of assay in an ontology, such as BAO or OBI, or register the term." ;
         sh:description "Terms of ontologies such as OBI or BAO that say what kind of assay the method is." ] ;
     sh:property [
         sh:path bioschemas_draft:reagent ; sh:group form:assay ; sh:order 1 ; sh:name "Assay" ; sh:maxCount 1 ; sh:datatype xsd:string ;
@@ -218,8 +220,11 @@ form:ResearchProject a sh:NodeShape ;
     sh:property [ sh:path schema:description ; sh:group form:casestudy ; sh:order 2 ; sh:name "Aim" ; sh:maxCount 1 ; sh:datatype xsd:string ;
         sh:description "What the case study studies, in one sentence." ] ;
     sh:property [ sh:path schema:about ; sh:group form:casestudy ; sh:order 3 ; sh:name "Condition" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
+        sh:message "Choose the condition in a vocabulary, such as SNOMED CT or MONDO, or register the term." ;
         sh:description "The medical condition that the case study is about, as a SNOMED or MONDO term." ] ;
-    sh:property [ sh:path schema:keywords ; sh:group form:casestudy ; sh:order 4 ; sh:name "Keywords" ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:keywords ; sh:group form:casestudy ; sh:order 4 ; sh:name "Keywords" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
+        sh:message "Choose a term of a vocabulary, such as Pharmacovigilance in the VHP4Safety glossary, or register the term; a keyword given as text is kept until then." ;
+        sh:description "Terms that say what the case study deals with." ] ;
     sh:property [ sh:path schema:abstract ; sh:group form:casestudy ; sh:order 5 ; sh:name "Introduction to the questions" ; sh:maxCount 1 ; sh:datatype xsd:string ; dash:singleLine false ] ;
     sh:property [ sh:path schema:text ; sh:group form:casestudy ; sh:order 6 ; sh:name "Text" ; sh:maxCount 1 ; sh:datatype xsd:string ; dash:singleLine false ;
         sh:description "The text of the case study's page, in HTML, when it is not in sections." ] ;
@@ -266,6 +271,8 @@ form:HowToSection a sh:NodeShape ;
     sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 4 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
         sh:description "The sections of the page, each with a heading, a text in HTML, and its position." ] ;
     sh:property [ sh:path schema:about ; sh:group form:workflow ; sh:order 5 ; sh:name "Glossary term" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
+        sh:pattern "^https://vhp4safety\\.github\\.io/glossary#" ;
+        sh:message "Choose a term of the VHP4Safety glossary, such as Toxicokinetics (Process Flow Step)." ;
         sh:description "The term of the glossary that the page is about: a process flow step, or a part of one." ] ;
     sh:property [ sh:path schema:creativeWorkStatus ; sh:group form:workflow ; sh:order 6 ; sh:name "Status" ; sh:maxCount 1 ; sh:datatype xsd:string ;
         sh:description "\"disabled\" when the page's button is shown but cannot be opened yet." ] ;
@@ -343,7 +350,8 @@ form:Dataset a sh:NodeShape ;
     sh:property [ sh:path schema:url ; sh:order 12 ; sh:name "Address" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
         sh:description "The dataset's page in BioStudies or Zenodo." ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 13 ; sh:name "DOI and other addresses" ; sh:nodeKind sh:IRI ] ;
-    sh:property [ sh:path schema:keywords ; sh:order 14 ; sh:name "Keywords" ; sh:datatype xsd:string ] .
+    sh:property [ sh:path schema:keywords ; sh:order 14 ; sh:name "Keywords" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
+        sh:message "Choose a term of a vocabulary, or register the term; a keyword given as text is kept until then." ] .
 
 # A term of a vocabulary or of an ontology, at its own address, such as a term of the VHP4Safety glossary:
 # the platform knows its label and its vocabulary, so that records can be about it.

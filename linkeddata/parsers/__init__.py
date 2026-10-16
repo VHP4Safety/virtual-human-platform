@@ -7,12 +7,26 @@ the rules of the source (sources/<name>.yaml), not here.
 
 A parser takes the downloaded file and returns rows. Each row keeps the upstream names of its
 fields, and has its address ("@id", under the platform's base address when it has no scheme) and
-its kind ("@type"). Addresses are written as {"@id": ...}. Placeholders are left out. Values the
-parser cannot read are passed on as plain text, so the checks of the build report them.
+its kind ("@type"). Addresses are written as {"@id": ...}. Placeholders are left out. A text that is
+exactly the label or the code of a term of a vocabulary of the model, such as "pharmacovigilance" in the
+VHP4Safety glossary, is written as the term's address (term). Values the parser cannot read are passed
+on as plain text, so the checks of the build report them.
 """
 
+import importlib
 import re
 import unicodedata
+from functools import cache
+from pathlib import Path
+
+import yaml
+
+from linkeddata.model import MODEL_DIR
+
+SOURCES = Path(__file__).parent.parent / "sources"
+# The glossary's site gives its terms at other addresses than the glossary's own file.
+GLOSSARY_SITE = "https://glossary.vhp4safety.nl/#"
+GLOSSARY = "https://vhp4safety.github.io/glossary#"
 
 # The codes with which upstream files name the regulatory questions of the case studies, and the addresses of
 # the questions.
@@ -25,12 +39,12 @@ QUESTIONS = {
     "reg_q_3b": "casestudies/thyroid/Q2",
 }
 
-MISSING = {"", "_No response_", "No response", "NA", "Unknown", "no_url", "[TODO]", "[DRAFT]"}
+MISSING = {"", "_No response_", "No response", "NA", "Unknown", "Unknown at this timepoint", "no_url", "[TODO]", "[DRAFT]"}
 
 
 def present(value) -> bool:
     """False for empty values and for the placeholders that upstream files use for them."""
-    return value is not None and str(value).strip() not in MISSING
+    return value is not None and str(value).strip() not in MISSING and not str(value).strip().startswith("[DRAFT]")
 
 
 def link(address: str) -> dict:
@@ -38,11 +52,47 @@ def link(address: str) -> dict:
 
 
 def web_link(value: str):
-    """A link for a web address; any other text is passed on as it is."""
+    """A link for a web address, and for the link of a text written as a Markdown link ([text](address)); a
+    term of the glossary at its site's address is linked at the glossary's own. Any other text is passed on
+    as it is."""
     text = str(value).strip()
+    written = re.fullmatch(r"\[[^\]]*\]\((https?://[^)\s]+)\)", text)
+    if written:
+        text = written.group(1)
+    if text.startswith(GLOSSARY_SITE):
+        text = GLOSSARY + text.removeprefix(GLOSSARY_SITE)
     if text.startswith(("http://", "https://")):
         return link(text)
     return text
+
+
+@cache
+def terms(source: str) -> dict[str, set[str]]:
+    """The terms of a vocabulary of the model (a source of a pinned vocabulary file, such as the glossary),
+    by their label and by their code in lower case, as the source's parser reads them."""
+    spec = yaml.safe_load((SOURCES / f"{source}.yaml").read_text(encoding="utf-8"))
+    parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
+    found = {}
+    for row in parser.parse((MODEL_DIR / "vocabularies" / spec["vocabulary"]).read_bytes()):
+        if row.get("@type") == "Term":
+            for text in (row.get("label"), row.get("code")):
+                if text:
+                    found.setdefault(str(text).strip().casefold(), set()).add(row["@id"])
+    return found
+
+
+def term(text, source: str, qualifier: str = ""):
+    """A link to the term of a vocabulary whose label (followed by a qualifier in brackets, when given) or
+    code is the text, ignoring case, when one term has it; a web address is linked as it is, and any other
+    text is passed on as it is."""
+    found = web_link(text)
+    if isinstance(found, dict):
+        return found
+    label = f"{found} ({qualifier})" if qualifier else found
+    matched = terms(source).get(label.casefold(), set())
+    if len(matched) == 1:
+        return link(next(iter(matched)))
+    return found
 
 
 def publication(value) -> dict | None:

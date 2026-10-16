@@ -27,6 +27,9 @@ rules:
   Organization:
     - {predicate: a, value: "https://schema.org/Organization"}
     - {predicate: "https://schema.org/name", object: name}
+  Person:
+    - {predicate: a, value: "https://schema.org/Person"}
+    - {predicate: "https://schema.org/name", object: name}
   Publication:
     - {predicate: a, value: "https://schema.org/ScholarlyArticle"}
     - {predicate: "https://schema.org/sameAs", object: doi}
