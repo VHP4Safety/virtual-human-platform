@@ -261,12 +261,12 @@ form:Question a sh:NodeShape ;
     sh:property [ sh:path schema:step ; sh:group form:parts ; sh:order 2 ; sh:name "Process flow steps" ;
         sh:class schema:HowToSection ; sh:node form:HowToSection ; sh:nodeKind sh:IRI ;
         sh:description "The process flow steps of the question's workflow, each a page at /casestudies/<case>/<question>/<step>." ] ;
-    sh:property [ sh:path schema:tool ; sh:group form:parts ; sh:order 3 ; sh:name "Tools and methods" ; sh:severity sh:Warning ;
+    sh:property [ sh:path schema:tool ; sh:group form:parts ; sh:order 3 ; sh:name "Tools and methods" ; sh:nodeKind sh:IRI ;
         sh:or ( [ sh:class schema:SoftwareApplication ; rdfs:label "Tool" ] [ sh:class bioschemas_draft:LabProtocol ; rdfs:label "Method" ] ) ;
-        sh:message "Choose a tool or a method of the platform; the item is kept as text until then." ;
+        sh:message "Link a tool or method of the platform." ;
         sh:description "The tools and methods of the platform that the page uses; their own records give their names, descriptions and pages." ] ;
-    sh:property [ sh:path schema:supply ; sh:group form:parts ; sh:order 4 ; sh:name "Data" ; sh:severity sh:Warning ; sh:class schema:Dataset ;
-        sh:message "Choose a dataset of the platform; the item is kept as text until then." ;
+    sh:property [ sh:path schema:supply ; sh:group form:parts ; sh:order 4 ; sh:name "Data" ; sh:nodeKind sh:IRI ; sh:class schema:Dataset ;
+        sh:message "Link a dataset of the platform." ;
         sh:description "The datasets of the platform that the page uses; their own records give their names, descriptions and pages." ] .
 
 # A page of the workflow of a question: a process flow step, or a part of one, with its own steps, tools,
@@ -291,12 +291,12 @@ form:HowToSection a sh:NodeShape ;
         sh:description "\"disabled\" when the page's button is shown but cannot be opened yet." ] ;
     sh:property [ sh:path schema:position ; sh:group form:workflow ; sh:order 7 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
         sh:description "Where the page's button is among those of the page that holds it: 1 is the first." ] ;
-    sh:property [ sh:path schema:tool ; sh:group form:parts ; sh:order 2 ; sh:name "Tools and methods" ; sh:severity sh:Warning ;
+    sh:property [ sh:path schema:tool ; sh:group form:parts ; sh:order 2 ; sh:name "Tools and methods" ; sh:nodeKind sh:IRI ;
         sh:or ( [ sh:class schema:SoftwareApplication ; rdfs:label "Tool" ] [ sh:class bioschemas_draft:LabProtocol ; rdfs:label "Method" ] ) ;
-        sh:message "Choose a tool or a method of the platform; the item is kept as text until then." ;
+        sh:message "Link a tool or method of the platform." ;
         sh:description "The tools and methods of the platform that the page uses; their own records give their names, descriptions and pages." ] ;
-    sh:property [ sh:path schema:supply ; sh:group form:parts ; sh:order 3 ; sh:name "Data" ; sh:severity sh:Warning ; sh:class schema:Dataset ;
-        sh:message "Choose a dataset of the platform; the item is kept as text until then." ;
+    sh:property [ sh:path schema:supply ; sh:group form:parts ; sh:order 3 ; sh:name "Data" ; sh:nodeKind sh:IRI ; sh:class schema:Dataset ;
+        sh:message "Link a dataset of the platform." ;
         sh:description "The datasets of the platform that the page uses; their own records give their names, descriptions and pages." ] .
 
 # A section of a page: its heading, its text in HTML, its position on the page, and the anchor that links
