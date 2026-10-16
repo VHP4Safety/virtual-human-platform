@@ -80,6 +80,7 @@ def test_pages(site):
     assert "Does T." in site.get("/tools").data.decode()
     assert site.get("/api/tools", query_string={"processFlowStep": STEP}).json[0]["name"] == "T"
     assert {"value": STEP, "count": 1} in [{"value": item["value"], "count": item["count"]} for item in site.get("/api/tools/facets").json["processFlowStep"]]
+    assert site.get("/api/docs/openapi.json").json["components"]["schemas"]["SoftwareApplication"]["properties"]["processFlowStep"]["items"]["format"] == "iri"
     writes.retire(BASE + "tools/t", "Test Editor", ORCID)
     assert site.get("/tools/t").status_code == 410
 

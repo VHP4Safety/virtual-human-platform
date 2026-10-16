@@ -24,8 +24,8 @@ from functools import cache
 from flask import Response, jsonify, redirect, request, url_for
 from flask_smorest import Api, Blueprint, abort
 from marshmallow import INCLUDE, Schema, fields, validate
-from rdflib import RDF, Graph, URIRef
-from rdflib.namespace import SDO
+from rdflib import RDF, Graph, Literal, URIRef
+from rdflib.namespace import SDO, XSD
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from admin import changes, tokens, writes
@@ -63,7 +63,7 @@ class Move(Restore):
     to = fields.String(required=True, metadata={"description": "The record's new address, such as tools/aop-suite."})
 
 
-class Done(Schema.from_dict({"@id": fields.String(metadata={"description": "The record's address."})})):
+class Done(Schema.from_dict({"@id": fields.String(metadata={"description": "The record's address (IRI).", "format": "iri"})})):
     """A change that is saved: the record's address, the change's page, the record's version, and the
     recommended fields that are empty."""
 
@@ -72,7 +72,7 @@ class Done(Schema.from_dict({"@id": fields.String(metadata={"description": "The 
     warnings = fields.Dict(keys=fields.String(), values=fields.List(fields.String()))
 
 
-class Image(Schema.from_dict({"@id": fields.String(metadata={"description": "The image's address, to give in a record's image field."})})):
+class Image(Schema.from_dict({"@id": fields.String(metadata={"description": "The image's address (IRI), to give in a record's image field.", "format": "iri"})})):
     pass
 
 
@@ -177,7 +177,7 @@ def found_record(path: str):
 
 class Search(Schema):
     text = fields.String(load_default="", metadata={"description": "Text that the name or the address has."})
-    of_class = fields.List(fields.Url(), data_key="class", load_default=list, metadata={"description": "The classes of the records (or of the terms), with their subclasses."})
+    of_class = fields.List(fields.Url(metadata={"format": "iri"}), data_key="class", load_default=list, metadata={"description": "The IRIs of the classes of the records (or of the terms), with their subclasses."})
     within = fields.String(load_default="", metadata={"description": "The start of the addresses, such as the namespace of a vocabulary."})
     limit = fields.Integer(load_default=20, validate=lambda number: 1 <= number <= 200)
 
@@ -203,10 +203,31 @@ class FacetValue(Schema):
     count = fields.Integer(metadata={"description": "How many of the records found have it."})
 
 
+# The JSON types of the datatypes of literals that JSON has; a literal of another datatype is a text.
+JSON_TYPES = {str(XSD.integer): {"type": "integer"}, str(XSD.boolean): {"type": "boolean"},
+              str(XSD.date): {"type": "string", "format": "date"}, str(XSD.dateTime): {"type": "string", "format": "date-time"}}
+
+
 def browsed(field: dict) -> bool:
     """Whether a kind's catalogue is browsed by a field: its values are one of a list (sh:in), or links to
     records or terms (sh:class, sh:or); not the parts of a record, nor the values that the model fixes."""
     return bool(field["values"] or field["classes"]) and not field["part"] and not field["fixed"]
+
+
+def value_field(field: dict, allow_none: bool = False) -> fields.Field:
+    """One value of a field, as the profile types it: an IRI as a text of the format iri, a literal of a
+    datatype that JSON has in its JSON type, a value of a list (sh:in) as one of an enum, matching the
+    field's pattern."""
+    validators = []
+    if field["values"]:
+        validators.append(validate.OneOf(field["values"]))
+    if field["pattern"]:
+        validators.append(validate.Regexp(field["pattern"]))
+    if field["iris"]:
+        return fields.String(validate=validators, allow_none=allow_none, metadata={"format": "iri"})
+    if field["datatype"] in JSON_TYPES:
+        return fields.Raw(validate=validators, allow_none=allow_none, metadata=dict(JSON_TYPES[field["datatype"]]))
+    return fields.String(validate=validators, allow_none=allow_none)
 
 
 def query_schema(of_class: str, examples: dict) -> type[Schema]:
@@ -216,31 +237,27 @@ def query_schema(of_class: str, examples: dict) -> type[Schema]:
         if not browsed(field):
             continue
         text = f"{field['label']}. {field['description']}".strip()
-        if field["values"]:
-            value = fields.String(validate=validate.OneOf(field["values"]))
-        else:
+        if not field["values"]:
             classes = ", ".join(documents.term(of_field) for of_field in field["classes"])
             text += f" The address of a record or term of {classes}; /facets lists them."
-            value = fields.String()
         metadata = {"description": text}
         if field["iri"] in examples:
             metadata["examples"] = [[examples[field["iri"]]]]
-        found[field["name"]] = fields.List(value, metadata=metadata)
+        found[field["name"]] = fields.List(value_field(field), metadata=metadata)
     return Schema.from_dict(found, name=documents.term(of_class).replace(":", "_") + "Query")
 
 
 @cache
 def row_schema(of_class: str) -> type[Schema]:
     """A row of a record, or of a part, of a class: the profile's fields by their JSON-LD names, a field that
-    takes several values as a list, links as addresses, and parts as rows of their own."""
-    found = {"@id": fields.String(metadata={"description": "The address of the record or the part.", "format": "uri"})}
+    takes several values as a list and one that takes one value as the value or null, values typed as the
+    profile types them, and parts as rows of their own."""
+    found = {"@id": fields.String(metadata={"description": "The address (IRI) of the record or the part.", "format": "iri"})}
     for field in model_fields.of(of_class):
         if field["part"] and field["classes"]:
-            value = fields.Nested(lambda of_part=field["classes"][0]: row_schema(of_part)())
-        elif field["datatype"] or field["values"]:
-            value = fields.String()
+            value = fields.Nested(lambda of_part=field["classes"][0]: row_schema(of_part)(), allow_none=field["single"])
         else:
-            value = fields.String(metadata={"format": "uri"})
+            value = value_field(field, field["single"])
         if not field["single"]:
             value = fields.List(value)
         value.metadata["description"] = f"{field['label']}. {field['description']}".strip()
@@ -258,6 +275,9 @@ def row(found: Graph, node, of_class: str) -> dict:
         for value in found.objects(node, URIRef(field["iri"])):
             if field["part"] and field["classes"]:
                 values.append(row(found, value, str(found.value(value, RDF.type) or field["classes"][0])))
+            elif isinstance(value, Literal) and isinstance(value.toPython(), (bool, int)):
+                # A number or a truth value that fits its datatype, such as xsd:integer, is given as one.
+                values.append(value.toPython())
             else:
                 values.append(str(value))
         if field["single"]:
