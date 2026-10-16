@@ -18,7 +18,7 @@
       <a class="small link-secondary" href="{{ url_for('changes.change_statements', number=change.number) }}">Download as N-Triples</a>
     </div>
     <div class="card-body">
-      <p class="small text-secondary">Each arrow is a statement the platform publishes about the record: from one of its fields to a value. Statements the change added are green, those it removed are red and struck through; the others were kept.</p>
+      <p class="small text-secondary">Each arrow is a published statement, from a field to a value. Added: green. Removed: red, struck through. The others are kept.</p>
       {% with graph=change %}{% include "changes/_graph.html" %}{% endwith %}
     </div>
   </div>

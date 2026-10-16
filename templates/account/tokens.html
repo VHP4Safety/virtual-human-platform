@@ -2,16 +2,16 @@
 {% block content %}
 <div class="container-fluid px-lg-4 py-4">
   <h1 class="h3 text-vhppurple mb-1">Write tokens</h1>
-  <p class="text-secondary">A write token lets a program, or the editor page, write records for you. Its secret is shown once.</p>
+  <p class="text-secondary">For programs and the editor page to write records. The secret is shown once.</p>
 
   {% if not editor %}
-  <div class="alert alert-secondary">Your ORCID iD is not on the list of editors of the platform.</div>
+  <div class="alert alert-secondary">This ORCID iD is not on the list of editors.</div>
   {% elif with_token %}
-  <div class="alert alert-secondary">You logged in with a write token. Tokens are made after <a class="alert-link" href="{{ url_for('account.orcid_login', next=request.path) }}">logging in with ORCID</a>.</div>
+  <div class="alert alert-secondary">Logged in with a write token; tokens are made after <a class="alert-link" href="{{ url_for('account.orcid_login', next=request.path) }}">logging in with ORCID</a>.</div>
   {% else %}
   {% if secret %}
   <div class="alert alert-warning">
-    <p class="mb-1 fw-semibold">Your new token. Copy it now: it is not shown again.</p>
+    <p class="mb-1 fw-semibold">New token, shown only once:</p>
     <code class="user-select-all fs-6">{{ secret }}</code>
   </div>
   {% endif %}
@@ -22,7 +22,7 @@
         <div class="card-header bg-white fw-semibold">New token</div>
         <div class="card-body">
           <input type="hidden" name="form_token" value="{{ form_token }}">
-          <p class="mb-2">The kinds of records it writes:</p>
+          <p class="mb-2">Kinds it writes:</p>
           {% for kind in kinds %}
           <div class="form-check">
             <input class="form-check-input" type="checkbox" name="kinds" value="{{ kind }}" id="kind-{{ kind }}" checked>
@@ -39,20 +39,20 @@
       <div class="card h-100">
         <div class="card-header bg-white fw-semibold">Writing records with a token</div>
         <div class="card-body small">
-          <p>Send the record's fields, named as in <a class="link-vhpblue" href="https://schema.org/SoftwareApplication">schema.org</a>. A link is written as <code>{"@id": "https://..."}</code>. The record is checked against the platform's model, and its page shows it at once.</p>
+          <p>Fields are named as in <a class="link-vhpblue" href="https://schema.org/SoftwareApplication">schema.org</a>; a link is <code>{"@id": "https://..."}</code>. The record is checked against the model and shown on its page at once.</p>
           <pre class="bg-body-tertiary p-2 rounded mb-2"><code>curl -X PUT {{ request.url_root }}api/tools/my-tool \
   -H "Authorization: Bearer vhp_..." \
   -H "Content-Type: application/json" \
   -d '{"name": "My tool", "description": "What it does.",
        "url": {"@id": "https://example.org"}}'</code></pre>
-          <p class="mb-0"><code>POST /api/tools</code> makes the address from the name, <code>DELETE /api/tools/my-tool</code> removes the record, <code>POST /api/images</code> uploads an image, and <code>{{ request.url_root }}tools/my-tool.jsonld</code> gives the record as it is saved. The <a class="link-vhpblue" href="{{ url_for('admin.admin') }}">record editor</a> does the same with a form.</p>
+          <p class="mb-0"><code>POST /api/tools</code> makes the address from the name; <code>DELETE /api/tools/my-tool</code> removes the record; <code>POST /api/images</code> uploads an image; <code>{{ request.url_root }}tools/my-tool.jsonld</code> gives the saved record. The <a class="link-vhpblue" href="{{ url_for('admin.admin') }}">record editor</a> does the same with a form.</p>
         </div>
       </div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-header bg-white fw-semibold">Your tokens</div>
+    <div class="card-header bg-white fw-semibold">Tokens</div>
     <div class="table-responsive">
       <table class="table mb-0 align-middle">
         <thead><tr><th>Token</th><th>Kinds</th><th>Created</th><th>Expires</th><th>Last used</th><th></th></tr></thead>

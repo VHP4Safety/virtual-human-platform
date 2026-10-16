@@ -3,12 +3,12 @@
 <section class="container-fluid px-lg-4 py-4">
   <div class="pb-2">
     <h1><span class="text-vhpblue">Data quality</span></h1>
-    <p class="text-secondary fs-5">How complete the records of the platform are, and what the checks of the model found.</p>
-    <p>The records follow the platform's model, built on <a class="link-vhpblue" href="https://schema.org">schema.org</a> and <a class="link-vhpblue" href="https://bioschemas.org">Bioschemas</a>. Every import checks its source against the model with <a class="link-vhpblue" href="https://github.com/jmillanacosta/rdfsolve">rdfsolve</a>, and every record written on the platform is checked before it is saved. See also <a class="link-vhpblue" href="{{ url_for('sources.sources') }}">where the records come from</a>.</p>
+    <p class="text-secondary fs-5">Record completeness, and what the model's checks found.</p>
+    <p>Records follow the platform's model, built on <a class="link-vhpblue" href="https://schema.org">schema.org</a> and <a class="link-vhpblue" href="https://bioschemas.org">Bioschemas</a>. Imports are converted with <a class="link-vhpblue" href="https://github.com/jmillanacosta/rdfsolve">rdfsolve</a> and checked against the model; records written on the platform are checked before they are saved. See also <a class="link-vhpblue" href="{{ url_for('sources.sources') }}">where the records come from</a>.</p>
   </div>
 
   <h2 class="h4 mt-3">Completeness</h2>
-  <p class="small text-secondary">How many records have a value in each field. Fields marked <span class="text-danger">*</span> are required by the platform's model.</p>
+  <p class="small text-secondary">Records with a value in each field. Fields marked <span class="text-danger">*</span> are required.</p>
   <div class="row g-3">
     {% for kind in classes %}
     <div class="col-md-6">
@@ -28,12 +28,12 @@
       </div>
     </div>
     {% else %}
-    <p>No records have been imported yet.</p>
+    <p>No records imported yet.</p>
     {% endfor %}
   </div>
 
   <h2 class="h4 mt-4">Values that do not fit <span class="badge text-bg-vhporange align-middle">{{ notes }}</span></h2>
-  <p>Values of the sources that do not fit the platform's model are left out of the records until the source is corrected. Records written on the platform are checked again every night, as the model may have changed since they were written; they are corrected in the record editor. The values are grouped by field and by what is wrong.</p>
+  <p>Source values that do not fit the model are kept, and listed here until the source is corrected. Records written on the platform are checked again nightly, as the model may have changed; they are corrected in the record editor. Values are grouped by field and problem.</p>
   <div class="accordion" id="notes">
     {% for group in groups %}
     <div class="accordion-item">
@@ -45,7 +45,7 @@
       </h3>
       <div id="notes-{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#notes">
         <div class="accordion-body p-0">
-          <p class="small text-secondary px-3 pt-2 mb-2">The check reports: <code>{{ group.reason }}</code></p>
+          <p class="small text-secondary px-3 pt-2 mb-2">Check message: <code>{{ group.reason }}</code></p>
           <table class="table table-sm mb-0">
             <thead><tr><th class="ps-3">Record</th><th>Value</th><th>Source</th></tr></thead>
             <tbody>

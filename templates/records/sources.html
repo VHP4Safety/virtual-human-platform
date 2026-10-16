@@ -3,8 +3,8 @@
 <section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
   <div class="pb-2">
     <h1><span class="text-vhpblue">Sources</span></h1>
-    <p class="text-secondary fs-5">Where the records of the platform come from.</p>
-    <p>Most records are imported every night from the sources below: each source is read, its fields are put into the platform's model, and the result is checked (see the <a class="link-vhpblue" href="{{ url_for('admin.data_quality') }}">quality of the data</a>). Editors also write records on the platform: {{ written }} records come from them, and each of their changes is kept with the editor's name. A record written on the platform replaces what a source gives for the same address.</p>
+    <p class="text-secondary fs-5">Where the platform's records come from.</p>
+    <p>Most records are imported nightly from the sources below: each source is read, mapped to the platform's model, and checked (see the <a class="link-vhpblue" href="{{ url_for('admin.data_quality') }}">data quality</a>). {{ written }} records are written by editors on the platform, each change kept with the editor's name; such a record replaces a source's record at the same address.</p>
   </div>
 
   {% for source in sources %}
@@ -16,7 +16,7 @@
     </div>
     <div class="card-body">
       {% if source.fetched and source.fetched.problem %}
-      <div class="alert alert-warning small"><strong>The last import was not stored</strong>, and the records it gave before were kept: {{ source.fetched.problem }}.</div>
+      <div class="alert alert-warning small"><strong>Last import not stored</strong>; the earlier records are kept: {{ source.fetched.problem }}.</div>
       {% endif %}
       <dl class="row small mb-3">
         <dt class="col-sm-3">Read from</dt>
@@ -25,7 +25,7 @@
         <dd class="col-sm-9">{% if source.fetched %}{{ source.fetched.fetched_at[:16]|replace("T", " ") }} UTC · SHA-256 <code>{{ source.fetched.sha256[:12] }}</code>{% else %}not yet{% endif %}</dd>
       </dl>
 
-      <h3 class="h6">How its fields become the platform's fields</h3>
+      <h3 class="h6">Field mapping</h3>
       <div class="table-responsive">
         <table class="table table-sm align-middle">
           <thead><tr><th style="width: 35%">In the source</th><th style="width: 30%">On the platform</th><th>Value</th></tr></thead>
@@ -44,7 +44,7 @@
       {% if source.fetched %}
       <details>
         <summary class="link-vhpblue small">For developers: the conversion as a SPARQL query</summary>
-        <p class="small text-secondary mt-2">The source's file is first cleaned by <code>linkeddata/parsers/{{ source.parser }}.py</code> and read as RDF, with its own field names under the <code>{{ source.name }}:</code> prefix. rdfsolve wrote this CONSTRUCT query from the table above; it turns those fields into the platform's model.</p>
+        <p class="small text-secondary mt-2">The file is cleaned by <code>linkeddata/parsers/{{ source.parser }}.py</code> and read as RDF, with its field names under the <code>{{ source.name }}:</code> prefix. This CONSTRUCT query, written by rdfsolve from the table above, maps them to the platform's model.</p>
         <pre class="small bg-body-tertiary p-2 rounded"><code>{{ source.fetched.queries }}</code></pre>
       </details>
       {% endif %}
