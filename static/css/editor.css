@@ -1,5 +1,5 @@
-/* The pages for editors: the platform's Bootstrap theme with a header and navigation of their own. */
-/* The public pages leave room for their fixed navbar; the editor's header is not fixed. */
+/* Editor pages: the platform's Bootstrap theme with their own header and navigation. */
+/* Room is left for the public navbar only; the editor's header is not fixed. */
 body.editor {
   font-family: "Open Sans", Arial, sans-serif;
   padding-top: 0;
@@ -21,8 +21,7 @@ body.editor {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-/* The record editor: the list of records, the form, and the linked data, each in its own area.
-   Wide screens show the three side by side; narrower ones put the linked data under the form. */
+/* The record editor: list, form and linked data, side by side on wide screens, else stacked. */
 .editor-layout {
   display: grid;
   gap: 1.5rem;
@@ -56,14 +55,14 @@ body.editor {
   }
 }
 
-/* The list of records scrolls on its own, next to the form */
+/* The record list scrolls on its own */
 .record-list {
   max-height: calc(100vh - 330px);
   min-height: 240px;
   overflow-y: auto;
 }
 
-/* The linked data beside the form stays in view while the form scrolls */
+/* The linked data stays in view */
 .rdf-preview {
   position: sticky;
   top: 1rem;
@@ -71,8 +70,7 @@ body.editor {
   overflow-y: auto;
 }
 
-/* The Save button stays in view while the form scrolls, above the case study's page when that is docked at
-   the bottom of the window */
+/* Save stays in view, above the docked case study page */
 .editor-save {
   position: sticky;
   bottom: calc(var(--case-study-dock, 0px) + 1rem);
@@ -83,7 +81,7 @@ body.editor {
   box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.25);
 }
 
-/* What the platform answers for is locked and dimmed */
+/* Locked and dimmed while the platform answers */
 .busy {
   cursor: progress;
 }
@@ -93,14 +91,14 @@ body.editor {
   transition: opacity 0.2s;
 }
 
-/* What keeps a record from being saved, next to the Save button */
+/* What blocks saving, next to Save */
 .editor-save .alert {
   max-height: 40vh;
   overflow-y: auto;
   box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.25);
 }
 
-/* A record's statements as a diagram: the record, and an arrow from each field to its value */
+/* The record's statements as a diagram: an arrow per value */
 .graph-node {
   display: inline-flex;
   flex-wrap: wrap;
@@ -168,7 +166,7 @@ body.editor {
   color: var(--bs-secondary-color);
 }
 
-/* A new record that a field links to, added in a form of its own */
+/* The dialogs of new records, vocabularies and terms */
 .record-dialog {
   width: min(56rem, 95vw);
   max-height: 90vh;

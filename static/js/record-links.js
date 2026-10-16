@@ -1,10 +1,6 @@
-// Plugins of shacl-form for the record editor. A field that links to records or to the terms of vocabularies
-// (sh:class, or sh:or of classes) shows what it links to and of which kind, and finds the records of its
-// classes by name with the platform's search (/api/search). A record that is not on the platform yet is added
-// in a form of its own, made from the shape of its class, in a dialog; a term is registered with its
-// vocabulary. Both are added through the platform's API, and the field links to them at once. The fields of
-// texts (xsd:string) give shacl-form their value as a literal, so that a text in HTML, such as <p>...</p>, is
-// not read as an address.
+// shacl-form plugins of the record editor. Link fields (sh:class, or sh:or of classes) show the kind of what
+// they link to and find records by name (/api/search); missing records are added in a dialog, and terms are
+// registered with their vocabulary. Text fields give shacl-form literals, so HTML is not read as an address.
 import { Plugin, registerPlugin, findLabel, loadRDF } from "https://cdn.jsdelivr.net/npm/@ulb-darmstadt/shacl-form@3.7.3/dist/bundle.js";
 import { busy } from "./busy.js";
 
@@ -18,8 +14,7 @@ const STRING = "http://www.w3.org/2001/XMLSchema#string";
 const HTML = "http://www.w3.org/1999/02/22-rdf-syntax-ns#HTML";
 const editor = JSON.parse(document.getElementById("editor").textContent);
 
-// The form is in a shadow root, which the page's styles do not reach. The inputs that show a value which
-// shacl-form reads from a hidden input are as wide as its own (.editor).
+// The form's shadow root is not reached by the page's styles. Shown inputs are as wide as .editor ones.
 const STYLE = `
 .shown:not([type='checkbox']) { flex-grow: 1; }
 textarea.shown { resize: vertical; }
@@ -66,13 +61,12 @@ function make(tag, className, text) {
   return node;
 }
 
-// A platform address is opened from this server, so that it works on every copy of the platform.
+// Platform addresses are opened on this server, so they work on every copy.
 function local(iri) {
   return iri.startsWith(editor.base) ? "/" + iri.slice(editor.base.length) : iri;
 }
 
-// A text in the form in which shacl-form reads a literal: in quotes, as it is, with its datatype when it is
-// not a plain text, such as HTML (rdf:HTML).
+// A text as shacl-form reads a literal: quoted, with its datatype unless plain (such as rdf:HTML).
 function literal(text, datatype) {
   return '"' + text + '"' + (datatype && datatype !== STRING ? "^^" + datatype : "");
 }
@@ -81,9 +75,8 @@ function query(fields) {
   return Object.entries(fields).map(function (entry) { return entry[0] + "=" + encodeURIComponent(entry[1]); }).join("&");
 }
 
-// The field of a text as the form's theme makes it, whose value is given to shacl-form as a literal of the
-// field's datatype, a plain text or HTML. An address that a record has where a text belongs is kept as an
-// address until the text is edited.
+// A text field of the theme, given to shacl-form as a literal of the field's datatype. An address where a
+// text belongs is kept until the text is edited.
 class Text extends Plugin {
   createEditor(template, value) {
     const datatype = template.datatype ? template.datatype.value : STRING;
@@ -108,7 +101,7 @@ class Text extends Plugin {
   }
 }
 
-// A dialog with a title, a place for what the platform refuses, and a body; closing it removes it.
+// A dialog with a title, a place for refusals and a body; it is removed when closed.
 function opened(title) {
   const dialog = make("dialog", "record-dialog");
   const top = make("div", "d-flex align-items-center gap-2 border-bottom px-3 py-2");
@@ -139,8 +132,7 @@ function labelled(text, input) {
   return label;
 }
 
-// A new record of a class, in a form of its own made from the shape of the class, in a dialog. It is added
-// through the API, and then given to *added* with its address and name.
+// A new record, in a dialog form made from its class's shape; once added, it is given to *added*.
 function addRecord(of_class, label, name, store, added) {
   const shape = store.getSubjects(TARGET, of_class, null)[0];
   const subject = "urn:uuid:" + crypto.randomUUID();
@@ -152,7 +144,7 @@ function addRecord(of_class, label, name, store, added) {
   form.dataset.values = "<" + subject + "> a <" + of_class + "> ; <" + NAME + "> " + JSON.stringify(name) + " .";
   form.dataset.generateNodeShapeReference = "";
   form.dataset.collapse = "open";
-  // The platform's checks decide whether the record is added, as in the editor's own form.
+  // Adding is decided by the platform's checks, as in the editor's form.
   const add = make("button", "btn btn-success", "Add the " + label.toLowerCase());
   add.type = "button";
   add.addEventListener("click", async function () {
@@ -181,9 +173,8 @@ function addRecord(of_class, label, name, store, added) {
   shown.body.append(form, bar);
 }
 
-// A vocabulary that is added to the platform, from a registry of vocabularies (the Ontology Lookup Service,
-// Ontobee, Wikidata), where it is found by its name, with its title, the namespace of its terms and its
-// description; or one given by hand. One that the platform has, at the same namespace, is chosen instead.
+// A vocabulary added from a registry (OLS, Ontobee, Wikidata), found by name, or given by hand. One the
+// platform has at the same namespace is chosen instead.
 async function addVocabulary(platform, added) {
   const shown = opened("Add a vocabulary");
   const registry = make("select", "form-select form-select-sm");
@@ -192,19 +183,19 @@ async function addVocabulary(platform, added) {
   }
   registry.append(new Option("By hand", ""));
   const text = make("input", "form-control form-control-sm");
-  text.placeholder = "Find a vocabulary by its name, such as assay or BAO";
+  text.placeholder = "Name, such as assay or BAO";
   const results = make("div", "list-group list-group-flush border rounded small record-dialog-results");
   const name = make("input", "form-control form-control-sm");
-  name.placeholder = "Its name, such as NCBI Taxonomy";
+  name.placeholder = "Name, such as NCBI Taxonomy";
   const namespace = make("input", "form-control form-control-sm");
-  namespace.placeholder = "The start of the addresses of its terms, such as http://purl.obolibrary.org/obo/NCBITaxon_";
+  namespace.placeholder = "Term address start, such as http://purl.obolibrary.org/obo/NCBITaxon_";
   const add = make("button", "btn btn-success btn-sm mt-2", "Add the vocabulary");
   add.type = "button";
   const finding = make("div", "");
-  finding.append(labelled("Its name", text), results);
+  finding.append(labelled("Name", text), results);
   const writing = make("div", "d-none");
-  writing.append(labelled("Its name", name), labelled("Its namespace", namespace), add);
-  shown.body.append(labelled("Where it is found", registry), finding, writing);
+  writing.append(labelled("Name", name), labelled("Namespace", namespace), add);
+  shown.body.append(labelled("Registry", registry), finding, writing);
 
   async function keep(found, button) {
     for (const vocabulary of platform) {
@@ -238,7 +229,7 @@ async function addVocabulary(platform, added) {
     if (!registry.value) {
       return;
     }
-    // Only the answer to the latest search is shown.
+    // Only the latest answer is shown.
     asked += 1;
     const question = asked;
     const searching = make("div", "list-group-item text-secondary");
@@ -276,7 +267,7 @@ async function addVocabulary(platform, added) {
   find();
 }
 
-// A term that is registered by hand, with its label and its address, in a vocabulary of the platform.
+// A term registered by hand, with label and address, in a platform vocabulary.
 function registerTerm(text, vocabulary, added) {
   const shown = opened("Register a term of " + vocabulary.name);
   const label = make("input", "form-control form-control-sm");
@@ -296,13 +287,12 @@ function registerTerm(text, vocabulary, added) {
       shown.refuse(error.message);
     }
   });
-  shown.body.append(labelled("Its label", label), labelled("Its address", address), add);
+  shown.body.append(labelled("Label", label), labelled("Address", address), add);
 }
 
 class RecordLink extends Plugin {
   createEditor(template, value) {
-    // The classes of the records that the field links to, by their name, as the profile gives them; a field
-    // of texts whose property links to records elsewhere, such as the keywords of a tool, has none.
+    // The field's link classes by name, from the profile; text fields, such as tool keywords, have none.
     const classes = template.class || template.or ? editor.links[template.path] || {} : {};
     const names = Object.values(classes);
     if (!names.length) {
@@ -318,9 +308,8 @@ class RecordLink extends Plugin {
     const open = make("a", "record-link-open", "↗");
     open.target = "_blank";
     open.rel = "noopener";
-    open.title = "Open its page";
-    // The link itself, which shacl-form reads as the field's value. A text that the record has where a link
-    // belongs is kept as a text until a record is chosen.
+    open.title = "Open page";
+    // The link, read by shacl-form as the value. A text where a link belongs is kept until a record is chosen.
     const chosen = document.createElement("input");
     chosen.type = "hidden";
     chosen.className = "editor";
@@ -340,8 +329,7 @@ class RecordLink extends Plugin {
     box.append(row, options);
     field.append(chosen);
 
-    // What the field links to: the kind of the record, and a link to its page. A text where a link belongs,
-    // a record of another class, and an address that is no record of the platform are marked.
+    // The linked record's kind and page. Texts, records of other classes and unknown addresses are marked.
     function show() {
       kind.className = "record-link-kind";
       kind.textContent = "";
@@ -353,7 +341,7 @@ class RecordLink extends Plugin {
       if (chosen.dataset.nodeKind !== IRI) {
         kind.classList.add("text");
         kind.textContent = "Text";
-        kind.title = "A name only: find its record, or add it";
+        kind.title = "Name only: find or add its record";
         return;
       }
       let named = "";
@@ -369,7 +357,7 @@ class RecordLink extends Plugin {
       kind.textContent = named || "Elsewhere";
       if (!fits) {
         kind.classList.add("text");
-        kind.title = named ? "A record of another kind than the field's" : "An address that is no record of the platform";
+        kind.title = named ? "Wrong kind" : "Not a platform record";
       }
       open.href = local(chosen.value);
       open.hidden = false;
@@ -393,7 +381,7 @@ class RecordLink extends Plugin {
       options.insertBefore(button, options.querySelector(".record-link-busy"));
     }
 
-    // A record or a term that is added is put in the form's graph too, so that the form's checks know it.
+    // Added records and terms are put in the form's graph too, for the form's checks.
     async function known(iri, name, of_class) {
       store.addQuads(await loadRDF({ rdf: "<" + iri + "> a <" + of_class + "> ; <" + LABEL + "> " + JSON.stringify(name) + " ." }));
       choose(iri, name);
@@ -407,7 +395,7 @@ class RecordLink extends Plugin {
       }
     }
 
-    // A field of terms first chooses the vocabulary, in whose namespace the terms are found.
+    // Term fields choose a vocabulary first; terms are found in its namespace.
     let vocabulary = null;
     if (classes[TERM]) {
       const vocabularies = make("select", "record-link-vocabulary");
@@ -420,8 +408,8 @@ class RecordLink extends Plugin {
           vocabularies.append(new Option(found.name, found["@id"], false, found["@id"] === selected));
         }
         vocabularies.append(new Option("Add a vocabulary…", ""));
-        // A term that the field has already is shown in its vocabulary, the one whose namespace starts its
-        // address; a field whose terms are of one vocabulary (sh:pattern ^<namespace>) shows that one only.
+        // A held term is shown in the vocabulary whose namespace starts its address; a field of one
+        // vocabulary (sh:pattern ^<namespace>) shows only that one.
         const only = template.pattern && template.pattern.startsWith("^") ? template.pattern.slice(1).replace(/\\(.)/g, "$1") : "";
         const current = listed.find(function (found) {
           return found.url && ((only && found.url["@id"] === only) || (value && value.value.startsWith(found.url["@id"])));
@@ -429,7 +417,7 @@ class RecordLink extends Plugin {
         if (current && !selected) {
           vocabularies.value = current["@id"];
         } else if (value && !selected) {
-          vocabularies.prepend(new Option("Not in a vocabulary of the platform", "none", true, true));
+          vocabularies.prepend(new Option("Not in a platform vocabulary", "none", true, true));
         } else if (!selected) {
           vocabularies.prepend(new Option("Any vocabulary", "any", true, true));
         }
@@ -448,8 +436,8 @@ class RecordLink extends Plugin {
       attempt(function () { return fill(null); });
     }
 
-    // The records of each of the field's classes whose name has the text, then a new record of each class
-    // that has a kind, or a new term of the vocabulary. A field whose text is emptied links to nothing.
+    // Records of the field's classes whose name has the text, then a new record or term. An emptied field
+    // links to nothing.
     let timer = null;
     search.addEventListener("input", function () {
       window.clearTimeout(timer);
@@ -474,8 +462,7 @@ class RecordLink extends Plugin {
               option([make("span", "record-link-kind", classes[of_class]), record.name], function () { choose(record["@id"], record.name); });
             }
           }
-          // The terms of the vocabulary that its registry has and the platform does not have yet, which are
-          // registered with their label, definition and code when they are chosen.
+          // Registry terms not on the platform yet; registered with label, definition and code when chosen.
           if (classes[TERM] && within) {
             const matched = await api("GET", "/api/registries/terms?" + query({ text: text, namespace: within }));
             for (const found of matched.terms) {
@@ -521,8 +508,7 @@ class RecordLink extends Plugin {
   }
 }
 
-// A field of links is one search for the records of any of its classes, so the choice among the classes of
-// sh:or, which shacl-form asks for first when a value is added, is made at once.
+// A link field searches all its classes, so shacl-form's sh:or choice is made at once.
 const watched = new WeakSet();
 
 function pick(within) {
@@ -530,7 +516,7 @@ function pick(within) {
   for (const constraint of found) {
     const choice = constraint.querySelector(".editor");
     if (editor.links[constraint.dataset.path] && choice && choice.onchange) {
-      // The choice is made once the form has drawn it.
+      // Made once the form has drawn it.
       window.requestAnimationFrame(function () {
         choice.value = "0";
         choice.onchange();
@@ -539,8 +525,7 @@ function pick(within) {
   }
 }
 
-// The kind of value of a field, as its shape gives it: an address (IRI), when the field links to a class or
-// takes addresses (sh:class, sh:nodeKind sh:IRI), or else the datatype of its literals (sh:datatype).
+// A field's value kind from its shape: IRI (sh:class, sh:nodeKind sh:IRI), else its sh:datatype.
 function typeOf(instance) {
   const editors = instance.querySelectorAll(".editor, .shown");
   for (const element of editors) {
@@ -556,7 +541,7 @@ function typeOf(instance) {
   return null;
 }
 
-// Each field that holds values, not parts, is marked with the kind of its values.
+// Value fields, not parts, are marked with their value kind.
 function tag(within) {
   const found = within.matches && within.matches(".property-instance") ? [within] : within.querySelectorAll(".property-instance");
   for (const instance of found) {

@@ -1,12 +1,11 @@
-// The record editor: shacl-form builds the form from the model's shapes, and each change is sent to the
-// records API (the W3C Graph Store Protocol), with the editor's login and the record's version. Beside the
-// form, the linked data shows the statements that saving would publish.
+// The record editor: the form is built by shacl-form from the model's shapes and saved through the records
+// API (Graph Store Protocol) with the record's version. The linked data beside it shows what is published.
 import { busy } from "./busy.js";
 
 (function () {
   const editor = JSON.parse(document.getElementById("editor").textContent);
   const message = document.getElementById("message");
-  // A record elsewhere, such as a term of an ontology, is at its whole address under /api/.
+  // A record elsewhere, such as an ontology term, is under /api/ at its whole address.
   const path = editor.graph.startsWith(editor.base) ? editor.graph.slice(editor.base.length) : editor.graph;
   const graph = "/api/" + encodeURI(path).replace(/#/g, "%23");
   const form = document.querySelector("shacl-form");
@@ -25,7 +24,7 @@ import { busy } from "./busy.js";
     return node;
   }
 
-  // A platform address is shown from this server, so that it works on every copy of the platform.
+  // Platform addresses are opened on this server, so they work on every copy.
   function pageLink(address) {
     return address.startsWith(editor.base) ? "/" + address.slice(editor.base.length) : address;
   }
@@ -65,8 +64,7 @@ import { busy } from "./busy.js";
     window.location.search = "?record=" + encodeURIComponent(address);
   }
 
-  // What keeps the record from being saved, next to the Save button: each field once, by the names of the
-  // fields that lead to it, with what is wrong and a button that shows it in the form.
+  // What blocks saving, next to Save: each field by its label path, with a Show button.
   function showProblems(answer) {
     const panel = document.getElementById("save-problems");
     const fields = Object.keys(answer.fields);
@@ -85,7 +83,7 @@ import { busy } from "./busy.js";
     panel.classList.remove("d-none");
   }
 
-  // The first value of a field in the form that its checks flag, else the first value of the field.
+  // The field's first flagged value, else its first value.
   function reveal(path) {
     const term = path.split(" > ").pop();
     const found = [];
@@ -100,7 +98,7 @@ import { busy } from "./busy.js";
     }
   }
 
-  // The values that saving removes, by the fields that lead to them, as the platform's preview tells them.
+  // The values that saving removes, by label path, from the preview.
   function removals(edges, trail, found) {
     for (const edge of edges) {
       if (edge.status === "removed") {
@@ -111,8 +109,8 @@ import { busy } from "./busy.js";
     return found;
   }
 
-  // The record's statements as a diagram: an arrow from the record to each value, green when saving adds
-  // it, red when saving removes it. A part of the record (a section, a listed tool) has its own arrows.
+  // The record's statements as a diagram: an arrow per value, green when added, red when removed. Parts
+  // (sections, listed tools) have their own arrows.
   function renderEdges(found) {
     const edges = make("ul", "graph-edges");
     for (const edge of found) {
@@ -159,13 +157,11 @@ import { busy } from "./busy.js";
     list.parentElement.classList.toggle("d-none", !list.children.length);
   }
 
-  // The preview asks the platform what saving would publish, without saving anything; only the latest
-  // request is drawn. Until the record is edited, it is drawn from the record as it is published, as
-  // shacl-form tells nothing when it has loaded the record.
+  // What saving publishes, previewed without saving; only the latest answer is drawn. Until the form is
+  // edited, the published record is drawn, as shacl-form sends no change on load.
   let edited = false;
 
-  // A case study's page as the website will show it, in the panel under the form (static/js/case-study.js):
-  // drawn from the record as it is published, then from each preview of the form's changes.
+  // The case study's page under the form (static/js/case-study.js): the published record, then each preview.
   const caseStudy = document.getElementById("case-study");
   let caseStudyComponent = null;
 
@@ -184,12 +180,11 @@ import { busy } from "./busy.js";
         caseStudy.scrollTop = 0;
       },
     });
-    document.getElementById("case-study-caption").textContent = edited ? "With the form's changes, not saved yet" : "As published";
+    document.getElementById("case-study-caption").textContent = edited ? "Unsaved changes" : "As published";
   }
 
-  // The field that the form is on is marked in the case study's page, on the page of the nearest node of the
-  // form that has an address. A node without one, reached from that page by its sections (schema:hasPart),
-  // is a section, known by its position and name.
+  // The focused field is marked on the page of the nearest node with an address. A node without one,
+  // reached by schema:hasPart, is a section, known by position and name.
   function term(path) {
     return path.split(/[/#]/).pop();
   }
@@ -257,7 +252,7 @@ import { busy } from "./busy.js";
       });
       answer = await response.json().catch(function () { return {}; });
       if (!response.ok) {
-        document.getElementById("rdf-caption").textContent = answer.message || "The linked data could not be built.";
+        document.getElementById("rdf-caption").textContent = answer.message || "Linked data not built.";
         return;
       }
     } catch (error) {
@@ -269,8 +264,8 @@ import { busy } from "./busy.js";
     const added = answer.edges.filter(function (edge) { return edge.status === "added"; }).length;
     const removed = answer.edges.filter(function (edge) { return edge.status === "removed"; }).length;
     document.getElementById("rdf-caption").textContent = added || removed
-      ? "When you save: " + added + " added, " + removed + " removed"
-      : "As published; nothing to save";
+      ? "On save: " + added + " added, " + removed + " removed"
+      : "Nothing to save";
     renderGraph(document.getElementById("rdf-graph"), answer);
     listMessages("rdf-problems", answer.fields);
     listMessages("rdf-warnings", answer.warnings);
@@ -288,7 +283,7 @@ import { busy } from "./busy.js";
     try {
       window.localStorage.setItem("editor-show-rdf", showRdf.checked ? "yes" : "no");
     } catch (error) {
-      // The choice is not remembered where the browser keeps no storage.
+      // Not remembered where the browser keeps no storage.
     }
     schedulePreview();
   }
@@ -310,7 +305,7 @@ import { busy } from "./busy.js";
       edited = true;
       schedulePreview();
     });
-    // The focus that moves within the form reaches its shadow root, not the form itself.
+    // Focus within the form reaches its shadow root, not the form.
     if (caseStudy) {
       form.addEventListener("focusin", function (event) {
         form.shadowRoot.addEventListener("focusin", markCaseStudy);
@@ -324,8 +319,7 @@ import { busy } from "./busy.js";
       problems.classList.remove("d-none");
     }
 
-    // The platform's checks decide whether a record is saved: a value that is only recommended does not
-    // keep it from being saved, as the form's own checks would.
+    // Saving is decided by the platform's checks; unlike the form's checks, warnings do not block it.
     async function saved(turtle, working) {
       const preview = await send("PUT", graph + "?preview=true", turtle, "text/turtle", refuse);
       if (!preview) {
@@ -335,7 +329,7 @@ import { busy } from "./busy.js";
         showProblems(preview);
         return false;
       }
-      // A save that removes values asks first, so that no value is removed that the editor did not mean to.
+      // Removals are confirmed first.
       if (editor.version) {
         const gone = removals(preview.edges, "", []);
         const listed = gone.slice(0, 15).join("\n") + (gone.length > 15 ? "\n…" : "");
@@ -347,7 +341,7 @@ import { busy } from "./busy.js";
       return Boolean(await send("PUT", graph, turtle, "text/turtle", refuse));
     }
 
-    // Saving waits for the form to load, as an empty form removes every value.
+    // Save is enabled once the form has loaded; an empty form would remove every value.
     form.addEventListener("ready", function () {
       save.disabled = false;
     });
@@ -363,7 +357,7 @@ import { busy } from "./busy.js";
     });
   }
 
-  // The button pressed turns until the record is reopened, or until the platform refuses.
+  // The pressed button turns until the record reopens or the platform refuses.
   async function act(button, text, method, address, body, reopened) {
     const working = busy(button, text, column);
     if (await send(method, address, body, body ? "application/json" : undefined)) {
@@ -375,7 +369,7 @@ import { busy } from "./busy.js";
 
   const actions = {
     remove: function (event) {
-      if (window.confirm("Remove this record? Its address answers 410 Gone from then on.")) {
+      if (window.confirm("Remove this record? Its address then answers 410 Gone.")) {
         act(event.currentTarget, "Removing…", "DELETE", graph, undefined, editor.graph);
       }
     },
@@ -383,7 +377,7 @@ import { busy } from "./busy.js";
       act(event.currentTarget, "Restoring…", "POST", "/api/restore", JSON.stringify({ record: path }), editor.graph);
     },
     move: function (event) {
-      const to = window.prompt("The record's new address; the old one will forward to it.", path);
+      const to = window.prompt("New address (the old one forwards to it):", path);
       if (to && to !== path) {
         act(event.currentTarget, "Moving…", "POST", "/api/move", JSON.stringify({ record: path, to: to }), editor.base + to);
       }
@@ -402,7 +396,7 @@ import { busy } from "./busy.js";
       const answer = await send("POST", "/api/images", body);
       working.done();
       if (answer) {
-        show("The image's address, to give in the image field: " + answer["@id"], true);
+        show("Image address, for the image field: " + answer["@id"], true);
       }
     });
   }
