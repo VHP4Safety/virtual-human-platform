@@ -105,8 +105,38 @@
   // shacl-form tells nothing when it has loaded the record.
   let edited = false;
 
+  // A case study's page as the website will show it, in the panel under the form (static/js/case-study.js):
+  // drawn from the record as it is published, then from each preview of the form's changes.
+  const caseStudy = document.getElementById("case-study");
+  let caseStudyComponent = null;
+
+  async function showCaseStudy(found) {
+    if (!caseStudy || !found) {
+      return;
+    }
+    if (!caseStudyComponent) {
+      caseStudyComponent = await import(caseStudy.dataset.component);
+    }
+    caseStudyComponent.renderCaseStudy(caseStudy, found, {
+      base: editor.base,
+      linkTarget: "_blank",
+      openDisabled: true,
+      onNavigate: function () {
+        caseStudy.scrollTop = 0;
+      },
+    });
+    document.getElementById("case-study-caption").textContent = edited ? "With the form's changes, not saved yet" : "As published";
+  }
+
+  async function showPublishedCaseStudy() {
+    const response = await fetch(graph, { credentials: "same-origin", headers: { Accept: "application/ld+json" } });
+    if (response.ok && !edited) {
+      showCaseStudy(await response.json());
+    }
+  }
+
   async function renderPreview() {
-    if (!showRdf.checked || !form) {
+    if (!form || !(showRdf.checked || (caseStudy && edited))) {
       return;
     }
     let turtle = "";
@@ -148,6 +178,7 @@
     renderGraph(document.getElementById("rdf-graph"), answer);
     listMessages("rdf-problems", answer.fields);
     listMessages("rdf-warnings", answer.warnings);
+    showCaseStudy(answer.document);
   }
 
   function schedulePreview() {
@@ -173,6 +204,10 @@
   }
   showRdf.addEventListener("change", showPreview);
   showPreview();
+
+  if (caseStudy && editor.version) {
+    showPublishedCaseStudy();
+  }
 
   if (form) {
     form.addEventListener("change", function () {

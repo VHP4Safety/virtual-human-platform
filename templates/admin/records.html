@@ -83,6 +83,84 @@
     </aside>
   </div>
 </div>
+{% if kind == "casestudies" and selected and (not record or not record.removed_at) %}
+<link href="{{ url_for('static', filename='css/casestudies.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/case-study.css') }}" rel="stylesheet">
+<section class="case-study-dock" id="case-study-dock" aria-label="The case study's page">
+  <div class="case-study-dock-handle" title="Drag to resize"></div>
+  <div class="case-study-dock-bar bg-vhppurple d-flex flex-wrap align-items-center column-gap-3 px-3">
+    <button type="button" class="case-study-dock-toggle d-flex align-items-center gap-2" id="case-study-toggle" aria-expanded="true" aria-controls="case-study">
+      <i class="bi bi-chevron-down"></i> The case study's page, as the website will show it
+    </button>
+    <span class="small text-white-50" id="case-study-caption"></span>
+  </div>
+  <div class="case-study-dock-body" id="case-study" data-component="{{ url_for('static', filename='js/case-study.js') }}">
+    <p class="text-secondary p-3 mb-0">{% if record %}The case study's page is on its way.{% else %}Fill in the form to see the case study's page here.{% endif %}</p>
+  </div>
+</section>
+<script>
+  // The panel of the case study folds with its bar and is resized from its top edge. The page leaves room
+  // for it, and the browser keeps the choice where it has storage.
+  (function () {
+    const dock = document.getElementById("case-study-dock");
+    const toggle = document.getElementById("case-study-toggle");
+    const handle = dock.querySelector(".case-study-dock-handle");
+
+    function remember(name, value) {
+      try {
+        window.localStorage.setItem(name, value);
+      } catch (error) {
+        // The choice is not kept where the browser keeps no storage.
+      }
+    }
+
+    function recall(name) {
+      try {
+        return window.localStorage.getItem(name);
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function fit() {
+      document.documentElement.style.setProperty("--case-study-dock", dock.offsetHeight + "px");
+    }
+
+    function fold(folded) {
+      dock.classList.toggle("folded", folded);
+      toggle.setAttribute("aria-expanded", folded ? "false" : "true");
+      toggle.querySelector("i").className = folded ? "bi bi-chevron-up" : "bi bi-chevron-down";
+      remember("editor-case-study-folded", folded ? "yes" : "no");
+      fit();
+    }
+
+    function resize(height) {
+      dock.style.height = Math.max(120, Math.min(window.innerHeight - 80, height)) + "px";
+      fit();
+    }
+
+    toggle.addEventListener("click", function () {
+      fold(!dock.classList.contains("folded"));
+    });
+    handle.addEventListener("pointerdown", function (event) {
+      handle.setPointerCapture(event.pointerId);
+    });
+    handle.addEventListener("pointermove", function (event) {
+      if (handle.hasPointerCapture(event.pointerId)) {
+        resize(window.innerHeight - event.clientY);
+      }
+    });
+    handle.addEventListener("pointerup", function () {
+      remember("editor-case-study-height", dock.offsetHeight);
+    });
+    window.addEventListener("resize", fit);
+    if (parseInt(recall("editor-case-study-height"), 10)) {
+      resize(parseInt(recall("editor-case-study-height"), 10));
+    }
+    fold(recall("editor-case-study-folded") === "yes");
+  })();
+</script>
+{% endif %}
 <script type="application/json" id="editor">{{ {"graph": selected, "base": base, "version": record.updated_at if record else none, "token": form_token, "links": links, "classes": classes}|tojson }}</script>
 <script type="module" src="https://cdn.jsdelivr.net/npm/@ulb-darmstadt/shacl-form@3.7.3/dist/bundle.js"></script>
 <script type="module" src="{{ url_for('static', filename='js/record-links.js') }}"></script>
