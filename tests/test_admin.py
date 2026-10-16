@@ -1,4 +1,4 @@
-"""What editors do: their write tokens, and the records they write with their revisions."""
+"""Editors' write tokens, and the records they write with revisions."""
 
 from sqlalchemy import select
 

@@ -1,12 +1,12 @@
-"""Every field of some records of each kind is changed in each way that the profile's shapes allow or
-forbid, at every depth of the records' parts: given a value that fits, given one more, emptied, and given
-values that do not fit. Each change is checked and saved through the records API and read back, and is
-loaded into the editor's form and serialized again. The statements lost or added on the way, and the checks
-that do not answer as the shapes say, are written to a report, and fail the test.
+"""Each field of some records of each kind is changed in each way the shapes allow or forbid, at every
+depth: a fitting value, one more, emptied, and misfits. Each change is checked and saved through the
+records API, read back, loaded into the editor's form and serialized again. Statements lost or added, and
+checks that differ from the shapes, are written to a report and fail the test.
 
-It runs on a copy of a platform state: FIELDS_STATE is the folder of its platform.sqlite. FIELDS_RECORDS
-records of each kind are changed (3: the least and the most complete, and one between). The form is
-checked when FIELDS_CHROME names a Chromium for Playwright. The report is written to FIELDS_REPORT."""
+- FIELDS_STATE: the folder of a platform.sqlite, which is copied;
+- FIELDS_RECORDS: records changed per kind (3: the least and most complete, and one between);
+- FIELDS_CHROME: a Chromium for Playwright, for the form's check;
+- FIELDS_REPORT: the report's path."""
 
 import json
 import os
@@ -50,7 +50,7 @@ def listed(given) -> list:
 
 
 def fitting(field: dict, holder: str, taken: list):
-    """A value that fits a field and that it does not have yet; None when none is known."""
+    """A fitting value that the field does not have yet; None when none is known."""
     if field["values"]:
         for value in field["values"]:
             if value not in taken:
@@ -81,8 +81,8 @@ def fitting(field: dict, holder: str, taken: list):
 
 
 def misfits(field: dict) -> dict:
-    """Values that do not fit a field, by what they are: a text where a link, a part, an address or a number
-    belongs, a link where a text belongs, a value that is not listed, or a record of another class."""
+    """Values that do not fit a field, by kind: a text where a link, part, address or number belongs, a link
+    where a text belongs, an unlisted value, or a record of another class."""
     if field["values"]:
         return {"unlisted": {"@id": "https://example.org/unlisted"}}
     found = {}
@@ -103,7 +103,7 @@ def misfits(field: dict) -> dict:
 
 
 def operated(operation: str, field: dict, current: list, holder: str):
-    """The values of a field after an operation; None when the operation leaves the field as it is."""
+    """A field's values after an operation; None when the field is left as it is."""
     taken = documents.values({"field": current}, "field")
     if field["part"] and current and operation in ("set", "empty"):
         return None
@@ -130,8 +130,8 @@ def expectation(operation: str, field: dict) -> str:
 
 
 def changed(document: dict, of_class: str, operation: str, holder: str, path: list, plan: list) -> dict:
-    """The document with an operation done on each of its fields, and on those of its parts; what the
-    shapes say of each change is added to the plan."""
+    """The document with an operation done on each field, parts included; each change's expected check is
+    added to the plan."""
     new = dict(document)
     for field in fields.of(of_class):
         if field["fixed"]:
@@ -153,8 +153,8 @@ def changed(document: dict, of_class: str, operation: str, holder: str, path: li
 
 
 def difference(intended: Graph, found: Graph) -> dict:
-    """The statements lost and added, counted by property and by what their value is (a link, a text or a
-    part); a statement that is only held by another node without an address is neither."""
+    """The statements lost and added, counted by property and value kind (link, text or part); a statement
+    only held by another node without an address is neither."""
     _, lost, added = graph_diff(to_isomorphic(intended), to_isomorphic(found))
     counted = {"lost": Counter(), "added": Counter()}
     for name, triples in (("lost", lost), ("added", added)):
@@ -172,9 +172,8 @@ def difference(intended: Graph, found: Graph) -> dict:
 
 
 def answered(plan: list, answer: dict, baseline: dict) -> list:
-    """The checks that do not answer as the shapes say: each change's field among the problems (a
-    violation) or the warnings, or among neither when it fits; a part's field is named by the fields that
-    lead to it."""
+    """The checks that differ from the shapes: each change's field is expected among the problems
+    (violation), the warnings, or neither (fits); a part's field is named by its path."""
     found = []
     for item in plan:
         top = item["field"]
@@ -238,12 +237,12 @@ def test_fields(state, site):
     with open(written, "w") as out:
         json.dump(report, out, indent=1, default=dict)
     failing = [row for row in report if row["issues"] or sum(row.get("lost", {}).values()) or sum(row.get("added", {}).values())]
-    assert not failing, f"{len(failing)} of {len(report)} changes lose or add statements, or are checked unlike the shapes say: {written}"
+    assert not failing, f"{len(failing)} of {len(report)} changes lose or add statements, or differ from the shapes: {written}"
 
 
 def form_rows(site, secret: str, chrome: str, cases: list) -> list:
-    """What the editor's form gives back for each changed record: it is loaded into the form of its record,
-    and the form's statements are compared with the record's."""
+    """What the editor's form gives back for each changed record, loaded into its form; the form's
+    statements are compared with the record's."""
     from playwright.sync_api import sync_playwright
     from werkzeug.serving import make_server
 

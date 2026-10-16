@@ -1,4 +1,4 @@
-"""Records as linked data: their documents and checks, the fields read from the model, and an import."""
+"""Records as linked data: documents, checks, fields from the model, and an import."""
 
 import json
 

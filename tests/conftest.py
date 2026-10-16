@@ -1,5 +1,5 @@
-"""Every test has its own database and records repository in a temporary folder; the platform's pages
-are served without network calls."""
+"""Each test has its own database and records repository in a temporary folder; pages are served
+without network calls."""
 
 import pytest
 
