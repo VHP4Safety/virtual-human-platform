@@ -42,6 +42,15 @@ QUESTIONS = {
 MISSING = {"", "_No response_", "No response", "NA", "Unknown", "Unknown at this timepoint", "no_url", "[TODO]", "[DRAFT]"}
 
 
+HTML = "http://www.w3.org/1999/02/22-rdf-syntax-ns#HTML"
+MARKUP = re.compile(r"<\s*/?[a-zA-Z][^>]*>")
+
+
+def marked(value):
+    """A text as it is written, typed as HTML (rdf:HTML) when it has markup, such as <p> or <b>."""
+    return {"@value": str(value), "@type": HTML} if MARKUP.search(str(value)) else str(value)
+
+
 def present(value) -> bool:
     """False for empty values and for the placeholders that upstream files use for them."""
     return value is not None and str(value).strip() not in MISSING and not str(value).strip().startswith("[DRAFT]")

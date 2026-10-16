@@ -39,6 +39,10 @@ form:question a sh:PropertyGroup ; sh:order 1 ; rdfs:label "The question" .
 form:workflow a sh:PropertyGroup ; sh:order 1 ; rdfs:label "The page of the workflow" .
 form:parts a sh:PropertyGroup ; sh:order 2 ; rdfs:label "Its parts" .
 
+# A text is plain, without markup, or in HTML (rdf:HTML): a text with markup, such as <p> or <b>, says so.
+form:PlainText a sh:NodeShape ; rdfs:label "Text" ; sh:datatype xsd:string ; sh:not [ sh:pattern "<\\s*/?[a-zA-Z][^>]*>" ] .
+form:HTMLText a sh:NodeShape ; rdfs:label "HTML" ; sh:datatype rdf:HTML .
+
 form:SoftwareApplication a sh:NodeShape ;
     sh:targetClass schema:SoftwareApplication ;
     rdfs:label "Tool" ;
@@ -48,8 +52,8 @@ form:SoftwareApplication a sh:NodeShape ;
         sh:description "The tool's name as its developers write it." ;
         sh:message "Give the tool one name." ] ;
     sh:property [
-        sh:path schema:description ; sh:group form:about ; sh:order 2 ; sh:name "Description" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        dash:singleLine false ;
+        sh:path schema:description ; sh:group form:about ; sh:order 2 ; sh:name "Description" ; sh:minCount 1 ; sh:maxCount 1 ;
+        dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ;
         sh:description "What the tool does and what it is used for, in two or three sentences. It is shown in the tool catalogue and on the tool's page." ;
         sh:message "Describe the tool in a few sentences." ] ;
     sh:property [
@@ -166,8 +170,8 @@ form:LabProtocol a sh:NodeShape ;
         sh:description "The method's name as it is known in the lab." ;
         sh:message "A method needs one name." ] ;
     sh:property [
-        sh:path schema:description ; sh:group form:method ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        dash:singleLine false ;
+        sh:path schema:description ; sh:group form:method ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ;
+        dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ;
         sh:description "What the method measures or shows, in one or two sentences." ] ;
     sh:property [
         sh:path glossary:VHP0000152 ; sh:group form:method ; sh:order 3 ; sh:name "Assessment steps" ;
@@ -232,8 +236,8 @@ form:ResearchProject a sh:NodeShape ;
     sh:property [ sh:path schema:keywords ; sh:group form:casestudy ; sh:order 4 ; sh:name "Keywords" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
         sh:message "Choose a term of a vocabulary, such as Pharmacovigilance in the VHP4Safety glossary, or register the term; a keyword given as text is kept until then." ;
         sh:description "Terms that say what the case study deals with." ] ;
-    sh:property [ sh:path schema:abstract ; sh:group form:casestudy ; sh:order 5 ; sh:name "Introduction to the questions" ; sh:maxCount 1 ; sh:datatype xsd:string ; dash:singleLine false ] ;
-    sh:property [ sh:path schema:text ; sh:group form:casestudy ; sh:order 6 ; sh:name "Text" ; sh:maxCount 1 ; sh:datatype xsd:string ; dash:singleLine false ;
+    sh:property [ sh:path schema:abstract ; sh:group form:casestudy ; sh:order 5 ; sh:name "Introduction to the questions" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
+    sh:property [ sh:path schema:text ; sh:group form:casestudy ; sh:order 6 ; sh:name "Text" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ;
         sh:description "The text of the case study's page, in HTML, when it is not in sections." ] ;
     sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 1 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
         sh:description "The sections of the case study's page, each with a heading, a text in HTML, and its position." ] ;
@@ -247,7 +251,7 @@ form:Question a sh:NodeShape ;
     sh:targetClass schema:Question ;
     rdfs:label "Regulatory question" ;
     sh:property [ sh:path schema:name ; sh:group form:question ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A question needs one title." ] ;
-    sh:property [ sh:path schema:text ; sh:group form:question ; sh:order 2 ; sh:name "The question" ; sh:maxCount 1 ; sh:datatype xsd:string ; dash:singleLine false ] ;
+    sh:property [ sh:path schema:text ; sh:group form:question ; sh:order 2 ; sh:name "The question" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
     sh:property [ sh:path schema:headline ; sh:group form:question ; sh:order 3 ; sh:name "Heading of its page" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:description ; sh:group form:question ; sh:order 4 ; sh:name "Summary" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:position ; sh:group form:question ; sh:order 5 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
@@ -272,7 +276,7 @@ form:HowToSection a sh:NodeShape ;
     rdfs:label "Workflow page" ;
     sh:property [ sh:path schema:name ; sh:group form:workflow ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A page of a workflow needs one title." ] ;
     sh:property [ sh:path schema:description ; sh:group form:workflow ; sh:order 2 ; sh:name "Summary" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
-    sh:property [ sh:path schema:text ; sh:group form:workflow ; sh:order 3 ; sh:name "Text" ; sh:maxCount 1 ; sh:datatype xsd:string ; dash:singleLine false ;
+    sh:property [ sh:path schema:text ; sh:group form:workflow ; sh:order 3 ; sh:name "Text" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ;
         sh:description "The text of the page, in HTML, when it is not in sections." ] ;
     sh:property [ sh:path schema:step ; sh:group form:parts ; sh:order 1 ; sh:name "Steps" ;
         sh:class schema:HowToSection ; sh:node form:HowToSection ; sh:nodeKind sh:IRI ;
@@ -301,7 +305,7 @@ form:WebPageElement a sh:NodeShape ;
     sh:targetClass schema:WebPageElement ;
     rdfs:label "Section" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Heading" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
-    sh:property [ sh:path schema:text ; sh:order 2 ; sh:name "Text" ; sh:maxCount 1 ; sh:datatype xsd:string ; dash:singleLine false ] ;
+    sh:property [ sh:path schema:text ; sh:order 2 ; sh:name "Text" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
     sh:property [ sh:path schema:position ; sh:order 3 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ] ;
     sh:property [ sh:path schema:identifier ; sh:order 4 ; sh:name "Anchor" ; sh:maxCount 1 ; sh:datatype xsd:string ] .
 
@@ -316,7 +320,7 @@ form:Periodical a sh:NodeShape ;
 form:ScholarlyArticle a sh:NodeShape ;
     sh:targetClass schema:ScholarlyArticle ;
     rdfs:label "Publication" ;
-    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ; sh:or ( form:PlainText form:HTMLText ) ] ;
     sh:property [ sh:path schema:author ; sh:order 2 ; sh:name "Authors" ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ] ;
     sh:property [ sh:path schema:datePublished ; sh:order 3 ; sh:name "Published" ; sh:maxCount 1 ;
@@ -352,7 +356,7 @@ form:Dataset a sh:NodeShape ;
     sh:targetClass schema:Dataset ;
     rdfs:label "Dataset" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A dataset needs one title." ] ;
-    sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ; dash:singleLine false ] ;
+    sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
     sh:property [ sh:path schema:creator ; sh:order 3 ; sh:name "Authors" ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ] ;
     sh:property [ sh:path schema:datePublished ; sh:order 4 ; sh:name "Published" ; sh:maxCount 1 ; sh:datatype xsd:date ] ;
@@ -393,7 +397,7 @@ form:DefinedTerm a sh:NodeShape ;
         sh:description "Other names of the term, such as a short one." ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 6 ; sh:name "Other addresses" ; sh:nodeKind sh:IRI ;
         sh:description "Other addresses of the term, such as those of a license's text." ] ;
-    sh:property [ sh:path schema:description ; sh:order 4 ; sh:name "Definition" ; sh:maxCount 1 ; sh:datatype xsd:string ; dash:singleLine false ] .
+    sh:property [ sh:path schema:description ; sh:order 4 ; sh:name "Definition" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] .
 
 # A vocabulary or an ontology, at /vocabularies/<name>, whose terms records can be about; the addresses of
 # its terms start with its namespace.

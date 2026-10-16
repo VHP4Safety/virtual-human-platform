@@ -5,7 +5,7 @@ a year and a month, or a year), and their journal, as a part."""
 
 import json
 
-from linkeddata.parsers import present
+from linkeddata.parsers import marked, present
 
 XSD = "http://www.w3.org/2001/XMLSchema#"
 
@@ -34,7 +34,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         found = json.loads(content)
         row = {"@id": iri, "@type": "Publication"}
         if present(found.get("title")):
-            row["title"] = found["title"]
+            row["title"] = marked(found["title"])
         date = published(found.get("issued"))
         if date:
             row["date"] = date

@@ -5,7 +5,7 @@ addresses, and so are the creators' affiliations, as organisations."""
 
 import json
 
-from linkeddata.parsers import licence, link, present, publication, slug, term
+from linkeddata.parsers import licence, link, marked, present, publication, slug, term
 
 DATE = "http://www.w3.org/2001/XMLSchema#date"
 LICENSES = "https://zenodo.org/api/vocabularies/licenses/"
@@ -21,7 +21,7 @@ def parse(content: bytes) -> list[dict]:
         metadata = hit["metadata"]
         row = {"@id": f"data/{hit['id']}", "@type": "Dataset", "title": metadata.get("title"), "page": link(hit["links"]["self_html"])}
         if present(metadata.get("description")):
-            row["description"] = metadata["description"]
+            row["description"] = marked(metadata["description"])
         if present(metadata.get("publication_date")):
             row["published"] = {"@value": metadata["publication_date"], "@type": DATE}
         if present(hit.get("doi")):
