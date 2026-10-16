@@ -1,8 +1,10 @@
 """The platform's API, with flask-smorest, documented at /api/docs/.
 
 Each kind of record has a resource: GET /api/<kind> lists its records, found by their name (search) or by
-the value of any of their fields (/api/tools?processFlowStep=<address>), a page at a time; POST /api/<kind>
-adds one, at an address made from its name. Each record is at the API's address of its page, with the
+the values of the fields it is browsed by (/api/tools?processFlowStep=<address>), a page at a time, in JSON
+rows with the profile's field names, or in JSON-LD, Turtle or N-Triples, as Accept asks; GET
+/api/<kind>/facets counts the records that have each of those values; POST /api/<kind> adds a record, at an
+address made from its name. Each record is at the API's address of its page, with the
 parts it holds: GET, PUT and DELETE /api/tools/aopsuite read it in JSON-LD, Turtle or N-Triples, as Accept
 asks, add or replace it, and remove it; /api/casestudies/kidney/Q1 is a question of a case study, read
 with its steps and written with its case study.
@@ -13,23 +15,23 @@ its own, or in Turtle; a link is {"@id": "https://..."}. The model's SHACL shape
 each field takes: a record that does not fit is refused, with what is wrong with each field. Writing needs a
 write token, or an editor's login on the editor page. A record's ETag is its version: a write that sends it
 in If-Match is refused when the record has changed since. With preview=true, a write saves nothing and
-answers with the statements about the record before and after it, and what is wrong with each field. The
-rows of the platform's tables are at /api/tables/<table>.
+answers with the statements about the record before and after it, and what is wrong with each field.
 """
 
 import json
+from functools import cache
 
 from flask import Response, jsonify, redirect, request, url_for
 from flask_smorest import Api, Blueprint, abort
-from marshmallow import INCLUDE, Schema, fields
-from rdflib import Graph, URIRef
+from marshmallow import INCLUDE, Schema, fields, validate
+from rdflib import RDF, Graph, URIRef
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from admin import changes, tokens, writes
 from database import images, records
-from linkeddata import checks, documents, fields as model_fields, storage
+from linkeddata import catalogue, checks, documents, fields as model_fields, storage
 from linkeddata.model import RELEASE, settings, shapes
-from routes import account, limiter, tables_api
+from routes import account, limiter
 from routes.record_pages import SERIALIZATIONS, data
 
 blueprint = Blueprint("api", __name__, url_prefix="/api", description="The records of each kind, each at the address of its page.")
@@ -190,52 +192,158 @@ def search(given):
     return jsonify({"@context": documents.context(settings()), "@graph": found})
 
 
-def listing(kind: str, given: dict) -> Response:
-    """The records of a kind that have the values asked for, and whose name has the text searched for, a
-    page at a time, in JSON-LD or Turtle; X-Total-Count gives how many there are."""
-    listed = [record.iri for record in records.search(given.get("search", ""), [settings()["kinds"][kind]], parts=False, limit=None)]
-    found = storage.graph(listed)
-    for name, value in given.items():
-        if name not in ("search", "page", "page_size"):
-            kept = []
-            for iri in listed:
-                if value in documents.stored_values(found, iri, name):
-                    kept.append(iri)
-            listed = kept
-    first = (given["page"] - 1) * given["page_size"]
-    page = listed[first:first + given["page_size"]]
-    media = request.accept_mimetypes.best_match(["application/ld+json", *SERIALIZATIONS]) or "application/ld+json"
-    if media == "application/ld+json":
-        documented = []
-        for iri in page:
-            document = documents.document(found, iri)
-            document.pop("@context", None)
-            documented.append(document)
-        answer = jsonify({"@context": documents.context(settings()), "@graph": documented})
-    else:
-        shown = Graph()
-        for iri in page:
-            shown += storage.described(found, iri)
-        answer = data(shown, media)
-    answer.headers["X-Total-Count"] = str(len(listed))
+MEDIA = ["application/json", "application/ld+json", *SERIALIZATIONS]
+LINKED = "Rows with the profile's field names in JSON, or linked data in JSON-LD, Turtle or N-Triples, as Accept asks."
+
+
+class FacetValue(Schema):
+    value = fields.String(metadata={"description": "The value, as the rows and the query give it: a link's address, or a value of a list."})
+    name = fields.String(metadata={"description": "Its name: the name of the record, or the label of the term."})
+    count = fields.Integer(metadata={"description": "How many of the records found have it."})
+
+
+def browsed(field: dict) -> bool:
+    """Whether a kind's catalogue is browsed by a field: its values are one of a list (sh:in), or links to
+    records or terms (sh:class, sh:or); not the parts of a record, nor the values that the model fixes."""
+    return bool(field["values"] or field["classes"]) and not field["part"] and not field["fixed"]
+
+
+def query_schema(of_class: str, examples: dict) -> type[Schema]:
+    """The query of a kind's catalogue: a text, and the values of each field it is browsed by."""
+    found = {"search": fields.String(load_default="", metadata={"description": "Text that the record's name or address has, in any case."})}
+    for field in model_fields.of(of_class):
+        if not browsed(field):
+            continue
+        text = f"{field['label']}. {field['description']}".strip()
+        if field["values"]:
+            value = fields.String(validate=validate.OneOf(field["values"]))
+        else:
+            classes = ", ".join(documents.term(of_field) for of_field in field["classes"])
+            text += f" The address of a record or term of {classes}; /facets lists them."
+            value = fields.String()
+        metadata = {"description": text}
+        if field["iri"] in examples:
+            metadata["examples"] = [[examples[field["iri"]]]]
+        found[field["name"]] = fields.List(value, metadata=metadata)
+    return Schema.from_dict(found, name=documents.term(of_class).replace(":", "_") + "Query")
+
+
+@cache
+def row_schema(of_class: str) -> type[Schema]:
+    """A row of a record, or of a part, of a class: the profile's fields by their JSON-LD names, a field that
+    takes several values as a list, links as addresses, and parts as rows of their own."""
+    found = {"@id": fields.String(metadata={"description": "The address of the record or the part.", "format": "uri"})}
+    for field in model_fields.of(of_class):
+        if field["part"] and field["classes"]:
+            value = fields.Nested(lambda of_part=field["classes"][0]: row_schema(of_part)())
+        elif field["datatype"] or field["values"]:
+            value = fields.String()
+        else:
+            value = fields.String(metadata={"format": "uri"})
+        if not field["single"]:
+            value = fields.List(value)
+        value.metadata["description"] = f"{field['label']}. {field['description']}".strip()
+        found[field["name"]] = value
+    return Schema.from_dict(found, name=documents.term(of_class).replace(":", "_"))
+
+
+def row(found: Graph, node, of_class: str) -> dict:
+    """A record, or a part of one, as a row with the profile's field names."""
+    answer = {}
+    if isinstance(node, URIRef):
+        answer["@id"] = str(node)
+    for field in model_fields.of(of_class):
+        values = []
+        for value in found.objects(node, URIRef(field["iri"])):
+            if field["part"] and field["classes"]:
+                values.append(row(found, value, str(found.value(value, RDF.type) or field["classes"][0])))
+            else:
+                values.append(str(value))
+        if field["single"]:
+            answer[field["name"]] = values[0] if values else None
+        else:
+            answer[field["name"]] = values
     return answer
 
 
-def resources() -> None:
-    """A resource for each kind of record: its records listed and found by the values of their fields, and
-    a new record added."""
-    for kind, of_class in settings()["kinds"].items():
-        filters = {
-            "search": fields.String(metadata={"description": "Text that the record's name has."}),
-            "page": fields.Integer(load_default=1, validate=lambda number: number >= 1),
-            "page_size": fields.Integer(load_default=50, validate=lambda number: 1 <= number <= 200),
-        }
-        for field in model_fields.of(of_class):
-            filters[field["name"]] = fields.String(metadata={"description": f"{field['label']}: a value, or the address of a link, that the record has."})
-        query = Schema.from_dict(filters, name=f"{kind.capitalize()}Query")
+def filters_of(of_class: str, given: dict) -> dict:
+    found = {}
+    for field in model_fields.of(of_class):
+        if browsed(field) and given.get(field["name"]):
+            found[field["iri"]] = given[field["name"]]
+    return found
 
-        def listed(given, kind=kind):
-            return listing(kind, given)
+
+def listing(of_class: str):
+    def listed(given, pagination_parameters):
+        total, iris = catalogue.page(of_class, filters_of(of_class, given), given["search"], pagination_parameters.first_item, pagination_parameters.page_size)
+        pagination_parameters.item_count = total
+        found = storage.graph(iris)
+        media = request.accept_mimetypes.best_match(MEDIA, "application/json")
+        if media == "application/json":
+            return [row(found, URIRef(iri), of_class) for iri in iris]
+        if media == "application/ld+json":
+            documented = []
+            for iri in iris:
+                document = documents.document(found, iri)
+                document.pop("@context", None)
+                documented.append(document)
+            return Response(json.dumps({"@context": documents.context(settings()), "@graph": documented}, indent=1), mimetype=media, headers={"Vary": "Accept"})
+        return data(found, media)
+
+    return listed
+
+
+def faceting(of_class: str):
+    def counted(given):
+        browsed_fields = [field for field in model_fields.of(of_class) if browsed(field)]
+        counts = catalogue.facets(of_class, [field["iri"] for field in browsed_fields], filters_of(of_class, given), given["search"])
+        every = []
+        for field in browsed_fields:
+            every.extend(field["values"])
+            every.extend(counts[field["iri"]])
+        names = records.names(every)
+        found = {}
+        for field in browsed_fields:
+            values = dict.fromkeys(field["values"], 0) | counts[field["iri"]]
+            listed = []
+            for value, count in values.items():
+                listed.append({"value": value, "name": names.get(value) or value, "count": count})
+            listed.sort(key=lambda item: (-item["count"], item["name"]))
+            found[field["name"]] = listed
+        return found
+
+    return counted
+
+
+def resources() -> None:
+    """The catalogue of each kind of record, its facets, and a new record added to it."""
+    for kind, of_class in settings()["kinds"].items():
+        browsed_fields = [field for field in model_fields.of(of_class) if browsed(field)]
+        # The examples of the query are the most common value of each field among the records.
+        examples = {}
+        for path, counts in catalogue.facets(of_class, [field["iri"] for field in browsed_fields], {}).items():
+            if counts:
+                examples[path] = max(counts, key=counts.get)
+        query = query_schema(of_class, examples)
+
+        listed = listing(of_class)
+        listed.__doc__ = (f"The {kind}, a page at a time, found by name and by the values of their fields.\n\n"
+                          "Several values of one field find the records that have any of them; values of several fields, the records that have all of them.")
+        view = blueprint.paginate(page_size=20, max_page_size=200)(listed)
+        view = blueprint.arguments(query, location="query")(view)
+        for media, schema in {"application/ld+json": {"type": "object"}, "text/turtle": {"type": "string"}, "application/n-triples": {"type": "string"}}.items():
+            view = blueprint.alt_response(200, schema=schema, content_type=media, success=True, description=LINKED)(view)
+        view = blueprint.response(200, row_schema(of_class)(many=True), description=LINKED)(view)
+        blueprint.route(f"/{kind}", endpoint=f"list_{kind}", methods=["GET"], tags=[kind])(view)
+
+        counted = faceting(of_class)
+        counted.__doc__ = (f"How many of the {kind} found have each value of each field that the catalogue is browsed by.\n\n"
+                           "A field's own values are left out of its counts, so that they say how many records each other value would find.")
+        facet_schema = Schema.from_dict({field["name"]: fields.List(fields.Nested(FacetValue), metadata={"description": field["label"]}) for field in browsed_fields},
+                                        name=documents.term(of_class).replace(":", "_") + "Facets")
+        view = blueprint.response(200, facet_schema)(blueprint.arguments(query, location="query")(counted))
+        blueprint.route(f"/{kind}/facets", endpoint=f"facets_{kind}", methods=["GET"], tags=[kind])(view)
 
         def added(body, kind=kind):
             # A term of a vocabulary is at its own address; another record is given one from its name.
@@ -245,11 +353,8 @@ def resources() -> None:
             body = {"@type": documents.term(settings()["kinds"][kind]), **body}
             return store(address, body)
 
-        listed.__doc__ = f"The {kind}, found by their name or by the values of their fields."
         added.__doc__ = f"Add a record to the {kind}, at an address made from its name."
-        blueprint.route(f"/{kind}", endpoint=f"list_{kind}", methods=["GET"])(
-            blueprint.doc(responses={"200": {"description": f"The {kind}, in JSON-LD (@graph) or Turtle."}})(blueprint.arguments(query, location="query")(listed)))
-        blueprint.route(f"/{kind}", endpoint=f"add_{kind}", methods=["POST"])(
+        blueprint.route(f"/{kind}", endpoint=f"add_{kind}", methods=["POST"], tags=[kind])(
             blueprint.doc(security=TOKEN)(blueprint.response(201, Done)(blueprint.arguments(Record)(added))))
 
 
@@ -386,4 +491,3 @@ def register(app) -> None:
     api.spec.components.schema("Record", component={"x-jsonld-context": documents.context(settings())}, schema=Record)
     resources()
     api.register_blueprint(blueprint)
-    tables_api.register(api)

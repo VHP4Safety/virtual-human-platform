@@ -58,9 +58,10 @@ def part(found: Graph, node: BNode) -> bool:
 
 
 def free(base: str, taken: set) -> str:
-    """An address that no record has, nor one of *taken*: *base*, or *base*-2, -3, ..."""
+    """An address that no record has, nor one of *taken*: *base*, or *base*-2, -3, ...; the address of a
+    kind's facets in the API (<kind>/facets) is not given to a record."""
     iri, number = base, 1
-    while iri in taken or records.get(iri) is not None:
+    while iri in taken or records.get(iri) is not None or iri.endswith("/facets"):
         number += 1
         iri = f"{base}-{number}"
     taken.add(iri)

@@ -4,7 +4,7 @@ vocabularies' shapes only check values; the fields, their names and their order 
 
 from functools import cache
 
-from rdflib import URIRef
+from rdflib import Literal, URIRef
 from rdflib.namespace import SH
 
 from linkeddata import documents
@@ -18,8 +18,10 @@ def shape_of(kind: str) -> URIRef | None:
 
 @cache
 def of(kind: str) -> list[dict]:
-    """Each field of a class: its name in JSON-LD, property, label, whether it is required, whether a value
-    that does not fit is only a warning (sh:Warning), the profile's message, the values the model fixes, whether its values are parts of the record that holds them (the values of a class without a
+    """Each field of a class: its name in JSON-LD, property, label and description, whether it is required,
+    whether it takes one value (sh:maxCount 1), what its values are (the values of sh:in, the classes of
+    sh:class and sh:or, the datatype, or web addresses), whether a value that does not fit is only a warning
+    (sh:Warning), the profile's message, the values the model fixes, whether its values are parts of the record that holds them (the values of a class without a
     kind of its own that fit its shape, sh:node, or nodes without an address, sh:nodeKind sh:BlankNode), and
     whether those parts have addresses of their own (sh:nodeKind sh:IRI)."""
     graph = profile()
@@ -35,10 +37,27 @@ def of(kind: str) -> list[dict]:
             fixed = []
             for value in graph.objects(field, SH.hasValue):
                 fixed.append(str(value))
+            values = []
+            for listed in graph.objects(field, SH["in"]):
+                for value in graph.items(listed):
+                    values.append(str(value))
+            classes = []
+            for of_class in graph.objects(field, SH["class"]):
+                classes.append(str(of_class))
+            for alternatives in graph.objects(field, SH["or"]):
+                for alternative in graph.items(alternatives):
+                    for of_class in graph.objects(alternative, SH["class"]):
+                        classes.append(str(of_class))
             found.append({
                 "name": documents.term(path),
                 "iri": path,
                 "label": str(name) if name is not None else documents.term(path),
+                "description": str(graph.value(field, SH.description) or ""),
+                "single": graph.value(field, SH.maxCount) == Literal(1),
+                "values": values,
+                "classes": classes,
+                "datatype": str(graph.value(field, SH.datatype) or ""),
+                "address": graph.value(field, SH.nodeKind) == SH.IRI,
                 "required": graph.value(field, SH.minCount) is not None and graph.value(field, SH.severity) != SH.Warning,
                 "warning": graph.value(field, SH.severity) == SH.Warning,
                 "message": str(graph.value(field, SH.message) or ""),

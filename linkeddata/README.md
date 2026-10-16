@@ -61,6 +61,7 @@ except that `database/` reads the base address of records from `linkeddata/model
 | | `checks.py` | the checks of records against the model's shapes |
 | | `imports.py` | the sources: fetched, converted and checked with rdfsolve, and stored as records |
 | | `fields.py` | the fields of a class, read from its shape in the application profile |
+| | `catalogue.py` | the records of a kind in SQL: a page of those that have some values, and how many have each value |
 | | `quality.py` | how complete the records are, what the checks found, and how each source becomes the model |
 | `admin/` | `accounts.py`, `tokens.py` | editors, and their write tokens |
 | | `writes.py` | records written on the platform, each change with its revision |
@@ -69,7 +70,6 @@ except that `database/` reads the base address of records from `linkeddata/model
 | `routes/` | `record_pages.py` | the address of each record: its data, 410 Gone once removed, a general record page |
 | | `sources.py` | the `/sources` page |
 | | `records_api.py` | the records API (flask-smorest): each record a graph of the W3C Graph Store Protocol |
-| | `tables_api.py` | the tables API (flask-smorest): the rows of the release's tables and of the records, notes and sources tables |
 | | `editor.py` | the record editor: shacl-form builds each form from the shapes, and writes through the records API |
 | | `changes.py` | the `/changes` pages |
 | | `account.py` | the login of editors (ORCID, or a write token) and their tokens page |
@@ -169,18 +169,22 @@ rules:
 The API is documented at `/api/docs/` (OpenAPI 3.1, written by flask-smorest; the record's schema carries
 the JSON-LD context as `x-jsonld-context`). Each kind of record has a resource:
 
-- `GET /api/<kind>` lists its records, found by name (`search`) or by the value of any of their fields
-  (`/api/tools?processFlowStep=<address>`), a page at a time (`page`, `page_size`; `X-Total-Count`), in
-  JSON-LD (`@graph`) or Turtle, as Accept asks; `POST /api/<kind>` adds a record, at an address made from
-  its name (a term of a vocabulary is at its own address, given as `@id`).
+- `GET /api/<kind>` lists its records, found by name (`search`) and by the values of the fields it is
+  browsed by: those of a closed list (`sh:in`, given as the parameter's enum) and the links to records or
+  terms (`/api/tools?processFlowStep=<address>&provider=<address>`; several values of one field find the
+  records with any of them, several fields the records with all). It answers a page at a time (`page`,
+  `page_size`, and the `X-Pagination` header of flask-smorest) in JSON rows with the profile's field names,
+  or in JSON-LD (`@graph`), Turtle or N-Triples, as Accept asks. `GET /api/<kind>/facets` counts how many of
+  the records found have each value of those fields; a field's own filter is left out of its counts. The
+  queries are made in SQL from rdfsolve's layout of the profile (`catalogue.py`).
+- `POST /api/<kind>` adds a record, at an address made from its name (a term of a vocabulary is at its own
+  address, given as `@id`).
 - `GET`, `PUT` and `DELETE /api/<address of its page>` (`/api/tools/aop-builder`,
   `/api/casestudies/kidney/Q1`) read a record in JSON-LD, Turtle or N-Triples, add or replace it, and
   remove it; `POST /api/move` and `POST /api/restore` move and restore one. A part of a record, such as a
   question of a case study, is read at its own address and written with the record that holds it.
 - `GET /api/search?text=&class=&within=` finds records, their parts and the terms of vocabularies by name
   or address, for the editor and the pages.
-- `GET /api/tables/<table>` gives the rows of the tables of the release, and of the records, notes and
-  sources tables, a page at a time, filtered by the value of any column.
 
 Writes are checked against the model's SHACL shapes (`/api/shapes.ttl`), need a write token or an editor's
 login, and are refused with `412` when If-Match does not give the record's version (its ETag). The address
