@@ -54,6 +54,17 @@
     window.location.search = "?record=" + encodeURIComponent(address);
   }
 
+  // The values that saving removes, by the fields that lead to them, as the platform's preview tells them.
+  function removals(edges, trail, found) {
+    for (const edge of edges) {
+      if (edge.status === "removed") {
+        found.push(trail + edge.label + ": " + (edge.name || edge.value || ""));
+      }
+      removals(edge.parts || [], trail + edge.label + " > ", found);
+    }
+    return found;
+  }
+
   // The record's statements as a diagram: an arrow from the record to each value, green when saving adds
   // it, red when saving removes it. A part of the record (a section, a listed tool) has its own arrows.
   function renderEdges(found) {
@@ -259,8 +270,23 @@
         markCaseStudy(event);
       }, { once: true });
     }
-    form.addEventListener("submit", async function () {
-      if (await send("PUT", graph, form.serialize("text/turtle"), "text/turtle")) {
+    // The platform's checks decide whether a record is saved: a value that is only recommended does not
+    // keep it from being saved, as the form's own checks would.
+    document.getElementById("save").addEventListener("click", async function () {
+      const turtle = form.serialize("text/turtle");
+      // A save that removes values asks first, so that no value is removed that the editor did not mean to.
+      if (editor.version) {
+        const preview = await send("PUT", graph + "?preview=true", turtle, "text/turtle");
+        if (!preview) {
+          return;
+        }
+        const gone = removals(preview.edges, "", []);
+        const listed = gone.slice(0, 15).join("\n") + (gone.length > 15 ? "\n…" : "");
+        if (gone.length && !window.confirm("Saving removes:\n\n" + listed + "\n\nSave anyway?")) {
+          return;
+        }
+      }
+      if (await send("PUT", graph, turtle, "text/turtle")) {
         reopen(editor.graph);
       }
     });

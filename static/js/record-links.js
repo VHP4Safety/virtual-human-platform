@@ -121,8 +121,10 @@ function addRecord(of_class, label, name, store, added) {
   form.dataset.values = "<" + subject + "> a <" + of_class + "> ; <" + NAME + "> " + JSON.stringify(name) + " .";
   form.dataset.generateNodeShapeReference = "";
   form.dataset.collapse = "open";
-  form.dataset.submitButton = "Add the " + label.toLowerCase();
-  form.addEventListener("submit", async function () {
+  // The platform's checks decide whether the record is added, as in the editor's own form.
+  const add = make("button", "btn btn-success", "Add the " + label.toLowerCase());
+  add.type = "button";
+  add.addEventListener("click", async function () {
     const response = await fetch("/api/" + editor.classes[of_class], {
       method: "POST",
       credentials: "same-origin",
@@ -140,7 +142,9 @@ function addRecord(of_class, label, name, store, added) {
     added(answer["@id"], record.name || name);
   });
   const body = make("div", "p-3");
-  body.append(form);
+  const bar = make("div", "editor-save mt-3");
+  bar.append(add);
+  body.append(form, bar);
   dialog.append(top, refused, body);
   dialog.addEventListener("close", function () { dialog.remove(); });
   document.body.append(dialog);

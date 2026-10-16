@@ -71,12 +71,15 @@ body.editor {
   overflow-y: auto;
 }
 
-/* The form's Save button stays in view while the form scrolls, above the case study's page when that is
-   docked at the bottom of the window */
-#main-column shacl-form::part(submit-button) {
+/* The Save button stays in view while the form scrolls, above the case study's page when that is docked at
+   the bottom of the window */
+.editor-save {
   position: sticky;
   bottom: calc(var(--case-study-dock, 0px) + 1rem);
-  z-index: 1;
+  z-index: 2;
+}
+
+.editor-save .btn {
   box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.25);
 }
 
@@ -158,10 +161,8 @@ body.editor {
   box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.3);
 }
 
-.record-dialog shacl-form::part(submit-button) {
-  position: sticky;
+.record-dialog .editor-save {
   bottom: 1rem;
-  z-index: 1;
 }
 
 .record-dialog::backdrop {
