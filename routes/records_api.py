@@ -198,7 +198,7 @@ LINKED = "Rows with the profile's field names in JSON, or linked data in JSON-LD
 
 
 class FacetValue(Schema):
-    value = fields.String(metadata={"description": "The value, as the rows and the query give it: a link's address, or a value of a list."})
+    value = fields.String(metadata={"description": "The value, as the rows and the query give it: an IRI for a field of IRIs, or a text of a list."})
     name = fields.String(metadata={"description": "Its name: the name of the record, or the label of the term."})
     count = fields.Integer(metadata={"description": "How many of the records found have it."})
 
@@ -321,12 +321,18 @@ def faceting(of_class: str):
         counts = catalogue.facets(of_class, [field["iri"] for field in browsed_fields], filters_of(of_class, given), given["search"])
         every = []
         for field in browsed_fields:
-            every.extend(field["values"])
-            every.extend(counts[field["iri"]])
+            # Only IRIs have names; a text of a list is its own name.
+            if field["iris"]:
+                every.extend(field["values"])
+                every.extend(counts[field["iri"]])
         names = records.names(every)
         found = {}
         for field in browsed_fields:
-            values = dict.fromkeys(field["values"], 0) | counts[field["iri"]]
+            values = dict.fromkeys(field["values"], 0)
+            for value, count in counts[field["iri"]].items():
+                # A field of a list (sh:in) is browsed by the values of the list only.
+                if value in values or not field["values"]:
+                    values[value] = count
             listed = []
             for value, count in values.items():
                 listed.append({"value": value, "name": names.get(value) or value, "count": count})

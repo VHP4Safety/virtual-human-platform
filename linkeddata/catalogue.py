@@ -7,12 +7,12 @@ the rest, which also holds the values of a field that takes one value when a nod
 
 from functools import cache
 
-from rdfsolve.client.sql_tables import STATEMENTS, layout
-from sqlalchemy import column, func, literal, or_, select, table, union_all
+from rdfsolve.client.sql_tables import STATEMENTS, TERM_SUFFIX, layout
+from sqlalchemy import and_, column, func, literal, or_, select, table, union_all
 
 import database
 from database.tables import Record
-from linkeddata import storage
+from linkeddata import fields as model_fields, storage
 
 RECORDS = Record.__table__
 
@@ -28,18 +28,29 @@ def tables() -> dict:
 
 def sources(of_class: str, path: str) -> list[dict]:
     """Where the values of a field of a class are: the field's own table, or its column of the class's table
-    and the statements table; each with its value column, and the condition its rows meet."""
+    and the statements table; each with its value column, and the condition its rows meet. Of a field whose
+    values are IRIs, only the IRIs are found, not a text kept in place of one."""
     of_layout = layout(storage.profile()).classes[of_class]
     rest = tables()[STATEMENTS]
-    in_statements = {"table": rest, "value": rest.c.value, "where": rest.c.property == path}
+    in_statements = {"table": rest, "value": rest.c.value, "term": rest.c.term, "where": rest.c.property == path}
     if path in of_layout.several:
         own = tables()[of_layout.field_table(of_layout.several[path])]
-        return [{"table": own, "value": own.c.value, "where": None}]
-    if path in of_layout.single:
+        found = [{"table": own, "value": own.c.value, "term": own.c.term, "where": None}]
+    elif path in of_layout.single:
         own = tables()[of_layout.name]
         name = of_layout.single[path]
-        return [{"table": own, "value": own.c[name], "where": own.c[name].is_not(None)}, in_statements]
-    return [in_statements]
+        found = [{"table": own, "value": own.c[name], "term": own.c[name + TERM_SUFFIX], "where": own.c[name].is_not(None)}, in_statements]
+    else:
+        found = [in_statements]
+    for field in model_fields.of(of_class):
+        if field["iri"] == path and field["iris"]:
+            for source in found:
+                # The term of an IRI in rdfsolve's tables is "@id".
+                if source["where"] is None:
+                    source["where"] = source["term"] == "@id"
+                else:
+                    source["where"] = and_(source["where"], source["term"] == "@id")
+    return found
 
 
 def holders(of_class: str, path: str, wanted: list[str]):
