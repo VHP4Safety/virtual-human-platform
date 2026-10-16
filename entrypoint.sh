@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# The platform does not start on a database whose tables are not those of the model's release
+# The platform does not start on a database of another release
 python -m linkeddata check || exit 1
 
 # Start Flask app

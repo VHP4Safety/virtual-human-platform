@@ -15,8 +15,7 @@ RUN apt-get update && apt-get install -y \
 # Set the working directory in the container
 WORKDIR /usr/src/app
 
-# Install any needed packages specified in requirements.txt; they are installed before the code is
-# copied, so that a change to the code does not install them again
+# The packages are installed before the code is copied, so a code change does not reinstall them
 COPY requirements.txt requirements.txt
 COPY linkeddata/requirements.txt linkeddata/requirements.txt
 RUN pip install -r requirements.txt -r linkeddata/requirements.txt
@@ -24,7 +23,7 @@ RUN pip install -r requirements.txt -r linkeddata/requirements.txt
 # Copy the current directory contents into the container at /usr/src/app
 COPY . .
 
-# The build fails when the vocabularies or the files generated from the model are not those of its release
+# The build fails when the vocabularies or generated files do not match the model's release
 RUN python -m linkeddata check
 
 # Copy entrypoint script

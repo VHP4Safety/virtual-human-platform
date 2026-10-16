@@ -125,12 +125,12 @@ cache_config = {
     "CACHE_DEFAULT_TIMEOUT": CACHE_TIMEOUT,  # 60 min chaching
 }
 app = Flask(__name__)
-# The reverse proxy tells the app the scheme and host it was reached at, for the ORCID login.
+# The scheme and host are taken from the reverse proxy, for the ORCID login.
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.config.from_mapping(cache_config)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 if not os.environ.get("SECRET_KEY"):
-    app.logger.warning("SECRET_KEY is not set: logins end when the platform restarts, and fail when more than one worker runs.")
+    app.logger.warning("SECRET_KEY is not set: logins end on restart, and fail with several workers.")
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLASK_DEBUG") != "1"
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.register_blueprint(account_blueprint)
@@ -154,9 +154,8 @@ _last_cache_reset = 0.0
 def handle_cache_reset():
     """Clear the entire server-side cache when ?reset_cache is in the URL.
 
-    Open to anyone, so no token is needed, but the cache is cleared at most
-    once every CACHE_RESET_INTERVAL seconds: each reset refetches every
-    upstream source, so repeated resets would flood them.
+    Open to anyone, but the cache is cleared at most once every
+    CACHE_RESET_INTERVAL seconds, as each reset refetches every upstream source.
     """
     global _last_cache_reset
     if "reset_cache" in request.args and time.time() - _last_cache_reset > CACHE_RESET_INTERVAL:
@@ -445,8 +444,8 @@ def get_stage_mapping() -> dict:
 
 
 def linked_tools(catalogue: dict) -> dict:
-    """The tools of the cloud catalogue with the values of their records. Tools
-    removed or moved on the platform are left out, and tools added on it are put in.
+    """The cloud catalogue's tools with their records' values; tools removed or
+    moved on the platform are left out, and tools added on it are put in.
     """
     removed = records.removed("tools") | records.moved("tools")
     tools = {}
@@ -470,7 +469,7 @@ def linked_tools(catalogue: dict) -> dict:
         for iri in about:
             if iri in stage_mapping:
                 tool["stage"] = iri
-        # A record links the regulatory questions that the catalogue marks with reg_q_Xy flags.
+        # The regulatory questions a record links become the catalogue's reg_q_Xy flags.
         for (case, number), field in _REG_QUESTION_KEYS.items():
             tool[field] = str(records.address(f"casestudies/{case}/Q{number + 1}") in about).lower()
     return tools
@@ -483,8 +482,7 @@ _PARTNER_IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".svg", ".gif", ".webp")
 
 
 def linked_methods() -> dict:
-    """The methods of the platform's records, as the cloud catalogue's methods index gives them, so
-    that the methods pages read them as they read the index."""
+    """The platform's method records, shaped as the cloud catalogue's methods index for the methods pages."""
     stage_mapping = get_stage_mapping()
     cases = records.address("casestudies/")
     methods = {}
@@ -1574,8 +1572,8 @@ def methods():
 
 @app.route("/methods/<methodid>")
 def method_page(methodid):
-    """Render a single method page using templates/methods/method.html, from the method's record
-    named with the keys of its template (templates/methods/method.context.jsonld)."""
+    """Render a method page (templates/methods/method.html) from its record, with the keys of
+    templates/methods/method.context.jsonld."""
     record = records.get(records.address(f"methods/{methodid}"))
     if record is None:
         abort(404)
@@ -1609,7 +1607,7 @@ def tool_page(toolname):
     if toolname not in tools:
         abort(404)
 
-    # Tools added on the platform are not in the cloud catalogue; their record page shows them
+    # Tools added on the platform are not in the catalogue; their record page shows them
     if toolname not in catalogue:
         abort(404)
 
