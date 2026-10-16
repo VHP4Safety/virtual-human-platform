@@ -147,3 +147,17 @@ shacl-form::part(submit-button) {
 .graph-kept {
   color: var(--bs-secondary-color);
 }
+
+/* A new record that a field links to, added in a form of its own */
+.record-dialog {
+  width: min(56rem, 95vw);
+  max-height: 90vh;
+  padding: 0;
+  border: 0;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.3);
+}
+
+.record-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}

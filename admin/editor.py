@@ -10,7 +10,7 @@ from sqlalchemy import func, select
 
 import database
 from database.tables import PLATFORM, Note, Record
-from linkeddata import fields, storage
+from linkeddata import documents, fields, storage
 from linkeddata.model import hierarchy, profile, settings, terms
 
 
@@ -67,8 +67,9 @@ def root_shape(kind: str) -> str:
 
 def form_graph() -> Graph:
     """The profile, the class hierarchy, and every record and listed term (sh:in) with its name. A field
-    whose values are of one of some classes (sh:or) takes a text too, so that the form shows and keeps a
-    value that is a name only; the profile's checks still tell about it."""
+    whose values are of one of some classes (sh:or) takes a text and an address too, so that the form shows
+    and keeps a value that is a name only or an address that is no record; the profile's checks still tell
+    about it."""
     found = Graph() + profile() + hierarchy()
     for alternatives in list(found.objects(None, SH["or"])):
         listed = Collection(found, alternatives)
@@ -81,6 +82,10 @@ def form_graph() -> Graph:
             found.add((text, SH.datatype, XSD.string))
             found.add((text, RDFS.label, Literal("Text")))
             listed.append(text)
+            address = BNode()
+            found.add((address, SH.nodeKind, SH.IRI))
+            found.add((address, RDFS.label, Literal("Address")))
+            listed.append(address)
     with database.session() as db:
         for iri, kind, name in db.execute(select(Record.iri, Record.type, Record.name).where(Record.removed_at.is_(None), Record.moved_to.is_(None))):
             found.add((URIRef(iri), RDF.type, URIRef(kind)))
@@ -95,15 +100,21 @@ def form_graph() -> Graph:
     return found
 
 
-def links() -> list[str]:
-    """The properties of the fields that link to records: those of sh:class, or of sh:or of classes, whose
-    values are not parts."""
+def links() -> dict[str, dict[str, str]]:
+    """The properties of the fields that link to records (those of sh:class, or of sh:or of classes, whose
+    values are not parts), each with the classes of their records by their name: the label of the class's
+    choice in sh:or, or else its name in the vocabulary."""
     graph = profile()
-    found = set()
+    found = {}
     for field in graph.objects(None, SH.property):
-        alternatives = list(graph.objects(field, SH["or"]))
-        linked = graph.value(field, SH["class"]) is not None or bool(alternatives)
-        part = graph.value(field, SH.node) is not None or graph.value(field, SH.nodeKind) == SH.BlankNode
-        if linked and not part:
-            found.add(str(graph.value(field, SH.path)))
-    return sorted(found)
+        if graph.value(field, SH.node) is not None or graph.value(field, SH.nodeKind) == SH.BlankNode:
+            continue
+        path = str(graph.value(field, SH.path))
+        for of_class in graph.objects(field, SH["class"]):
+            found.setdefault(path, {}).setdefault(str(of_class), documents.term(str(of_class)).split(":")[-1])
+        for alternatives in graph.objects(field, SH["or"]):
+            for alternative in graph.items(alternatives):
+                for of_class in graph.objects(alternative, SH["class"]):
+                    label = graph.value(alternative, RDFS.label) or documents.term(str(of_class)).split(":")[-1]
+                    found.setdefault(path, {}).setdefault(str(of_class), str(label))
+    return found
