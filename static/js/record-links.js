@@ -14,7 +14,7 @@ const TARGET = "http://www.w3.org/ns/shacl#targetClass";
 const NAME = "https://schema.org/name";
 const TERM = "https://schema.org/DefinedTerm";
 const STRING = "http://www.w3.org/2001/XMLSchema#string";
-const XSD = "http://www.w3.org/2001/XMLSchema#";
+const HTML = "http://www.w3.org/1999/02/22-rdf-syntax-ns#HTML";
 const editor = JSON.parse(document.getElementById("editor").textContent);
 
 // The form is in a shadow root, which the page's styles do not reach. The inputs that show a value which
@@ -67,19 +67,22 @@ function local(iri) {
   return iri.startsWith(editor.base) ? "/" + iri.slice(editor.base.length) : iri;
 }
 
-// A text in the form in which shacl-form reads a literal: in quotes, as it is.
-function literal(text) {
-  return '"' + text + '"';
+// A text in the form in which shacl-form reads a literal: in quotes, as it is, with its datatype when it is
+// not a plain text, such as HTML (rdf:HTML).
+function literal(text, datatype) {
+  return '"' + text + '"' + (datatype && datatype !== STRING ? "^^" + datatype : "");
 }
 
 function query(fields) {
   return Object.entries(fields).map(function (entry) { return entry[0] + "=" + encodeURIComponent(entry[1]); }).join("&");
 }
 
-// The field of a text as the form's theme makes it, whose value is given to shacl-form as a literal. An
-// address that a record has where a text belongs is kept as an address until the text is edited.
+// The field of a text as the form's theme makes it, whose value is given to shacl-form as a literal of the
+// field's datatype, a plain text or HTML. An address that a record has where a text belongs is kept as an
+// address until the text is edited.
 class Text extends Plugin {
   createEditor(template, value) {
+    const datatype = template.datatype ? template.datatype.value : STRING;
     const field = template.config.theme.createTextEditor(template.label, value || null, false, template);
     const shown = field.querySelector(".editor");
     shown.classList.replace("editor", "shown");
@@ -90,12 +93,12 @@ class Text extends Plugin {
       text.dataset.nodeKind = IRI;
       text.value = value.value;
     } else {
-      text.value = shown.value ? literal(shown.value) : "";
+      text.value = shown.value ? literal(shown.value, datatype) : "";
     }
     field.append(text);
     shown.addEventListener("input", function () {
       delete text.dataset.nodeKind;
-      text.value = shown.value ? literal(shown.value) : "";
+      text.value = shown.value ? literal(shown.value, datatype) : "";
     });
     return field;
   }
@@ -383,7 +386,7 @@ function typeOf(instance) {
   }
   for (const element of editors) {
     if (element.shaclDatatype) {
-      return { name: element.shaclDatatype.value.replace(XSD, ""), title: element.shaclDatatype.value };
+      return { name: element.shaclDatatype.value.split(/[#/]/).pop(), title: element.shaclDatatype.value };
     }
   }
   return null;
@@ -435,3 +438,4 @@ for (const predicate of Object.keys(editor.links)) {
   registerPlugin(new RecordLink({ predicate: predicate }, STYLE));
 }
 registerPlugin(new Text({ datatype: STRING }, STYLE));
+registerPlugin(new Text({ datatype: HTML }, STYLE));
