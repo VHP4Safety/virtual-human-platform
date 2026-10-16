@@ -11,8 +11,12 @@ const TERM = "https://schema.org/DefinedTerm";
 const STRING = "http://www.w3.org/2001/XMLSchema#string";
 const editor = JSON.parse(document.getElementById("editor").textContent);
 
-// The form is in a shadow root, which the page's styles do not reach.
+// The form is in a shadow root, which the page's styles do not reach. The inputs that show a value which
+// shacl-form reads from a hidden input are as wide as its own (.editor).
 const STYLE = `
+.shown:not([type='checkbox']) { flex-grow: 1; }
+textarea.shown { resize: vertical; }
+.record-link-box > .shown { width: 100%; }
 .record-link-options { display: flex; flex-direction: column; border: 1px solid #ccc; border-top: 0; max-height: 14em; overflow-y: auto; }
 .record-link-options:empty { display: none; }
 .record-link-options button { text-align: left; background: #fff; border: 0; border-bottom: 1px solid #eee; padding: 4px 8px; font: inherit; cursor: pointer; }
@@ -45,7 +49,7 @@ class Text extends Plugin {
   createEditor(template, value) {
     const field = template.config.theme.createTextEditor(template.label, value || null, false, template);
     const shown = field.querySelector(".editor");
-    shown.classList.remove("editor");
+    shown.classList.replace("editor", "shown");
     const text = document.createElement("input");
     text.type = "hidden";
     text.className = "editor";
@@ -70,7 +74,8 @@ class RecordLink extends Plugin {
     // The field as the form's theme makes it, with its label; its text input finds by name.
     const field = template.config.theme.createTextEditor(template.label, null, false, template);
     const search = field.querySelector(".editor");
-    search.classList.remove("editor");
+    search.classList.replace("editor", "shown");
+    search.pattern = undefined;
     search.setAttribute("placeholder", "Find a " + named + " by name");
     search.value = value ? findLabel(store.getQuads(value.value, null, null, null), template.config.languages) || value.value : "";
     // The link itself, which shacl-form reads as the field's value. A text that the record has where a link
@@ -212,4 +217,4 @@ class RecordLink extends Plugin {
 for (const predicate of editor.links) {
   registerPlugin(new RecordLink({ predicate: predicate }, STYLE));
 }
-registerPlugin(new Text({ datatype: STRING }));
+registerPlugin(new Text({ datatype: STRING }, STYLE));
