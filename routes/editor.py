@@ -2,7 +2,7 @@
 builds from the model's shapes, which writes and removes records through the records API with the
 editor's login."""
 
-from flask import Blueprint, Response, abort, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, redirect, render_template, request, url_for
 
 from admin import editor
 from database import records
@@ -55,6 +55,8 @@ def edit(kind: str):
         base=settings()["base"],
         record=record,
         shape=editor.root_shape(kind),
+        links=editor.links(),
+        classes={of_class: name for name, of_class in settings()["kinds"].items()},
         form_token=form_token(),
         page_title=f"{kind.capitalize()} — VHP4Safety editor",
     ))
@@ -70,12 +72,4 @@ def form():
     return Response(editor.form_graph().serialize(format="turtle"), mimetype="text/turtle")
 
 
-@blueprint.get("/admin/linkable")
-def linkable():
-    """The records that a field can link to, for each node shape (shape=...), as shacl-form's link provider
-    asks for them; with record=..., those records with their class and name."""
-    if logged_in() is None:
-        abort(401)
-    if request.args.getlist("record"):
-        return jsonify(editor.resources(request.args.getlist("record")))
-    return jsonify(editor.linkable(request.args.getlist("shape")))
+

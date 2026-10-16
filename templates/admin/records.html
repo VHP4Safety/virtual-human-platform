@@ -83,7 +83,8 @@
     </aside>
   </div>
 </div>
-<script type="application/json" id="editor">{{ {"graph": selected, "base": base, "version": record.updated_at if record else none, "token": form_token}|tojson }}</script>
+<script type="application/json" id="editor">{{ {"graph": selected, "base": base, "version": record.updated_at if record else none, "token": form_token, "links": links, "classes": classes}|tojson }}</script>
 <script type="module" src="https://cdn.jsdelivr.net/npm/@ulb-darmstadt/shacl-form@3.7.3/dist/bundle.js"></script>
+<script type="module" src="{{ url_for('static', filename='js/record-links.js') }}"></script>
 <script src="{{ url_for('static', filename='js/editor.js') }}"></script>
 {% endblock %}

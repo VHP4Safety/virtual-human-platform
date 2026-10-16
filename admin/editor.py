@@ -82,32 +82,15 @@ def form_graph() -> Graph:
     return found
 
 
-def linkable(shapes: list[str]) -> dict[str, list[str]]:
-    """For each node shape, the records of the class it targets (or of a subclass) that a field can link to,
-    for the form's dialog that links an existing record."""
-    classes = {}
-    for shape in shapes:
-        kind = profile().value(URIRef(shape), SH.targetClass)
-        if kind is not None:
-            classes[shape] = {str(kind)} | {str(sub) for sub in hierarchy().transitive_subjects(RDFS.subClassOf, kind)}
-    every = set()
-    for found in classes.values():
-        every |= found
-    with database.session() as db:
-        rows = db.execute(select(Record.iri, Record.type).where(Record.type.in_(every), Record.removed_at.is_(None), Record.moved_to.is_(None)).order_by(Record.name)).all()
-    found = {}
-    for shape, of_shape in classes.items():
-        found[shape] = [iri for iri, kind in rows if kind in of_shape]
-    return found
-
-
-def resources(iris: list[str]) -> list[dict]:
-    """The records at these addresses as shacl-form loads them: each with its class and name, in Turtle."""
-    found = []
-    with database.session() as db:
-        for iri, kind, name in db.execute(select(Record.iri, Record.type, Record.name).where(Record.iri.in_(iris))):
-            graph = Graph()
-            graph.add((URIRef(iri), RDF.type, URIRef(kind)))
-            graph.add((URIRef(iri), RDFS.label, Literal(name or iri)))
-            found.append({"resourceId": iri, "resourceRDF": graph.serialize(format="turtle")})
-    return found
+def links() -> list[str]:
+    """The properties of the fields that link to records: those of sh:class, or of sh:or of classes, whose
+    values are not parts."""
+    graph = profile()
+    found = set()
+    for field in graph.objects(None, SH.property):
+        alternatives = list(graph.objects(field, SH["or"]))
+        linked = graph.value(field, SH["class"]) is not None or bool(alternatives)
+        part = graph.value(field, SH.node) is not None or graph.value(field, SH.nodeKind) == SH.BlankNode
+        if linked and not part:
+            found.add(str(graph.value(field, SH.path)))
+    return sorted(found)
