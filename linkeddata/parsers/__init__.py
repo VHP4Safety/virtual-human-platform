@@ -102,6 +102,12 @@ def term(text, source: str, qualifier: str = ""):
     return web_link(text)
 
 
+def licence(text):
+    """A link to the licence of the SPDX License List that a text names, by its identifier, its name or one
+    of its addresses, also when the text ends in "license"; else a web address or the text as it is."""
+    return term(re.sub(r"\s+licen[cs]e$", "", str(text).strip(), flags=re.IGNORECASE), "spdx")
+
+
 def publication(value) -> dict | None:
     """The row of the publication that a DOI names (10.1234/x, or https://doi.org/10.1234/x), at
     publications/<DOI>, with the DOI's address; None for any other text."""

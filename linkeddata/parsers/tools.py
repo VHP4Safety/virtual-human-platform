@@ -7,7 +7,7 @@ and videos of a tool are parts of its row.
 import json
 import re
 
-from linkeddata.parsers import QUESTIONS, link, present, publication, slug, term, web_link
+from linkeddata.parsers import QUESTIONS, licence, link, present, publication, slug, term, web_link
 
 # The catalogue gives this logo to tools that have none.
 PLACEHOLDER_LOGO = "https://github.com/VHP4Safety/ui-design/blob/main/static/images/logo.png"
@@ -86,7 +86,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         notes = detail.get("notes") if isinstance(detail.get("notes"), dict) else {}
         written_license = instance.get("license") or detail.get("license") or notes.get("license")
         if present(written_license):
-            row["license"] = web_link(written_license)
+            row["license"] = licence(written_license)
         sources = []
         for address in (instance.get("source"), detail.get("source")):
             if present(address) and web_link(address) not in sources:

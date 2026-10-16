@@ -8,7 +8,7 @@ of people and organisations it links to."""
 import json
 import re
 
-from linkeddata.parsers import QUESTIONS, link, present, publication, slug, web_link
+from linkeddata.parsers import QUESTIONS, licence, link, present, publication, slug, web_link
 
 STUDIES = "https://www.ebi.ac.uk/biostudies/studies/"
 PLATFORM = "https://platform.vhp4safety.nl/"
@@ -92,7 +92,8 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             elif name == "Organism":
                 row.setdefault("topics", []).append(value_of(attribute))
             elif name == "License":
-                row["license"] = value_of(attribute)
+                stated = value_of(attribute)
+                row["license"] = licence(stated["@id"] if isinstance(stated, dict) else stated)
             elif name == "Bioassay":
                 found = value_of(attribute)
                 # An assay is a method of the platform when it links to the method's page.

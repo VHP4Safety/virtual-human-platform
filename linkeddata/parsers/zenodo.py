@@ -5,7 +5,7 @@ addresses, and so are the creators' affiliations, as organisations."""
 
 import json
 
-from linkeddata.parsers import link, present, publication, slug, term
+from linkeddata.parsers import licence, link, present, publication, slug, term
 
 DATE = "http://www.w3.org/2001/XMLSchema#date"
 LICENSES = "https://zenodo.org/api/vocabularies/licenses/"
@@ -30,7 +30,8 @@ def parse(content: bytes) -> list[dict]:
             if present(keyword):
                 row.setdefault("keywords", []).append(term(keyword, "glossary"))
         if isinstance(metadata.get("license"), dict) and present(metadata["license"].get("id")):
-            row["license"] = link(LICENSES + metadata["license"]["id"])
+            given = licence(metadata["license"]["id"])
+            row["license"] = given if isinstance(given, dict) else link(LICENSES + metadata["license"]["id"])
         for creator in metadata.get("creators") or []:
             if not present(creator.get("name")):
                 continue

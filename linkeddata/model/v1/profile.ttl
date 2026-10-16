@@ -113,8 +113,8 @@ form:SoftwareApplication a sh:NodeShape ;
         sh:description "The version of the tool that the platform describes, as its developers number it." ] ;
     sh:property [
         sh:path schema:license ; sh:group form:technical ; sh:order 2 ; sh:name "License" ; sh:maxCount 1 ;
-        sh:severity sh:Warning ; sh:nodeKind sh:IRI ;
-        sh:message "Give the license as a web address, such as https://spdx.org/licenses/MIT." ;
+        sh:severity sh:Warning ; sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ;
+        sh:message "Choose the license in the SPDX License List; a license given as text or as another address is kept." ;
         sh:description "The license under which the tool is shared." ] ;
     sh:property [
         sh:path schema:isBasedOn ; sh:group form:technical ; sh:order 3 ; sh:name "Source code" ; sh:nodeKind sh:IRI ;
@@ -371,8 +371,9 @@ form:Dataset a sh:NodeShape ;
         sh:message "Choose an assay in a vocabulary, such as BAO, or register the term." ;
         sh:description "The assays with which the data was measured, as terms of ontologies such as BAO." ] ;
     sh:property [ sh:path schema:citation ; sh:order 10 ; sh:name "Publications" ; sh:class schema:ScholarlyArticle ] ;
-    sh:property [ sh:path schema:license ; sh:order 11 ; sh:name "License" ; sh:maxCount 1 ; sh:severity sh:Warning ; sh:nodeKind sh:IRI ;
-        sh:message "Give the license as a web address." ] ;
+    sh:property [ sh:path schema:license ; sh:order 11 ; sh:name "License" ; sh:maxCount 1 ; sh:severity sh:Warning ;
+        sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ;
+        sh:message "Choose the license in the SPDX License List; a license given as text or as another address is kept." ] ;
     sh:property [ sh:path schema:isBasedOn ; sh:order 12 ; sh:name "Source record" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
         sh:description "The record in BioStudies or Zenodo that this record represents on the platform, made from it every night." ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 13 ; sh:name "DOI and other addresses" ; sh:nodeKind sh:IRI ] ;
