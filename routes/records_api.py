@@ -191,9 +191,12 @@ class Registry(Schema):
 
 
 def registered() -> None:
-    """The registries of vocabularies answer editors only, as they are asked on the editor's behalf."""
-    if account.current_editor() is None:
-        abort(401, message="An editor's login is needed.")
+    """The registries of vocabularies answer editors only, as they are asked on the editor's behalf: one
+    logged in, or one with a valid write token."""
+    header = request.headers.get("Authorization", "")
+    token = tokens.find(header.removeprefix("Bearer ").strip()) if header.startswith("Bearer ") else None
+    if account.current_editor() is None and token is None:
+        abort(401, message="An editor's login or write token is needed.")
 
 
 @blueprint.get("/registries")
