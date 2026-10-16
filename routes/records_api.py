@@ -25,6 +25,7 @@ from flask import Response, jsonify, redirect, request, url_for
 from flask_smorest import Api, Blueprint, abort
 from marshmallow import INCLUDE, Schema, fields, validate
 from rdflib import RDF, Graph, URIRef
+from rdflib.namespace import SDO
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from admin import changes, tokens, writes
@@ -346,16 +347,26 @@ def resources() -> None:
         blueprint.route(f"/{kind}/facets", endpoint=f"facets_{kind}", methods=["GET"], tags=[kind])(view)
 
         def added(body, kind=kind):
+            # A record given in Turtle is the node of the kind's class.
+            given = None
+            if request.mimetype == "text/turtle":
+                given = Graph().parse(data=request.get_data(as_text=True), format="turtle")
+                node = given.value(None, RDF.type, URIRef(settings()["kinds"][kind]))
+                body = {"name": str(given.value(node, SDO.name) or "")}
             # A term of a vocabulary is at its own address; another record is given one from its name.
             address = body.get("@id") or writes.free(records.address(f"{kind}/{writes.slug(str(body.get('name') or kind))}"), set())
             if records.get(address) is not None:
                 abort(409, message="There is a record at this address already.")
+            if given is not None:
+                writes.renamed(given, node, address)
+                body = documents.document(given, address)
             body = {"@type": documents.term(settings()["kinds"][kind]), **body}
             return store(address, body)
 
-        added.__doc__ = f"Add a record to the {kind}, at an address made from its name."
+        added.__doc__ = f"Add a record to the {kind}, given in JSON-LD or in Turtle, at an address made from its name."
         blueprint.route(f"/{kind}", endpoint=f"add_{kind}", methods=["POST"], tags=[kind])(
-            blueprint.doc(security=TOKEN)(blueprint.response(201, Done)(blueprint.arguments(Record)(added))))
+            blueprint.doc(security=TOKEN, requestBody={"content": {"text/turtle": {"schema": {"type": "string"}}}})(
+                blueprint.response(201, Done)(blueprint.arguments(Record)(added))))
 
 
 @blueprint.get("/<path:path>")
