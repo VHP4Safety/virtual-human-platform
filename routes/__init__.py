@@ -1,4 +1,4 @@
-"""The platform's routes. Requests to its APIs are limited per client address, with Flask-Limiter."""
+"""The platform's routes; API requests are limited per client address (Flask-Limiter)."""
 
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address

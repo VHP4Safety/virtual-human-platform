@@ -1,11 +1,10 @@
 """The records on the platform's pages.
 
-The address of a record answers with its data when JSON-LD, Turtle or N-Triples is asked for, with
-the Accept header or with a .jsonld, .ttl or .nt ending (/tools/pathvisio.ttl). Its page links to
-that data as FAIR Signposting does (Link headers): the record's address to cite (cite-as), its class
-(type), its data (describedby), and the shapes that its data is checked with (ldp:constrainedBy). The address of a removed record answers 410 Gone, and an earlier address of a record
-that moved forwards to its address (301). A record with no page of its own is shown on a general
-record page.
+A record's address answers with its data when JSON-LD, Turtle or N-Triples is asked for, by the Accept
+header or a .jsonld, .ttl or .nt ending (/tools/pathvisio.ttl). Its page links to that data with FAIR
+Signposting (Link headers): cite-as, type, describedby, and the shapes it is checked with
+(ldp:constrainedBy). A removed record's address answers 410 Gone; an earlier address of a moved record
+forwards (301). A record without a page of its own is shown on a general record page.
 """
 
 import json
@@ -39,7 +38,7 @@ def data(found: Graph, media: str, iri: str | None = None) -> Response:
 
 @blueprint.before_app_request
 def negotiate():
-    """The data of a record is sent when it is asked for; otherwise its page is made as usual."""
+    """A record's data is sent when asked for; otherwise its page is made as usual."""
     if request.endpoint in ("static", "images.image") or request.path.startswith("/api/"):
         return None
     path = request.path.strip("/")
@@ -84,7 +83,7 @@ def link_data(response):
 
 @blueprint.app_context_processor
 def record_context() -> dict:
-    """The JSON-LD of the page's record and the addresses of its data, for the head of the page."""
+    """The page record's JSON-LD and data addresses, for the page head."""
     if "record" not in g:
         return {}
     formats = {}
@@ -111,7 +110,7 @@ def short_iri(iri: str) -> str:
 
 @blueprint.app_template_filter("page_link")
 def page_link(iri: str) -> str:
-    """The link to a platform address on this server, so that it works on every copy of the platform."""
+    """A platform address as a path on this server, so it works on every copy of the platform."""
     if iri.startswith(settings()["base"]):
         return "/" + iri.removeprefix(settings()["base"])
     return iri

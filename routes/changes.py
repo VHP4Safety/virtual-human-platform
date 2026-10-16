@@ -4,7 +4,7 @@
     /changes/<number>             one change
     /changes/<number>.json        one change, for the record editor and programs
     /changes/<number>.nt          the statements it added and removed, in N-Triples
-    /changes/record.json?record=  the statements about a record as it is now, for the record editor
+    /changes/record.json?record=  a record's current statements, for the record editor
 """
 
 from flask import Blueprint, Response, abort, jsonify, redirect, render_template, request, url_for
@@ -39,7 +39,7 @@ def editors_only():
     if allowed():
         return None
     if request.path.endswith((".json", ".nt")):
-        return jsonify({"error": "The changes are shown to editors of the platform."}), 401
+        return jsonify({"error": "Editors only."}), 401
     return redirect(url_for("account.login", next=request.full_path.rstrip("?")))
 
 
@@ -93,7 +93,7 @@ def change_statements(number: int):
 
 @blueprint.get("/changes/record.json")
 def record_data():
-    """The statements about a record as it is now, all kept, in the form of a change."""
+    """A record's current statements, as a change that keeps them all."""
     document = documents.document_of(request.args.get("record", ""))
     if document is None:
         abort(404)

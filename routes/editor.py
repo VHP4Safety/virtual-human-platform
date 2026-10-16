@@ -1,6 +1,5 @@
-"""The record editor: every kind of record, and for each a list of its records and a form that shacl-form
-builds from the model's shapes, which writes and removes records through the records API with the
-editor's login."""
+"""The record editor: per kind, a list of records and a form built by shacl-form from the model's shapes,
+which writes through the records API with the editor's login."""
 
 import json
 
@@ -17,7 +16,7 @@ blueprint = Blueprint("admin", __name__)
 
 
 def logged_in(kind: str | None = None):
-    """The editor who makes the request; one who may not write records of *kind* gets 404."""
+    """The requesting editor; 404 for one not allowed to write *kind*."""
     found = current_editor()
     if found is not None and kind is not None and (kind not in settings()["kinds"] or kind not in found.kinds):
         abort(404)
@@ -33,7 +32,7 @@ def admin():
 
 @blueprint.get("/admin/quality")
 def data_quality():
-    """How complete the records are, and what the checks of the imports and of the written records found."""
+    """Record completeness, and the checks' notes on imported and written records."""
     if logged_in() is None:
         return redirect(url_for("account.login", next=request.path))
     return render_template("records/quality.html", **quality.report(), written=PLATFORM, page_title="Data quality — VHP4Safety editor")
@@ -45,7 +44,7 @@ def edit(kind: str):
         return redirect(url_for("account.login", next=request.path))
     listed = editor.listing(kind)
     selected = request.args.get("record") or ""
-    # A new record's address is made from the name it is given, as the API makes it.
+    # A new record's address is made from its name, as in the API.
     name = request.args.get("new", "").strip()
     if name:
         selected = writes.free(records.address(f"{kind}/{writes.slug(name)}"), set())
@@ -71,7 +70,7 @@ def edit(kind: str):
 
 @blueprint.get("/admin/form.ttl")
 def form():
-    """The graph from which the forms are built: the profile and the names of the terms its fields list."""
+    """The graph the forms are built from: the profile, with the names of records and listed terms."""
     if logged_in() is None:
         abort(401)
     return Response(editor.form_graph().serialize(format="turtle"), mimetype="text/turtle")
