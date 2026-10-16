@@ -7,7 +7,7 @@ is read and removed by its address."""
 from functools import cache
 
 import pandas as pd
-from rdflib import RDF, BNode, Graph, URIRef
+from rdflib import RDF, BNode, Graph, Literal, URIRef
 from rdflib.namespace import SDO
 from rdfsolve.client.sql_tables import from_tables, layout, tables
 from sqlalchemy import bindparam, select, text
@@ -102,6 +102,24 @@ def graph(iris: list[str]) -> Graph:
     for prefix, namespace in settings()["prefixes"].items():
         found.bind(prefix, namespace)
     return found
+
+
+def with_names(found: Graph) -> Graph:
+    """Some statements, with the class and name of the records they link to, so that a document of them
+    names what its links point to."""
+    linked = set()
+    for value in found.objects():
+        if isinstance(value, URIRef) and (value, None, None) not in found:
+            linked.add(str(value))
+    named = Graph() + found
+    with database.session() as db:
+        for iri, kind, name in db.execute(select(Record.iri, Record.type, Record.name).where(Record.iri.in_(linked))):
+            named.add((URIRef(iri), RDF.type, URIRef(kind)))
+            if name:
+                named.add((URIRef(iri), SDO.name, Literal(name)))
+    for prefix, namespace in settings()["prefixes"].items():
+        named.bind(prefix, namespace)
+    return named
 
 
 def linked_graph(record: Record) -> Graph:

@@ -1,6 +1,7 @@
 """The imports: each source is fetched and cleaned by its parser, converted to the model with rdfsolve,
-checked against the model, and stored as records in place of those the source gave before. Records
-written on the platform are left as they are. `python -m linkeddata import` runs every import, for
+and stored as records in place of those the source gave before. Records written on the platform are left
+as they are. Once every source is stored, the records of each are checked against the model, with the
+records they link to as the database holds them. `python -m linkeddata import` runs every import, for
 example every night."""
 
 import hashlib
@@ -21,7 +22,7 @@ from sqlalchemy import delete, func, insert, select
 import database
 from database.tables import PLATFORM, Note, Record, Source, now
 from linkeddata import checks, storage
-from linkeddata.model import RELEASE, settings
+from linkeddata.model import MODEL_DIR, RELEASE, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
 TARGET = f"VHP4Safety model {RELEASE}"
@@ -83,14 +84,15 @@ class Refused(Exception):
     """An import that would remove most of a source's records, which an upstream fault usually explains."""
 
 
-def store(source: Source, found: list[tuple[list[dict], Graph]], notes: list[dict]) -> None:
-    """The records of a source replace those it gave before, except the records written on the platform.
-    An import that gives no records, or less than half of those it gave before, is refused."""
+def store(source: Source, found: list[tuple[list[dict], Graph]]) -> None:
+    """The records of a source replace those it gave before, except the records written on the platform and
+    those that another source gives, such as a person whom two sources name. An import that gives no
+    records, or less than half of those it gave before, is refused."""
     with database.session() as db, db.begin():
         before = db.scalar(select(func.count()).select_from(Record).where(Record.source == source.name, Record.part_of.is_(None)))
         if not found or (before >= 10 and len(found) < before / 2):
             raise Refused(f"the source gave {len(found)} records where it gave {before} before; the records were kept")
-        written = set(db.scalars(select(Record.iri).where(Record.source == PLATFORM)))
+        written = set(db.scalars(select(Record.iri).where(Record.source != source.name)))
         for iri in db.scalars(select(Record.iri).where(Record.source == source.name, Record.part_of.is_(None))):
             storage.delete(db, iri)
         db.execute(delete(Record).where(Record.source == source.name))
@@ -102,30 +104,32 @@ def store(source: Source, found: list[tuple[list[dict], Graph]], notes: list[dic
                 storage.save(db, statements, listed[0]["iri"])
         if kept:
             db.execute(insert(Record), list(kept.values()))
-        db.execute(delete(Note).where(Note.source == source.name))
-        for note in notes:
-            db.add(Note(source=source.name, **note))
         db.merge(source)
 
 
 def files_of(spec: dict) -> dict[str, str]:
-    """The files of a source by name: the one at its url, or those listed under its files."""
+    """The files of a source by name: the one at its url, those listed under its files, or the pinned
+    vocabulary of the model that it names."""
     if "files" in spec:
         return dict(spec["files"])
+    if "vocabulary" in spec:
+        return {spec["name"]: settings()["vocabularies"][spec["vocabulary"]]["url"]}
     return {spec["name"]: spec["url"]}
 
 
 ENTRY = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
-def download(spec: dict) -> dict[str, bytes]:
+def download(spec: dict, parser) -> dict[str, bytes]:
     """The files of a source by name. A source with entries also has, by its key, the file of each entry
-    of its index (a JSON object)."""
+    of its index: the keys of the index (a JSON object), or those its parser reads from it (keys)."""
     contents = {}
     for name, url in files_of(spec).items():
-        contents[name] = fetch(url)
+        # A pinned vocabulary is read from the model's folder, where its SHA-256 is checked.
+        contents[name] = (MODEL_DIR / "vocabularies" / spec["vocabulary"]).read_bytes() if "vocabulary" in spec else fetch(url)
     if "entries" in spec:
-        for key in json.loads(contents[spec["name"]]):
+        index = contents[spec["name"]]
+        for key in parser.keys(index) if hasattr(parser, "keys") else json.loads(index):
             # The keys come from upstream and are put in addresses, so only plain names are taken.
             if not ENTRY.fullmatch(key) or key == spec["name"]:
                 continue
@@ -138,12 +142,11 @@ def download(spec: dict) -> dict[str, bytes]:
 
 def import_source(spec: dict) -> None:
     config = settings()
-    contents = download(spec)
     parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
+    contents = download(spec, parser)
     # A source of one file gives its parser the file; a source of several gives them by name.
     parsed = parser.parse(contents if "files" in spec or "entries" in spec else contents[spec["name"]])
     data, queries = convert(spec, parsed, config["base"])
-    notes = checks.notes(Graph().parse(data=ox.serialize(data, format=ox.RdfFormat.N_QUADS), format="nt"))
     found = records_of(data, list(config["kinds"].values()), spec["name"])
     checksum = hashlib.sha256()
     for name in sorted(contents):
@@ -155,31 +158,43 @@ def import_source(spec: dict) -> None:
         sha256=checksum.hexdigest(),
         queries="\n\n".join(queries),
     )
-    store(source, found, notes)
-    print(f"{spec['name']}: {len(found)} records, {len(notes)} notes")
+    store(source, found)
+    print(f"{spec['name']}: {len(found)} records")
+
+
+def spec_of(name: str) -> dict:
+    """A source as its file in sources/ describes it. A source whose rows are also those of other sources
+    names them (uses), and has their rules too."""
+    spec = yaml.safe_load((SOURCES_DIR / f"{name}.yaml").read_text(encoding="utf-8"))
+    rules = {}
+    for other in spec.get("uses", []):
+        rules.update(spec_of(other)["rules"])
+    spec["rules"] = {**rules, **spec.get("rules", {})}
+    return spec
 
 
 def specs() -> list[dict]:
-    """The sources that are fetched (they have a url or files), as their files in sources/ describe them."""
+    """The sources that are fetched (they have a url or files) or read (a vocabulary of the model)."""
     found = []
     for path in sorted(SOURCES_DIR.glob("*.yaml")):
-        spec = yaml.safe_load(path.read_text(encoding="utf-8"))
-        if "url" in spec or "files" in spec:
+        spec = spec_of(path.stem)
+        if "url" in spec or "files" in spec or "vocabulary" in spec:
             found.append(spec)
     return found
 
 
-def check_written() -> None:
-    """The records written on the platform are checked again against the model, which may have changed
-    since they were written; what no longer fits is noted for the data quality page."""
+def check(source: str) -> None:
+    """The records of a source, or those written on the platform, are checked against the model as the
+    database holds them, with the records they link to; what does not fit is noted for the data quality
+    page. The values are kept as they are."""
     with database.session() as db:
-        iris = list(db.scalars(select(Record.iri).where(Record.source == PLATFORM, Record.removed_at.is_(None))))
+        iris = list(db.scalars(select(Record.iri).where(Record.source == source, Record.removed_at.is_(None), Record.part_of.is_(None))))
     notes = checks.notes(storage.graph(iris))
     with database.session() as db, db.begin():
-        db.execute(delete(Note).where(Note.source == PLATFORM))
+        db.execute(delete(Note).where(Note.source == source))
         for note in notes:
-            db.add(Note(source=PLATFORM, **note))
-    print(f"{PLATFORM}: {len(iris)} records, {len(notes)} notes")
+            db.add(Note(source=source, **note))
+    print(f"{source}: {len(iris)} records checked, {len(notes)} notes")
 
 
 def note_problem(spec: dict, problem: Exception) -> None:
@@ -193,14 +208,18 @@ def note_problem(spec: dict, problem: Exception) -> None:
 
 
 def import_all() -> list[str]:
-    """Every source that is fetched is imported, and the records written on the platform are checked
-    again. The problems of the sources that could not be imported are given back; their records are kept."""
+    """Every source is imported, and then the records of every source, and those written on the platform,
+    are checked. The problems of the sources that could not be imported are given back; their records are
+    kept."""
     problems = []
-    for spec in specs():
+    every = specs()
+    for spec in every:
         try:
             import_source(spec)
         except (Refused, requests.RequestException, OSError, ValueError) as problem:
             note_problem(spec, problem)
             problems.append(f"{spec['name']}: {problem}")
-    check_written()
+    for spec in every:
+        check(spec["name"])
+    check(PLATFORM)
     return problems

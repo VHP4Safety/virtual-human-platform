@@ -3,7 +3,8 @@ study, and the content file of a case study holds the pages of its interface, on
 the case study with its regulatory questions (step1Contents), the page of each question with its process
 flow steps (step2Contents), and the steps and their parts below (step3Contents and on). Each page has a
 title, a summary, a text in sections, and a list of items: the pages one level down, at addresses under its
-own, the tools it uses, and the data it uses."""
+own, and the tools, methods and data it uses, which are linked by the id of their record on the platform
+(an item without one is kept as its label)."""
 
 import json
 
@@ -64,12 +65,9 @@ def fill(row: dict, node: dict, levels: list[dict], depth: int, path: list[str])
             row.setdefault("steps", []).append(link(child))
             rows.extend(step(levels, depth + 1, path + [entry["value"]], entry, child, len(row["steps"])))
             continue
-        used = {"@type": "Data" if entry.get("type") == "data" else "Tool", "label": entry.get("label")}
-        if present(entry.get("description")):
-            used["description"] = entry["description"]
-        if item_link(entry):
-            used["page"] = item_link(entry)
-        row.setdefault("supplies" if used["@type"] == "Data" else "tools", []).append(used)
+        used = item_link(entry) or entry.get("label")
+        if present(used):
+            row.setdefault("supplies" if entry.get("type") == "data" else "tools", []).append(used)
     return rows
 
 
@@ -107,13 +105,13 @@ def parse(files: dict[str, bytes]) -> list[dict]:
             if question.get("type") != "regulatory-question" or not present(question.get("value")):
                 continue
             here = f"{address}/{question['value']}"
-            found = {"@id": here, "@type": "Question", "label": question.get("label")}
+            row.setdefault("questions", []).append(link(here))
+            found = {"@id": here, "@type": "Question", "label": question.get("label"), "position": len(row["questions"])}
             if present(question.get("description")):
                 found["text"] = question["description"]
             node = at(levels, 0, [question["value"]])
             if present(node.get("navTitle")):
                 found["headline"] = node["navTitle"]
-            row.setdefault("questions", []).append(link(here))
             rows.append(found)
             rows.extend(fill(found, node, levels, 0, [question["value"]]))
         rows.append(row)

@@ -25,6 +25,7 @@ rules:
     - {predicate: "https://schema.org/name", object: label}
     - {predicate: "https://schema.org/text", object: text}
     - {predicate: "https://schema.org/headline", object: headline}
+    - {predicate: "https://schema.org/position", object: position}
     - {predicate: "https://schema.org/description", object: summary}
     - {predicate: "https://schema.org/hasPart", object: sections}
     - {predicate: "https://schema.org/step", object: steps}
@@ -47,13 +48,3 @@ rules:
     - {predicate: "https://schema.org/name", object: title}
     - {predicate: "https://schema.org/text", object: text}
     - {predicate: "https://schema.org/position", object: position}
-  Tool:
-    - {predicate: a, value: "https://schema.org/HowToTool"}
-    - {predicate: "https://schema.org/name", object: label}
-    - {predicate: "https://schema.org/description", object: description}
-    - {predicate: "https://schema.org/url", object: page}
-  Data:
-    - {predicate: a, value: "https://schema.org/HowToSupply"}
-    - {predicate: "https://schema.org/name", object: label}
-    - {predicate: "https://schema.org/description", object: description}
-    - {predicate: "https://schema.org/url", object: page}

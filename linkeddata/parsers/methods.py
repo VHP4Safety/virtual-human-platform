@@ -42,10 +42,14 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         for field, given in (("url", "catalog_webpage_url"), ("sop", "available_sop_or_protocol_url")):
             if present(detail.get(given)):
                 row[field] = web_link(detail[given])
-        steps = parts(detail.get("vhp4safety_workflow_stage_content"))
+        steps = []
+        for part in parts(detail.get("vhp4safety_workflow_stage_content")):
+            steps.append(web_link(part))
         if steps:
             row["steps"] = steps
-        about = parts(detail.get("workflow_substage_content")) + parts(detail.get(KEY_EVENTS)) + parts(detail.get(AOPS))
+        about = []
+        for part in parts(detail.get("workflow_substage_content")) + parts(detail.get(KEY_EVENTS)) + parts(detail.get(AOPS)):
+            about.append(web_link(part))
         types = []
         for given in ("type_url", "ontology_term_url", "ontology_term_content"):
             if present(detail.get(given)):

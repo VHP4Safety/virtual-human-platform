@@ -1,0 +1,18 @@
+name: glossary
+title: VHP4Safety glossary
+# The vocabulary of the model that the source is; its terms are the terms records can be about.
+vocabulary: vhp4safety-glossary-34f9389.ttl
+parser: glossary
+
+# How the parsed rows become the model: the arguments of rdfsolve's Rule.between, for each kind of row.
+rules:
+  Term:
+    - {predicate: a, value: "https://schema.org/DefinedTerm"}
+    - {predicate: "https://schema.org/name", object: label}
+    - {predicate: "https://schema.org/description", object: definition}
+    - {predicate: "https://schema.org/termCode", object: code}
+    - {predicate: "https://schema.org/inDefinedTermSet", object: vocabulary}
+  Vocabulary:
+    - {predicate: a, value: "https://schema.org/DefinedTermSet"}
+    - {predicate: "https://schema.org/name", object: name}
+    - {predicate: "https://schema.org/url", object: namespace}

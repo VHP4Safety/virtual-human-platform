@@ -30,6 +30,8 @@ kinds:
   organizations: https://schema.org/Organization
   people: https://schema.org/Person
   pages: https://schema.org/WebPage
+  terms: https://schema.org/DefinedTerm
+  vocabularies: https://schema.org/DefinedTermSet
 
 # Used for short names in the YAML mappings and in the JSON-LD documents.
 prefixes:

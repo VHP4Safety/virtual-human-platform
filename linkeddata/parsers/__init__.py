@@ -14,6 +14,17 @@ parser cannot read are passed on as plain text, so the checks of the build repor
 import re
 import unicodedata
 
+# The codes with which upstream files name the regulatory questions of the case studies, and the addresses of
+# the questions.
+QUESTIONS = {
+    "reg_q_1a": "casestudies/kidney/Q1",
+    "reg_q_1b": "casestudies/kidney/Q2",
+    "reg_q_2a": "casestudies/parkinson/Q1",
+    "reg_q_2b": "casestudies/parkinson/Q2",
+    "reg_q_3a": "casestudies/thyroid/Q1",
+    "reg_q_3b": "casestudies/thyroid/Q2",
+}
+
 MISSING = {"", "_No response_", "No response", "NA", "Unknown", "no_url", "[TODO]", "[DRAFT]"}
 
 

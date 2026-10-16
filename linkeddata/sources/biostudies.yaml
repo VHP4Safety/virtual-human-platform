@@ -1,0 +1,41 @@
+name: biostudies
+title: BioStudies collection VHP4Safety
+url: https://www.ebi.ac.uk/biostudies/api/v1/VHP4Safety/search?pageSize=100
+# The file of each study, by its accession in the search.
+entries: https://www.ebi.ac.uk/biostudies/api/v1/studies/{key}
+parser: biostudies
+# The terms of ontologies that the studies name are registered as the glossary's are.
+uses: [glossary]
+
+# How the parsed rows become the model: the arguments of rdfsolve's Rule.between, for each kind of row.
+rules:
+  Dataset:
+    - {predicate: a, value: "https://schema.org/Dataset"}
+    - {predicate: "https://schema.org/name", object: title}
+    - {predicate: "https://schema.org/description", object: description}
+    - {predicate: "https://schema.org/datePublished", object: published}
+    - {predicate: "https://schema.org/sameAs", object: doi}
+    - {predicate: "https://schema.org/url", object: page}
+    - {predicate: "https://vhp4safety.github.io/glossary#VHP0000152", object: steps}
+    - {predicate: "https://vhp4safety.github.io/glossary#VHP0000151", object: questions}
+    - {predicate: "https://schema.org/sourceOrganization", object: cases}
+    - {predicate: "https://schema.org/about", object: topics}
+    - {predicate: "https://schema.org/measurementMethod", object: methods}
+    - {predicate: "https://schema.org/measurementTechnique", object: assays}
+    - {predicate: "https://schema.org/license", object: license}
+    - {predicate: "https://schema.org/creator", object: creators}
+    - {predicate: "https://schema.org/keywords", object: keywords}
+    - {predicate: "https://schema.org/citation", object: references}
+  Person:
+    - {predicate: a, value: "https://schema.org/Person"}
+    - {predicate: "https://schema.org/name", object: name}
+    - {predicate: "https://schema.org/email", object: email}
+    - {predicate: "https://schema.org/sameAs", object: same_as}
+    - {predicate: "https://schema.org/affiliation", object: affiliation}
+  Organization:
+    - {predicate: a, value: "https://schema.org/Organization"}
+    - {predicate: "https://schema.org/name", object: name}
+    - {predicate: "https://schema.org/sameAs", object: same_as}
+  Publication:
+    - {predicate: a, value: "https://schema.org/ScholarlyArticle"}
+    - {predicate: "https://schema.org/sameAs", object: doi}
