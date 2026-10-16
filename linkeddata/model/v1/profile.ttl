@@ -386,6 +386,10 @@ form:DefinedTerm a sh:NodeShape ;
     sh:property [ sh:path schema:inDefinedTermSet ; sh:order 2 ; sh:name "Vocabulary" ; sh:minCount 1 ; sh:maxCount 1 ; sh:class schema:DefinedTermSet ;
         sh:message "A term belongs to one vocabulary." ] ;
     sh:property [ sh:path schema:termCode ; sh:order 3 ; sh:name "Code" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:alternateName ; sh:order 5 ; sh:name "Other names" ; sh:datatype xsd:string ;
+        sh:description "Other names of the term, such as a short one." ] ;
+    sh:property [ sh:path schema:sameAs ; sh:order 6 ; sh:name "Other addresses" ; sh:nodeKind sh:IRI ;
+        sh:description "Other addresses of the term, such as those of a license's text." ] ;
     sh:property [ sh:path schema:description ; sh:order 4 ; sh:name "Definition" ; sh:maxCount 1 ; sh:datatype xsd:string ; dash:singleLine false ] .
 
 # A vocabulary or an ontology, at /vocabularies/<name>, whose terms records can be about; the addresses of

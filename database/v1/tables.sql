@@ -227,6 +227,24 @@ CREATE TABLE IF NOT EXISTS "schema_defined_term" (
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_defined_term__record" ON "schema_defined_term" ("record");
+CREATE TABLE IF NOT EXISTS "schema_defined_term__schema_alternate_name" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_defined_term" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_defined_term__schema_alternate_name__record" ON "schema_defined_term__schema_alternate_name" ("record");
+CREATE TABLE IF NOT EXISTS "schema_defined_term__schema_same_as" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_defined_term" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_defined_term__schema_same_as__record" ON "schema_defined_term__schema_same_as" ("record");
 CREATE TABLE IF NOT EXISTS "schema_defined_term_set" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,

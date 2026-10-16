@@ -12,6 +12,8 @@ rules:
     - {predicate: "https://schema.org/description", object: definition}
     - {predicate: "https://schema.org/termCode", object: code}
     - {predicate: "https://schema.org/inDefinedTermSet", object: vocabulary}
+    - {predicate: "https://schema.org/alternateName", object: alternate}
+    - {predicate: "https://schema.org/sameAs", object: same_as}
   Vocabulary:
     - {predicate: a, value: "https://schema.org/DefinedTermSet"}
     - {predicate: "https://schema.org/name", object: name}

@@ -66,33 +66,40 @@ def web_link(value: str):
     return text
 
 
+def spelled(text: str) -> str:
+    """A text as names are compared: in lower case, with hyphens, underscores and runs of spaces as one
+    space, and without a slash at its end."""
+    return " ".join(str(text).casefold().replace("-", " ").replace("_", " ").split()).rstrip("/")
+
+
 @cache
 def terms(source: str) -> dict[str, set[str]]:
     """The terms of a vocabulary of the model (a source of a pinned vocabulary file, such as the glossary),
-    by their label and by their code in lower case, as the source's parser reads them."""
+    by their label, their code, their other names and their other addresses, as spelled() compares them, as
+    the source's parser reads them."""
     spec = yaml.safe_load((SOURCES / f"{source}.yaml").read_text(encoding="utf-8"))
     parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
     found = {}
     for row in parser.parse((MODEL_DIR / "vocabularies" / spec["vocabulary"]).read_bytes()):
         if row.get("@type") == "Term":
-            for text in (row.get("label"), row.get("code")):
+            names = [row.get("label"), row.get("code")] + list(row.get("alternate") or [])
+            for address in row.get("same_as") or []:
+                names.append(address["@id"])
+            for text in names:
                 if text:
-                    found.setdefault(str(text).strip().casefold(), set()).add(row["@id"])
+                    found.setdefault(spelled(text), set()).add(row["@id"])
     return found
 
 
 def term(text, source: str, qualifier: str = ""):
-    """A link to the term of a vocabulary whose label (followed by a qualifier in brackets, when given) or
-    code is the text, ignoring case, when one term has it; a web address is linked as it is, and any other
-    text is passed on as it is."""
-    found = web_link(text)
-    if isinstance(found, dict):
-        return found
-    label = f"{found} ({qualifier})" if qualifier else found
-    matched = terms(source).get(label.casefold(), set())
+    """A link to the term of a vocabulary whose label (followed by a qualifier in brackets, when given), code,
+    other name or other address is the text, as spelled() compares them, when one term has it; another web
+    address is linked as it is, and any other text is passed on as it is."""
+    label = f"{str(text).strip()} ({qualifier})" if qualifier else str(text).strip()
+    matched = terms(source).get(spelled(label), set())
     if len(matched) == 1:
         return link(next(iter(matched)))
-    return found
+    return web_link(text)
 
 
 def publication(value) -> dict | None:
