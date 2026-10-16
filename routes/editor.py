@@ -2,9 +2,11 @@
 builds from the model's shapes, which writes and removes records through the records API with the
 editor's login."""
 
+import json
+
 from flask import Blueprint, Response, abort, redirect, render_template, request, url_for
 
-from admin import editor
+from admin import editor, writes
 from database import records
 from database.tables import PLATFORM
 from linkeddata import quality
@@ -43,8 +45,10 @@ def edit(kind: str):
         return redirect(url_for("account.login", next=request.path))
     listed = editor.listing(kind)
     selected = request.args.get("record") or ""
-    if request.args.get("new"):
-        selected = records.address(f"{kind}/{request.args['new']}")
+    # A new record's address is made from the name it is given, as the API makes it.
+    name = request.args.get("new", "").strip()
+    if name:
+        selected = writes.free(records.address(f"{kind}/{writes.slug(name)}"), set())
     record = records.get(selected) if selected else None
     response = Response(render_template(
         "admin/records.html",
@@ -55,6 +59,7 @@ def edit(kind: str):
         base=settings()["base"],
         record=record,
         shape=editor.root_shape(kind),
+        values=f"<{selected}> a <{settings()['kinds'][kind]}> ; <https://schema.org/name> {json.dumps(name)} ." if name and record is None else "",
         links=editor.links(),
         classes={of_class: name for name, of_class in settings()["kinds"].items()},
         form_token=form_token(),
