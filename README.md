@@ -132,7 +132,7 @@ python app.py
 ```
 
 The application will be available at [http://localhost:5050/](http://localhost:5050/).
-Set `FLASK_DEBUG=1` to get the Flask debugger and reloader during development; never set it in production.
+`FLASK_DEBUG=1` turns on the Flask debugger and reloader for development; it is never set in production.
 
 ### Deployment with Docker
 
