@@ -10,16 +10,16 @@ from rdflib.namespace import SH
 from linkeddata import documents, fields, storage
 from linkeddata.model import hierarchy, shapes
 
-# What breaking each SHACL constraint means for a curator, by the name of the constraint.
+# Messages by SHACL constraint.
 CONSTRAINTS = {
-    "NodeKindConstraintComponent": "A text where a link (a web address) is expected.",
-    "ClassConstraintComponent": "A link to something of which the platform does not know the kind.",
-    "DatatypeConstraintComponent": "A value of the wrong type.",
-    "OrConstraintComponent": "A value of a kind that this field does not take.",
-    "MinCountConstraintComponent": "A required value is missing.",
-    "MaxCountConstraintComponent": "Several values where the platform takes one.",
-    "HasValueConstraintComponent": "A value that the platform sets is missing or different.",
-    "NodeConstraintComponent": "A part, or a linked record, that does not fit its own fields.",
+    "NodeKindConstraintComponent": "Web address expected.",
+    "ClassConstraintComponent": "Unknown kind of link.",
+    "DatatypeConstraintComponent": "Wrong type.",
+    "OrConstraintComponent": "Wrong kind.",
+    "MinCountConstraintComponent": "Missing.",
+    "MaxCountConstraintComponent": "Only one value.",
+    "HasValueConstraintComponent": "Fixed value missing or wrong.",
+    "NodeConstraintComponent": "Part or link does not fit.",
 }
 
 
@@ -37,7 +37,7 @@ class NotFitting(ValueError):
 
 def meaning(component: str | None) -> str:
     name = (component or "").replace("#", ":").rsplit(":", 1)[-1]
-    return CONSTRAINTS.get(name, "A value that does not fit the model.")
+    return CONSTRAINTS.get(name, "Does not fit the model.")
 
 
 def validate(found: Graph) -> Graph:
@@ -119,7 +119,7 @@ def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]
         if isinstance(value, URIRef) and predicate != RDF.type and not str(value).startswith(("https://", "http://")):
             field = documents.term(str(predicate))
             if field not in problems:
-                problems[field] = ["A web address starts with https:// or http://."]
+                problems[field] = ["Only https:// or http:// addresses."]
     return found, problems, warnings
 
 

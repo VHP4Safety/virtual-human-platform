@@ -1,19 +1,19 @@
-# The application profile of the platform: what the platform adds to schema.org and Bioschemas.
+# The platform's application profile: what it adds to schema.org and Bioschemas.
 #
-# Each class of the platform has one node shape here, named after the class, and its property shapes are
-# the fields of its records: the editor's form, the pages and the linked data view are built from them
-# alone, while the vocabularies' value types only check the values. sh:group, sh:order and sh:name place
-# and name each field, and sh:description explains it. Each field states what its values are, so that the
-# form gives the right input: sh:datatype a text, a number or a date (xsd:date is picked in a calendar),
-# sh:nodeKind sh:IRI a web address, sh:in one of a list, sh:class a link to a record of a class (with
-# sh:pattern on a namespace, a term of that vocabulary only), and sh:or
-# a choice between classes; the form finds the records of the class by their name, or adds a new one. With
-# sh:node, the values are parts of the record that holds them, written with it and fitting the shape of
-# their class: without an address (sh:nodeKind sh:BlankNode), such as the sections of a page, or at an
-# address under the record's (sh:nodeKind sh:IRI), such as the questions of a case study. sh:minCount marks a required field (a recommended one with sh:severity sh:Warning: missing it is
-# pointed out, but does not stop a save), sh:hasValue a fixed value, and dash:singleLine false a longer
-# text. sh:message is what an editor reads when a value is missing or does not fit.
-# The required fields of tools are the minimum of Bioschemas' ComputationalTool profile.
+# Each class has one node shape, named after it; its property shapes are the fields of its records.
+# The editor's form, the pages and the linked data view are built from them alone; the vocabularies'
+# value types only check values.
+# - sh:group, sh:order, sh:name: a field's section, place and label. sh:description: its help.
+# - sh:datatype: a text, a number or a date (xsd:date is picked in a calendar).
+# - sh:nodeKind sh:IRI: a web address. sh:in: one of a list.
+# - sh:class: a link to a record of a class; with sh:pattern, a term of one vocabulary only.
+# - sh:or: a choice between classes. Records are found by name, or a new one is added.
+# - sh:node: parts written with the record: without an address (sh:nodeKind sh:BlankNode), such as
+#   page sections, or under the record's address (sh:nodeKind sh:IRI), such as case study questions.
+# - sh:minCount: required; with sh:severity sh:Warning, recommended (shown, but a save is not stopped).
+# - sh:hasValue: a fixed value. dash:singleLine false: a longer text.
+# - sh:message: shown when a value is missing or does not fit.
+# The required fields of tools are the minimum of the Bioschemas ComputationalTool profile.
 
 @prefix schema: <https://schema.org/> .
 @prefix bioschemas_draft: <https://bioschemas.org/draft_terms/> .
@@ -29,146 +29,146 @@
 
 form:about a sh:PropertyGroup ; sh:order 1 ; rdfs:label "About the tool" .
 form:method a sh:PropertyGroup ; sh:order 1 ; rdfs:label "About the method" .
-form:assay a sh:PropertyGroup ; sh:order 2 ; rdfs:label "The assay" .
-form:people a sh:PropertyGroup ; sh:order 2 ; rdfs:label "Who is behind it" .
+form:assay a sh:PropertyGroup ; sh:order 2 ; rdfs:label "Assay" .
+form:people a sh:PropertyGroup ; sh:order 2 ; rdfs:label "People" .
 form:documentation a sh:PropertyGroup ; sh:order 3 ; rdfs:label "Documentation and training" .
 form:technical a sh:PropertyGroup ; sh:order 4 ; rdfs:label "Technical details" .
 form:elsewhere a sh:PropertyGroup ; sh:order 5 ; rdfs:label "Elsewhere on the web" .
 form:casestudy a sh:PropertyGroup ; sh:order 1 ; rdfs:label "About the case study" .
-form:question a sh:PropertyGroup ; sh:order 1 ; rdfs:label "The question" .
-form:workflow a sh:PropertyGroup ; sh:order 1 ; rdfs:label "The page of the workflow" .
-form:parts a sh:PropertyGroup ; sh:order 2 ; rdfs:label "Its parts" .
+form:question a sh:PropertyGroup ; sh:order 1 ; rdfs:label "Question" .
+form:workflow a sh:PropertyGroup ; sh:order 1 ; rdfs:label "Workflow page" .
+form:parts a sh:PropertyGroup ; sh:order 2 ; rdfs:label "Parts" .
 
-# A text is plain, without markup, or in HTML (rdf:HTML): a text with markup, such as <p> or <b>, says so.
+# A text is plain, or HTML (rdf:HTML) when it has markup such as <p> or <b>.
 form:PlainText a sh:NodeShape ; rdfs:label "Text" ; sh:datatype xsd:string ; sh:not [ sh:pattern "<\\s*/?[a-zA-Z][^>]*>" ] .
 form:HTMLText a sh:NodeShape ; rdfs:label "HTML" ; sh:datatype rdf:HTML .
 
 form:SoftwareApplication a sh:NodeShape ;
     sh:targetClass schema:SoftwareApplication ;
     rdfs:label "Tool" ;
-    rdfs:comment "Tools state the Bioschemas profile they follow (ComputationalTool)." ;
+    rdfs:comment "Tools state their Bioschemas profile (ComputationalTool)." ;
     sh:property [
         sh:path schema:name ; sh:group form:about ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "The tool's name as its developers write it." ;
-        sh:message "Give the tool one name." ] ;
+        sh:description "As its developers write it." ;
+        sh:message "One name needed." ] ;
     sh:property [
         sh:path schema:description ; sh:group form:about ; sh:order 2 ; sh:name "Description" ; sh:minCount 1 ; sh:maxCount 1 ;
         dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ;
-        sh:description "What the tool does and what it is used for, in two or three sentences. It is shown in the tool catalogue and on the tool's page." ;
-        sh:message "Describe the tool in a few sentences." ] ;
+        sh:description "What the tool does, in two or three sentences. Shown in the catalogue and on the tool's page." ;
+        sh:message "One description needed." ] ;
     sh:property [
         sh:path schema:url ; sh:group form:about ; sh:order 3 ; sh:name "Website" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
         sh:severity sh:Warning ;
-        sh:description "The tool's website or documentation." ;
-        sh:message "A website helps people find the tool; add it when the tool has one." ] ;
+        sh:description "Website or documentation." ;
+        sh:message "Add the website, if any." ] ;
     sh:property [
         sh:path schema:installUrl ; sh:group form:about ; sh:order 4 ; sh:name "Where to use it" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
-        sh:description "The address where the tool runs and can be used, when that is not its website. The tool's page links to it as \"Run the tool\"." ] ;
+        sh:description "Where the tool runs, if not its website. Linked as \"Run the tool\"." ] ;
     sh:property [
         sh:path schema:image ; sh:group form:about ; sh:order 5 ; sh:name "Logo or screenshot" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
         sh:description "Shown on the tool's card in the catalogue." ] ;
     sh:property [
         sh:path glossary:VHP0000152 ; sh:group form:about ; sh:order 6 ; sh:name "Assessment steps" ;
         sh:severity sh:Warning ; sh:nodeKind sh:IRI ; sh:in ( glossary:VHP0000153 glossary:VHP0000154 glossary:VHP0000155 glossary:VHP0000156 glossary:VHP0000158 ) ;
-        sh:message "Choose the steps from the list; other values are kept, but the catalogue's filters do not show them." ;
-        sh:description "The process flow steps of the safety assessment that the tool supports (the glossary's Process Flow Step). The tool catalogue filters tools by them." ] ;
+        sh:message "Choose from the list; other values are not in the filters." ;
+        sh:description "Process flow steps the tool supports; the catalogue is filtered by them." ] ;
     sh:property [
         sh:path glossary:VHP0000151 ; sh:group form:about ; sh:order 7 ; sh:name "Case-study questions" ;
         sh:class schema:Question ;
-        sh:description "The regulatory questions of the case studies that the tool helps to answer (the glossary's Regulatory Question). The tool catalogue filters tools by them." ] ;
+        sh:description "Case study questions the tool helps answer; the catalogue is filtered by them." ] ;
     sh:property [
         sh:path schema:about ; sh:group form:about ; sh:order 8 ; sh:name "Topics" ;
         sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
-        sh:message "Choose a term of a vocabulary, such as Model in the VHP4Safety glossary, or register the term." ;
-        sh:description "Terms of the VHP4Safety glossary, or of other vocabularies, that say what the tool deals with, such as Model or Adverse Outcome Pathway." ] ;
+        sh:message "Choose a vocabulary term, or register it." ;
+        sh:description "What the tool deals with, such as Model or Adverse Outcome Pathway." ] ;
     sh:property [
         sh:path schema:provider ; sh:group form:people ; sh:order 1 ; sh:name "Provided by" ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ;
-        sh:description "The organisations that offer the tool. VHP4Safety is one of them when the tool runs on the platform's own servers; its page then says that VHP4Safety hosts it." ] ;
+        sh:description "Who offers the tool. VHP4Safety, when it runs on the platform's servers, is shown as its host." ] ;
     sh:property [
         sh:path schema:creator ; sh:group form:people ; sh:order 2 ; sh:name "Developed by" ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ;
-        sh:description "The organisations that developed the tool. Choose VHP4Safety when the project developed it." ] ;
+        sh:description "Who developed the tool; VHP4Safety when the project did." ] ;
     sh:property [
         sh:path schema:maintainer ; sh:group form:people ; sh:order 3 ; sh:name "Contact people" ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ;
-        sh:description "The people to contact about the tool. Their names and email addresses are shown on the tool's support tab." ] ;
+        sh:description "Who to contact. Names and email addresses are shown on the support tab." ] ;
     sh:property [
         sh:path schema:softwareHelp ; sh:group form:documentation ; sh:order 1 ; sh:name "Guides and demos" ;
         sh:class schema:WebPage ; sh:node form:WebPage ; sh:nodeKind sh:BlankNode ;
-        sh:description "Pages that explain the tool or show it at work: introductions, tutorials, demos and deployment guides, each with its title." ] ;
+        sh:description "Introductions, tutorials, demos and deployment guides, each with a title." ] ;
     sh:property [
         sh:path schema:subjectOf ; sh:group form:documentation ; sh:order 2 ; sh:name "Used in workflows" ;
         sh:class schema:WebPage ; sh:node form:WebPage ; sh:nodeKind sh:BlankNode ;
-        sh:description "The VHP4Safety workflows and tutorials that use the tool, each with its title." ] ;
+        sh:description "VHP4Safety workflows and tutorials that use the tool, each with a title." ] ;
     sh:property [
         sh:path schema:video ; sh:group form:documentation ; sh:order 3 ; sh:name "Videos" ;
         sh:class schema:VideoObject ; sh:node form:VideoObject ; sh:nodeKind sh:BlankNode ;
-        sh:description "Videos about the tool that can be embedded on its page, such as PeerTube videos, each with its title." ] ;
+        sh:description "Videos shown on its page, such as PeerTube ones, each with a title." ] ;
     sh:property [
         sh:path schema:citation ; sh:group form:documentation ; sh:order 4 ; sh:name "Publication to cite" ; sh:maxCount 1 ;
         sh:class schema:ScholarlyArticle ;
-        sh:description "The publication to cite when the tool is used, such as the article that describes it. Its page on the platform links to its DOI." ] ;
+        sh:description "The publication to cite when the tool is used; its page links to its DOI." ] ;
     sh:property [
         sh:path schema:keywords ; sh:group form:documentation ; sh:order 5 ; sh:name "Training search term" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "The words that find training material about the tool on ELIXIR TeSS and Taxila. The tool's page shows what they find." ] ;
+        sh:description "Searched on ELIXIR TeSS and Taxila; the results are shown on the tool's page." ] ;
     sh:property [
         sh:path schema:softwareVersion ; sh:group form:technical ; sh:order 1 ; sh:name "Version" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "The version of the tool that the platform describes, as its developers number it." ] ;
+        sh:description "As its developers number it." ] ;
     sh:property [
         sh:path schema:license ; sh:group form:technical ; sh:order 2 ; sh:name "License" ; sh:maxCount 1 ;
         sh:severity sh:Warning ; sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ;
-        sh:message "Choose the license in the SPDX License List; a license given as text or as another address is kept." ;
-        sh:description "The license under which the tool is shared." ] ;
+        sh:message "Choose an SPDX license; other values are kept." ;
+        sh:description "The tool's license." ] ;
     sh:property [
         sh:path schema:isBasedOn ; sh:group form:technical ; sh:order 3 ; sh:name "Source code" ; sh:nodeKind sh:IRI ;
-        sh:description "Where the tool's source code is kept, such as its GitHub repository." ] ;
+        sh:description "Its repository, such as on GitHub." ] ;
     sh:property [
         sh:path schema:downloadUrl ; sh:group form:technical ; sh:order 4 ; sh:name "Downloads" ; sh:nodeKind sh:IRI ;
-        sh:description "Where the tool can be downloaded: its container image or its software packages." ] ;
+        sh:description "Container images or software packages." ] ;
     sh:property [
         sh:path schema:creativeWorkStatus ; sh:group form:technical ; sh:order 5 ; sh:name "Technology readiness" ; sh:maxCount 1 ;
         sh:severity sh:Warning ; sh:nodeKind sh:IRI ;
         sh:in ( wd:Q120669280 wd:Q120669304 wd:Q120669316 wd:Q120669327 wd:Q120669340 wd:Q120669350 wd:Q120669358 wd:Q120669370 wd:Q120669377 ) ;
-        sh:description "How mature the tool is, as a technology readiness level: from TRL 1 (basic principles observed) to TRL 9 (proven in its operational environment)." ;
-        sh:message "Choose a technology readiness level from TRL 1 to TRL 9; a level given as text is kept." ] ;
+        sh:description "From TRL 1 (basic principles observed) to TRL 9 (proven in its operational environment)." ;
+        sh:message "Choose a level from TRL 1 to TRL 9; text is kept." ] ;
     sh:property [
         sh:path schema:releaseNotes ; sh:group form:technical ; sh:order 6 ; sh:name "Release notes" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "The address of the tool's release notes, or a short note about its latest release." ] ;
+        sh:description "Address of the release notes, or a short note on the latest release." ] ;
     sh:property [
         sh:path schema:sameAs ; sh:group form:elsewhere ; sh:order 1 ; sh:name "Other addresses" ; sh:nodeKind sh:IRI ;
-        sh:description "Other web addresses of the tool, such as its pages on bio.tools, FAIRsharing, Wikipedia or the Research Software Directory. Its earlier addresses on the platform are kept here too, so that links to them still find it." ] ;
+        sh:description "Such as bio.tools, FAIRsharing, Wikipedia or the Research Software Directory. Earlier platform addresses are kept here, so old links still work." ] ;
     sh:property [
         sh:path dct:conformsTo ; sh:group form:elsewhere ; sh:order 2 ; sh:name "Bioschemas profile" ; sh:nodeKind sh:IRI ;
         sh:hasValue <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE> ;
-        sh:description "Records of tools follow the ComputationalTool profile of Bioschemas, version 1.0, so that search engines and registries can read them." ;
-        sh:message "A tool follows the ComputationalTool profile of Bioschemas, version 1.0-RELEASE." ] .
+        sh:description "Bioschemas ComputationalTool 1.0, read by search engines and registries." ;
+        sh:message "ComputationalTool 1.0-RELEASE expected." ] .
 
 form:Organization a sh:NodeShape ;
     sh:targetClass schema:Organization ;
     rdfs:label "Organisation" ;
-    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "An organisation needs one name." ] ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
     sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Website" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 3 ; sh:name "Elsewhere" ; sh:nodeKind sh:IRI ;
-        sh:description "The organisation's item in Wikidata or ROR, and its other addresses." ] .
+        sh:description "Its Wikidata or ROR item, and other addresses." ] .
 
 form:Person a sh:NodeShape ;
     sh:targetClass schema:Person ;
     rdfs:label "Person" ;
-    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A person needs one name." ] ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
     sh:property [ sh:path schema:email ; sh:order 2 ; sh:name "Email address" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 3 ; sh:name "Elsewhere" ; sh:nodeKind sh:IRI ;
-        sh:description "The person's ORCID iD or Wikidata item, as a web address." ] ;
+        sh:description "ORCID iD or Wikidata item, as a web address." ] ;
     sh:property [ sh:path schema:affiliation ; sh:order 4 ; sh:name "Affiliation" ; sh:class schema:Organization ] .
 
 form:LabProtocol a sh:NodeShape ;
     sh:targetClass bioschemas_draft:LabProtocol ;
     rdfs:label "Method" ;
-    rdfs:comment "Methods state the Bioschemas profile they follow (LabProtocol)." ;
+    rdfs:comment "Methods state their Bioschemas profile (LabProtocol)." ;
     sh:property [
         sh:path schema:name ; sh:group form:method ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "The method's name as it is known in the lab." ;
-        sh:message "A method needs one name." ] ;
+        sh:description "As known in the lab." ;
+        sh:message "One name needed." ] ;
     sh:property [
         sh:path schema:description ; sh:group form:method ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ;
         dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ;
@@ -176,131 +176,131 @@ form:LabProtocol a sh:NodeShape ;
     sh:property [
         sh:path glossary:VHP0000152 ; sh:group form:method ; sh:order 3 ; sh:name "Assessment steps" ;
         sh:severity sh:Warning ; sh:nodeKind sh:IRI ; sh:in ( glossary:VHP0000153 glossary:VHP0000154 glossary:VHP0000155 glossary:VHP0000156 glossary:VHP0000158 ) ;
-        sh:message "Choose the steps from the list; other values are kept, but the catalogue's filters do not show them." ;
-        sh:description "The process flow steps of the safety assessment that the method informs." ] ;
+        sh:message "Choose from the list; other values are not in the filters." ;
+        sh:description "Process flow steps the method informs." ] ;
     sh:property [
         sh:path glossary:VHP0000151 ; sh:group form:method ; sh:order 4 ; sh:name "Case-study questions" ;
         sh:class schema:Question ;
-        sh:description "The regulatory questions of the case studies that the method informs." ] ;
+        sh:description "Case study questions the method informs." ] ;
     sh:property [
         sh:path schema:about ; sh:group form:method ; sh:order 5 ; sh:name "Key events, pathways and topics" ;
         sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
-        sh:message "Choose a key event, a pathway or a topic in a vocabulary, such as AOP-Wiki, or register the term." ;
-        sh:description "The AOP-Wiki key events and adverse outcome pathways that the method measures, and terms of the glossary." ] ;
+        sh:message "Choose a term, such as an AOP-Wiki key event, or register it." ;
+        sh:description "AOP-Wiki key events and pathways the method measures, and glossary terms." ] ;
     sh:property [
         sh:path schema:additionalType ; sh:group form:method ; sh:order 6 ; sh:name "Kind of assay" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
-        sh:message "Choose the kind of assay in an ontology, such as BAO or OBI, or register the term." ;
-        sh:description "Terms of ontologies such as OBI or BAO that say what kind of assay the method is." ] ;
+        sh:message "Choose a term, such as from BAO or OBI, or register it." ;
+        sh:description "The kind of assay, as OBI or BAO terms." ] ;
     sh:property [
         sh:path schema:alternateName ; sh:group form:assay ; sh:order 1 ; sh:name "Assay name" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "Another name of the method: the name of the assay or kit as its vendor gives it." ] ;
+        sh:description "The assay or kit name, as its vendor gives it." ] ;
     sh:property [
         sh:path schema:provider ; sh:group form:assay ; sh:order 2 ; sh:name "Vendor" ;
         sh:class schema:Organization ;
         sh:description "The company that sells the assay or kit." ] ;
     sh:property [
         sh:path schema:identifier ; sh:group form:assay ; sh:order 3 ; sh:name "Catalogue number" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "The vendor's catalogue number of the assay or kit." ] ;
+        sh:description "The vendor's catalogue number." ] ;
     sh:property [
         sh:path schema:url ; sh:group form:assay ; sh:order 4 ; sh:name "Product page" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
-        sh:description "The vendor's page of the assay or kit." ] ;
+        sh:description "The vendor's page." ] ;
     sh:property [
         sh:path schema:creator ; sh:group form:people ; sh:order 1 ; sh:name "Data producer" ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ;
-        sh:description "The people who produce data with the method in VHP4Safety." ] ;
+        sh:description "Who produces data with the method in VHP4Safety." ] ;
     sh:property [
         sh:path schema:citation ; sh:group form:documentation ; sh:order 1 ; sh:name "Publications" ;
         sh:class schema:ScholarlyArticle ;
-        sh:description "The publications that describe the method. Their pages on the platform link to their DOIs." ] ;
+        sh:description "Publications on the method; their pages link to their DOIs." ] ;
     sh:property [
         sh:path schema:subjectOf ; sh:group form:documentation ; sh:order 2 ; sh:name "Standard operating procedure" ; sh:nodeKind sh:IRI ;
-        sh:description "The standard operating procedure or protocol that the lab follows." ] ;
+        sh:description "The protocol the lab follows." ] ;
     sh:property [
         sh:path schema:isBasedOn ; sh:group form:elsewhere ; sh:order 1 ; sh:name "Catalogue request" ; sh:nodeKind sh:IRI ;
-        sh:description "The request in the cloud catalogue from which the method's record was made." ] ;
+        sh:description "The cloud catalogue request the record was made from." ] ;
     sh:property [
         sh:path dct:conformsTo ; sh:group form:elsewhere ; sh:order 2 ; sh:name "Bioschemas profile" ; sh:nodeKind sh:IRI ;
         sh:hasValue <https://bioschemas.org/profiles/LabProtocol/0.9-DRAFT> ;
-        sh:message "A method follows the LabProtocol profile of Bioschemas, version 0.9-DRAFT." ] .
+        sh:message "LabProtocol 0.9-DRAFT expected." ] .
 
-# A case study, at /casestudies/<case>: the page of its regulatory questions.
+# A case study, at /casestudies/<case>, with its regulatory questions.
 form:ResearchProject a sh:NodeShape ;
     sh:targetClass schema:ResearchProject ;
     rdfs:label "Case study" ;
-    sh:property [ sh:path schema:name ; sh:group form:casestudy ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A case study needs one name." ] ;
+    sh:property [ sh:path schema:name ; sh:group form:casestudy ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
     sh:property [ sh:path schema:description ; sh:group form:casestudy ; sh:order 2 ; sh:name "Aim" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "What the case study studies, in one sentence." ] ;
+        sh:description "In one sentence." ] ;
     sh:property [ sh:path schema:about ; sh:group form:casestudy ; sh:order 3 ; sh:name "Condition" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
-        sh:message "Choose the condition in a vocabulary, such as SNOMED CT or MONDO, or register the term." ;
-        sh:description "The medical condition that the case study is about, as a SNOMED or MONDO term." ] ;
+        sh:message "Choose a SNOMED CT or MONDO term, or register it." ;
+        sh:description "The medical condition, as a SNOMED or MONDO term." ] ;
     sh:property [ sh:path schema:keywords ; sh:group form:casestudy ; sh:order 4 ; sh:name "Keywords" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
-        sh:message "Choose a term of a vocabulary, such as Pharmacovigilance in the VHP4Safety glossary, or register the term; a keyword given as text is kept until then." ;
-        sh:description "Terms that say what the case study deals with." ] ;
+        sh:message "Choose a vocabulary term, or register it; text is kept until then." ;
+        sh:description "What the case study deals with." ] ;
     sh:property [ sh:path schema:abstract ; sh:group form:casestudy ; sh:order 5 ; sh:name "Introduction to the questions" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
     sh:property [ sh:path schema:text ; sh:group form:casestudy ; sh:order 6 ; sh:name "Text" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ;
-        sh:description "The text of the case study's page, in HTML, when it is not in sections." ] ;
+        sh:description "The page's text in HTML, when not in sections." ] ;
     sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 1 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
-        sh:description "The sections of the case study's page, each with a heading, a text in HTML, and its position." ] ;
+        sh:description "Page sections, each with a heading, an HTML text and a position." ] ;
     sh:property [ sh:path glossary:VHP0000151 ; sh:group form:parts ; sh:order 2 ; sh:name "Regulatory questions" ;
         sh:class schema:Question ; sh:node form:Question ; sh:nodeKind sh:IRI ;
-        sh:description "The regulatory questions of the case study, each at /casestudies/<case>/<question>, with the process flow steps of its workflow." ] .
+        sh:description "Each at /casestudies/<case>/<question>, with its workflow's steps." ] .
 
-# A regulatory question of a case study, at /casestudies/<case>/<question>, with the page of its workflow:
-# the process flow steps that answer it. It is part of the record of its case study.
+# A regulatory question, at /casestudies/<case>/<question>, with its workflow's process flow steps.
+# It is part of its case study's record.
 form:Question a sh:NodeShape ;
     sh:targetClass schema:Question ;
     rdfs:label "Regulatory question" ;
-    sh:property [ sh:path schema:name ; sh:group form:question ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A question needs one title." ] ;
+    sh:property [ sh:path schema:name ; sh:group form:question ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One title needed." ] ;
     sh:property [ sh:path schema:text ; sh:group form:question ; sh:order 2 ; sh:name "The question" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
     sh:property [ sh:path schema:headline ; sh:group form:question ; sh:order 3 ; sh:name "Heading of its page" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:description ; sh:group form:question ; sh:order 4 ; sh:name "Summary" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:position ; sh:group form:question ; sh:order 5 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
-        sh:description "Where the question's button is among those of its case study: 1 is the first." ] ;
+        sh:description "Button order in the case study; 1 is first." ] ;
     sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 1 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
-        sh:description "The sections of the question's page, each with a heading, a text in HTML, and its position." ] ;
+        sh:description "Page sections, each with a heading, an HTML text and a position." ] ;
     sh:property [ sh:path schema:step ; sh:group form:parts ; sh:order 2 ; sh:name "Process flow steps" ;
         sh:class schema:HowToSection ; sh:node form:HowToSection ; sh:nodeKind sh:IRI ;
-        sh:description "The process flow steps of the question's workflow, each a page at /casestudies/<case>/<question>/<step>." ] ;
+        sh:description "Workflow steps, each a page at /casestudies/<case>/<question>/<step>." ] ;
     sh:property [ sh:path schema:tool ; sh:group form:parts ; sh:order 3 ; sh:name "Tools and methods" ; sh:nodeKind sh:IRI ;
         sh:or ( [ sh:class schema:SoftwareApplication ; rdfs:label "Tool" ] [ sh:class bioschemas_draft:LabProtocol ; rdfs:label "Method" ] ) ;
-        sh:message "Link a tool or method of the platform." ;
-        sh:description "The tools and methods of the platform that the page uses; their own records give their names, descriptions and pages." ] ;
+        sh:message "Link a tool or method." ;
+        sh:description "Tools and methods the page uses; names and descriptions come from their records." ] ;
     sh:property [ sh:path schema:supply ; sh:group form:parts ; sh:order 4 ; sh:name "Data" ; sh:nodeKind sh:IRI ; sh:class schema:Dataset ;
-        sh:message "Link a dataset of the platform." ;
-        sh:description "The datasets of the platform that the page uses; their own records give their names, descriptions and pages." ] .
+        sh:message "Link a dataset." ;
+        sh:description "Datasets the page uses; names and descriptions come from their records." ] .
 
-# A page of the workflow of a question: a process flow step, or a part of one, with its own steps, tools,
-# data and text. It is part of the record of its case study, at an address under the page that holds it.
+# A workflow page: a process flow step or part of one, with its own steps, tools, data and text.
+# It is part of its case study's record, at an address under its parent page.
 form:HowToSection a sh:NodeShape ;
     sh:targetClass schema:HowToSection ;
     rdfs:label "Workflow page" ;
-    sh:property [ sh:path schema:name ; sh:group form:workflow ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A page of a workflow needs one title." ] ;
+    sh:property [ sh:path schema:name ; sh:group form:workflow ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One title needed." ] ;
     sh:property [ sh:path schema:description ; sh:group form:workflow ; sh:order 2 ; sh:name "Summary" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:text ; sh:group form:workflow ; sh:order 3 ; sh:name "Text" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ;
-        sh:description "The text of the page, in HTML, when it is not in sections." ] ;
+        sh:description "The page's text in HTML, when not in sections." ] ;
     sh:property [ sh:path schema:step ; sh:group form:parts ; sh:order 1 ; sh:name "Steps" ;
         sh:class schema:HowToSection ; sh:node form:HowToSection ; sh:nodeKind sh:IRI ;
-        sh:description "The steps of this page, each a page at an address under this one." ] ;
+        sh:description "Each a page under this page's address." ] ;
     sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 4 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
-        sh:description "The sections of the page, each with a heading, a text in HTML, and its position." ] ;
+        sh:description "Page sections, each with a heading, an HTML text and a position." ] ;
     sh:property [ sh:path schema:about ; sh:group form:workflow ; sh:order 5 ; sh:name "Glossary term" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
         sh:pattern "^https://vhp4safety\\.github\\.io/glossary#" ;
-        sh:message "Choose a term of the VHP4Safety glossary, such as Toxicokinetics (Process Flow Step)." ;
-        sh:description "The term of the glossary that the page is about: a process flow step, or a part of one." ] ;
+        sh:message "Choose a glossary term, such as Toxicokinetics (Process Flow Step)." ;
+        sh:description "A process flow step, or a part of one." ] ;
     sh:property [ sh:path schema:creativeWorkStatus ; sh:group form:workflow ; sh:order 6 ; sh:name "Status" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "\"disabled\" when the page's button is shown but cannot be opened yet." ] ;
+        sh:description "\"disabled\": the button is shown but cannot be opened yet." ] ;
     sh:property [ sh:path schema:position ; sh:group form:workflow ; sh:order 7 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
-        sh:description "Where the page's button is among those of the page that holds it: 1 is the first." ] ;
+        sh:description "Button order on the parent page; 1 is first." ] ;
     sh:property [ sh:path schema:tool ; sh:group form:parts ; sh:order 2 ; sh:name "Tools and methods" ; sh:nodeKind sh:IRI ;
         sh:or ( [ sh:class schema:SoftwareApplication ; rdfs:label "Tool" ] [ sh:class bioschemas_draft:LabProtocol ; rdfs:label "Method" ] ) ;
-        sh:message "Link a tool or method of the platform." ;
-        sh:description "The tools and methods of the platform that the page uses; their own records give their names, descriptions and pages." ] ;
+        sh:message "Link a tool or method." ;
+        sh:description "Tools and methods the page uses; names and descriptions come from their records." ] ;
     sh:property [ sh:path schema:supply ; sh:group form:parts ; sh:order 3 ; sh:name "Data" ; sh:nodeKind sh:IRI ; sh:class schema:Dataset ;
-        sh:message "Link a dataset of the platform." ;
-        sh:description "The datasets of the platform that the page uses; their own records give their names, descriptions and pages." ] .
+        sh:message "Link a dataset." ;
+        sh:description "Datasets the page uses; names and descriptions come from their records." ] .
 
-# A section of a page: its heading, its text in HTML, its position on the page, and the anchor that links
-# to it (#contact-section). It is part of the record of its page.
+# A page section: heading, HTML text, position and anchor (#contact-section). It is part of its page's
+# record.
 form:WebPageElement a sh:NodeShape ;
     sh:targetClass schema:WebPageElement ;
     rdfs:label "Section" ;
@@ -309,11 +309,11 @@ form:WebPageElement a sh:NodeShape ;
     sh:property [ sh:path schema:position ; sh:order 3 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ] ;
     sh:property [ sh:path schema:identifier ; sh:order 4 ; sh:name "Anchor" ; sh:maxCount 1 ; sh:datatype xsd:string ] .
 
-# The journal of a publication, with its ISSNs; it is part of the record of the publication.
+# A publication's journal, with its ISSNs; it is part of the publication's record.
 form:Periodical a sh:NodeShape ;
     sh:targetClass schema:Periodical ;
     rdfs:label "Journal" ;
-    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A journal needs one name." ] ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
     sh:property [ sh:path schema:issn ; sh:order 2 ; sh:name "ISSN" ; sh:datatype xsd:string ; sh:pattern "^[0-9]{4}-[0-9]{3}[0-9X]$" ] .
 
 # A publication, at /publications/<DOI>, with the DOI's address in sameAs.
@@ -325,15 +325,15 @@ form:ScholarlyArticle a sh:NodeShape ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ] ;
     sh:property [ sh:path schema:datePublished ; sh:order 3 ; sh:name "Published" ; sh:maxCount 1 ;
         sh:or ( [ sh:datatype xsd:date ; rdfs:label "Date" ] [ sh:datatype xsd:gYearMonth ; rdfs:label "Month" ] [ sh:datatype xsd:gYear ; rdfs:label "Year" ] ) ;
-        sh:description "The date of publication, as precise as the publisher gives it: a date, a month or a year." ] ;
+        sh:description "A date, a month or a year, as precise as the publisher gives it." ] ;
     sh:property [ sh:path schema:isPartOf ; sh:order 4 ; sh:name "Journal" ; sh:maxCount 1 ;
         sh:class schema:Periodical ; sh:node form:Periodical ; sh:nodeKind sh:BlankNode ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 5 ; sh:name "DOI and other addresses" ; sh:minCount 1 ; sh:nodeKind sh:IRI ;
-        sh:message "A publication needs its DOI, as a web address starting with https://doi.org/10." ;
-        sh:description "The publication's DOI, as a web address, its item in Wikidata, and its other addresses." ] .
+        sh:message "DOI needed, starting with https://doi.org/10." ;
+        sh:description "The DOI as a web address, the Wikidata item, and other addresses." ] .
 
-# A page: a page of the platform, at its address on the platform, with its text in sections; or a page
-# elsewhere on the web, such as the guide of a tool, which is part of the record of the tool.
+# A page of the platform, with its text in sections; or a page elsewhere, such as a tool's guide, as part
+# of the tool's record.
 form:WebPage a sh:NodeShape ;
     sh:targetClass schema:WebPage ;
     rdfs:label "Page" ;
@@ -341,71 +341,69 @@ form:WebPage a sh:NodeShape ;
     sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:url ; sh:order 3 ; sh:name "Address elsewhere" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
     sh:property [ sh:path schema:hasPart ; sh:order 4 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
-        sh:description "The sections of a page of the platform, each with a heading, a text in HTML, its position and its anchor." ] .
+        sh:description "Sections of a platform page, each with a heading, an HTML text, a position and an anchor." ] .
 
-# A video, such as one on PeerTube; it is part of the record of the tool that it shows.
+# A video, such as a PeerTube one; it is part of its tool's record.
 form:VideoObject a sh:NodeShape ;
     sh:targetClass schema:VideoObject ;
     rdfs:label "Video" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Address" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] .
 
-# A dataset, at /data/<identifier>: the platform's representation of a study in BioStudies or a record in
-# Zenodo, which it is based on (schema:isBasedOn).
+# A dataset, at /data/<identifier>, based on a BioStudies study or a Zenodo record (schema:isBasedOn).
 form:Dataset a sh:NodeShape ;
     sh:targetClass schema:Dataset ;
     rdfs:label "Dataset" ;
-    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A dataset needs one title." ] ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One title needed." ] ;
     sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
     sh:property [ sh:path schema:creator ; sh:order 3 ; sh:name "Authors" ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ] ;
     sh:property [ sh:path schema:datePublished ; sh:order 4 ; sh:name "Published" ; sh:maxCount 1 ; sh:datatype xsd:date ] ;
     sh:property [ sh:path glossary:VHP0000152 ; sh:order 5 ; sh:name "Assessment steps" ;
         sh:severity sh:Warning ; sh:nodeKind sh:IRI ; sh:in ( glossary:VHP0000153 glossary:VHP0000154 glossary:VHP0000155 glossary:VHP0000156 glossary:VHP0000158 ) ;
-        sh:message "Choose the steps from the list; other values are kept, but the data catalogue's filters do not show them." ] ;
+        sh:message "Choose from the list; other values are not in the filters." ] ;
     sh:property [ sh:path glossary:VHP0000151 ; sh:order 6 ; sh:name "Case-study questions" ; sh:class schema:Question ] ;
     sh:property [ sh:path schema:sourceOrganization ; sh:order 6 ; sh:name "Case studies" ; sh:class schema:ResearchProject ;
-        sh:description "The case studies that the data was made for." ] ;
+        sh:description "Case studies the data was made for." ] ;
     sh:property [ sh:path schema:about ; sh:order 7 ; sh:name "Topics" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
-        sh:message "Choose a term of a vocabulary, or register the term." ;
-        sh:description "Terms that say what the data is about, such as the organism." ] ;
+        sh:message "Choose a vocabulary term, or register it." ;
+        sh:description "What the data is about, such as the organism." ] ;
     sh:property [ sh:path schema:measurementMethod ; sh:order 8 ; sh:name "Methods" ; sh:class bioschemas_draft:LabProtocol ;
-        sh:description "The methods of the platform with which the data was measured." ] ;
+        sh:description "Methods the data was measured with." ] ;
     sh:property [ sh:path schema:measurementTechnique ; sh:order 9 ; sh:name "Assays" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
-        sh:message "Choose an assay in a vocabulary, such as BAO, or register the term." ;
-        sh:description "The assays with which the data was measured, as terms of ontologies such as BAO." ] ;
+        sh:message "Choose a term, such as from BAO, or register it." ;
+        sh:description "Assays the data was measured with, as terms of BAO or other ontologies." ] ;
     sh:property [ sh:path schema:citation ; sh:order 10 ; sh:name "Publications" ; sh:class schema:ScholarlyArticle ] ;
     sh:property [ sh:path schema:license ; sh:order 11 ; sh:name "License" ; sh:maxCount 1 ; sh:severity sh:Warning ;
         sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ;
-        sh:message "Choose the license in the SPDX License List; a license given as text or as another address is kept." ] ;
+        sh:message "Choose an SPDX license; other values are kept." ] ;
     sh:property [ sh:path schema:isBasedOn ; sh:order 12 ; sh:name "Source record" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
-        sh:description "The record in BioStudies or Zenodo that this record represents on the platform, made from it every night." ] ;
+        sh:description "The BioStudies or Zenodo record this one is made from, every night." ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 13 ; sh:name "DOI and other addresses" ; sh:nodeKind sh:IRI ] ;
     sh:property [ sh:path schema:keywords ; sh:order 14 ; sh:name "Keywords" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
-        sh:message "Choose a term of a vocabulary, or register the term; a keyword given as text is kept until then." ] .
+        sh:message "Choose a vocabulary term, or register it; text is kept until then." ] .
 
-# A term of a vocabulary or of an ontology, at its own address, such as a term of the VHP4Safety glossary:
-# the platform knows its label and its vocabulary, so that records can be about it.
+# A vocabulary or ontology term, at its own address, with its label and vocabulary, so that records can
+# be about it.
 form:DefinedTerm a sh:NodeShape ;
     sh:targetClass schema:DefinedTerm ;
     rdfs:label "Term" ;
-    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Label" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A term needs one label." ] ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Label" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One label needed." ] ;
     sh:property [ sh:path schema:inDefinedTermSet ; sh:order 2 ; sh:name "Vocabulary" ; sh:minCount 1 ; sh:maxCount 1 ; sh:class schema:DefinedTermSet ;
-        sh:message "A term belongs to one vocabulary." ] ;
+        sh:message "One vocabulary needed." ] ;
     sh:property [ sh:path schema:termCode ; sh:order 3 ; sh:name "Code" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:alternateName ; sh:order 5 ; sh:name "Other names" ; sh:datatype xsd:string ;
-        sh:description "Other names of the term, such as a short one." ] ;
+        sh:description "Such as a short name." ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 6 ; sh:name "Other addresses" ; sh:nodeKind sh:IRI ;
-        sh:description "Other addresses of the term, such as those of a license's text." ] ;
+        sh:description "Such as those of a license's text." ] ;
     sh:property [ sh:path schema:description ; sh:order 4 ; sh:name "Definition" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] .
 
-# A vocabulary or an ontology, at /vocabularies/<name>, whose terms records can be about; the addresses of
-# its terms start with its namespace.
+# A vocabulary or ontology, at /vocabularies/<name>; its terms' addresses start with its namespace.
 form:DefinedTermSet a sh:NodeShape ;
     sh:targetClass schema:DefinedTermSet ;
     rdfs:label "Vocabulary" ;
-    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A vocabulary needs one name." ] ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
     sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Namespace" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
-        sh:message "Give the namespace of the vocabulary's terms, such as http://purl.obolibrary.org/obo/NCBITaxon_." ;
-        sh:description "The start of the addresses of the vocabulary's terms." ] ;
+        sh:message "One namespace needed, such as http://purl.obolibrary.org/obo/NCBITaxon_." ;
+        sh:description "The start of its terms' addresses." ] ;
     sh:property [ sh:path schema:description ; sh:order 3 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] .
