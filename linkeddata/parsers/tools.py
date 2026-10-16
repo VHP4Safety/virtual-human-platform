@@ -127,8 +127,9 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 organization["url"] = web_link(provider["url"])
             others.setdefault(identifier, organization)
             providers.append(link(identifier))
-        # A tool runs on the platform when the catalogue says where on it.
-        if present(instance.get("vhp-platform")):
+        # A tool is hosted by VHP4Safety when the catalogue says that it runs on the platform's development
+        # servers; "External" and "independent" are hosted elsewhere.
+        if str(instance.get("vhp-platform") or "").strip().lower() == "development":
             providers.append(link(VHP4SAFETY))
         if providers:
             row["provider"] = providers
