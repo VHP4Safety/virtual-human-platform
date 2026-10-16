@@ -10,7 +10,7 @@ import pandas as pd
 from rdflib import RDF, BNode, Graph, Literal, URIRef
 from rdflib.namespace import SDO
 from rdfsolve.client.sql_tables import from_tables, layout, tables
-from sqlalchemy import bindparam, select, text
+from sqlalchemy import bindparam, column, select, table, text
 
 import database
 from database.tables import Record
@@ -27,15 +27,28 @@ def names() -> list[str]:
     return list(layout(profile()).columns())
 
 
+@cache
+def reading() -> dict:
+    """For each table of the release, the select of the rows of some records."""
+    found = {}
+    for name, columns in layout(profile()).columns().items():
+        of_table = table(name, *[column(name_of_column) for name_of_column in columns])
+        found[name] = select(of_table).where(of_table.c.record.in_(bindparam("records", expanding=True)))
+    return found
+
+
 def read(records: list[str]) -> Graph:
-    """The statements of these records, made from their rows."""
+    """The statements of these records, made from their rows; only the tables that have rows of them are
+    given to rdfsolve."""
     if not records:
         return Graph()
     found = {}
     with database.engine().connect() as connection:
-        for name in names():
-            query = text(f'SELECT * FROM "{name}" WHERE record IN :records').bindparams(bindparam("records", expanding=True))
-            found[name] = pd.read_sql(query, connection, params={"records": list(records)}, dtype="string")
+        for name, statement in reading().items():
+            result = connection.execute(statement, {"records": list(records)})
+            rows = result.all()
+            if rows:
+                found[name] = pd.DataFrame(rows, columns=list(result.keys()), dtype="string")
     return from_tables(found, profile())
 
 
