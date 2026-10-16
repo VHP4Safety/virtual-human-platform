@@ -15,7 +15,7 @@ rules:
     - {predicate: "https://vhp4safety.github.io/glossary#VHP0000151", object: question}
     - {predicate: "https://schema.org/about", object: about}
     - {predicate: "https://schema.org/additionalType", object: types}
-    - {predicate: "https://bioschemas.org/draft_terms/reagent", object: assay}
+    - {predicate: "https://schema.org/alternateName", object: assay}
     - {predicate: "https://schema.org/url", object: url}
     - {predicate: "https://schema.org/provider", object: vendor}
     - {predicate: "https://schema.org/identifier", object: catalog_number}

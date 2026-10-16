@@ -186,8 +186,8 @@ form:LabProtocol a sh:NodeShape ;
         sh:message "Choose the kind of assay in an ontology, such as BAO or OBI, or register the term." ;
         sh:description "Terms of ontologies such as OBI or BAO that say what kind of assay the method is." ] ;
     sh:property [
-        sh:path bioschemas_draft:reagent ; sh:group form:assay ; sh:order 1 ; sh:name "Assay" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "The assay or kit that the method uses, as its vendor names it." ] ;
+        sh:path schema:alternateName ; sh:group form:assay ; sh:order 1 ; sh:name "Assay name" ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:description "Another name of the method: the name of the assay or kit as its vendor gives it." ] ;
     sh:property [
         sh:path schema:provider ; sh:group form:assay ; sh:order 2 ; sh:name "Vendor" ;
         sh:class schema:Organization ;
