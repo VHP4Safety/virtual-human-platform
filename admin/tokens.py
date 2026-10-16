@@ -1,6 +1,5 @@
-"""Write tokens, made as ToxTempAssistant makes its workspace tokens: the secret is shown once and only
-its hash is kept; a token expires (after 90 days unless set otherwise), can be revoked, and lists the
-kinds of records it may write."""
+"""Write tokens, like ToxTempAssistant's workspace tokens: the secret is shown once and only its hash is
+kept. A token expires (after 90 days by default), can be revoked, and lists the kinds it may write."""
 
 import hashlib
 import secrets

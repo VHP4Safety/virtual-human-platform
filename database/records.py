@@ -11,9 +11,8 @@ from linkeddata.model import hierarchy, settings, terms
 
 
 def address(path: str) -> str:
-    """The address of a record from the path of its page: a path under the platform's base address, or the
-    whole address of a record elsewhere, such as a term of an ontology, whose two slashes a path may give as
-    one (https:/...)."""
+    """A record's address from its page's path: a path under the base address, or a whole address
+    elsewhere, such as an ontology term (https:/... is read as https://...)."""
     whole = re.fullmatch(r"(https?):/+(.*)", path)
     if whole:
         return whole.group(1) + "://" + whole.group(2)
@@ -33,7 +32,7 @@ def of_kind(kind: str) -> list[Record]:
 
 
 def removed(kind: str) -> set[str]:
-    """The identifiers of the removed records of a kind; the earlier addresses of moved records are not removed records."""
+    """The identifiers of a kind's removed records, without the earlier addresses of moved records."""
     prefix = address(kind) + "/"
     statement = select(Record.iri).where(Record.iri.startswith(prefix), Record.removed_at.is_not(None), Record.moved_to.is_(None))
     with database.session() as db:
@@ -41,7 +40,7 @@ def removed(kind: str) -> set[str]:
 
 
 def moved(kind: str) -> set[str]:
-    """The identifiers of the earlier addresses of records of a kind that moved."""
+    """The identifiers of the earlier addresses of a kind's moved records."""
     prefix = address(kind) + "/"
     statement = select(Record.iri).where(Record.iri.startswith(prefix), Record.moved_to.is_not(None))
     with database.session() as db:
@@ -49,9 +48,8 @@ def moved(kind: str) -> set[str]:
 
 
 def search(text: str, classes: list[str], within: str = "", parts: bool = True, limit: int | None = 20) -> list[Record]:
-    """The records of these classes or of their subclasses (and their parts, unless *parts* is false) whose
-    name or address has a text, and whose address starts with *within*, such as the namespace of a
-    vocabulary; by name."""
+    """The records of these classes or their subclasses (parts too, unless *parts* is false) whose name or
+    address has *text* and whose address starts with *within*, such as a vocabulary namespace; by name."""
     every = set(classes)
     for of_class in classes:
         every |= {str(sub) for sub in hierarchy().transitive_subjects(RDFS.subClassOf, URIRef(of_class))}
@@ -67,7 +65,7 @@ def search(text: str, classes: list[str], within: str = "", parts: bool = True, 
 
 
 def names(iris: list[str]) -> dict[str, str]:
-    """The names of the records at these addresses, and the labels of the terms of the vocabularies."""
+    """The names of the records at these addresses, and the labels of vocabulary terms."""
     with database.session() as db:
         found = dict(db.execute(select(Record.iri, Record.name).where(Record.iri.in_(iris))).all())
     others = []

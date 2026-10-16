@@ -1,6 +1,5 @@
-"""The changes made on the platform, for editors. Each revision keeps the record as it was before and
-after the change. A change is shown field by field, and as linked data: a diagram of the statements
-about the record, with those the change added and removed."""
+"""Changes made on the platform, for editors. Each revision keeps the record before and after; a change
+is shown field by field, and as a diagram of the record's statements, with those added and removed."""
 
 from rdflib import RDF, BNode, Graph, URIRef
 from rdflib.namespace import SDO
@@ -18,9 +17,8 @@ def statements(document: str | None) -> Graph:
 
 
 def key(graph: Graph, value) -> str:
-    """A value as it is compared: a link or a text, so that "X" and "X"^^xsd:string are the same value, and
-    a part (a node without an address) by the values it holds, so that a part with the same values is the
-    same part before and after a change."""
+    """A value as compared: a link or a text ("X" and "X"^^xsd:string are the same), or a part (a node
+    without an address) by the values it holds."""
     if not isinstance(value, BNode):
         return ("link " if isinstance(value, URIRef) else "text ") + str(value)
     held = []
@@ -30,10 +28,8 @@ def key(graph: Graph, value) -> str:
 
 
 def compared(before: Graph, after: Graph, old, new, kind: str | None) -> list[dict]:
-    """The edges from a node to its values before (*old* in *before*) and after (*new* in *after*) a change:
-    added, removed, or kept, each named by the field of the node's class in the profile. A part is shown
-    with its own edges: a part without an address is added, removed or kept with them, and the edges of a
-    part at an address under the node's are compared in the same way."""
+    """The edges from a node to its values before (*old* in *before*) and after (*new* in *after*): added,
+    removed or kept, each with its field's label. A part is shown with its own edges, compared in the same way."""
     form = fields.of(kind) if kind is not None else []
     labels = {}
     order = {}
@@ -112,7 +108,7 @@ def triples(graph: Graph) -> list[str]:
 
 
 def compare(revision: Revision) -> dict:
-    """What a revision changed: the values of each field before and after, and the statements it added and removed."""
+    """What a revision changed: each field's values before and after, and the statements added and removed."""
     before = statements(revision.previous)
     after = statements(revision.document)
     record = URIRef(revision.record_iri)

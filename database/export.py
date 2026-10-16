@@ -1,8 +1,7 @@
-"""The records written on the platform, exported to a git repository (PLATFORM_RECORDS) so that they
-outlive the server: one JSON-LD file per record at the path of its page (tools/aop-builder.jsonld),
-as its latest revision wrote it, and the images these records use (images/<sha256>.webp).
-`python -m linkeddata export` writes and commits them, and `python -m linkeddata push` sends them to
-the repository's remote; both are meant to run every night.
+"""The platform's records, exported to a git repository (PLATFORM_RECORDS) so they outlive the server:
+one JSON-LD file per record at its page's path (tools/aop-builder.jsonld), from its latest revision, and
+the images they use (images/<sha256>.webp). They are committed by `python -m linkeddata export` and
+pushed by `python -m linkeddata push`, both nightly.
 """
 
 import json
@@ -28,7 +27,7 @@ def git(*args: str) -> str:
 
 
 def latest_documents() -> dict[str, str]:
-    """The latest revision of each record written on the platform and not removed, by the path of its file."""
+    """The latest revision of each platform record not removed, by file path."""
     base = settings()["base"]
     written = select(Record.iri).where(Record.source == PLATFORM, Record.removed_at.is_(None))
     documents = {}
@@ -39,7 +38,7 @@ def latest_documents() -> dict[str, str]:
 
 
 def used_images() -> dict[str, Path]:
-    """The images uploaded to the platform that records written on the platform use, by the path of their file."""
+    """The uploaded images that platform records use, by file path."""
     base = settings()["base"]
     used = {}
     for text in latest_documents().values():

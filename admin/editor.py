@@ -1,7 +1,5 @@
-"""What the record editor shows: how many records of each kind there are and how complete they are, the
-records of a kind, and the graph from which shacl-form builds the form of a kind: the application profile,
-with the class hierarchy of the vocabularies, and the records and vocabulary terms that a field lists, with
-their names."""
+"""What the record editor shows: counts and completeness per kind, the records of a kind, and the graph
+shacl-form builds forms from (the profile, the vocabularies' class hierarchy, and named records and terms)."""
 
 from rdflib import RDF, RDFS, XSD, BNode, Graph, Literal, URIRef
 from rdflib.collection import Collection
@@ -15,8 +13,8 @@ from linkeddata.model import hierarchy, profile, settings, terms
 
 
 def counts() -> list[dict]:
-    """For each kind: its records, those written on the platform, those removed, their notes, and how many
-    of the kind's fields they fill, on average."""
+    """Per kind: its records, those written on the platform, those removed, their notes, and the average
+    share of fields filled."""
     found = []
     with database.session() as db:
         for name, kind in settings()["kinds"].items():
@@ -38,8 +36,8 @@ def counts() -> list[dict]:
 
 
 def listing(kind: str) -> list[dict]:
-    """The records of a kind, the removed ones too, by name, each with how many of the kind's fields it
-    fills and how many of its values, or of its parts' values, do not fit the model."""
+    """A kind's records, removed ones too, by name, each with its filled fields and its notes (parts
+    included)."""
     of_kind = fields.of(settings()["kinds"][kind])
     with database.session() as db:
         statement = select(Record).where(Record.type == settings()["kinds"][kind], Record.moved_to.is_(None))
@@ -66,11 +64,9 @@ def root_shape(kind: str) -> str:
 
 
 def form_graph() -> Graph:
-    """The profile, the class hierarchy, and every record and listed term (sh:in) with its name. A field
-    whose values are of one of some classes (sh:or) has two more choices, a text and an address, which the
-    form gives a value that is a name only or an address that is no record, so that it shows and keeps it;
-    neither choice takes any value (an empty sh:in), so that the form's checks flag it with the field's
-    message, as the profile's do."""
+    """The profile, the class hierarchy, and every record and listed term (sh:in) with its name. An sh:or of
+    classes gets two more choices, a text and an address, so the form shows a bare name or an address that is
+    no record; neither takes a value (an empty sh:in), so the form flags it with the field's message."""
     found = Graph() + profile() + hierarchy()
     for alternatives in list(found.objects(None, SH["or"])):
         listed = Collection(found, alternatives)
@@ -104,9 +100,8 @@ def form_graph() -> Graph:
 
 
 def links() -> dict[str, dict[str, str]]:
-    """The properties of the fields that link to records (those of sh:class, or of sh:or of classes, whose
-    values are not parts), each with the classes of their records by their name: the label of the class's
-    choice in sh:or, or else the label of the class's shape, or else its name in the vocabulary."""
+    """The properties of fields that link to records (sh:class, or sh:or of classes, without parts), each
+    with its classes by label: the sh:or choice's, else the class shape's, else the class's own name."""
     graph = profile()
     found = {}
     for field in graph.objects(None, SH.property):

@@ -1,8 +1,7 @@
 """Records written on the platform, each change with its revision.
 
-A record written on the platform replaces what a source gives for the same address, and the
-imports leave it as it is. Every change made on the platform is kept as a revision, with who made it.
-The body of a write gives the record's fields, as the write API describes it."""
+A record written on the platform replaces a source's record at the same address, and is left alone by
+imports. Each change is kept as a revision, with its author. A write's body gives the record's fields."""
 
 import json
 import re
@@ -21,13 +20,12 @@ from linkeddata.model import settings
 
 
 def version() -> str:
-    """The version of a record: when it was last written, to the microsecond, so that two writes differ."""
+    """A record's version: its last write time, to the microsecond, so two writes differ."""
     return datetime.now(timezone.utc).isoformat()
 
 
 def document(kind: str, address: str, body: dict) -> dict:
-    """The JSON-LD document of a request's body: its fields, named as the platform's JSON-LD context names
-    them, and the values that the model fixes. A field that the class does not have is refused."""
+    """A request body as a JSON-LD document, with the values the model fixes; an unknown field is refused."""
     known = {}
     for field in fields.of(kind):
         known[field["name"]] = field
@@ -36,7 +34,7 @@ def document(kind: str, address: str, body: dict) -> dict:
         if name.startswith("@"):
             continue
         if name not in known:
-            raise ValueError(f"The platform does not keep the field {name!r}.")
+            raise ValueError(f"Unknown field {name!r}.")
         found[name] = value
     for name, field in known.items():
         if field["fixed"]:
@@ -49,7 +47,7 @@ def slug(name: str) -> str:
 
 
 def part(found: Graph, node: BNode) -> bool:
-    """Whether a node is the value of a field of parts of the node that holds it."""
+    """Whether a node is held in a field of parts."""
     for holder, predicate in found.subject_predicates(node):
         for field in fields.of(str(found.value(holder, RDF.type))):
             if field["iri"] == str(predicate) and field["part"]:
@@ -58,8 +56,7 @@ def part(found: Graph, node: BNode) -> bool:
 
 
 def free(base: str, taken: set) -> str:
-    """An address that no record has, nor one of *taken*: *base*, or *base*-2, -3, ...; the address of a
-    kind's facets in the API (<kind>/facets) is not given to a record."""
+    """A free address, not in *taken*: *base*, or *base*-2, -3, ...; <kind>/facets is kept for the API."""
     iri, number = base, 1
     while iri in taken or records.get(iri) is not None or iri.endswith("/facets"):
         number += 1
@@ -79,9 +76,8 @@ def renamed(found: Graph, node, iri: str) -> None:
 
 
 def addressed(found: Graph) -> None:
-    """The new parts of a record that have addresses of their own (sh:nodeKind sh:IRI), such as a step
-    added to a question, are given one under the address of the node that holds them: its address and the
-    part's name (casestudies/kidney/Q1/exposure)."""
+    """New parts with addresses of their own (sh:nodeKind sh:IRI), such as a new step of a question, are
+    given one under their holder's, from their name (casestudies/kidney/Q1/exposure)."""
     taken = set()
     pending = True
     while pending:
@@ -96,10 +92,9 @@ def addressed(found: Graph) -> None:
 
 
 def separate(found: Graph) -> list[tuple[str, str, Graph]]:
-    """The new records that a record holds as nodes without an address, such as a person added in the
-    record's form: a node of a class that has a kind of its own is a record of its own, at <kind>/<its name>,
-    and the record links to it, unless it is the value of a field of parts. Their statements are taken out
-    of *found*; each is given with its class."""
+    """New records held as nodes without an address, such as a person added in the form: a node of a
+    kind's class, unless in a field of parts, becomes a record at <kind>/<name>, linked from the record.
+    Their statements are taken out of *found*; each is given with its class."""
     kinds = {}
     for kind_name, kind in settings()["kinds"].items():
         kinds[URIRef(kind)] = kind_name
@@ -122,8 +117,7 @@ def separate(found: Graph) -> list[tuple[str, str, Graph]]:
 
 
 def save(document: dict, kind: str, name: str, orcid: str) -> Revision:
-    """A record's document, checked against the model, is written on the platform in place of the record at
-    its address, with its revision."""
+    """A checked record document replaces the record at its address, with a revision."""
     iri = document["@id"]
     previous = documents.document_of(iri)
     with database.session() as db, db.begin():
@@ -145,7 +139,7 @@ def save(document: dict, kind: str, name: str, orcid: str) -> Revision:
 
 
 def retire(iri: str, name: str, orcid: str) -> Revision:
-    """The record is removed and its address is kept, so that it is never given to another record."""
+    """The record is removed; its address is kept, so it is never reused."""
     previous = documents.document_of(iri)
     with database.session() as db, db.begin():
         for record in db.scalars(select(Record).where((Record.iri == iri) | (Record.part_of == iri))):
@@ -158,9 +152,8 @@ def retire(iri: str, name: str, orcid: str) -> Revision:
 
 
 def move(old: str, new: str, name: str, orcid: str) -> Revision:
-    """The record moves to a new address, with its parts at addresses under its own. The old addresses
-    forward to the new ones, the record keeps the old one among its other addresses (sameAs), and so do the
-    addresses it had before."""
+    """The record and its addressed parts move to a new address. The old addresses, and earlier ones,
+    forward to the new ones; the old one is kept in sameAs."""
     previous = documents.document_of(old)
 
     def moved(node):

@@ -1,9 +1,9 @@
-"""Images uploaded to the platform, such as the logo of a tool.
+"""Images uploaded to the platform, such as tool logos.
 
-An upload is read in full by Pillow, so a file that only claims to be an image is refused, and a very
-large picture is refused before it is read. The picture is made smaller when it is large and saved
-again as WebP, which keeps the picture and leaves out the rest of the file (metadata, anything
-hidden in it). The file is named after the SHA-256 of what was saved, so it never changes.
+An upload is read in full by Pillow, so a file that only claims to be an image is refused; a very large
+picture is refused before it is read. Large pictures are scaled down. Each is saved as WebP, which drops
+the rest of the file (metadata, anything hidden). The file is named after the SHA-256 of what was saved,
+so it never changes.
 """
 
 import hashlib
@@ -31,25 +31,25 @@ def folder():
 
 
 def picture_of(stream) -> Picture.Image:
-    """The picture of an uploaded file, read in full; ValueError when it is not an image the platform takes."""
+    """An uploaded file's picture, read in full; ValueError when it is not an image of a taken format."""
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Picture.DecompressionBombWarning)
             with Picture.open(stream) as opened:
                 if opened.format not in FORMATS:
-                    raise ValueError("The file is not a PNG, JPEG, WebP or GIF image.")
+                    raise ValueError("Not a PNG, JPEG, WebP or GIF image.")
                 if opened.width * opened.height > MAX_PIXELS:
-                    raise ValueError("The image has too many pixels; the platform takes up to 40 million.")
+                    raise ValueError("Over 40 million pixels.")
                 opened.load()
                 picture = ImageOps.exif_transpose(opened)
     except (UnidentifiedImageError, Picture.DecompressionBombError, Picture.DecompressionBombWarning, OSError) as problem:
-        raise ValueError("The file is not a PNG, JPEG, WebP or GIF image.") from problem
+        raise ValueError("Not a PNG, JPEG, WebP or GIF image.") from problem
     picture.thumbnail((LONGEST_SIDE, LONGEST_SIDE))
     return picture.convert("RGBA")
 
 
 def store(stream, name: str, orcid: str) -> str:
-    """The address of the uploaded image, saved again as WebP; who uploaded it is kept."""
+    """The address of the uploaded image, saved as WebP with its uploader."""
     picture = picture_of(stream)
     output = io.BytesIO()
     picture.save(output, format="WEBP", quality=88)

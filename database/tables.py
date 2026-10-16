@@ -1,8 +1,8 @@
-"""The tables of the database.
+"""The database tables.
 
-The records table has one row per record: its address, class, source and dates, and its name for lists
-and links. What a record says is kept in the tables of the model's release (v1/tables.sql), one for
-each class of the application profile, which `python -m linkeddata model` writes.
+The records table has one row per record: its address, class, source, dates, and name for lists and links.
+What a record says is kept in the release's tables (v1/tables.sql), one per profile class, written by
+`python -m linkeddata model`.
 """
 
 from datetime import datetime, timezone
@@ -21,25 +21,24 @@ class Base(DeclarativeBase):
 
 
 class Record(Base):
-    """A thing the platform knows by its address, such as a tool, a method or the organisations and
-    people they link to, with its class and its name for lists and links. The parts of a record that have
-    addresses of their own, such as the questions of a case study, are listed too, with the record that
-    holds them; they are written with it."""
+    """A thing known by its address, such as a tool, a method, or a linked organisation or person, with its
+    class and name. Parts with addresses of their own, such as case study questions, are listed too, with
+    their record; they are written with it."""
 
     __tablename__ = "records"
     iri: Mapped[str] = mapped_column(primary_key=True, doc="The record's address.")
     type: Mapped[str] = mapped_column(index=True, doc="The record's class.")
-    source: Mapped[str] = mapped_column(index=True, doc='The source the record is imported from, or "platform" when it is written on the platform.')
+    source: Mapped[str] = mapped_column(index=True, doc='The source it is imported from, or "platform".')
     updated_at: Mapped[str] = mapped_column(default=now, doc="When the record was last written, in UTC (ISO 8601).")
     removed_at: Mapped[str | None] = mapped_column(doc="When the record was removed.")
-    moved_to: Mapped[str | None] = mapped_column(doc="The address the record moved to, when this address is an earlier one; it forwards there.")
+    moved_to: Mapped[str | None] = mapped_column(doc="Where this earlier address forwards to.")
     name: Mapped[str | None] = mapped_column(doc="The record's name.")
-    part_of: Mapped[str | None] = mapped_column(index=True, doc="The record that holds this one as a part, such as the case study of a question.")
+    part_of: Mapped[str | None] = mapped_column(index=True, doc="The record holding this part, such as a question's case study.")
 
 
 class Revision(Base):
-    """A change to a record made on the platform, as in ToxTempAssistant: the record in JSON-LD before
-    and after the change, who made it, and when."""
+    """A change made on the platform, as in ToxTempAssistant: the record in JSON-LD before and after, by
+    whom, and when."""
 
     __tablename__ = "revisions"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -69,7 +68,7 @@ class Token(Base):
 
 
 class Image(Base):
-    """An image uploaded to the platform, kept as a file named after the SHA-256 of its content."""
+    """An uploaded image, kept as a file named after the SHA-256 of its content."""
 
     __tablename__ = "images"
     sha256: Mapped[str] = mapped_column(primary_key=True)
@@ -82,25 +81,25 @@ class Image(Base):
 
 
 class Source(Base):
-    """A source of records as its last import fetched it, with the rdfsolve queries that convert it."""
+    """A source as its last import fetched it, with the rdfsolve queries that convert it."""
 
     __tablename__ = "sources"
     name: Mapped[str] = mapped_column(primary_key=True, doc="The source's name.")
     url: Mapped[str] = mapped_column(doc="The addresses of its files, separated by spaces.")
-    fetched_at: Mapped[str] = mapped_column(doc="When its last import fetched it, in UTC (ISO 8601).")
-    sha256: Mapped[str] = mapped_column(doc="The SHA-256 of the files its last import fetched.")
+    fetched_at: Mapped[str] = mapped_column(doc="The last fetch, in UTC (ISO 8601).")
+    sha256: Mapped[str] = mapped_column(doc="The SHA-256 of the last fetched files.")
     queries: Mapped[str] = mapped_column(doc="The rdfsolve CONSTRUCT queries that convert it into the model.")
-    problem: Mapped[str | None] = mapped_column(doc="Why the last import of the source was not stored, when it was not.")
+    problem: Mapped[str | None] = mapped_column(doc="Why the last import was not stored, if so.")
 
 
 class Note(Base):
-    """A value of a source that does not fit the model, found by the checks of its last import."""
+    """A source value that does not fit the model, found by the checks of its last import."""
 
     __tablename__ = "notes"
     id: Mapped[int] = mapped_column(primary_key=True, doc="The note's number.")
-    source: Mapped[str] = mapped_column(index=True, doc='The source of the record, or "platform" for a record written on the platform.')
+    source: Mapped[str] = mapped_column(index=True, doc='The record\'s source, or "platform".')
     iri: Mapped[str] = mapped_column(doc="The record's address.")
     field: Mapped[str] = mapped_column(doc="The address of the field's property.")
     value: Mapped[str] = mapped_column(doc="The value that does not fit; empty when a value is missing.")
-    reason: Mapped[str] = mapped_column(doc="Why it does not fit, as the checks say it.")
+    reason: Mapped[str] = mapped_column(doc="Why it does not fit, as the checks say.")
     component: Mapped[str | None] = mapped_column(doc="The SHACL constraint the value breaks, such as sh:NodeKindConstraintComponent.")

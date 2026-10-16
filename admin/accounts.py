@@ -23,7 +23,7 @@ def editors() -> set[str]:
 
 
 def editor(orcid: str | None, name: str | None, token_id: int | None) -> Editor | None:
-    """The editor who logged in with this ORCID iD: with ORCID, or with a write token that is still valid."""
+    """The editor logged in with this ORCID iD, through ORCID or a valid write token."""
     if not orcid or orcid not in editors():
         return None
     kinds = list(settings()["kinds"])
