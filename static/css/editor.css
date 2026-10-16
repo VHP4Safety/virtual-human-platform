@@ -83,6 +83,16 @@ body.editor {
   box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.25);
 }
 
+/* What the platform answers for is locked and dimmed */
+.busy {
+  cursor: progress;
+}
+
+.busy shacl-form {
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
 /* What keeps a record from being saved, next to the Save button */
 .editor-save .alert {
   max-height: 40vh;

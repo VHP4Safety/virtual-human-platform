@@ -6,6 +6,7 @@
 // texts (xsd:string) give shacl-form their value as a literal, so that a text in HTML, such as <p>...</p>, is
 // not read as an address.
 import { Plugin, registerPlugin, findLabel, loadRDF } from "https://cdn.jsdelivr.net/npm/@ulb-darmstadt/shacl-form@3.7.3/dist/bundle.js";
+import { busy } from "./busy.js";
 
 const IRI = "http://www.w3.org/ns/shacl#IRI";
 const LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
@@ -35,6 +36,9 @@ textarea.shown { resize: vertical; }
 .record-link-options button:hover { background: #f1f0f7; }
 .record-link-options .record-link-new { font-weight: 600; color: #29235c; }
 .record-link-problem { padding: 4px 8px; color: #b02a37; }
+.record-link-busy { padding: 4px 8px; color: #6c757d; }
+.record-link-busy::before { content: ""; display: inline-block; width: 0.8em; height: 0.8em; margin-right: 6px; vertical-align: -0.1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: record-link-turning 0.75s linear infinite; }
+@keyframes record-link-turning { to { transform: rotate(360deg); } }
 .record-link-vocabulary { margin-bottom: 4px; font: inherit; }
 .value-type { align-self: center; margin-left: 4px; padding: 0 4px; border: 1px solid #ced4da; border-radius: 3px; color: #6c757d; font: 0.7em monospace; white-space: nowrap; }
 `;
@@ -152,20 +156,25 @@ function addRecord(of_class, label, name, store, added) {
   const add = make("button", "btn btn-success", "Add the " + label.toLowerCase());
   add.type = "button";
   add.addEventListener("click", async function () {
-    const response = await fetch("/api/" + editor.classes[of_class], {
-      method: "POST",
-      credentials: "same-origin",
-      headers: { "X-Form-Token": editor.token, "Content-Type": "text/turtle", Accept: "application/json" },
-      body: form.serialize("text/turtle"),
-    });
-    const answer = await response.json().catch(function () { return {}; });
-    if (!response.ok) {
-      shown.refuse(answer.message || response.statusText);
-      return;
+    const working = busy(add, "Adding…", shown.body);
+    try {
+      const response = await fetch("/api/" + editor.classes[of_class], {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "X-Form-Token": editor.token, "Content-Type": "text/turtle", Accept: "application/json" },
+        body: form.serialize("text/turtle"),
+      });
+      const answer = await response.json().catch(function () { return {}; });
+      if (!response.ok) {
+        throw new Error(answer.message || response.statusText);
+      }
+      const record = await api("GET", "/api" + local(answer["@id"]));
+      shown.dialog.close();
+      added(answer["@id"], record.name || name);
+    } catch (error) {
+      working.done();
+      shown.refuse(error.message);
     }
-    const record = await api("GET", "/api" + local(answer["@id"]));
-    shown.dialog.close();
-    added(answer["@id"], record.name || name);
   });
   const bar = make("div", "editor-save mt-3");
   bar.append(add);
@@ -197,7 +206,7 @@ async function addVocabulary(platform, added) {
   writing.append(labelled("Its name", name), labelled("Its namespace", namespace), add);
   shown.body.append(labelled("Where it is found", registry), finding, writing);
 
-  async function keep(found) {
+  async function keep(found, button) {
     for (const vocabulary of platform) {
       if (vocabulary.url && vocabulary.url["@id"] === found.namespace) {
         shown.dialog.close();
@@ -205,6 +214,7 @@ async function addVocabulary(platform, added) {
         return;
       }
     }
+    const working = busy(button, "Adding…", shown.body);
     try {
       const body = { name: found.title, url: { "@id": found.namespace } };
       if (found.description) {
@@ -214,6 +224,7 @@ async function addVocabulary(platform, added) {
       shown.dialog.close();
       added(answer["@id"]);
     } catch (error) {
+      working.done();
       shown.refuse(error.message);
     }
   }
@@ -230,19 +241,27 @@ async function addVocabulary(platform, added) {
     // Only the answer to the latest search is shown.
     asked += 1;
     const question = asked;
+    const searching = make("div", "list-group-item text-secondary");
+    searching.append(make("span", "spinner-border spinner-border-sm me-1"), document.createTextNode("Searching…"));
+    results.append(searching);
     try {
       const answer = await api("GET", "/api/registries/" + registry.value + "/vocabularies?" + query({ text: text.value.trim() }));
       if (question !== asked) {
         return;
       }
+      results.replaceChildren();
+      if (!answer.length) {
+        results.append(make("div", "list-group-item text-secondary", "No vocabulary found."));
+      }
       for (const found of answer) {
         const item = make("button", "list-group-item list-group-item-action");
         item.type = "button";
         item.append(make("b", "", found.title), make("div", "text-secondary", found.id + " · " + found.namespace));
-        item.addEventListener("click", function () { keep(found); });
+        item.addEventListener("click", function () { keep(found, item); });
         results.append(item);
       }
     } catch (error) {
+      results.replaceChildren();
       shown.refuse(error.message);
     }
   }
@@ -252,7 +271,7 @@ async function addVocabulary(platform, added) {
     timer = window.setTimeout(find, 300);
   });
   add.addEventListener("click", function () {
-    keep({ title: name.value.trim(), namespace: namespace.value.trim() });
+    keep({ title: name.value.trim(), namespace: namespace.value.trim() }, add);
   });
   find();
 }
@@ -267,11 +286,13 @@ function registerTerm(text, vocabulary, added) {
   const add = make("button", "btn btn-success btn-sm mt-2", "Register the term");
   add.type = "button";
   add.addEventListener("click", async function () {
+    const working = busy(add, "Registering…", shown.body);
     try {
       const answer = await api("POST", "/api/terms", { "@id": address.value.trim(), name: label.value.trim(), inDefinedTermSet: { "@id": vocabulary["@id"] } });
       shown.dialog.close();
       added(answer["@id"], label.value.trim());
     } catch (error) {
+      working.done();
       shown.refuse(error.message);
     }
   });
@@ -368,7 +389,8 @@ class RecordLink extends Plugin {
       button.type = "button";
       button.append(...content);
       button.addEventListener("click", onClick);
-      options.append(button);
+      // Options are listed above the search that is still running.
+      options.insertBefore(button, options.querySelector(".record-link-busy"));
     }
 
     // A record or a term that is added is put in the form's graph too, so that the form's checks know it.
@@ -442,6 +464,8 @@ class RecordLink extends Plugin {
             return;
           }
           const within = vocabulary && vocabulary.url ? vocabulary.url["@id"] : "";
+          const searching = make("div", "record-link-busy", "Searching…");
+          options.append(searching);
           const seen = new Set();
           for (const of_class of Object.keys(classes)) {
             const found = await api("GET", "/api/search?" + query({ text: text, class: of_class, within: within }));
@@ -460,6 +484,7 @@ class RecordLink extends Plugin {
               }
               option([make("span", "record-link-kind text", "＋ " + matched.title), found.name + (found.code ? " · " + found.code : "")], function () {
                 attempt(async function () {
+                  options.replaceChildren(make("div", "record-link-busy", "Registering “" + found.name + "”…"));
                   const body = { "@id": found["@id"], name: found.name, termCode: found.code, inDefinedTermSet: { "@id": vocabulary["@id"] } };
                   if (found.description) {
                     body.description = found.description;
@@ -487,6 +512,7 @@ class RecordLink extends Plugin {
               }, "record-link-new");
             }
           }
+          searching.remove();
         });
       }, 250);
     });

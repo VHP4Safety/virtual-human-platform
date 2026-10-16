@@ -60,7 +60,7 @@
       </div></div>
       <div class="editor-save mt-3">
         <div class="alert alert-danger small py-2 mb-2 d-none" id="save-problems" role="alert"></div>
-        <button type="button" class="btn btn-success" id="save"><i class="bi bi-check-lg"></i> Save</button>
+        <button type="button" class="btn btn-success" id="save" disabled><i class="bi bi-check-lg"></i> Save</button>
       </div>
       {% endif %}
       {% else %}
@@ -166,5 +166,5 @@
 <script type="application/json" id="editor">{{ {"graph": selected, "base": base, "version": record.updated_at if record else none, "token": form_token, "links": links, "classes": classes}|tojson }}</script>
 <script type="module" src="https://cdn.jsdelivr.net/npm/@ulb-darmstadt/shacl-form@3.7.3/dist/bundle.js"></script>
 <script type="module" src="{{ url_for('static', filename='js/record-links.js') }}"></script>
-<script src="{{ url_for('static', filename='js/editor.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/editor.js') }}"></script>
 {% endblock %}

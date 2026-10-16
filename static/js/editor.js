@@ -1,6 +1,8 @@
 // The record editor: shacl-form builds the form from the model's shapes, and each change is sent to the
 // records API (the W3C Graph Store Protocol), with the editor's login and the record's version. Beside the
 // form, the linked data shows the statements that saving would publish.
+import { busy } from "./busy.js";
+
 (function () {
   const editor = JSON.parse(document.getElementById("editor").textContent);
   const message = document.getElementById("message");
@@ -8,6 +10,7 @@
   const path = editor.graph.startsWith(editor.base) ? editor.graph.slice(editor.base.length) : editor.graph;
   const graph = "/api/" + encodeURI(path).replace(/#/g, "%23");
   const form = document.querySelector("shacl-form");
+  const column = document.getElementById("main-column");
   const showRdf = document.getElementById("show-rdf");
   const SCHEMA = "https://schema.org/";
   let previewTimer = null;
@@ -32,7 +35,8 @@
     message.textContent = text;
   }
 
-  async function send(method, address, body, type) {
+  // A refusal is shown by *refuse*, else above the form.
+  async function send(method, address, body, type, refuse) {
     const headers = { "X-Form-Token": editor.token };
     if (editor.version) {
       headers["If-Match"] = '"' + editor.version + '"';
@@ -40,11 +44,18 @@
     if (type) {
       headers["Content-Type"] = type;
     }
-    const response = await fetch(address, { method: method, credentials: "same-origin", headers: headers, body: body });
+    const refused = refuse || function (text) { show(text, false); };
+    let response;
+    try {
+      response = await fetch(address, { method: method, credentials: "same-origin", headers: headers, body: body });
+    } catch (error) {
+      refused("No answer from the platform.");
+      return null;
+    }
     const answer = await response.json().catch(function () { return {}; });
     if (!response.ok) {
       const fields = Object.entries(answer.errors || {}).map(function (entry) { return entry[0] + ": " + entry[1].join(" "); });
-      show([answer.message || response.statusText].concat(fields).join(" "), false);
+      refused([answer.message || response.statusText].concat(fields).join(" "));
       return null;
     }
     return answer;
@@ -223,6 +234,7 @@
     if (!form || !(showRdf.checked || (caseStudy && edited))) {
       return;
     }
+    document.getElementById("rdf-caption").textContent = "Checking…";
     let turtle = "";
     if (edited || !editor.version) {
       turtle = form.serialize("text/turtle");
@@ -305,48 +317,75 @@
         markCaseStudy(event);
       }, { once: true });
     }
+    const save = document.getElementById("save");
+    const problems = document.getElementById("save-problems");
+    function refuse(text) {
+      problems.replaceChildren(make("div", "", "Not saved: " + text));
+      problems.classList.remove("d-none");
+    }
+
     // The platform's checks decide whether a record is saved: a value that is only recommended does not
     // keep it from being saved, as the form's own checks would.
-    document.getElementById("save").addEventListener("click", async function () {
-      const turtle = form.serialize("text/turtle");
-      document.getElementById("save-problems").classList.add("d-none");
-      const preview = await send("PUT", graph + "?preview=true", turtle, "text/turtle");
+    async function saved(turtle, working) {
+      const preview = await send("PUT", graph + "?preview=true", turtle, "text/turtle", refuse);
       if (!preview) {
-        return;
+        return false;
       }
       if (Object.keys(preview.fields).length) {
         showProblems(preview);
-        return;
+        return false;
       }
       // A save that removes values asks first, so that no value is removed that the editor did not mean to.
       if (editor.version) {
         const gone = removals(preview.edges, "", []);
         const listed = gone.slice(0, 15).join("\n") + (gone.length > 15 ? "\n…" : "");
         if (gone.length && !window.confirm("Saving removes:\n\n" + listed + "\n\nSave anyway?")) {
-          return;
+          return false;
         }
       }
-      if (await send("PUT", graph, turtle, "text/turtle")) {
+      working.say("Saving…");
+      return Boolean(await send("PUT", graph, turtle, "text/turtle", refuse));
+    }
+
+    // Saving waits for the form to load, as an empty form removes every value.
+    form.addEventListener("ready", function () {
+      save.disabled = false;
+    });
+    save.addEventListener("click", async function () {
+      problems.classList.add("d-none");
+      const working = busy(save, "Checking…", column);
+      if (await saved(form.serialize("text/turtle"), working)) {
+        working.say("Saved; reloading…");
         reopen(editor.graph);
+      } else {
+        working.done();
       }
     });
   }
 
+  // The button pressed turns until the record is reopened, or until the platform refuses.
+  async function act(button, text, method, address, body, reopened) {
+    const working = busy(button, text, column);
+    if (await send(method, address, body, body ? "application/json" : undefined)) {
+      reopen(reopened);
+    } else {
+      working.done();
+    }
+  }
+
   const actions = {
-    remove: async function () {
-      if (window.confirm("Remove this record? Its address answers 410 Gone from then on.") && await send("DELETE", graph)) {
-        reopen(editor.graph);
+    remove: function (event) {
+      if (window.confirm("Remove this record? Its address answers 410 Gone from then on.")) {
+        act(event.currentTarget, "Removing…", "DELETE", graph, undefined, editor.graph);
       }
     },
-    restore: async function () {
-      if (await send("POST", "/api/restore", JSON.stringify({ record: path }), "application/json")) {
-        reopen(editor.graph);
-      }
+    restore: function (event) {
+      act(event.currentTarget, "Restoring…", "POST", "/api/restore", JSON.stringify({ record: path }), editor.graph);
     },
-    move: async function () {
+    move: function (event) {
       const to = window.prompt("The record's new address; the old one will forward to it.", path);
-      if (to && to !== path && await send("POST", "/api/move", JSON.stringify({ record: path, to: to }), "application/json")) {
-        reopen(editor.base + to);
+      if (to && to !== path) {
+        act(event.currentTarget, "Moving…", "POST", "/api/move", JSON.stringify({ record: path, to: to }), editor.base + to);
       }
     },
   };
@@ -359,7 +398,9 @@
     image.addEventListener("change", async function () {
       const body = new FormData();
       body.append("image", image.files[0]);
+      const working = busy(image.parentElement, "Uploading…", column);
       const answer = await send("POST", "/api/images", body);
+      working.done();
       if (answer) {
         show("The image's address, to give in the image field: " + answer["@id"], true);
       }
