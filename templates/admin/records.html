@@ -58,7 +58,10 @@
                     {% if record %}data-values-url="{{ url_for('api.read', path=selected.removeprefix(base)) }}"{% elif values %}data-values="{{ values }}"{% endif %}
                     data-values-subject="{{ selected }}" data-generate-node-shape-reference="" data-collapse="open"></shacl-form>
       </div></div>
-      <div class="editor-save mt-3"><button type="button" class="btn btn-success" id="save"><i class="bi bi-check-lg"></i> Save</button></div>
+      <div class="editor-save mt-3">
+        <div class="alert alert-danger small py-2 mb-2 d-none" id="save-problems" role="alert"></div>
+        <button type="button" class="btn btn-success" id="save"><i class="bi bi-check-lg"></i> Save</button>
+      </div>
       {% endif %}
       {% else %}
       <p class="text-secondary">Choose a record, or add one with its address.</p>

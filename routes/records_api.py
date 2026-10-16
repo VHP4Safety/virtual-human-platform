@@ -149,7 +149,11 @@ def store(address: str, body: dict, preview: bool = False):
     found, problems, warnings = checks.checked(documents.document(found, address))
     if preview:
         before = changes.statements(documents.document_of(address))
-        return jsonify({**changes.edges(before, found, URIRef(address)), "fields": problems, "warnings": warnings, "document": documents.document(storage.with_names(found), address)})
+        labels = {}
+        for path in list(problems) + list(warnings):
+            labels[path] = checks.named(kind, path)
+        return jsonify({**changes.edges(before, found, URIRef(address)), "fields": problems, "warnings": warnings, "labels": labels,
+                        "document": documents.document(storage.with_names(found), address)})
     unchanged(address)
     if problems:
         abort(422, message=str(checks.NotFitting(problems)), errors=problems)

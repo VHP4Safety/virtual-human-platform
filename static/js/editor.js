@@ -54,6 +54,41 @@
     window.location.search = "?record=" + encodeURIComponent(address);
   }
 
+  // What keeps the record from being saved, next to the Save button: each field once, by the names of the
+  // fields that lead to it, with what is wrong and a button that shows it in the form.
+  function showProblems(answer) {
+    const panel = document.getElementById("save-problems");
+    const fields = Object.keys(answer.fields);
+    panel.replaceChildren(make("div", "fw-semibold mb-1", "Not saved: " + fields.length + (fields.length === 1 ? " field to fix" : " fields to fix")));
+    const list = make("ul", "mb-0 ps-3");
+    for (const path of fields) {
+      const item = make("li", "mb-1");
+      item.append(make("span", "fw-semibold", (answer.labels && answer.labels[path]) || path), document.createTextNode(": " + answer.fields[path].join(" ") + " "));
+      const button = make("button", "btn btn-link btn-sm p-0 align-baseline", "Show");
+      button.type = "button";
+      button.addEventListener("click", function () { reveal(path); });
+      item.append(button);
+      list.append(item);
+    }
+    panel.append(list);
+    panel.classList.remove("d-none");
+  }
+
+  // The first value of a field in the form that its checks flag, else the first value of the field.
+  function reveal(path) {
+    const term = path.split(" > ").pop();
+    const found = [];
+    for (const instance of form.shadowRoot.querySelectorAll(".property-instance")) {
+      if ((instance.dataset.path || "").split(/[/#]/).pop() === term) {
+        found.push(instance);
+      }
+    }
+    const flagged = found.find(function (instance) { return instance.classList.contains("invalid"); }) || found[0];
+    if (flagged) {
+      flagged.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }
+
   // The values that saving removes, by the fields that lead to them, as the platform's preview tells them.
   function removals(edges, trail, found) {
     for (const edge of edges) {
@@ -274,12 +309,17 @@
     // keep it from being saved, as the form's own checks would.
     document.getElementById("save").addEventListener("click", async function () {
       const turtle = form.serialize("text/turtle");
+      document.getElementById("save-problems").classList.add("d-none");
+      const preview = await send("PUT", graph + "?preview=true", turtle, "text/turtle");
+      if (!preview) {
+        return;
+      }
+      if (Object.keys(preview.fields).length) {
+        showProblems(preview);
+        return;
+      }
       // A save that removes values asks first, so that no value is removed that the editor did not mean to.
       if (editor.version) {
-        const preview = await send("PUT", graph + "?preview=true", turtle, "text/turtle");
-        if (!preview) {
-          return;
-        }
         const gone = removals(preview.edges, "", []);
         const listed = gone.slice(0, 15).join("\n") + (gone.length > 15 ? "\n…" : "");
         if (gone.length && !window.confirm("Saving removes:\n\n" + listed + "\n\nSave anyway?")) {

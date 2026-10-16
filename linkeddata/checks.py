@@ -123,6 +123,25 @@ def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]
     return found, problems, warnings
 
 
+def named(of_class: str, path: str) -> str:
+    """A field of a record or of one of its parts, as the names that the profile gives the fields that lead
+    to it (Regulatory questions › Process flow steps › Title), from its JSON-LD names (regulatoryQuestion >
+    step > name)."""
+    names = []
+    for term in path.split(" > "):
+        found = None
+        for field in fields.of(of_class):
+            if field["name"] == term:
+                found = field
+        if found is None:
+            names.append(term)
+            continue
+        names.append(found["label"])
+        if found["classes"]:
+            of_class = found["classes"][0]
+    return " › ".join(names)
+
+
 def check(new: dict) -> Graph:
     """A record's document as linked data; NotFitting tells what is wrong with each field when it does not fit."""
     found, problems, _ = checked(new)
