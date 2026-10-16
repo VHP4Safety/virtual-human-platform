@@ -67,9 +67,10 @@ def root_shape(kind: str) -> str:
 
 def form_graph() -> Graph:
     """The profile, the class hierarchy, and every record and listed term (sh:in) with its name. A field
-    whose values are of one of some classes (sh:or) takes a text and an address too, so that the form shows
-    and keeps a value that is a name only or an address that is no record; the profile's checks still tell
-    about it."""
+    whose values are of one of some classes (sh:or) has two more choices, a text and an address, which the
+    form gives a value that is a name only or an address that is no record, so that it shows and keeps it;
+    neither choice takes any value (an empty sh:in), so that the form's checks flag it with the field's
+    message, as the profile's do."""
     found = Graph() + profile() + hierarchy()
     for alternatives in list(found.objects(None, SH["or"])):
         listed = Collection(found, alternatives)
@@ -81,10 +82,12 @@ def form_graph() -> Graph:
             text = BNode()
             found.add((text, SH.datatype, XSD.string))
             found.add((text, RDFS.label, Literal("Text")))
+            found.add((text, SH["in"], RDF.nil))
             listed.append(text)
             address = BNode()
             found.add((address, SH.nodeKind, SH.IRI))
             found.add((address, RDFS.label, Literal("Address")))
+            found.add((address, SH["in"], RDF.nil))
             listed.append(address)
     with database.session() as db:
         for iri, kind, name in db.execute(select(Record.iri, Record.type, Record.name).where(Record.removed_at.is_(None), Record.moved_to.is_(None))):
