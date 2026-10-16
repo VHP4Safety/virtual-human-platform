@@ -338,6 +338,7 @@ def query_schema(of_class: str, in_use: dict) -> type[Schema]:
 
 
 @cache
+@cache
 def row_schema(of_class: str) -> type[Schema]:
     """A row of a record, or of a part, of a class: the profile's fields by their JSON-LD names, a field that
     takes several values as a list and one that takes one value as the value or null, values typed as the
@@ -611,5 +612,22 @@ def register(app) -> None:
     api = Api(app)
     api.spec.components.security_scheme("token", {"type": "http", "scheme": "bearer", "description": tokens.__doc__})
     api.spec.components.schema("Record", component={"x-jsonld-context": documents.context(settings())}, schema=Record)
+    # Each row's schema says of which class a row is and with which context its names read as JSON-LD, as the
+    # keywords for linked data in REST APIs propose (x-jsonld-type, x-jsonld-context); the schemas of the parts
+    # of a class are given before the class's own, which holds them.
+    named = set()
+
+    def hinted(of_class: str) -> None:
+        name = documents.term(of_class).replace(":", "_")
+        if name in named:
+            return
+        named.add(name)
+        for field in model_fields.of(of_class):
+            if field["part"] and field["classes"]:
+                hinted(field["classes"][0])
+        api.spec.components.schema(name, schema=row_schema(of_class), component={"x-jsonld-type": of_class, "x-jsonld-context": documents.context(settings())})
+
+    for of_class in settings()["kinds"].values():
+        hinted(of_class)
     resources()
     api.register_blueprint(blueprint)
