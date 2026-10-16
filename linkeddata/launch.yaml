@@ -1,0 +1,23 @@
+# The corrections made to the records when the platform first goes live, after its first import (python -m
+# linkeddata import), by python -m linkeddata launch. Each is saved as a revision of its record, named with
+# why it was made. Fields are named as in JSON-LD, and values as the record has them.
+corrections:
+  - record: casestudies/kidney
+    why: Clinical data and cell viability data are data, not tools or methods.
+    move:
+      - {field: tool, to: supply, values: ["Clinical data", "Cell viability data"]}
+  - record: casestudies/parkinson
+    why: The epidemiological, exposure and transcriptomic data are data, not tools or methods.
+    move:
+      - field: tool
+        to: supply
+        values: ["Rotenone transcriptomic data (LUHMES cells)", "Epidemiological data", "Dietary exposure dataset for pesticides",
+                 "Environmental exposure dataset for pesticides", "Occupational exposure dataset for pesticides"]
+  - record: casestudies/thyroid
+    why: Characters that HTML escapes are escaped, and a text does not end a document it does not start.
+    replace:
+      - {field: text, from: "D2&3", to: "D2&amp;3"}
+      - {field: text, from: "(**p<0.01)", to: "(**p&lt;0.01)"}
+      - {field: text, from: "A BER < 1", to: "A BER &lt; 1"}
+      - {field: text, from: "***p<0.001, ****p<0.0001", to: "***p&lt;0.001, ****p&lt;0.0001"}
+      - {field: text, from: "</table></body></html>", to: "</table>"}

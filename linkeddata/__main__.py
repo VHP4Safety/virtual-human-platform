@@ -4,6 +4,8 @@
     python -m linkeddata check                  check that the generated files, the vocabularies and the
                                                 database are those of the model's release
     python -m linkeddata import                 import every source into the database
+    python -m linkeddata launch                 make the corrections of launch.yaml, when the platform first
+                                                goes live, after its first import
     python -m linkeddata export                 write the records made on the platform to the records repository
     python -m linkeddata push                   send the records repository to its remote
     python -m linkeddata backup                 copy the database to PLATFORM_STATE/backups (the latest 14 are kept)
@@ -17,12 +19,13 @@ import database
 from admin import tokens
 from database import export
 from linkeddata.imports import import_all
+from linkeddata.launch import launch
 from linkeddata.model import RELEASE, download_vocabularies, pinned_problems, schema_problems, tables_problems, write_schema, write_tables
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m linkeddata", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=["model", "check", "import", "export", "push", "backup", "token"])
+    parser.add_argument("command", choices=["model", "check", "import", "launch", "export", "push", "backup", "token"])
     parser.add_argument("arguments", nargs="*", help="token: the ORCID iD, the name, and the kinds it may write")
     parser.add_argument("--days", type=int, default=tokens.DEFAULT_DAYS, help="how long a new token is valid")
     args = parser.parse_args()
@@ -49,6 +52,12 @@ def main() -> None:
         problems = import_all()
         for problem in problems:
             print(f"Not imported: {problem}", file=sys.stderr)
+        if problems:
+            sys.exit(1)
+    elif args.command == "launch":
+        problems = launch()
+        for problem in problems:
+            print(f"Not corrected: {problem}", file=sys.stderr)
         if problems:
             sys.exit(1)
     elif args.command == "export":

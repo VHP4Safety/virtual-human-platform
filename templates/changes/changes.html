@@ -20,7 +20,7 @@
             <td><a class="link-vhpblue" href="{{ change.record|page_link }}">{{ change.record_name }}</a></td>
             <td>{% with action=change.action %}{% include "changes/_action.html" %}{% endwith %}</td>
             <td class="small">{% for field in change.fields %}{{ field.field }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
-            <td class="small">{{ change.name }}<br><a class="link-secondary" href="https://orcid.org/{{ change.orcid }}">{{ change.orcid }}</a></td>
+            <td class="small">{{ change.name }}{% if change.orcid %}<br><a class="link-secondary" href="https://orcid.org/{{ change.orcid }}">{{ change.orcid }}</a>{% endif %}</td>
             <td class="text-end"><a class="btn btn-sm btn-outline-vhpblue" href="{{ url_for('changes.change', number=change.number) }}">Details</a></td>
           </tr>
           {% endfor %}

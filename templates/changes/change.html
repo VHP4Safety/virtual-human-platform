@@ -6,7 +6,7 @@
     <h1 class="h3 text-vhppurple mb-0">{{ change.record_name }}</h1>
     {% with action=change.action %}{% include "changes/_action.html" %}{% endwith %}
   </div>
-  <p class="text-secondary">By {{ change.name }} (<a class="link-secondary" href="https://orcid.org/{{ change.orcid }}">{{ change.orcid }}</a>) on {{ change.date[:16]|replace("T", " ") }} UTC ·
+  <p class="text-secondary">By {{ change.name }}{% if change.orcid %} (<a class="link-secondary" href="https://orcid.org/{{ change.orcid }}">{{ change.orcid }}</a>){% endif %} on {{ change.date[:16]|replace("T", " ") }} UTC ·
     <a class="link-vhpblue" href="{{ change.record|page_link }}">Record page</a> ·
     <a class="link-vhpblue" href="{{ url_for('changes.changes', record=change.record) }}">All changes to this record</a></p>
 
