@@ -1,6 +1,9 @@
 name: glossary
 title: VHP4Safety glossary
-# The vocabulary of the model that the source is; its terms are the terms records can be about.
+# The glossary's terms, from its main branch every night; the model keeps the pinned file (vocabulary), from
+# which the profile and the parsers' links to terms are made, and the checks note the terms of the profile
+# that main drops or renames.
+url: https://raw.githubusercontent.com/VHP4Safety/glossary/main/glossary.owl
 vocabulary: vhp4safety-glossary-34f9389.ttl
 parser: glossary
 

@@ -115,15 +115,15 @@ def store(source: Source, found: list[tuple[list[dict], Graph]]) -> None:
 
 
 def files_of(spec: dict) -> dict[str, str]:
-    """The files of a source by name: the one at its url, those listed under its files, or the pinned
+    """The files of a source by name: the one at its url, those listed under its files, or else the pinned
     vocabulary of the model that it names."""
     if "files" in spec:
         return dict(spec["files"])
     if "enriches" in spec:
         return {}
-    if "vocabulary" in spec:
-        return {spec["name"]: settings()["vocabularies"][spec["vocabulary"]]["url"]}
-    return {spec["name"]: spec["url"]}
+    if "url" in spec:
+        return {spec["name"]: spec["url"]}
+    return {spec["name"]: settings()["vocabularies"][spec["vocabulary"]]["url"]}
 
 
 ENTRY = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
@@ -180,8 +180,12 @@ def download(spec: dict, parser) -> dict[str, bytes]:
     of its index: the keys of the index (a JSON object), or those its parser reads from it (keys)."""
     contents = {}
     for name, url in files_of(spec).items():
-        # A pinned vocabulary is read from the model's folder, where its SHA-256 is checked.
-        contents[name] = (MODEL_DIR / "vocabularies" / spec["vocabulary"]).read_bytes() if "vocabulary" in spec else fetch(url)
+        # A pinned vocabulary is read from the model's folder, where its SHA-256 is checked, unless the source
+        # follows the vocabulary upstream (url).
+        if "vocabulary" in spec and "url" not in spec:
+            contents[name] = (MODEL_DIR / "vocabularies" / spec["vocabulary"]).read_bytes()
+        else:
+            contents[name] = fetch(url)
     if "entries" in spec:
         index = contents[spec["name"]]
         for key in parser.keys(index) if hasattr(parser, "keys") else json.loads(index):
@@ -290,13 +294,44 @@ def specs() -> list[dict]:
     return found
 
 
+def drifted(spec: dict) -> list[dict]:
+    """For a source that follows upstream a vocabulary that the model pins: the terms of the pinned file that
+    the profile uses and that the source no longer gives, or gives under another label."""
+    parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
+    pinned = {}
+    for row in parser.parse((MODEL_DIR / "vocabularies" / spec["vocabulary"]).read_bytes()):
+        if row.get("@type") == "Term":
+            pinned[row["@id"]] = row.get("label") or ""
+    used = set()
+    for node in profile().all_nodes():
+        if str(node) in pinned:
+            used.add(str(node))
+    with database.session() as db:
+        given = dict(db.execute(select(Record.iri, Record.name).where(Record.source == spec["name"])).all())
+    found = []
+    for iri in sorted(used):
+        if iri not in given:
+            reason = f"The profile uses {pinned[iri]}, which {spec['title']} no longer gives."
+        elif (given[iri] or "") != pinned[iri]:
+            reason = f"The profile uses {pinned[iri]}, which {spec['title']} now names {given[iri]}."
+        else:
+            continue
+        found.append({"iri": iri, "field": "", "value": iri, "reason": reason, "component": "model"})
+    return found
+
+
 def check(source: str) -> None:
     """The records of a source, or those written on the platform, are checked against the model as the
     database holds them, with the records they link to; what does not fit is noted for the data quality
-    page. The values are kept as they are."""
+    page. The values are kept as they are. A source that follows a pinned vocabulary upstream also notes the
+    terms of the profile that it dropped or renamed."""
     with database.session() as db:
         iris = list(db.scalars(select(Record.iri).where(Record.source == source, Record.removed_at.is_(None), Record.part_of.is_(None))))
     notes = checks.notes(storage.graph(iris))
+    if source != PLATFORM:
+        spec = spec_of(source)
+        if "url" in spec and "vocabulary" in spec:
+            notes += drifted(spec)
     with database.session() as db, db.begin():
         db.execute(delete(Note).where(Note.source == source))
         for note in notes:
