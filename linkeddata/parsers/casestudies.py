@@ -56,7 +56,7 @@ def at(levels: list[dict], depth: int, path: list[str]) -> dict:
     return node if isinstance(node, dict) else {}
 
 
-def step(levels: list[dict], depth: int, path: list[str], item: dict, address: str, position: int) -> list[dict]:
+def step(levels: list[dict], depth: int, path: list[str], item: dict, address: str, position: int, made: set) -> list[dict]:
     """The page of a step that an item leads to, at *path* of the content's levels, and the pages below it."""
     node = at(levels, depth, path)
     row = {"@id": address, "@type": "Workflow", "title": node.get("navTitle") or item.get("label"), "position": position}
@@ -64,12 +64,13 @@ def step(levels: list[dict], depth: int, path: list[str], item: dict, address: s
         row["status"] = item["state"]
     if present(item.get("glossaryUrl")):
         row["about"] = web_link(item["glossaryUrl"])
-    return [row] + fill(row, node, levels, depth, path)
+    return [row] + fill(row, node, levels, depth, path, made)
 
 
-def fill(row: dict, node: dict, levels: list[dict], depth: int, path: list[str]) -> list[dict]:
+def fill(row: dict, node: dict, levels: list[dict], depth: int, path: list[str], made: set) -> list[dict]:
     """The summary, text and items of a page from its node of the content: the pages one level down, at
-    addresses under its own, and the tools and data it lists. Gives the rows of the pages below."""
+    addresses under its own, and the tools and data it lists. Gives the rows of the pages below. A page that
+    two items lead to is one page, made once (*made*), with the title and position of the first."""
     if present(node.get("navDescription")):
         row["summary"] = node["navDescription"]
     text(row, node.get("content"))
@@ -78,7 +79,9 @@ def fill(row: dict, node: dict, levels: list[dict], depth: int, path: list[str])
         if entry.get("type") in PAGES and present(entry.get("value")):
             child = f"{row['@id']}/{slug(entry['value'])}"
             row.setdefault("steps", []).append(link(child))
-            rows.extend(step(levels, depth + 1, path + [entry["value"]], entry, child, len(row["steps"])))
+            if child not in made:
+                made.add(child)
+                rows.extend(step(levels, depth + 1, path + [entry["value"]], entry, child, len(row["steps"]), made))
             continue
         used = item_link(entry) or entry.get("label")
         if present(used):
@@ -120,6 +123,7 @@ def parse(files: dict[str, bytes]) -> list[dict]:
         levels = []
         while f"step{len(levels) + 2}Contents" in data:
             levels.append(data[f"step{len(levels) + 2}Contents"])
+        made = set()
         for question in first.get("questions") or []:
             if question.get("type") != "regulatory-question" or not present(question.get("value")):
                 continue
@@ -132,6 +136,6 @@ def parse(files: dict[str, bytes]) -> list[dict]:
             if present(node.get("navTitle")):
                 found["headline"] = node["navTitle"]
             rows.append(found)
-            rows.extend(fill(found, node, levels, 0, [question["value"]]))
+            rows.extend(fill(found, node, levels, 0, [question["value"]], made))
         rows.append(row)
     return rows
