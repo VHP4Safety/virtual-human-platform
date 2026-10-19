@@ -29,13 +29,14 @@ def value_of(value, names: dict) -> dict:
 
 
 def placed(found: Graph, node) -> tuple:
-    """A part's place: by its position, then by its name."""
+    """A part's place: by its position, then by its name, then by its values, so parts in the same place
+    keep one order."""
     position = found.value(node, SDO.position)
     try:
         number = float(position)
     except (TypeError, ValueError):
         number = float("inf")
-    return number, str(found.value(node, SDO.name) or "")
+    return number, str(found.value(node, SDO.name) or ""), sorted(str(value) for value in found.objects(node, None))
 
 
 def in_order(found: Graph, nodes) -> list:
