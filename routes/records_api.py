@@ -104,6 +104,31 @@ def identity(kind: str):
     return account.editor_of_request(kind)
 
 
+def reader(kind: str | None) -> bool:
+    """Whether the request may read private fields, such as email addresses: an editor of the kind, logged in
+    or with a write token. Reading needs no form token, as nothing is changed."""
+    if kind is None:
+        return False
+    header = request.headers.get("Authorization", "")
+    if header.startswith("Bearer "):
+        return tokens.check(header.removeprefix("Bearer ").strip(), kind) is not None
+    editor = account.current_editor()
+    return editor is not None and kind in editor.kinds
+
+
+def readable(found: Graph, kind: str | None) -> Graph:
+    """The statements as the request may read them: private fields are taken out for visitors."""
+    return found if reader(kind) else documents.public(found)
+
+
+@blueprint.after_request
+def varied(response):
+    """Answers differ for editors, who also read private fields."""
+    response.vary.add("Cookie")
+    response.vary.add("Authorization")
+    return response
+
+
 def writer(kind: str | None):
     found = identity(kind) if kind is not None else None
     if found is None:
@@ -412,7 +437,7 @@ def listing(of_class: str):
     def listed(given, pagination_parameters):
         total, iris = catalogue.page(of_class, filters_of(of_class, given), given["search"], pagination_parameters.first_item, pagination_parameters.page_size)
         pagination_parameters.item_count = total
-        found = storage.graph(iris)
+        found = readable(storage.graph(iris), kind_of(None, {"@type": of_class}))
         media = request.accept_mimetypes.best_match(MEDIA, "application/json")
         if media == "application/json":
             return [row(found, URIRef(iri), of_class) for iri in iris]
@@ -516,7 +541,9 @@ def read(path):
     if record.removed_at:
         abort(410, message="Removed.")
     media = request.accept_mimetypes.best_match(["application/ld+json", *SERIALIZATIONS]) or "application/ld+json"
-    answer = data(storage.with_names(storage.graph([record.iri])), media, record.iri)
+    # A part, such as a case study question, is read as its record is.
+    kind = kind_of(record.part_of or record.iri, {})
+    answer = data(storage.with_names(readable(storage.graph([record.iri]), kind)), media, record.iri)
     answer.headers["ETag"] = f'"{record.updated_at}"'
     return answer
 
