@@ -40,8 +40,9 @@ function entries(element, nested, found) {
   return found;
 }
 
-// A part of the form is opened, shown and marked for a moment; its first field takes the focus, so the
-// preview shows the same part.
+// A part of the form is opened and shown with the part or group that holds it, when both fit in view (else
+// in the middle of the view), and marked as the page marks it until another is shown; its first field takes
+// the focus, so the preview shows the same part.
 export function reveal(target) {
   for (let node = target; node; node = node.parentElement) {
     if (node.tagName === "ROKIT-COLLAPSIBLE") {
@@ -49,14 +50,18 @@ export function reveal(target) {
     }
   }
   window.requestAnimationFrame(function () {
-    target.scrollIntoView({ block: "start", behavior: "smooth" });
+    for (const marked of target.getRootNode().querySelectorAll(".index-shown")) {
+      marked.classList.remove("index-shown");
+    }
+    target.classList.add("index-shown");
+    const holder = target.parentElement ? target.parentElement.closest("shacl-node, rokit-collapsible") : null;
+    const fits = holder && target.getBoundingClientRect().bottom - holder.getBoundingClientRect().top < window.innerHeight * 0.8;
+    (fits ? holder : target).scrollIntoView({ block: fits ? "start" : "center", behavior: "smooth" });
     const first = target.matches(".property-instance") ? target.querySelector(".shown, .editor:not([type=hidden])")
       : target.querySelector(".property-instance .shown, .property-instance .editor:not([type=hidden])");
     if (first) {
       first.focus({ preventScroll: true });
     }
-    target.classList.add("index-shown");
-    window.setTimeout(function () { target.classList.remove("index-shown"); }, 1600);
   });
 }
 
