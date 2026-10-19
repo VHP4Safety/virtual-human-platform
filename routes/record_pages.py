@@ -61,9 +61,9 @@ def negotiate():
         return redirect(target, code=301)
     if record.removed_at:
         return render_template("records/gone.html", record=record, page_title="Removed — VHP4Safety"), 410
+    g.record = record
     if media != "text/html":
         return data(documents.public(storage.linked_graph(record)), media)
-    g.record = record
     # A record with no page of its own is shown on the general record page.
     if request.url_rule is None:
         return record_page(record)
@@ -72,13 +72,19 @@ def negotiate():
 
 @blueprint.after_app_request
 def link_data(response):
+    links = []
     if "record" in g:
         links = [f'<{g.record.iri}>; rel="cite-as"', f'<{g.record.type}>; rel="type"']
         for ending, media in FORMATS.items():
             links.append(f'<{page_path(g.record)}{ending}>; rel="describedby"; type="{media}"')
         links.append(f'<{url_for("api.model_shapes")}>; rel="http://www.w3.org/ns/ldp#constrainedBy"; type="text/turtle"')
-        response.headers["Link"] = ", ".join(links)
         response.headers["Vary"] = "Accept"
+    # The records' licence, on their pages, their data and the API.
+    if "record" in g or request.path.startswith("/api/"):
+        links.append(f'<{settings()["license"]}>; rel="license"')
+    if links:
+        given = response.headers.get("Link")
+        response.headers["Link"] = ", ".join(([given] if given else []) + links)
     return response
 
 

@@ -6,6 +6,9 @@ title: VHP4Safety Virtual Human Platform
 # A record with a page is identified by the page's address.
 base: https://platform.vhp4safety.nl/
 
+# The licence of the platform's records: the repository's (LICENSE.md, the GNU AGPL version 3).
+license: https://spdx.org/licenses/AGPL-3.0-only
+
 # Vocabularies are pinned to exact versions and kept in vocabularies/, with their SHA-256.
 vocabularies:
   schemaorg-30.1.ttl:
