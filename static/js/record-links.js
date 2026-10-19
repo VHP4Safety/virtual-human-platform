@@ -292,6 +292,20 @@ function registerTerm(text, vocabulary, added) {
   shown.body.append(labelled("Label", label), labelled("Address", address), add);
 }
 
+// The values each link field has held while the form is open, by its node and property, so that a removed
+// one is put back as it was: a text as a text, a link with its name.
+const held = new Map();
+
+function hold(field, path, entry) {
+  const node = field.closest("shacl-node");
+  const scope = (node ? node.dataset.nodeId : "") + " " + path;
+  if (!held.has(scope)) {
+    held.set(scope, new Map());
+  }
+  held.get(scope).set((entry.text ? "text " : "link ") + entry.value, entry);
+  return scope;
+}
+
 class RecordLink extends Plugin {
   createEditor(template, value) {
     // The field's link classes by name, from the profile; text fields, such as tool keywords, have none.
@@ -324,6 +338,11 @@ class RecordLink extends Plugin {
       chosen.dataset.nodeKind = IRI;
       chosen.value = value.value;
       search.value = findLabel(store.getQuads(value.value, null, null, null), template.config.languages) || value.value;
+    }
+    // Held once the field is in the form, where its node is known.
+    if (value) {
+      const loaded = { text: value.termType === "Literal", value: value.value, name: search.value };
+      window.requestAnimationFrame(function () { hold(field, template.path, loaded); });
     }
     const options = make("div", "record-link-options");
     const row = make("div", "record-link-row");
@@ -373,7 +392,37 @@ class RecordLink extends Plugin {
       search.value = name;
       options.replaceChildren();
       show();
+      hold(field, template.path, { text: false, value: iri, name: name });
       chosen.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    function putBack(entry) {
+      if (!entry.text) {
+        choose(entry.value, entry.name);
+        return;
+      }
+      delete chosen.dataset.nodeKind;
+      chosen.value = literal(entry.value);
+      search.value = entry.value;
+      options.replaceChildren();
+      show();
+      chosen.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    // The values this field has held that it no longer has, with the text in their name.
+    function heldOptions(text) {
+      const present = new Set();
+      const property = field.closest("shacl-property");
+      for (const input of property ? property.querySelectorAll("input.editor") : []) {
+        present.add(input.value);
+      }
+      const node = field.closest("shacl-node");
+      for (const entry of (held.get((node ? node.dataset.nodeId : "") + " " + template.path) || new Map()).values()) {
+        const given = entry.text ? literal(entry.value) : entry.value;
+        if (!present.has(given) && entry.name.toLowerCase().includes(text.toLowerCase())) {
+          option([make("span", "record-link-kind text", "↺ Put back"), entry.name], function () { putBack(entry); });
+        }
+      }
     }
 
     function option(content, onClick, className) {
@@ -442,6 +491,21 @@ class RecordLink extends Plugin {
 
     // Records of the field's classes whose name has the text, then a new record or term. An emptied field
     // links to nothing.
+    // An empty field offers the values it held, while it has the focus.
+    search.addEventListener("focusin", function () {
+      if (!search.value.trim()) {
+        options.replaceChildren();
+        heldOptions("");
+      }
+    });
+    search.addEventListener("focusout", function () {
+      window.setTimeout(function () {
+        if (!search.value.trim() && !box.contains(field.getRootNode().activeElement)) {
+          options.replaceChildren();
+        }
+      }, 200);
+    });
+
     let timer = null;
     search.addEventListener("input", function () {
       window.clearTimeout(timer);
@@ -458,6 +522,7 @@ class RecordLink extends Plugin {
           const within = vocabulary && vocabulary.url ? vocabulary.url["@id"] : "";
           const searching = make("div", "record-link-busy", "Searching…");
           options.append(searching);
+          heldOptions(text);
           const seen = new Set();
           for (const of_class of Object.keys(classes)) {
             const found = await api("GET", "/api/search?" + query({ text: text, class: of_class, within: within }));
