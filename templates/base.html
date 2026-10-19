@@ -14,6 +14,9 @@
     {% for media, href in (record_formats or {}).items() %}
     <link rel="describedby" type="{{ media }}" href="{{ href }}" />
     {% endfor %}
+    {% if record_markdown %}
+    <link rel="alternate" type="text/markdown" href="{{ record_markdown }}" />
+    {% endif %}
 
     <!-- Open Graph / Twitter Card for link previews (and minor search signal) -->
     <meta property="og:type" content="website" />

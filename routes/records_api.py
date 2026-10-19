@@ -34,10 +34,10 @@ from werkzeug.exceptions import RequestEntityTooLarge
 import database
 from admin import changes, tokens, writes
 from database import images, records
-from linkeddata import catalogue, checks, documents, fields as model_fields, patches, storage
+from linkeddata import catalogue, checks, documents, fields as model_fields, markdown, patches, storage
 from linkeddata.model import RELEASE, settings, shapes
 from routes import account, limiter
-from routes.record_pages import SERIALIZATIONS, data
+from routes.record_pages import SERIALIZATIONS, data, markdown_of
 
 blueprint = Blueprint("api", __name__, url_prefix="/api", description="Records of each kind, at their page addresses.")
 limiter.limit("300 per minute")(blueprint)
@@ -215,6 +215,7 @@ RECORD_FORMATS = {"200": {"description": "The record, in the Accept header's for
     "application/ld+json": {"schema": {"$ref": "#/components/schemas/Record"}},
     "text/turtle": {"schema": {"type": "string"}},
     "application/n-triples": {"schema": {"type": "string"}},
+    "text/markdown": {"schema": {"type": "string"}},
 }}}
 
 
@@ -289,8 +290,8 @@ def search(given):
     return jsonify({"@context": documents.context(settings()), "@graph": found})
 
 
-MEDIA = ["application/json", "application/ld+json", *SERIALIZATIONS]
-LINKED = "JSON rows with the profile's field names, or JSON-LD, Turtle or N-Triples, by the Accept header."
+MEDIA = ["application/json", "application/ld+json", *SERIALIZATIONS, "text/markdown"]
+LINKED = "JSON rows with the profile's field names, or JSON-LD, Turtle, N-Triples or Markdown, by the Accept header."
 
 
 class FacetValue(Schema):
@@ -441,6 +442,14 @@ def listing(of_class: str):
         media = request.accept_mimetypes.best_match(MEDIA, "application/json")
         if media == "application/json":
             return [row(found, URIRef(iri), of_class) for iri in iris]
+        if media == "text/markdown":
+            listed = []
+            for iri in iris:
+                description = found.value(URIRef(iri), SDO.description)
+                listed.append({"name": str(found.value(URIRef(iri), SDO.name) or iri), "address": iri,
+                               "description": markdown.text({"text": str(description), "html": description.datatype == RDF.HTML}) if description else ""})
+            kind = kind_of(None, {"@type": of_class}) or of_class
+            return Response(markdown.listing(kind.capitalize(), listed, settings()["license"]), content_type=markdown.MEDIA, headers={"Vary": "Accept"})
         if media == "application/ld+json":
             documented = []
             for iri in iris:
@@ -495,7 +504,7 @@ def resources() -> None:
                           "Several values of one field match any; several fields match all.")
         view = blueprint.paginate(page_size=20, max_page_size=200)(listed)
         view = blueprint.arguments(query, location="query")(view)
-        for media, schema in {"application/ld+json": {"type": "object"}, "text/turtle": {"type": "string"}, "application/n-triples": {"type": "string"}}.items():
+        for media, schema in {"application/ld+json": {"type": "object"}, "text/turtle": {"type": "string"}, "application/n-triples": {"type": "string"}, "text/markdown": {"type": "string"}}.items():
             view = blueprint.alt_response(200, schema=schema, content_type=media, success=True, description=LINKED)(view)
         view = blueprint.response(200, row_schema(of_class)(many=True), description=LINKED)(view)
         blueprint.route(f"/{kind}", endpoint=f"list_{kind}", methods=["GET"], tags=[kind])(view)
@@ -534,13 +543,15 @@ def resources() -> None:
 @blueprint.get("/<path:path>")
 @blueprint.doc(responses=RECORD_FORMATS)
 def read(path):
-    """A record or part at its page's address, in JSON-LD, Turtle or N-Triples, by the Accept header."""
+    """A record or part at its page's address, in JSON-LD, Turtle, N-Triples or Markdown, by the Accept header."""
     record = found_record(path)
     if record.moved_to:
         return redirect(url_for("api.read", path=record.moved_to.removeprefix(settings()["base"])), code=301)
     if record.removed_at:
         abort(410, message="Removed.")
-    media = request.accept_mimetypes.best_match(["application/ld+json", *SERIALIZATIONS]) or "application/ld+json"
+    media = request.accept_mimetypes.best_match(["application/ld+json", *SERIALIZATIONS, "text/markdown"]) or "application/ld+json"
+    if media == "text/markdown":
+        return markdown_of(record)
     # A part, such as a case study question, is read as its record is.
     kind = kind_of(record.part_of or record.iri, {})
     answer = data(storage.with_names(readable(storage.graph([record.iri]), kind)), media, record.iri)

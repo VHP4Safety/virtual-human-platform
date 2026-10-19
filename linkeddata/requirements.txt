@@ -2,6 +2,7 @@ rdfsolve[validation] @ git+https://github.com/jmillanacosta/rdfsolve@2905d6e6861
 pillow>=11
 pyshacl>=0.30
 pyyaml>=6.0
+markdownify>=1.2
 sqlalchemy>=2.0
 requests>=2.33.0
 pytest>=8

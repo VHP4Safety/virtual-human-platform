@@ -1,7 +1,8 @@
 """The records on the platform's pages.
 
 A record's address answers with its data when JSON-LD, Turtle or N-Triples is asked for, by the Accept
-header or a .jsonld, .ttl or .nt ending (/tools/pathvisio.ttl). Its page links to that data with FAIR
+header or a .jsonld, .ttl or .nt ending (/tools/pathvisio.ttl), and with its page in Markdown for
+text/markdown or a .md ending. Its page links to that data with FAIR
 Signposting (Link headers): cite-as, type, describedby, and the shapes it is checked with
 (ldp:constrainedBy). A removed record's address answers 410 Gone; an earlier address of a moved record
 forwards (301). A record without a page of its own is shown on a general record page.
@@ -14,10 +15,13 @@ from rdflib import Graph
 
 from database import records
 from database.tables import Record
-from linkeddata import documents, outline, storage
+from linkeddata import documents, markdown, outline, storage
 from linkeddata.model import settings
 
 FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "application/n-triples"}
+FORMAT_NAMES = {".jsonld": "JSON-LD", ".ttl": "Turtle", ".nt": "N-Triples"}
+# A page in Markdown, for readers of plain text such as agents.
+MARKDOWN = ".md"
 SERIALIZATIONS = {"text/turtle": "turtle", "application/n-triples": "nt"}
 
 blueprint = Blueprint("pages", __name__)
@@ -37,6 +41,15 @@ def data(found: Graph, media: str, iri: str | None = None) -> Response:
     return Response(body, mimetype=media, headers={"Vary": "Accept"})
 
 
+def markdown_of(record: Record) -> Response:
+    """A record's page in Markdown, with links to its data."""
+    formats = {}
+    for ending, name in FORMAT_NAMES.items():
+        formats[name] = record.iri + ending
+    body = markdown.record(outline.outline(record), formats, settings()["license"])
+    return Response(body, content_type=markdown.MEDIA, headers={"Vary": "Accept"})
+
+
 @blueprint.before_app_request
 def negotiate():
     """A record's data is sent when asked for; otherwise its page is made as usual."""
@@ -44,12 +57,12 @@ def negotiate():
         return None
     path = request.path.strip("/")
     media = None
-    for ending, ending_media in FORMATS.items():
+    for ending, ending_media in {**FORMATS, MARKDOWN: "text/markdown"}.items():
         if path.endswith(ending):
             path = path.removesuffix(ending)
             media = ending_media
     if media is None:
-        media = request.accept_mimetypes.best_match(["text/html", *FORMATS.values(), "application/json"], "text/html")
+        media = request.accept_mimetypes.best_match(["text/html", *FORMATS.values(), "application/json", "text/markdown"], "text/html")
     record = records.get(records.address(path))
     if record is None:
         return None
@@ -62,6 +75,8 @@ def negotiate():
     if record.removed_at:
         return render_template("records/gone.html", record=record, page_title="Removed — VHP4Safety"), 410
     g.record = record
+    if media == "text/markdown":
+        return markdown_of(record)
     if media != "text/html":
         return data(documents.public(storage.linked_graph(record)), media)
     # A record with no page of its own is shown on the general record page.
@@ -78,6 +93,7 @@ def link_data(response):
         for ending, media in FORMATS.items():
             links.append(f'<{page_path(g.record)}{ending}>; rel="describedby"; type="{media}"')
         links.append(f'<{url_for("api.model_shapes")}>; rel="http://www.w3.org/ns/ldp#constrainedBy"; type="text/turtle"')
+        links.append(f'<{page_path(g.record)}{MARKDOWN}>; rel="alternate"; type="text/markdown"')
         response.headers["Vary"] = "Accept"
     # The records' licence, on their pages, their data and the API.
     if "record" in g or request.path.startswith("/api/"):
@@ -101,7 +117,7 @@ def record_context() -> dict:
     except ValueError as problem:
         current_app.logger.warning("The record %s does not fit the model: %s", g.record.iri, problem)
         document = None
-    return {"record_document": document, "record_formats": formats}
+    return {"record_document": document, "record_formats": formats, "record_markdown": page_path(g.record) + MARKDOWN}
 
 
 @blueprint.app_template_filter("short_iri")
