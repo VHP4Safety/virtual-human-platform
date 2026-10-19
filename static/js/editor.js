@@ -390,9 +390,17 @@ import { outline } from "./record-index.js";
     form.addEventListener("ready", function () {
       loaded = form.serialize("text/turtle");
     });
+    const discard = document.getElementById("discard");
     form.addEventListener("change", function () {
       edited = loaded !== null && form.serialize("text/turtle") !== loaded;
+      discard.classList.toggle("d-none", !edited);
       schedulePreview();
+    });
+    discard.addEventListener("click", function () {
+      if (window.confirm("Discard the changes? The record is opened again as it was saved.")) {
+        busy(discard, "Discarding…", column);
+        reopen(editor.graph);
+      }
     });
     // Focus within the form reaches its shadow root, not the form.
     if (caseStudy) {
