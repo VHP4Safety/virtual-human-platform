@@ -557,7 +557,7 @@ def read(path):
         return markdown_of(record)
     # A part, such as a case study question, is read as its record is.
     kind = kind_of(record.part_of or record.iri, {})
-    answer = data(storage.with_names(readable(storage.graph([record.iri]), kind)), media, record.iri)
+    answer = data(readable(storage.with_names(storage.graph([record.iri])), kind), media, record.iri)
     answer.headers["ETag"] = f'"{record.updated_at}"'
     return answer
 

@@ -38,10 +38,10 @@ def page_path(record: Record) -> str:
 
 
 def data(found: Graph, media: str, iri: str | None = None) -> Response:
-    """Statements in JSON-LD (the document of the record at *iri*, when it is given), also when plain JSON is
-    asked for, Turtle or N-Triples."""
+    """Statements in JSON-LD (the document of the record at *iri*, when it is given, with the names of the records
+    it links to), also when plain JSON is asked for, Turtle or N-Triples."""
     if media in ("application/ld+json", "application/json"):
-        body = json.dumps(documents.document(found, iri), indent=2)
+        body = json.dumps(documents.document(found, iri, named=True), indent=2)
     else:
         body = found.serialize(format=SERIALIZATIONS[media])
     return Response(body, mimetype=media, headers={"Vary": "Accept"})

@@ -7,7 +7,7 @@ from functools import cache
 
 from pyld import jsonld
 from rdflib import RDF, Graph, Literal, URIRef
-from rdflib.namespace import SH
+from rdflib.namespace import SDO, SH
 
 import database
 from database import records
@@ -87,13 +87,21 @@ def statements(document: dict) -> Graph:
     return Graph().parse(data=json.dumps(document), format="json-ld")
 
 
-def document(found: Graph, iri: str | None = None) -> dict:
-    """The JSON-LD document of the record at *iri*, with its nodes without an address; without *iri*, of all
+def document(found: Graph, iri: str | None = None, named: bool = False) -> dict:
+    """The JSON-LD document of the record at *iri*, with its nodes without an address, and, when *named*, the
+    class and name of each record it links to that *found* gives (as a read gives them); without *iri*, of all
     the statements."""
     if iri is None:
         expanded = jsonld.from_rdf(found.serialize(format="nt"), {"format": "application/n-quads"})
         return jsonld.compact(expanded, context(settings()))
-    expanded = jsonld.from_rdf(storage.described(found, iri).serialize(format="nt"), {"format": "application/n-quads"})
+    own = storage.described(found, iri)
+    if named:
+        for value in set(own.objects()):
+            if isinstance(value, URIRef) and (value, None, None) not in own:
+                for predicate in (RDF.type, SDO.name):
+                    for given in found.objects(value, predicate):
+                        own.add((value, predicate, given))
+    expanded = jsonld.from_rdf(own.serialize(format="nt"), {"format": "application/n-quads"})
     framed = jsonld.frame(expanded, {"@context": context(settings()), "@id": iri})
     if "@graph" in framed:
         return {"@context": framed["@context"], **framed["@graph"][0]} if framed["@graph"] else {"@context": framed["@context"]}
