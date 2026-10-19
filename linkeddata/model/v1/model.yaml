@@ -48,6 +48,8 @@ kinds:
   pages: https://schema.org/WebPage
   terms: https://schema.org/DefinedTerm
   vocabularies: https://schema.org/DefinedTermSet
+  grants: https://schema.org/MonetaryGrant
+  platform: https://schema.org/DataCatalog
 
 # Used for short names in the YAML mappings and in the JSON-LD documents.
 prefixes:

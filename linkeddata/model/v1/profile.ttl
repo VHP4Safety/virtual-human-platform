@@ -154,7 +154,84 @@ form:Organization a sh:NodeShape ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
     sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Website" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 3 ; sh:name "Elsewhere" ; sh:nodeKind sh:IRI ;
-        sh:description "Its Wikidata or ROR item, and other addresses." ] .
+        sh:description "Its Wikidata or ROR item, and other addresses." ] ;
+    sh:property [ sh:path schema:description ; sh:order 4 ; sh:name "Description" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
+    sh:property [ sh:path schema:logo ; sh:order 5 ; sh:name "Logo" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+        sh:description "Shown among the platform's partners." ] ;
+    sh:property [ sh:path schema:email ; sh:order 6 ; sh:name "Contact email" ; sh:maxCount 1 ; sh:datatype xsd:string ; form:private true ;
+        sh:description "A general address of the organisation." ] .
+
+# A research project, such as VHP4Safety: an organisation with its grants, videos, figures, research lines,
+# partners and co-funders.
+form:ResearchProject a sh:NodeShape ;
+    sh:targetClass schema:ResearchProject ;
+    sh:node form:Organization ;
+    rdfs:label "Project" ;
+    sh:property [ sh:path schema:funding ; sh:order 7 ; sh:name "Grants" ; sh:class schema:MonetaryGrant ;
+        sh:description "Publications and data that name one of its grants are its outputs." ] ;
+    sh:property [ sh:path schema:subjectOf ; sh:order 8 ; sh:name "Videos" ; sh:class schema:VideoObject ; sh:node form:VideoObject ; sh:nodeKind sh:BlankNode ] ;
+    sh:property [ sh:path schema:image ; sh:order 9 ; sh:name "Figures" ; sh:class schema:ImageObject ; sh:node form:ImageObject ; sh:nodeKind sh:BlankNode ] ;
+    sh:property [ sh:path schema:subOrganization ; sh:order 10 ; sh:name "Research lines" ; sh:class schema:ResearchProject ; sh:node form:ResearchProject ; sh:nodeKind sh:BlankNode ;
+        sh:description "Each with its name and what it does." ] ;
+    sh:property [ sh:path schema:member ; sh:order 11 ; sh:name "Partners" ; sh:class schema:OrganizationRole ; sh:node form:OrganizationRole ; sh:nodeKind sh:BlankNode ;
+        sh:description "Each partner organisation with its role, such as coordination." ] ;
+    sh:property [ sh:path schema:funder ; sh:order 12 ; sh:name "Co-funders" ; sh:class schema:Organization ] .
+
+# A partner of a project, with its role; it is part of the project's record.
+form:OrganizationRole a sh:NodeShape ;
+    sh:targetClass schema:OrganizationRole ;
+    rdfs:label "Partner" ;
+    sh:property [ sh:path schema:member ; sh:order 1 ; sh:name "Organisation" ; sh:minCount 1 ; sh:maxCount 1 ; sh:class schema:Organization ; sh:message "One organisation needed." ] ;
+    sh:property [ sh:path schema:roleName ; sh:order 2 ; sh:name "Role" ; sh:maxCount 1 ; sh:datatype xsd:string ] .
+
+# A grant, at /grants/<name>, with its funder, number and amount; the records that name it (schema:funding)
+# are what it funds.
+form:MonetaryGrant a sh:NodeShape ;
+    sh:targetClass schema:MonetaryGrant ;
+    rdfs:label "Grant" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
+    sh:property [ sh:path schema:identifier ; sh:order 2 ; sh:name "Grant number" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:funder ; sh:order 3 ; sh:name "Funder" ; sh:minCount 1 ; sh:severity sh:Warning ; sh:class schema:Organization ;
+        sh:message "Add the funder." ] ;
+    sh:property [ sh:path schema:amount ; sh:order 4 ; sh:name "Amount" ; sh:maxCount 1 ; sh:class schema:MonetaryAmount ; sh:node form:MonetaryAmount ; sh:nodeKind sh:BlankNode ] ;
+    sh:property [ sh:path schema:url ; sh:order 5 ; sh:name "Page" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+        sh:description "The funder's page of the grant." ] ;
+    sh:property [ sh:path schema:description ; sh:order 6 ; sh:name "Description" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] .
+
+# An amount of money; it is part of its grant's record.
+form:MonetaryAmount a sh:NodeShape ;
+    sh:targetClass schema:MonetaryAmount ;
+    rdfs:label "Amount" ;
+    sh:property [ sh:path schema:value ; sh:order 1 ; sh:name "Value" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:decimal ; sh:message "One number needed." ] ;
+    sh:property [ sh:path schema:currency ; sh:order 2 ; sh:name "Currency" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:pattern "^[A-Z]{3}$" ;
+        sh:message "A three-letter currency code, such as EUR." ] .
+
+# The platform, at its own address: a catalogue of the records, with its publisher, licence and kinds of
+# records. Its VoID description (/.well-known/void, and the platform's address in Turtle) is made from it.
+form:DataCatalog a sh:NodeShape ;
+    sh:targetClass schema:DataCatalog ;
+    rdfs:label "Platform" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
+    sh:property [ sh:path schema:alternateName ; sh:order 2 ; sh:name "Heading" ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:description "The name as the home page heads it." ] ;
+    sh:property [ sh:path schema:abstract ; sh:order 3 ; sh:name "In one sentence" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:description ; sh:order 4 ; sh:name "Description" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
+    sh:property [ sh:path schema:publisher ; sh:order 5 ; sh:name "Publisher" ; sh:minCount 1 ; sh:maxCount 1 ; sh:severity sh:Warning ; sh:class schema:Organization ;
+        sh:message "Add who publishes the platform." ;
+        sh:description "Its partners are the platform's contributors." ] ;
+    sh:property [ sh:path schema:license ; sh:order 6 ; sh:name "Licence of the records" ; sh:minCount 1 ; sh:maxCount 1 ; sh:severity sh:Warning ;
+        sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ; form:publishedAs schema:CreativeWork ;
+        sh:message "Choose the licence of the platform's records; none is stated until then." ] ;
+    sh:property [ sh:path schema:subjectOf ; sh:order 7 ; sh:name "Pages about it" ; sh:class schema:WebPage ] ;
+    sh:property [ sh:path void:classPartition ; sh:order 8 ; sh:name "Kinds of records" ; sh:node form:ClassPartition ; sh:nodeKind sh:BlankNode ;
+        sh:description "Each kind's name and description, as the home page shows them; their counts are added." ] .
+
+# A kind of records of the platform: its class, name and description; it is part of the platform's record.
+form:ClassPartition a sh:NodeShape ;
+    rdfs:label "Kind of records" ;
+    sh:property [ sh:path void:class ; sh:order 1 ; sh:name "Class" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:message "One class needed." ] ;
+    sh:property [ sh:path schema:name ; sh:order 2 ; sh:name "Name" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:description ; sh:order 3 ; sh:name "Description" ; sh:maxCount 1 ; sh:or ( form:PlainText form:HTMLText ) ] .
 
 form:Person a sh:NodeShape ;
     sh:targetClass schema:Person ;
@@ -309,7 +386,22 @@ form:WebPageElement a sh:NodeShape ;
     rdfs:label "Section" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Heading" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:text ; sh:order 2 ; sh:name "Text" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
-    sh:property [ sh:path schema:position ; sh:order 3 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ] .
+    sh:property [ sh:path schema:position ; sh:order 3 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ] ;
+    sh:property [ sh:path schema:image ; sh:order 4 ; sh:name "Figures" ; sh:class schema:ImageObject ; sh:node form:ImageObject ; sh:nodeKind sh:BlankNode ;
+        sh:description "Shown after the text." ] ;
+    sh:property [ sh:path schema:video ; sh:order 5 ; sh:name "Videos" ; sh:class schema:VideoObject ; sh:node form:VideoObject ; sh:nodeKind sh:BlankNode ] ;
+    sh:property [ sh:path schema:creativeWorkStatus ; sh:order 6 ; sh:name "Status" ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:description "\"hidden\": kept, but not shown." ] ;
+    sh:property [ sh:path schema:hasPart ; sh:order 7 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
+        sh:description "Its own sections, shown as its items." ] .
+
+# A figure: an image's address and caption; it is part of the record that shows it.
+form:ImageObject a sh:NodeShape ;
+    sh:targetClass schema:ImageObject ;
+    rdfs:label "Figure" ;
+    sh:property [ sh:path schema:contentUrl ; sh:order 1 ; sh:name "Image" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:message "One image address needed." ] ;
+    sh:property [ sh:path schema:caption ; sh:order 2 ; sh:name "Caption" ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:description "Also read out in place of the image." ] .
 
 # A publication's journal, with its ISSNs; it is part of the publication's record.
 form:Periodical a sh:NodeShape ;
@@ -332,7 +424,9 @@ form:ScholarlyArticle a sh:NodeShape ;
         sh:class schema:Periodical ; sh:node form:Periodical ; sh:nodeKind sh:BlankNode ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 5 ; sh:name "DOI and other addresses" ; sh:minCount 1 ; sh:nodeKind sh:IRI ;
         sh:message "DOI needed, starting with https://doi.org/10." ;
-        sh:description "The DOI as a web address, the Wikidata item, and other addresses." ] .
+        sh:description "The DOI as a web address, the Wikidata item, and other addresses." ] ;
+    sh:property [ sh:path schema:funding ; sh:order 6 ; sh:name "Funded by" ; sh:class schema:MonetaryGrant ;
+        sh:description "The grants it acknowledges; a project's page lists the publications of its grants." ] .
 
 # A page of the platform, with its text in sections; or a page elsewhere, such as a tool's guide, as part
 # of the tool's record.
@@ -342,8 +436,18 @@ form:WebPage a sh:NodeShape ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:url ; sh:order 3 ; sh:name "Address elsewhere" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
-    sh:property [ sh:path schema:hasPart ; sh:order 4 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
-        sh:description "Sections of a platform page, each with a heading, an HTML text, a position and an anchor." ] .
+    sh:property [ sh:path schema:about ; sh:order 4 ; sh:name "Terms explained" ; sh:class schema:DefinedTerm ;
+        sh:description "A term whose kinds the page explains, such as Process Flow Step." ] ;
+    sh:property [ sh:path schema:hasPart ; sh:order 5 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
+        sh:description "Sections of a platform page, each with a heading, a text and a position; a section's own sections are its items." ] .
+
+# A page about a project or organisation, whose record gives what it is; the page's sections give the rest.
+form:AboutPage a sh:NodeShape ;
+    sh:targetClass schema:AboutPage ;
+    sh:node form:WebPage ;
+    rdfs:label "About page" ;
+    sh:property [ sh:path schema:mainEntity ; sh:order 6 ; sh:name "About" ; sh:maxCount 1 ; sh:class schema:Organization ;
+        sh:description "Its description, videos, figures, research lines, grants and partners are shown, and the publications of its grants." ] .
 
 # A video, such as a PeerTube one, shown in its player; it is part of the record that shows it.
 form:VideoObject a sh:NodeShape ;
