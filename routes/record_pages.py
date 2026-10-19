@@ -111,6 +111,10 @@ def link_data(response):
         response.headers["Link"] = ", ".join(([given] if given else []) + links)
     if "record" in g and request.method in ("GET", "HEAD") and response.status_code == 200:
         conditional(response)
+    # Scripts of other sites may read public data; without credentials, so as visitors.
+    if request.method in ("GET", "HEAD") and (request.path.startswith("/api/") or ("record" in g and response.mimetype != "text/html")):
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Expose-Headers"] = "Link, ETag, Last-Modified, X-Pagination"
     return response
 
 
