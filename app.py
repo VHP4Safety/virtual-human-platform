@@ -9,7 +9,7 @@ import time
 import nh3
 import requests
 import urllib.parse
-from flask import Flask, abort, jsonify, render_template, request, Response
+from flask import Flask, abort, jsonify, render_template, request, Response, url_for
 from flask_caching import Cache
 from jinja2 import TemplateNotFound
 from markupsafe import Markup
@@ -21,7 +21,7 @@ from data.biostudies.search import BioStudiesExtractor
 from data.zenodo.search import ZenodoExtractor
 from data.mapping import normalize_all, scrub_draft
 from database import records
-from linkeddata import documents, storage
+from linkeddata import documents, outline, storage
 from routes.account import blueprint as account_blueprint
 from routes import limiter, records_api
 from routes.changes import blueprint as changes_blueprint
@@ -1729,26 +1729,24 @@ def workflows():
 def casestudy(case: str = "", question: str = "", step: str = "",
               step1: str = "", step2: str = "", step3: str = "",
               step4: str = "", step5: str = ""):
-    if case not in get_casestudies():
+    """A case study's page from its record: its content for readers without scripts, then the page drawn by
+    static/js/case-study.js at the address asked for. Its question and step addresses are views of the same
+    page, so they all have the case study's address as canonical."""
+    record = records.get(records.address(f"casestudies/{case}"))
+    if record is None:
         abort(404)
-    # The <question>/<step> sub-routes are JS-driven states of the same page, so
-    # canonicalise them all to the base case URL to avoid duplicate indexing.
-    case_labels = {
-        "kidney": "Kidney",
-        "parkinson": "Parkinson's disease",
-        "thyroid": "Thyroid",
-    }
-    case_name = case_labels.get(case, case.capitalize())
-    # JS will handle steps via the URL
+    found = outline.outline(record)
+    descriptions = [field["values"][0] for field in found["fields"] if field["name"] == "description"]
     return render_template(
         "case_studies/casestudy.html",
-        case=case,
-        page_title=f"{case_name} case study — VHP4Safety",
-        meta_description=(
-            f"The VHP4Safety {case_name} case study: a Virtual Human Platform "
-            "workflow connecting tools, methods and data to a regulatory question."
-        ),
-        canonical_url=request.url_root.rstrip("/") + "/casestudies/" + case,
+        case_outline=found,
+        case_document=url_for("api.read", path=f"casestudies/{case}"),
+        page_address=records.address(request.path.strip("/")),
+        config_base=records.address(""),
+        page_title=f"{record.name or case} — VHP4Safety",
+        meta_description=clip(descriptions[0]["text"] if descriptions else "")
+        or f"The VHP4Safety {record.name or case}: a Virtual Human Platform workflow connecting tools, methods and data to a regulatory question.",
+        canonical_url=record.iri,
     )
 
 

@@ -5,8 +5,6 @@ and the record's address, data and licence."""
 from markdownify import markdownify
 
 MEDIA = "text/markdown; charset=utf-8; variant=GFM"
-# Texts longer than this, or in HTML, are paragraphs of their own; shorter ones are listed.
-SHORT = 160
 
 
 def text(value: dict) -> str:
@@ -24,6 +22,13 @@ def shown(value: dict) -> str:
     return text(value)
 
 
+def values(field: dict) -> list[str]:
+    found = []
+    for value in field["values"]:
+        found.append(shown(value))
+    return found
+
+
 def heading(level: int, title: str) -> str:
     """A heading; levels below the sixth are bold lines."""
     return "#" * level + " " + title if level <= 6 else f"**{title}**"
@@ -35,13 +40,10 @@ def node(found: dict, level: int) -> list[str]:
         lines.append(f"_{found['kind']}_" + (f" · <{found['address']}>" if found["address"] else ""))
     listed = []
     for field in found["fields"]:
-        long = [value for value in field["values"] if "text" in value and (value["html"] or len(value["text"]) > SHORT)]
-        if long:
-            for value in long:
-                lines.append(f"**{field['label']}**\n\n{text(value)}")
-        short = [shown(value) for value in field["values"] if value not in long]
-        if short:
-            listed.append(f"- **{field['label']}:** " + "; ".join(short))
+        if field["long"]:
+            lines.append(f"**{field['label']}**\n\n" + "\n\n".join(values(field)))
+        else:
+            listed.append(f"- **{field['label']}:** " + "; ".join(values(field)))
     if listed:
         lines.append("\n".join(listed))
     for group in found["parts"]:

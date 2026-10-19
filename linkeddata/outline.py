@@ -12,6 +12,8 @@ from linkeddata.model import profile
 
 # A node's name heads it, and its position orders it among its kind; neither is listed with its fields.
 HEADING = {str(SDO.name), str(SDO.position)}
+# A field with a text longer than this, or in HTML, is read as paragraphs; others as a list.
+SHORT = 160
 
 
 def kind_of(of_class: str) -> str:
@@ -49,7 +51,12 @@ def node_outline(found: Graph, node, names: dict) -> dict:
             shown["parts"].append({"label": field["label"], "items": [node_outline(found, part, names) for part in values]})
         else:
             values.sort(key=str)
-            shown["fields"].append({"name": field["name"], "label": field["label"], "values": [value_of(value, names) for value in values]})
+            given = [value_of(value, names) for value in values]
+            long = False
+            for value in given:
+                if "text" in value and (value["html"] or len(value["text"]) > SHORT):
+                    long = True
+            shown["fields"].append({"name": field["name"], "label": field["label"], "values": given, "long": long})
     return shown
 
 

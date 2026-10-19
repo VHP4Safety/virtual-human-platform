@@ -35,6 +35,21 @@
 {% endfor %}
 {% endmacro %}
 
+{# An outline to read: headings, fields as a list, and texts as paragraphs. #}
+{% macro article(found, level) %}
+<section class="mb-4">
+  <h{{ [level, 6]|min }}>{{ found.name or found.kind }}</h{{ [level, 6]|min }}>
+  {% for field in found.fields %}
+  {% if field.long %}
+  <div class="mb-3"><p class="fw-semibold mb-1">{{ field.label }}</p>{% for found_value in field["values"] %}<div>{{ value(found_value) }}</div>{% endfor %}</div>
+  {% else %}
+  <p class="mb-1"><span class="fw-semibold">{{ field.label }}:</span> {% for found_value in field["values"] %}{{ value(found_value) }}{% if not loop.last %}; {% endif %}{% endfor %}</p>
+  {% endif %}
+  {% endfor %}
+  {% for group in found.parts %}{% for item in group["items"] %}{{ article(item, level + 1) }}{% endfor %}{% endfor %}
+</section>
+{% endmacro %}
+
 {% macro named_on(named) %}
 {% if named %}
 <div class="card mt-3">
