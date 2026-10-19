@@ -24,6 +24,7 @@ from importlib.resources import files
 from pyld import jsonld
 
 from linkeddata.parsers import licence, link, present, publication, slug, term
+from linkeddata.patches import local_name
 
 DATE = "http://www.w3.org/2001/XMLSchema#date"
 DECIMAL = "http://www.w3.org/2001/XMLSchema#decimal"
@@ -58,11 +59,6 @@ def listed(value) -> list:
     return value if isinstance(value, list) else [value] if present(value) else []
 
 
-def named(iri: str) -> str:
-    """A term's name: its address after the last / or #."""
-    return re.split(r"[/#]", iri)[-1]
-
-
 def entities(crate: dict) -> dict[str, dict]:
     """The crate's entities by address, as linked data."""
     contexts = []
@@ -75,13 +71,13 @@ def entities(crate: dict) -> dict[str, dict]:
 
 
 def kinds(node: dict) -> list[str]:
-    return [named(kind) for kind in node.get("@type", [])]
+    return [local_name(kind) for kind in node.get("@type", [])]
 
 
 def values(node: dict, field: str) -> list:
     """A field's values, by its name in schema.org or another vocabulary."""
     for iri, given in node.items():
-        if iri not in ("@id", "@type") and named(iri) == field:
+        if iri not in ("@id", "@type") and local_name(iri) == field:
             return given
     return []
 
@@ -137,7 +133,7 @@ def fields(nodes: dict, node: dict, others: dict, seen: frozenset = frozenset())
         if iri in ("@id", "@type"):
             continue
         for value in given:
-            row.setdefault(named(iri), []).append(converted(nodes, value, others, seen | {node["@id"]}))
+            row.setdefault(local_name(iri), []).append(converted(nodes, value, others, seen | {node["@id"]}))
     return row
 
 

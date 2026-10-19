@@ -32,12 +32,11 @@ def term(iri: str) -> str:
     for name, named in settings().get("terms", {}).items():
         if iri == named:
             return name
-    for prefix, namespace in settings()["prefixes"].items():
-        if iri.startswith(namespace):
-            if prefix == "schema":
-                return iri.removeprefix(namespace)
-            return prefix + ":" + iri.removeprefix(namespace)
-    return iri
+    found = patches.curie(iri, settings()["prefixes"])
+    if found is None:
+        return iri
+    written, prefix, namespace = found
+    return iri.removeprefix(namespace) if prefix == "schema" else written
 
 
 def expand(name: str) -> str:

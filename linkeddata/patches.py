@@ -9,11 +9,23 @@ from uuid import NAMESPACE_URL, uuid5
 import requests
 from rdflib import RDF, RDFS, BNode, Graph, URIRef
 from rdflib.namespace import SH
+from rdfsolve import _uri
 from rdfsolve.client.sql_tables import STATEMENTS, TERM_SUFFIX, layout
 from rdfsolve.ontology.service import Ontologies
 from rdfsolve.schema_models.core import MinedSchema
 from rdfsolve.schema_models.void_model import VoidClassPartition, VoidDatatypePartition, VoidPropertyPartition
 from sqlalchemy import column, func, literal, select, table, union_all
+
+
+def curie(iri: str, prefixes: dict[str, str]) -> tuple[str, str, str] | None:
+    """Issue 24: an IRI as a CURIE of the longest namespace among the prefixes, with its prefix and
+    namespace; None when none matches (rdfsolve._uri.curie_from_prefixes, to be public)."""
+    return _uri.curie_from_prefixes(iri, prefixes)
+
+
+def local_name(iri: str) -> str:
+    """Issue 24: an IRI's last part, after its # or last / (rdfsolve._uri.get_local_name, to be public)."""
+    return _uri.get_local_name(iri)
 
 
 @dataclass

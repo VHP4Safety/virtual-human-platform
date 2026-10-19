@@ -17,7 +17,7 @@ from urllib.parse import urlsplit
 
 from rdflib import RDF, XSD, Graph, Literal, URIRef
 from rdflib.namespace import DCTERMS, FOAF, SDO, VOID
-
+from rdfsolve.ontology.terms import namespace
 from sqlalchemy import select
 
 import database
@@ -49,12 +49,6 @@ def platform() -> dict:
                         license=str(found.value(node, SDO.license) or ""),
                         publisher=documents.document(documents.linked(publisher), publisher.iri, named=True) if publisher is not None else None)
     return PLATFORM
-
-
-def namespace(iri: str) -> str:
-    """A term's vocabulary: its address up to its last # or /."""
-    cut = max(iri.rfind("#"), iri.rfind("/"))
-    return iri[:cut + 1]
 
 
 def general(void: Graph, dataset: URIRef) -> None:
@@ -139,7 +133,7 @@ def terms(void: Graph, dataset: URIRef) -> None:
     counted = Counter(found.objects(None, SDO.inDefinedTermSet))
     held = storage.graph(sorted(str(vocabulary) for vocabulary in counted))
     for vocabulary, count in sorted(counted.items()):
-        part = URIRef(records.address(DESCRIPTION) + "#terms-" + str(vocabulary).rstrip("/").rsplit("/", 1)[-1])
+        part = URIRef(records.address(DESCRIPTION) + "#terms-" + patches.local_name(str(vocabulary)))
         void.add((subset, VOID.subset, part))
         void.add((part, RDF.type, VOID.Dataset))
         void.add((part, DCTERMS.source, vocabulary))

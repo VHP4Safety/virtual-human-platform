@@ -183,19 +183,12 @@ def record_context() -> dict:
     except ValueError as problem:
         current_app.logger.warning("The record %s does not fit the model: %s", g.record.iri, problem)
         document = None
-    return {"record_document": document, "record_formats": formats, "record_markdown": page_path(g.record) + MARKDOWN,
-            "record_crate": page_path(g.record) + "/ro-crate-metadata.json"}
+    return {"record_document": document, "record_formats": formats, "record_markdown": page_link(g.record.iri) + MARKDOWN,
+            "record_crate": page_link(g.record.iri) + "/ro-crate-metadata.json"}
 
 
-@blueprint.app_template_filter("short_iri")
-def short_iri(iri: str) -> str:
-    """An address written with the model's prefixes: https://schema.org/name is name."""
-    for prefix, namespace in settings()["prefixes"].items():
-        if iri.startswith(namespace):
-            if prefix == "schema":
-                return iri.removeprefix(namespace)
-            return prefix + ":" + iri.removeprefix(namespace)
-    return iri
+# An address written with the model's prefixes: https://schema.org/name is name.
+blueprint.add_app_template_filter(documents.term, "short_iri")
 
 
 @blueprint.app_template_filter("issue_tracker")
