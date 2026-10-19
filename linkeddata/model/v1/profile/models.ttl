@@ -469,7 +469,6 @@ form:SUVAnalysis a sh:NodeShape ;
         sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] .
 
 form:MediaObject a sh:NodeShape ;
-    sh:targetClass schema:MediaObject ;
     rdfs:label "File" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Artifact name" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the artifact name, as ROBOT asks." ] ;

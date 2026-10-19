@@ -1144,21 +1144,6 @@ CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_teaches" (
   FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_learning_resource__schema_teaches__record" ON "schema_learning_resource__schema_teaches" ("record");
-CREATE TABLE IF NOT EXISTS "schema_media_object" (
-  "record" TEXT NOT NULL,
-  "iri" TEXT NOT NULL,
-  "type" TEXT,
-  "pbpk_artifact_location" TEXT,
-  "pbpk_artifact_location__term" TEXT,
-  "pbpk_artifact_type" TEXT,
-  "pbpk_artifact_type__term" TEXT,
-  "schema_encoding_format" TEXT,
-  "schema_encoding_format__term" TEXT,
-  "schema_name" TEXT,
-  "schema_name__term" TEXT,
-  PRIMARY KEY ("iri")
-);
-CREATE INDEX IF NOT EXISTS "schema_media_object__record" ON "schema_media_object" ("record");
 CREATE TABLE IF NOT EXISTS "schema_molecular_entity" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
