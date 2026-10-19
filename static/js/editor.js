@@ -2,7 +2,7 @@
 // API (Graph Store Protocol) with the record's version. The preview beside it shows what is published: the
 // record's page, or its linked data.
 import { busy } from "./busy.js";
-import { outline } from "./record-index.js";
+import { outline, reveal as showPart } from "./record-index.js";
 
 (function () {
   const editor = JSON.parse(document.getElementById("editor").textContent);
@@ -95,7 +95,7 @@ import { outline } from "./record-index.js";
     }
     const flagged = found.find(function (instance) { return instance.classList.contains("invalid"); }) || found[0];
     if (flagged) {
-      flagged.scrollIntoView({ block: "center", behavior: "smooth" });
+      showPart(flagged);
     }
   }
 
@@ -193,7 +193,47 @@ import { outline } from "./record-index.js";
       onNavigate: function () {
         pageView.scrollTop = 0;
       },
+      onPick: showEditing,
     });
+  }
+
+  // What is clicked in the case study's page is shown in the form: the part at the page's address, its
+  // section by position and name, and the field, at the value clicked when there is one.
+  function showEditing(address, field, section, value) {
+    const own = function (element, node) { return element.closest("shacl-node") === node; };
+    let node = Array.from(form.shadowRoot.querySelectorAll("shacl-node")).find(function (found) {
+      return found.dataset.nodeId === address;
+    });
+    if (!node) {
+      return;
+    }
+    if (section) {
+      let fit = 0;
+      let found = null;
+      for (const part of node.querySelectorAll('.property-instance[data-path="' + SCHEMA + 'hasPart"] > shacl-node')) {
+        const fits = (parseFloat(valueOf(part, SCHEMA + "position")) === parseFloat(section.position) ? 2 : 0) + (valueOf(part, SCHEMA + "name") === section.name ? 1 : 0);
+        if (own(part.parentElement, node) && fits > fit) {
+          fit = fits;
+          found = part;
+        }
+      }
+      node = found || node;
+    }
+    let target = node;
+    for (const name of field.split(" ").filter(Boolean)) {
+      const fields = Array.from(node.querySelectorAll(".property-instance")).filter(function (instance) {
+        return own(instance, node) && term(instance.dataset.path || "") === name;
+      });
+      const valued = fields.find(function (instance) {
+        const input = instance.querySelector("input.editor");
+        return value && input && (input.value === value || input.value === JSON.stringify(value));
+      });
+      if (valued || fields.length) {
+        target = valued || fields[0];
+        break;
+      }
+    }
+    showPart(target);
   }
 
   // The focused field is marked on the page of the nearest node with an address. A node without one,

@@ -15,6 +15,8 @@
 //   linkTarget   where links open, such as "_blank" in the editor
 //   openDisabled true opens pages whose buttons the website greys out, to preview them
 //   onNavigate   called with the address of the page in view, after a click opens another
+//   onPick       called with the page in view, the field, the section ({position, name}) and the value of
+//                what is clicked, such as a section's text; links then open only with Ctrl or Cmd
 //
 // markField(container, address, field, section) marks what shows a field of a page, such as the one an
 // editor's form is on, and opens that page.
@@ -319,6 +321,7 @@ function buttons(container, state, page, level) {
   for (const item of items(state, page)) {
     const button = make(item.address ? "a" : "button", "btn w-100 text-white " + ITEMS);
     button.dataset.field = item.field;
+    button.dataset.value = item.address || item.name || "";
     if (item.address) {
       button.href = local(item.address, state.options);
       opens(button, state.options);
@@ -505,6 +508,21 @@ export function renderCaseStudy(container, caseStudy, options) {
     containers += 1;
     state = { id: "case-study-" + containers, path: [], open: new Map() };
     states.set(container, state);
+    // Told after the page's own buttons have done their part, such as opening another page.
+    container.addEventListener("click", function (event) {
+      const picked = states.get(container);
+      if (!picked.options.onPick || event.ctrlKey || event.metaKey) {
+        return;
+      }
+      if (event.target.closest("a[href]")) {
+        event.preventDefault();
+      }
+      const field = event.target.closest("[data-field]");
+      const item = event.target.closest(".accordion-item");
+      const section = item ? { position: item.dataset.position, name: item.dataset.name } : null;
+      const here = picked.path.length ? picked.path[picked.path.length - 1] : picked.document["@id"];
+      picked.options.onPick(here, field ? field.dataset.field : "", section, field ? field.dataset.value || "" : "");
+    });
   }
   state.document = caseStudy || {};
   state.options = options || {};
