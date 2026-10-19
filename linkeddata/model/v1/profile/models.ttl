@@ -329,7 +329,6 @@ form:ComputerLanguage a sh:NodeShape ;
     sh:property [ sh:path schema:alternateName ; sh:order 4 ; sh:name "Other name" ; sh:datatype xsd:string ] .
 
 form:MolecularEntity a sh:NodeShape ;
-    sh:targetClass schema:MolecularEntity ;
     rdfs:label "Chemical" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Chemical name" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the chemical name, as ROBOT asks." ] ;
@@ -356,7 +355,6 @@ form:ChemicalSubstance a sh:NodeShape ;
     sh:node form:MolecularEntity .
 
 form:PropertyValue a sh:NodeShape ;
-    sh:targetClass schema:PropertyValue ;
     rdfs:label "Identifier or value" ;
     sh:property [ sh:path schema:propertyID ; sh:order 1 ; sh:name "Identifier type" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "CAS RN" "InChI" "InChIKey" "SMILES" "PubChem CID" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;

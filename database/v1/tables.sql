@@ -1144,65 +1144,6 @@ CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_teaches" (
   FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_learning_resource__schema_teaches__record" ON "schema_learning_resource__schema_teaches" ("record");
-CREATE TABLE IF NOT EXISTS "schema_molecular_entity" (
-  "record" TEXT NOT NULL,
-  "iri" TEXT NOT NULL,
-  "type" TEXT,
-  "pbpk_chemical_role" TEXT,
-  "pbpk_chemical_role__term" TEXT,
-  "pbpk_physicochemical_notes" TEXT,
-  "pbpk_physicochemical_notes__term" TEXT,
-  "schema_description" TEXT,
-  "schema_description__term" TEXT,
-  "schema_in_ch_i" TEXT,
-  "schema_in_ch_i__term" TEXT,
-  "schema_in_ch_i_key" TEXT,
-  "schema_in_ch_i_key__term" TEXT,
-  "schema_molecular_formula" TEXT,
-  "schema_molecular_formula__term" TEXT,
-  "schema_molecular_weight" TEXT,
-  "schema_molecular_weight__term" TEXT,
-  "schema_name" TEXT,
-  "schema_name__term" TEXT,
-  PRIMARY KEY ("iri")
-);
-CREATE INDEX IF NOT EXISTS "schema_molecular_entity__record" ON "schema_molecular_entity" ("record");
-CREATE TABLE IF NOT EXISTS "schema_molecular_entity__schema_alternate_name" (
-  "record" TEXT NOT NULL,
-  "iri" TEXT NOT NULL,
-  "value" TEXT NOT NULL,
-  "term" TEXT NOT NULL,
-  PRIMARY KEY ("iri", "value", "term"),
-  FOREIGN KEY ("iri") REFERENCES "schema_molecular_entity" ("iri")
-);
-CREATE INDEX IF NOT EXISTS "schema_molecular_entity__schema_alternate_name__record" ON "schema_molecular_entity__schema_alternate_name" ("record");
-CREATE TABLE IF NOT EXISTS "schema_molecular_entity__schema_identifier" (
-  "record" TEXT NOT NULL,
-  "iri" TEXT NOT NULL,
-  "value" TEXT NOT NULL,
-  "term" TEXT NOT NULL,
-  PRIMARY KEY ("iri", "value", "term"),
-  FOREIGN KEY ("iri") REFERENCES "schema_molecular_entity" ("iri")
-);
-CREATE INDEX IF NOT EXISTS "schema_molecular_entity__schema_identifier__record" ON "schema_molecular_entity__schema_identifier" ("record");
-CREATE TABLE IF NOT EXISTS "schema_molecular_entity__schema_same_as" (
-  "record" TEXT NOT NULL,
-  "iri" TEXT NOT NULL,
-  "value" TEXT NOT NULL,
-  "term" TEXT NOT NULL,
-  PRIMARY KEY ("iri", "value", "term"),
-  FOREIGN KEY ("iri") REFERENCES "schema_molecular_entity" ("iri")
-);
-CREATE INDEX IF NOT EXISTS "schema_molecular_entity__schema_same_as__record" ON "schema_molecular_entity__schema_same_as" ("record");
-CREATE TABLE IF NOT EXISTS "schema_molecular_entity__schema_smiles" (
-  "record" TEXT NOT NULL,
-  "iri" TEXT NOT NULL,
-  "value" TEXT NOT NULL,
-  "term" TEXT NOT NULL,
-  PRIMARY KEY ("iri", "value", "term"),
-  FOREIGN KEY ("iri") REFERENCES "schema_molecular_entity" ("iri")
-);
-CREATE INDEX IF NOT EXISTS "schema_molecular_entity__schema_smiles__record" ON "schema_molecular_entity__schema_smiles" ("record");
 CREATE TABLE IF NOT EXISTS "schema_monetary_amount" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -1335,17 +1276,6 @@ CREATE TABLE IF NOT EXISTS "schema_person__schema_same_as" (
   FOREIGN KEY ("iri") REFERENCES "schema_person" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_person__schema_same_as__record" ON "schema_person__schema_same_as" ("record");
-CREATE TABLE IF NOT EXISTS "schema_property_value" (
-  "record" TEXT NOT NULL,
-  "iri" TEXT NOT NULL,
-  "type" TEXT,
-  "schema_property_id" TEXT,
-  "schema_property_id__term" TEXT,
-  "schema_value" TEXT,
-  "schema_value__term" TEXT,
-  PRIMARY KEY ("iri")
-);
-CREATE INDEX IF NOT EXISTS "schema_property_value__record" ON "schema_property_value" ("record");
 CREATE TABLE IF NOT EXISTS "schema_research_project" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
