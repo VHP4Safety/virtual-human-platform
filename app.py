@@ -22,6 +22,7 @@ from data.zenodo.search import ZenodoExtractor
 from data.mapping import normalize_all, scrub_draft
 from database import records
 from linkeddata import documents, outline, storage
+from linkeddata.model import settings
 from routes.account import blueprint as account_blueprint
 from routes import limiter, records_api
 from routes.changes import blueprint as changes_blueprint
@@ -86,11 +87,7 @@ CACHE_RESET_INTERVAL = 5 * 60  # seconds
 # routes override page_title / meta_description with page-specific values, and
 # inject_seo_defaults() falls back to these for anything that does not.
 DEFAULT_PAGE_TITLE = "VHP4Safety — Virtual Human Platform for safety assessment"
-DEFAULT_META_DESCRIPTION = (
-    "The Virtual Human Platform (VHP4Safety) brings together tools, methods, "
-    "data and case studies for animal-free, human-based safety assessment of "
-    "chemicals and pharmaceuticals."
-)
+DEFAULT_META_DESCRIPTION = settings()["description"]
 
 
 def clip(text, limit=160):

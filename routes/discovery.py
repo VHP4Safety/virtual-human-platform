@@ -2,7 +2,8 @@
 - /.well-known/api-catalog: the APIs (RFC 9727), as a linkset (RFC 9264), with their OpenAPI descriptions;
 - the API's answers link its description and its documentation (service-desc, service-doc, RFC 8631), and the
   home page links the catalogue (api-catalog);
-- /.well-known/void: the published data (VoID), with its licence, vocabularies, size and dump (/api/dump).
+- /.well-known/void: the published data (VoID), with its licence, vocabularies, size and dump (/api/dump);
+- /llms.txt: where language models and agents find the records in Markdown, the API and the data (llmstxt.org).
 """
 
 import json
@@ -13,7 +14,7 @@ from rdflib import RDF, XSD, Graph, Literal, URIRef
 from rdflib.namespace import DCTERMS, FOAF, VOID
 
 from database import records
-from linkeddata import documents
+from linkeddata import documents, markdown
 from linkeddata.model import settings
 from routes.record_pages import SERIALIZATIONS, data
 
@@ -77,6 +78,27 @@ def void_description():
     answer = data(described(), media)
     answer.headers["Access-Control-Allow-Origin"] = "*"
     return answer
+
+
+@blueprint.get("/llms.txt")
+def llms_txt():
+    lines = [f"# {settings()['title']}", f"> {settings()['description']}",
+             "Every record's page is also in Markdown (add .md to its address, or ask for text/markdown) and in linked data "
+             f"(.jsonld, .ttl, .nt). The records are under the licence <{settings()['license']}>.",
+             "## Records"]
+    listed = []
+    for kind in settings()["kinds"]:
+        listed.append(f"- [{kind.capitalize()}]({records.address(kind)}.md?page_size=200): the {kind}, in Markdown")
+    lines.append("\n".join(listed))
+    lines.append("## Data")
+    lines.append("\n".join([
+        f"- [API]({records.address(DOCS)}): search, filter and read records, in JSON, JSON-LD, Turtle or Markdown",
+        f"- [OpenAPI description]({records.address(OPENAPI)}): the API for programs",
+        f"- [All data]({records.address('api/dump')}): every published statement, as one N-Triples file",
+        f"- [VoID description]({records.address('.well-known/void')}): what the data holds, by class",
+        f"- [Shapes]({records.address('api/shapes.ttl')}): what each field of a record takes (SHACL)",
+    ]))
+    return Response("\n\n".join(lines) + "\n", content_type=markdown.MEDIA, headers={"Access-Control-Allow-Origin": "*"})
 
 
 @blueprint.after_app_request

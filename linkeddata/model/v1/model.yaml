@@ -1,7 +1,10 @@
 # Version 1 of the platform's data model.
 
-# The platform's name in its API.
+# The platform's name in its API, and what it is, for its pages and agents.
 title: VHP4Safety Virtual Human Platform
+description: >-
+  The Virtual Human Platform (VHP4Safety) brings together tools, methods, data and case studies for animal-free,
+  human-based safety assessment of chemicals and pharmaceuticals.
 
 # A record with a page is identified by the page's address.
 base: https://platform.vhp4safety.nl/
