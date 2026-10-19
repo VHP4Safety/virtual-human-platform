@@ -23,7 +23,7 @@ from sqlalchemy import delete, func, insert, select
 
 import database
 from database.tables import PLATFORM, Note, Record, Revision, Source, now
-from linkeddata import checks, documents, patches, storage
+from linkeddata import catalogue, checks, documents, patches, storage
 from linkeddata.model import MODEL_DIR, RELEASE, profile, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
@@ -158,7 +158,7 @@ def identified(spec: dict) -> list[tuple[str, str]]:
     source that finds records by name (by: name), the name of each record without such an address."""
     with database.session() as db:
         iris = list(db.scalars(select(Record.iri).where(
-            Record.type == settings()["kinds"][spec["enriches"]], Record.part_of.is_(None), Record.removed_at.is_(None), Record.source != PLATFORM)))
+            Record.type.in_(catalogue.within(settings()["kinds"][spec["enriches"]])), Record.part_of.is_(None), Record.removed_at.is_(None), Record.source != PLATFORM)))
     found = storage.read(iris)
     keys = []
     for iri in iris:

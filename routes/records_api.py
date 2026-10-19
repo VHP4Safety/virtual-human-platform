@@ -82,12 +82,14 @@ class Image(Schema.from_dict({"@id": fields.String(metadata={"description": "The
 
 
 def kind_of(address: str | None, body: dict) -> str | None:
-    """The kind of the record at an address, or of a new record's @type."""
+    """The kind of the record at an address, or of a new record's @type: the kind of its class, or of a class
+    above it."""
     record = records.get(address) if address else None
     given = record.type if record is not None else body.get("@type")
     names = {}
     for name, kind in settings()["kinds"].items():
-        names[kind] = name
+        for of_class in catalogue.within(kind):
+            names[of_class] = name
     for value in given if isinstance(given, list) else [given]:
         if isinstance(value, str):
             iri = value if value.startswith(("http://", "https://")) else documents.expand(value)

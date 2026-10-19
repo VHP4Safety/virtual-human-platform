@@ -18,7 +18,7 @@ def counts() -> list[dict]:
     found = []
     with database.session() as db:
         for name, kind in settings()["kinds"].items():
-            records_of_kind = select(Record.iri).where(Record.type == kind)
+            records_of_kind = select(Record.iri).where(Record.type.in_(catalogue.within(kind)))
             of_kind = select(Record.iri).where(Record.iri.in_(records_of_kind) | Record.part_of.in_(records_of_kind))
             listed = listing(name)
             filled = 0
@@ -26,9 +26,9 @@ def counts() -> list[dict]:
                 filled += item["filled"]
             found.append({
                 "kind": name,
-                "records": db.scalar(select(func.count()).select_from(Record).where(Record.type == kind, Record.removed_at.is_(None))),
-                "edited": db.scalar(select(func.count()).select_from(Record).where(Record.type == kind, Record.source == PLATFORM)),
-                "removed": db.scalar(select(func.count()).select_from(Record).where(Record.type == kind, Record.removed_at.is_not(None))),
+                "records": db.scalar(select(func.count()).select_from(Record).where(Record.type.in_(catalogue.within(kind)), Record.removed_at.is_(None))),
+                "edited": db.scalar(select(func.count()).select_from(Record).where(Record.type.in_(catalogue.within(kind)), Record.source == PLATFORM)),
+                "removed": db.scalar(select(func.count()).select_from(Record).where(Record.type.in_(catalogue.within(kind)), Record.removed_at.is_not(None))),
                 "notes": db.scalar(select(func.count()).select_from(Note).where(Note.iri.in_(of_kind))),
                 "complete": round(100 * filled / (len(listed) * len(fields.of(kind)))) if listed else 0,
             })
@@ -40,7 +40,7 @@ def listing(kind: str) -> list[dict]:
     included)."""
     of_kind = fields.of(settings()["kinds"][kind])
     with database.session() as db:
-        statement = select(Record).where(Record.type == settings()["kinds"][kind], Record.moved_to.is_(None))
+        statement = select(Record).where(Record.type.in_(catalogue.within(settings()["kinds"][kind])), Record.moved_to.is_(None))
         listed = list(db.scalars(statement.order_by(func.lower(Record.name), Record.iri)))
         holder = func.coalesce(Record.part_of, Record.iri)
         noted = dict(db.execute(select(holder, func.count()).select_from(Note).join(Record, Record.iri == Note.iri).where(holder.in_([record.iri for record in listed])).group_by(holder)).all())

@@ -8,7 +8,7 @@ from flask import Blueprint, Response, abort, redirect, render_template, request
 from admin import editor, writes
 from database import records
 from database.tables import PLATFORM
-from linkeddata import quality
+from linkeddata import fields, quality
 from linkeddata.model import settings
 from routes.account import current_editor, form_token
 
@@ -57,7 +57,7 @@ def edit(kind: str):
         selected=selected,
         base=settings()["base"],
         record=record,
-        shape=editor.root_shape(kind),
+        shape=str(fields.shape_of(record.type)) if record is not None else editor.root_shape(kind),
         values=f"<{selected}> a <{settings()['kinds'][kind]}> ; <https://schema.org/name> {json.dumps(name)} ." if name and record is None else "",
         links=editor.links(),
         mixed=editor.mixed(),

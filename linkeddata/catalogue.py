@@ -10,7 +10,8 @@ from sqlalchemy import column, func, literal, or_, select, table, union_all
 
 import database
 from database.tables import Record
-from linkeddata import storage
+from linkeddata import patches, storage
+from linkeddata.model import hierarchy
 
 RECORDS = Record.__table__
 
@@ -24,21 +25,32 @@ def tables() -> dict:
     return found
 
 
+def within(of_class: str) -> list[str]:
+    """The class and its subclasses that the profile has, whose records are of its kind too."""
+    return patches.within(of_class, storage.profile(), hierarchy())
+
+
 def sources(of_class: str, path: str) -> list[dict]:
-    """Where a field's values are: its own table, or its column of the class's table and the statements
-    table; each with its value column, term column (an IRI's is "@id") and row condition."""
-    of_layout = layout(storage.profile()).classes[of_class]
+    """Where a field's values are, for the class and its subclasses: each one's own table, or its column of
+    the class's table, and the statements table; each with its value column, term column (an IRI's is "@id")
+    and row condition."""
     rest = tables()[STATEMENTS]
-    in_statements = {"table": rest, "value": rest.c.value, "term": rest.c.term, "where": rest.c.property == path}
-    if path in of_layout.several:
-        own = tables()[of_layout.field_table(of_layout.several[path])]
-        found = [{"table": own, "value": own.c.value, "term": own.c.term, "where": None}]
-    elif path in of_layout.single:
-        own = tables()[of_layout.name]
-        name = of_layout.single[path]
-        found = [{"table": own, "value": own.c[name], "term": own.c[name + TERM_SUFFIX], "where": own.c[name].is_not(None)}, in_statements]
-    else:
-        found = [in_statements]
+    found = []
+    in_statements = False
+    for each in within(of_class):
+        of_layout = layout(storage.profile()).classes[each]
+        if path in of_layout.several:
+            own = tables()[of_layout.field_table(of_layout.several[path])]
+            found.append({"table": own, "value": own.c.value, "term": own.c.term, "where": None})
+        elif path in of_layout.single:
+            own = tables()[of_layout.name]
+            name = of_layout.single[path]
+            found.append({"table": own, "value": own.c[name], "term": own.c[name + TERM_SUFFIX], "where": own.c[name].is_not(None)})
+            in_statements = True
+        else:
+            in_statements = True
+    if in_statements:
+        found.append({"table": rest, "value": rest.c.value, "term": rest.c.term, "where": rest.c.property == path})
     return found
 
 
@@ -86,10 +98,10 @@ def holders(of_class: str, path: str, wanted: list[str]):
 
 
 def chosen(of_class: str, filters: dict, search: str = ""):
-    """The select of a class's records that are not removed, moved or parts, whose name or address has
-    *search*, and that have a value of each field of *filters* (property: values)."""
+    """The select of the records of a class and its subclasses that are not removed, moved or parts, whose
+    name or address has *search*, and that have a value of each field of *filters* (property: values)."""
     statement = select(RECORDS.c.iri, RECORDS.c.name).where(
-        RECORDS.c.type == of_class, RECORDS.c.removed_at.is_(None), RECORDS.c.moved_to.is_(None), RECORDS.c.part_of.is_(None))
+        RECORDS.c.type.in_(within(of_class)), RECORDS.c.removed_at.is_(None), RECORDS.c.moved_to.is_(None), RECORDS.c.part_of.is_(None))
     if search:
         statement = statement.where(or_(RECORDS.c.name.icontains(search, autoescape=True), RECORDS.c.iri.contains(search, autoescape=True)))
     for path, wanted in filters.items():

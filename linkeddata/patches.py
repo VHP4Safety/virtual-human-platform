@@ -7,7 +7,8 @@ from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
 
 import requests
-from rdflib import RDF, BNode, Graph, URIRef
+from rdflib import RDF, RDFS, BNode, Graph, URIRef
+from rdflib.namespace import SH
 from rdfsolve.client.sql_tables import layout
 from rdfsolve.ontology.service import Ontologies
 from rdfsolve.schema_models.core import MinedSchema
@@ -121,6 +122,33 @@ def context(profile: Graph, of_class: str, term) -> dict:
         terms[term(iri)] = definition
     return terms
 
+
+
+# rdfsolve issue 17: layout(profile) reads a node shape's own property shapes only, not those of the shapes it
+# builds on (a node-level sh:node, such as an AboutPage's on WebPage).
+def inherited(profile: str) -> str:
+    """The profile, with each class's node shape given the property shapes of the shapes it builds on."""
+    graph = Graph(bind_namespaces="none").parse(data=profile, format="turtle")
+    added = False
+    for shape in set(graph.subjects(SH.targetClass, None)):
+        built_on = list(graph.objects(shape, SH.node))
+        while built_on:
+            other = built_on.pop()
+            for found in graph.objects(other, SH.property):
+                graph.add((shape, SH.property, found))
+                added = True
+            built_on.extend(graph.objects(other, SH.node))
+    return graph.serialize(format="turtle") if added else profile
+
+
+# rdfsolve proposal P8: Layout.within(of_class, hierarchy) -> list[str]
+def within(of_class: str, profile: str, hierarchy: Graph) -> list[str]:
+    """The profile's classes that are of_class or below it in the vocabularies' class hierarchy."""
+    found = [of_class]
+    for other in layout(profile).classes:
+        if other != of_class and URIRef(of_class) in hierarchy.transitive_objects(URIRef(other), RDFS.subClassOf):
+            found.append(other)
+    return found
 
 OBO = "http://purl.obolibrary.org/obo/"
 ENTITY = "http://www.wikidata.org/entity/"

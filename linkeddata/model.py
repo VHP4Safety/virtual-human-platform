@@ -86,7 +86,7 @@ def schema_problems() -> list[str]:
 
 
 def tables_sql() -> str:
-    return layout((MODEL_DIR / "profile.ttl").read_text(encoding="utf-8")).ddl()
+    return layout(patches.inherited((MODEL_DIR / "profile.ttl").read_text(encoding="utf-8"))).ddl()
 
 
 def write_tables() -> Path:
