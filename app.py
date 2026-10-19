@@ -21,7 +21,7 @@ from data.biostudies.search import BioStudiesExtractor
 from data.zenodo.search import ZenodoExtractor
 from data.mapping import normalize_all, scrub_draft
 from database import records
-from linkeddata import documents, outline, storage
+from linkeddata import documents, outline, pages, storage
 from linkeddata.model import settings
 from routes.account import blueprint as account_blueprint
 from routes import limiter, records_api
@@ -30,7 +30,6 @@ from routes.discovery import blueprint as discovery_blueprint
 from routes.sources import blueprint as sources_blueprint
 from routes.editor import blueprint as admin_blueprint
 from routes.images import blueprint as images_blueprint
-from routes import record_pages
 from routes.record_pages import blueprint as pages_blueprint
 from routes.record_pages import page_link
 
@@ -45,7 +44,7 @@ ZENODO_RECORD_TYPE = "dataset"  # only show datasets
 ZENODO_RECORD_TYPE_MODEL = "model"  # only show datasets
 
 # Non-glossary "stage" labels. The five Process Flow Step stages are resolved
-# from the VHP glossary at runtime (see get_process_flow_steps); these legacy
+# from the glossary's records (see get_process_flow_steps); these legacy
 # labels stay hardcoded because the data/models pages still reference them by
 # literal key and their data sources have not migrated to the glossary URIs.
 STAGE_EXPLANATIONS_LEGACY = {
@@ -59,7 +58,7 @@ STAGE_EXPLANATIONS_LEGACY = {
 }
 
 # Legacy glossary-URI -> stage-label mappings, superseded by the Process Flow
-# Step URIs that get_process_flow_steps() resolves from the glossary.
+# Step URIs that get_process_flow_steps() gives from the glossary's records.
 STAGE_MAPPING_LEGACY = {
     "https://vhp4safety.github.io/glossary#VHP0000056": "ADME",
     "https://vhp4safety.github.io/glossary#VHP0000102": "Hazard Assessment",
@@ -69,9 +68,6 @@ STAGE_MAPPING_LEGACY = {
 METHODS_URL = "https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/methods_index.json"
 # TOOLS and SERVICES are synonymous
 SERVICES_URL = "https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/service_index.json"
-GLOSSARY_URL = (
-    "https://raw.githubusercontent.com/VHP4Safety/glossary/refs/heads/main/glossary.owl"
-)
 CASESTUDIES_URL = (
     "https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/"
     "refs/heads/main/ro-crate-metadata.json"
@@ -355,74 +351,17 @@ def get_reg_question_explanations() -> dict:
     return {v["label"]: v["explanation"] for v in get_reg_questions().values()}
 
 
-# Suffix the VHP glossary uses to mark an owl:Class as a Process Flow Step stage.
-_PROCESS_FLOW_STEP_SUFFIX = " (Process Flow Step)"
-# Matches a Turtle quoted literal, tolerating backslash escapes.
-_TTL_QUOTED = r'"((?:[^"\\]|\\.)*)"'
-
-
-@cache.memoize(timeout=CACHE_TIMEOUT)
-def _get_process_flow_steps_cached() -> dict:
-    """Fetch + parse Process Flow Steps from the glossary. Raises on failure
-    so the cache does not store an empty/poisoned result (the raw.github CDN
-    intermittently resets the connection; we must not keep that empty result
-    around for CACHE_TIMEOUT). Public wrapper get_process_flow_steps() catches.
-    """
-    resp = requests.get(GLOSSARY_URL, timeout=5)
-    resp.raise_for_status()
-    # Normalise line endings so the block split works regardless of CRLF / LF
-    ttl = resp.text.replace("\r\n", "\n")
-
-    steps = {}
-    # The glossary is Turtle with one blank-line-separated block per subject.
-    for block in ttl.split("\n\n"):
-        m_subj = re.match(r"\s*<([^>]+)>", block)
-        m_label = re.search(r"rdfs:label\s+" + _TTL_QUOTED, block)
-        if not (m_subj and m_label):
-            continue
-        label = m_label.group(1)
-        if not label.endswith(_PROCESS_FLOW_STEP_SUFFIX):
-            continue
-        m_desc = re.search(r"dc:description\s+" + _TTL_QUOTED, block)
-        clean_label = label[: -len(_PROCESS_FLOW_STEP_SUFFIX)].strip()
-        steps[m_subj.group(1)] = {
-            "label": clean_label,
-            # URL/id-safe anchor slug, computed once here so the templates that
-            # link to it (home.html) and define it (the accordion) can't drift.
-            "slug": clean_label.lower().replace(" ", "-"),
-            "description": (m_desc.group(1) if m_desc else "").strip(),
-        }
-    # sort by id
-    sort_ids = [
-        "https://vhp4safety.github.io/glossary#VHP0000153",
-        "https://vhp4safety.github.io/glossary#VHP0000154",
-        "https://vhp4safety.github.io/glossary#VHP0000155",
-        "https://vhp4safety.github.io/glossary#VHP0000156",
-        "https://vhp4safety.github.io/glossary#VHP0000158",
-    ]
-    steps = dict(
-        sorted(
-            steps.items(),
-            key=lambda item: (
-                sort_ids.index(item[0]) if item[0] in sort_ids else len(sort_ids)
-            ),
-        )
-    )
-    if not steps:
-        raise ValueError("no Process Flow Step entries found in glossary")
-    return steps
+# The glossary term whose kinds are the process flow steps.
+PROCESS_FLOW_STEP = "https://vhp4safety.github.io/glossary#VHP0000152"
 
 
 def get_process_flow_steps() -> dict:
-    """Return {glossary_uri: {"label", "slug", "description"}} for every
-    owl:Class whose rdfs:label ends with " (Process Flow Step)". Returns an
-    empty dict on any error so callers degrade safely; failures are NOT cached
-    so the next request retries.
-    """
-    try:
-        return _get_process_flow_steps_cached()
-    except Exception:
-        return {}
+    """Return {glossary_uri: {"label", "slug", "description"}} for the glossary's process flow steps, from
+    their records, by address."""
+    steps = {}
+    for kind in pages.kinds(PROCESS_FLOW_STEP):
+        steps[kind["iri"]] = {"label": kind["label"], "slug": kind["slug"], "description": kind["description"]}
+    return steps
 
 
 def get_stage_explanations() -> dict:
@@ -891,7 +830,7 @@ def sitemap():
         and "GET" in (rule.methods or set())
     )
     entries = [f"  <url>\n    <loc>{BASE}{p}</loc>\n  </url>" for p in paths]
-    for address, changed in record_pages.pages():
+    for address, changed in records.with_pages():
         entries.append(f"  <url>\n    <loc>{address}</loc>\n    <lastmod>{changed}</lastmod>\n  </url>")
     sitemapContent = (
         '<?xml version="1.0" encoding="utf-8"?>\n'
@@ -1599,61 +1538,6 @@ def model_page(modelid):
 
 
 ################################################################################
-### Pages under 'Implementation'
-
-
-# General Explore our work
-@app.route("/explore_our_work")
-def explore_our_work():
-    return render_template(
-        "implementation/explore_our_work.html",
-        page_title="Our work — VHP4Safety",
-        meta_description=(
-            "How the VHP4Safety consortium builds the Virtual Human Platform to "
-            "advance animal-free safety assessment of chemicals and pharmaceuticals."
-        ),
-    )
-
-
-# General Training
-@app.route("/training")
-def training():
-    return render_template(
-        "implementation/training.html",
-        page_title="Training — VHP4Safety",
-        meta_description=(
-            "Training materials and courses on the VHP4Safety Virtual Human Platform "
-            "and animal-free, human-based safety assessment."
-        ),
-    )
-
-
-# General Impact
-@app.route("/impact")
-def impact():
-    return render_template(
-        "implementation/impact.html",
-        page_title="Impact — VHP4Safety",
-        meta_description=(
-            "The scientific and societal impact of VHP4Safety in the transition to "
-            "animal-free safety assessment of chemicals and pharmaceuticals."
-        ),
-    )
-
-
-################################################################################
-### Pages under 'Process Flow'
-
-
-# General Safety Assessment Workflow page
-@app.route("/safety_assessment_workflow")
-def SafetyAssessmentWorkflow():
-    return render_template(
-        "safety_assessment_workflow.html", process_flow_steps=get_process_flow_steps()
-    )
-
-
-################################################################################
 ### Pages under 'Case Studies'
 
 
@@ -1965,26 +1849,6 @@ def show_compounds_expdata_as_json(cwid):
             }
         )
     return jsonify(compound_list), 200
-
-
-################################################################################
-### Pages under 'Legal'
-@app.route("/legal/terms_of_service")
-def terms_of_service():
-    return render_template(
-        "legal/terms_of_service.html",
-        page_title="Terms of Service — VHP4Safety",
-        meta_description="Terms of Service for the VHP4Safety Virtual Human Platform.",
-    )
-
-
-@app.route("/legal/privacypolicy")
-def privacy_policy():
-    return render_template(
-        "legal/privacypolicy.html",
-        page_title="Privacy Policy — VHP4Safety",
-        meta_description="Privacy Policy for the VHP4Safety Virtual Human Platform.",
-    )
 
 
 if __name__ == "__main__":

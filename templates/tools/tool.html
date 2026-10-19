@@ -65,7 +65,7 @@
         {% for stage in tool_details.processFlowStep|default([]) if stage.id in process_flow_steps %}
           {% set step = process_flow_steps[stage.id] %}
           <div style="margin-top: 5px">
-            <a href="{{ url_for('SafetyAssessmentWorkflow') }}#definition-{{ step.slug }}"
+            <a href="/safety_assessment_workflow#definition-{{ step.slug }}"
                class="btn btn-vhppurple"
                data-bs-toggle="tooltip"
                title="{{ step.description }}">

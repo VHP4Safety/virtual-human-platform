@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{# A page of the platform from its record (routes/record_pages.py: page): its sections as tabs with their items,
+   or as text when it has one section without a heading. An about page shows its subject's description, videos,
+   research lines and grants in its first tab; a section about a grant lists what names it; a page that explains
+   a term lists the term's kinds. #}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
+{% endblock %}
+
+{% macro html(value) -%}
+  {%- if value is mapping %}{{ value["@value"]|sanitize_html }}{% elif value %}<p>{{ value }}</p>{% endif -%}
+{%- endmacro %}
+
+{% macro media(part) %}
+{% for figure in part.figures %}
+<figure class="mt-3 mb-0">
+  <img src="{{ figure.address|page_link }}" alt="{{ figure.caption or '' }}" class="img-fluid d-block" loading="lazy">
+</figure>
+{% endfor %}
+{% for video in part.videos %}
+<div class="mt-3" style="position: relative; padding-top: 56.25%;"><iframe title="{{ video.name or '' }}" width="100%" height="100%" src="{{ video.player }}" allow="fullscreen" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" style="border: 0px; position: absolute; inset: 0px;"></iframe></div>
+{% endfor %}
+{% endmacro %}
+
+{% macro item(id, heading, open=false) %}
+<div class="accordion-item">
+  <h2 class="accordion-header" id="{{ id }}-heading">
+    <button class="accordion-button{% if not open %} collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#{{ id }}" aria-expanded="{{ 'true' if open else 'false' }}" aria-controls="{{ id }}">{{ heading }}</button>
+  </h2>
+  <div id="{{ id }}" class="accordion-collapse collapse{% if open %} show{% endif %}" aria-labelledby="{{ id }}-heading">
+    <div class="accordion-body" style="text-align: justify;">{{ caller() }}</div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro subject_items(subject) %}
+{% if subject.description %}
+{% call item("subject-description", (subject.alternateName ~ ": " if subject.alternateName else "") ~ "The research project behind the VHP") %}{{ html(subject.description) }}{% endcall %}
+{% endif %}
+{% endmacro %}
+
+{% macro subject_more(subject) %}
+{% if subject.videos %}
+{% call item("subject-videos", "Project video") %}{{ media({"videos": subject.videos}) }}{% endcall %}
+{% endif %}
+{% if subject.lines %}
+{% call item("subject-lines", "Project structure") %}
+<p>The project is organised into {{ subject.lines|length }} research lines:</p>
+<ol>{% for line in subject.lines %}<li>{{ line.name }}{% if line.description %}: {{ line.description }}{% endif %}</li>{% endfor %}</ol>
+{{ media({"figures": subject.figures}) }}
+{% endcall %}
+{% endif %}
+{% if subject.grants %}
+{% call item("subject-grants", "Funding information") %}
+{% for grant in subject.grants %}
+{{ html(grant.description) if grant.description else "" }}
+<p class="small text-secondary mb-0">
+  <a class="link-vhpblue" href="{{ grant.address|page_link }}">{{ grant.name }}</a>{% if grant.identifier %} ({{ grant.identifier }}){% endif %}{% if grant.funder %}, funded by {{ grant.funder }}{% endif %}{% if grant.amount %}: {{ "{:,.0f}".format(grant.amount.value) }} {{ grant.amount.currency }}{% endif %}
+</p>
+{% endfor %}
+{% endcall %}
+{% endif %}
+{% endmacro %}
+
+{% macro outputs(listed) %}
+{% if listed %}
+<ul class="list-unstyled mt-3 mb-0">
+  {% for output in listed %}
+  <li class="mb-1"><span class="badge text-bg-light border fw-normal me-1">{{ output.kind }}</span><a class="link-vhpblue" href="{{ output.address|page_link }}">{{ output.name }}</a></li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endmacro %}
+
+{% block content %}
+<section class="container py-md-5 py-3" id="about-section">
+  <h1>{{ page.name }}</h1>
+  {% if page.description %}<p class="text-secondary fs-5">{{ page.description }}</p>{% endif %}
+
+  {% if page.tabbed %}
+  <div class="card">
+    <div class="card-header">
+      <ul class="nav nav-tabs card-header-tabs" role="tablist">
+        {% for section in page.sections %}
+        <li class="nav-item" role="presentation">
+          <a class="nav-link text-start{% if loop.first %} active{% endif %}" id="tab-{{ loop.index }}" data-bs-toggle="tab" href="#tabpanel-{{ loop.index }}" role="tab" aria-controls="tabpanel-{{ loop.index }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ section.heading }}</a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="card-body">
+      <div class="tab-content">
+        {% for section in page.sections %}
+        {% set tab = loop.index %}
+        <div class="tab-pane{% if loop.first %} active{% endif %}" id="tabpanel-{{ tab }}" role="tabpanel" aria-labelledby="tab-{{ tab }}">
+          {{ html(section.text) }}
+          {{ media(section) }}
+          <div class="accordion accordion-flush" id="accordion-{{ tab }}">
+            {% if loop.first and page.subject %}{{ subject_items(page.subject) }}{% endif %}
+            {% for part in section.sections %}
+            {% call item("item-" ~ tab ~ "-" ~ loop.index, part.heading or "") %}{{ html(part.text) }}{{ media(part) }}{% endcall %}
+            {% endfor %}
+            {% if loop.first and page.subject %}{{ subject_more(page.subject) }}{% endif %}
+          </div>
+          {{ outputs(section.outputs) }}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  {% for section in page.sections %}
+  {% if section.heading %}<h2 class="h4 mt-4">{{ section.heading }}</h2>{% endif %}
+  {{ html(section.text) }}
+  {{ media(section) }}
+  {{ outputs(section.outputs) }}
+  {% endfor %}
+  {% endif %}
+
+  {% if page.kinds %}
+  <div class="accordion accordion-flush" id="kinds-accordion">
+    {% for kind in page.kinds %}
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="definition-{{ kind.slug }}"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ kind.slug }}" aria-expanded="false" aria-controls="collapse-{{ kind.slug }}">{{ kind.label }}</button></h2>
+      <div id="collapse-{{ kind.slug }}" class="accordion-collapse collapse" aria-labelledby="definition-{{ kind.slug }}" data-bs-parent="#kinds-accordion">
+        <div class="accordion-body">{{ kind.description }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% include "records/_data_links.html" %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+{# The accordion item that the address's fragment names (#definition-toxicokinetics) is opened. #}
+<script>
+  (function () {
+    function openFromHash() {
+      let target = null;
+      try {
+        target = window.location.hash ? document.querySelector(window.location.hash) : null;
+      } catch (error) {
+        return;
+      }
+      const button = target && target.querySelector('[data-bs-toggle="collapse"]');
+      const panel = button && document.querySelector(button.getAttribute("data-bs-target"));
+      if (panel) {
+        bootstrap.Collapse.getOrCreateInstance(panel).show();
+      }
+    }
+    window.addEventListener("DOMContentLoaded", openFromHash);
+    window.addEventListener("hashchange", openFromHash);
+  })();
+</script>
+{% endblock %}

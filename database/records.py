@@ -106,3 +106,13 @@ def earlier_addresses(iri: str) -> list[str]:
     """The addresses that a record had before it moved to *iri*."""
     with database.session() as db:
         return list(db.scalars(select(Record.iri).where(Record.moved_to == iri)))
+
+
+def kinds_of(term: str) -> list[Record]:
+    """The terms named as kinds of a term, the glossary's way: "<name> (<term's name>)"; by address."""
+    named = get(term)
+    if named is None or not named.name:
+        return []
+    statement = select(Record).where(Record.name.endswith(f" ({named.name})"), Record.removed_at.is_(None), Record.moved_to.is_(None))
+    with database.session() as db:
+        return list(db.scalars(statement.order_by(Record.iri)))

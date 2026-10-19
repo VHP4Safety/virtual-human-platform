@@ -156,7 +156,7 @@
               {% set is_odd = (process_flow_steps | length) % 2 == 1 %}
               {% for k, v in process_flow_steps.items() %}
                 <div class="col d-grid{% if loop.first and is_odd %} col-md-12{% endif %}">
-                  <a href="{{ url_for('SafetyAssessmentWorkflow') }}#definition-{{ v.slug }}" class="text-decoration-none">
+                  <a href="/safety_assessment_workflow#definition-{{ v.slug }}" class="text-decoration-none">
                     <div class="bg-vhppurple text-white rounded-pill px-3 py-2 text-center small fw-semibold">{{ v.label }}</div>
                   </a>
                 </div>
@@ -188,19 +188,19 @@
 
 	<div class="row row-cols-1 row-cols-md-3 g-4">
 	  <div class="col">
-	    <a href="{{ url_for('explore_our_work') }}#about-section"
+	    <a href="/explore_our_work"
 	       class="btn btn-outline-secondary w-100  d-flex align-items-center justify-content-center gap-2">
 	      <i class="bi bi-diagram-3" aria-hidden="true"></i>Project
 	    </a>
 	  </div>
 	  <div class="col">
-	    <a href="{{ url_for('training') }}#partners-section"
+	    <a href="/training"
 	       class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2">
 	      <i class="bi bi-mortarboard" aria-hidden="true"></i>Training
 	    </a>
 	  </div>
 	  <div class="col">
-	    <a href="{{ url_for('impact') }}#contact-section"
+	    <a href="/impact"
 	       class="btn btn-outline-secondary w-100  d-flex align-items-center justify-content-center gap-2">
 	      <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>Impact
 	    </a>

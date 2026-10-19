@@ -14,10 +14,11 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, Response, current_app, g, redirect, render_template, request, url_for
 from rdflib import Graph
+from rdflib.namespace import SDO
 
 from database import records
 from database.tables import Record
-from linkeddata import documents, markdown, outline
+from linkeddata import catalogue, documents, markdown, outline, pages
 from linkeddata.model import settings
 
 FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "application/n-triples"}
@@ -44,11 +45,6 @@ def data(found: Graph, media: str, iri: str | None = None) -> Response:
     else:
         body = found.serialize(format=SERIALIZATIONS[media])
     return Response(body, mimetype=media, headers={"Vary": "Accept"})
-
-
-def pages() -> list[tuple[str, str]]:
-    """The records' pages for the sitemap: each page's address and last change."""
-    return records.with_pages()
 
 
 def not_acceptable() -> Response:
@@ -199,6 +195,11 @@ def page_link(iri: str) -> str:
 
 
 def record_page(record: Record):
+    """A record's page: a platform page's own (templates/records/page.html), or the general record page."""
+    if record.type in catalogue.within(str(SDO.WebPage)):
+        found = pages.page(record)
+        return render_template("records/page.html", page=found, page_title=f"{found['name']} — VHP4Safety",
+                               meta_description=found["description"][:160] or f"{found['name']}, a page of the VHP4Safety Virtual Human Platform.")
     found = outline.outline(record)
     first = {}
     for field in found["fields"]:
