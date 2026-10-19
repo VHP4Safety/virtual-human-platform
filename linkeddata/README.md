@@ -33,7 +33,7 @@ python -m pytest tests          # the parts are checked on small inputs, offline
 `python -m linkeddata check` fails when:
 
 - a vocabulary file is not the pinned one;
-- `schema.json` or `database/v1/tables.sql` does not match the vocabularies and `profile.ttl` (after a
+- `schema.json` or `database/v1/tables.sql` does not match the vocabularies and the profile (after a
   profile change, `python -m linkeddata model` is run, and the change is reviewed and committed);
 - the database's tables are not those of the model's release.
 
@@ -99,9 +99,10 @@ platform's context: schema.org terms are unprefixed (`name`), and other vocabula
 
 ## The application profile
 
-`model/v1/profile.ttl` is the platform's application profile, in SHACL. Each class has one node shape,
-named after it (`form:SoftwareApplication`); its property shapes are the fields of its records. The profile
-sets:
+`model/v1/profile/` is the platform's application profile, in SHACL, in modules: `ontology.ttl` (the
+header), `text.ttl`, and one file per kind of record with the shapes of its parts (`tools.ttl`,
+`casestudies.ttl`, `models.ttl`, ...). Each class has one node shape, named after it
+(`form:SoftwareApplication`); its property shapes are the fields of its records. The profile sets:
 
 - what each field takes (`sh:datatype`, `sh:nodeKind`, `sh:in`, `sh:class`, `sh:or`);
 - required fields (`sh:minCount`) and single-valued ones (`sh:maxCount`);
@@ -132,7 +133,21 @@ The editor's forms are built by shacl-form (`@ulb-darmstadt/shacl-form`) from th
   API's search (`static/js/record-links.js`, a shacl-form plugin); a new record (a person, an
   organisation) or term can be added at once.
 
-The form is changed by changing the profile.
+The form is changed by changing the profile. The profile's own terms:
+
+- `form:path`, `sh:order` (on a node shape): the class's records are a kind, with pages at `/<path>/<name>`,
+  in this order among the kinds;
+- `sh:group`, `sh:order`, `sh:name`, `sh:description`: a field's section, place, label and help;
+  `sh:message`: shown when a value is missing or does not fit; `dash:singleLine false`: a longer text;
+- `form:private true`: kept off the pages and their data, shown to editors;
+- `form:shown false`: kept in the data, not shown on the pages, shown to editors;
+- `form:term`: the JSON-LD name of a property of another vocabulary, such as the glossary's;
+- `form:publishedAs`: a class its values also have on the pages and their data, as schema.org expects (a
+  licence is a CreativeWork); the records keep their own;
+- `form:shows` (data, on a page section): the fields of the record the section presents (`schema:about`)
+  that it shows.
+
+The required fields of tools are the minimum of the Bioschemas ComputationalTool profile.
 
 ## The parts of an import
 
@@ -150,7 +165,7 @@ The form is changed by changing the profile.
   The rules are the arguments of rdfsolve's `Rule.between`, one list per kind of row; rdfsolve finds the
   fields by name and writes the CONSTRUCT queries. A source whose rows are shaped like other sources' names
   them (`uses`), and takes their rules.
-- **`model/v1/`**: the model. `profile.ttl` is the one model file: its header gives the base address of
+- **`model/v1/`**: the model. `profile/` holds the one model, in modules: its header (`ontology.ttl`) gives the base address of
   identifiers (`void:uriSpace`), the vocabularies it is built from (`owl:imports`: schema.org, the Bioschemas
   types and the VHP4Safety glossary, each pinned by `form:file` and `form:sha256` and kept in `vocabularies/`)
   and the prefixes of its JSON-LD (`sh:declare`); its shapes give the classes by kind (`form:path`) and what

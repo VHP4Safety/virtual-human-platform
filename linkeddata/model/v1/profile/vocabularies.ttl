@@ -1,0 +1,38 @@
+@prefix schema: <https://schema.org/> .
+@prefix void: <http://rdfs.org/ns/void#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dash: <http://datashapes.org/dash#> .
+@prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
+
+form:DefinedTerm a sh:NodeShape ;
+    form:path "terms" ; sh:order 9 ;
+    sh:targetClass schema:DefinedTerm ;
+    rdfs:label "Term" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Label" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One label needed." ] ;
+    sh:property [ sh:path schema:inDefinedTermSet ; sh:order 2 ; sh:name "Vocabulary" ; sh:minCount 1 ; sh:maxCount 1 ; sh:class schema:DefinedTermSet ;
+        sh:message "One vocabulary needed." ] ;
+    sh:property [ sh:path schema:termCode ; sh:order 3 ; sh:name "Code" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:alternateName ; sh:order 5 ; sh:name "Other names" ; sh:datatype xsd:string ;
+        sh:description "Such as a short name." ] ;
+    sh:property [ sh:path schema:sameAs ; sh:order 6 ; sh:name "Other addresses" ;
+        sh:or ( [ sh:class schema:DefinedTerm ; rdfs:label "Term" ] [ sh:nodeKind sh:IRI ; rdfs:label "Address" ] ) ;
+        sh:description "The same term in another vocabulary, or another address, such as a license's text." ] ;
+    sh:property [ sh:path schema:description ; sh:order 4 ; sh:name "Definition" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] .
+
+form:DefinedTermSet a sh:NodeShape ;
+    form:path "vocabularies" ; sh:order 10 ;
+    sh:targetClass schema:DefinedTermSet ;
+    rdfs:label "Vocabulary" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
+    sh:property [ sh:path void:uriSpace ; sh:order 2 ; sh:name "Namespace" ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:pattern "^https?://" ;
+        sh:message "One web address start, such as http://purl.obolibrary.org/obo/NCBITaxon_." ;
+        sh:description "The start of its terms' addresses, when they share one." ] ;
+    sh:property [ sh:path schema:url ; sh:order 3 ; sh:name "Home page" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+    sh:property [ sh:path schema:sameAs ; sh:order 4 ; sh:name "Same as" ; sh:nodeKind sh:IRI ;
+        sh:description "Its own address elsewhere, such as its Wikidata item." ] ;
+    sh:property [ sh:path schema:description ; sh:order 5 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:license ; sh:order 6 ; sh:name "License" ; sh:minCount 1 ; sh:maxCount 1 ; sh:severity sh:Warning ; sh:nodeKind sh:IRI ;
+        sh:message "Add the license of its terms: an SPDX license, or the address of its terms of use." ;
+        sh:description "The terms that records link to are published with it, under this license." ] .

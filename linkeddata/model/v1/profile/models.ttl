@@ -1,0 +1,481 @@
+@prefix schema: <https://schema.org/> .
+@prefix bioschemas: <https://bioschemas.org/terms/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dash: <http://datashapes.org/dash#> .
+@prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
+@prefix glossary: <https://vhp4safety.github.io/glossary#> .
+@prefix pbpk: <https://platform.vhp4safety.nl/model/v1/pbpk#> .
+
+form:modelGeneral a sh:PropertyGroup ; sh:order 1 ; rdfs:label "General Model Information" .
+
+form:modelModelStructure a sh:PropertyGroup ; sh:order 2 ; rdfs:label "Model Structure and Mathematical Representation" .
+
+form:modelChemicals a sh:PropertyGroup ; sh:order 3 ; rdfs:label "Chemical(s) Description" .
+
+form:modelBiologicalSystem a sh:PropertyGroup ; sh:order 4 ; rdfs:label "Biological System Description" .
+
+form:modelParameterization a sh:PropertyGroup ; sh:order 5 ; rdfs:label "Parameterisation" .
+
+form:modelCalibration a sh:PropertyGroup ; sh:order 6 ; rdfs:label "Calibration and Parameter Estimation" .
+
+form:modelValidation a sh:PropertyGroup ; sh:order 7 ; rdfs:label "Model Evaluation and Validation" .
+
+form:modelUncertainty a sh:PropertyGroup ; sh:order 8 ; rdfs:label "Sensitivity, Uncertainty, and Variability Analyses" .
+
+form:modelApplicability a sh:PropertyGroup ; sh:order 9 ; rdfs:label "Model Applicability and Limitations" .
+
+form:modelElectronicFiles a sh:PropertyGroup ; sh:order 10 ; rdfs:label "Electronic Files and Reproducibility" .
+
+form:modelLinks a sh:PropertyGroup ; sh:order 11 ; rdfs:label "On the platform" .
+
+pbpk:analysisType a rdf:Property ; rdfs:label "Analysis type" ;
+    schema:domainIncludes pbpk:SUVAnalysis ; schema:rangeIncludes schema:Text .
+
+pbpk:analyzedParameters a rdf:Property ; rdfs:label "Analyzed parameters" ;
+    schema:domainIncludes pbpk:SUVAnalysis ; schema:rangeIncludes schema:Text .
+
+pbpk:anatomicalAssumptions a rdf:Property ; rdfs:label "Anatomical assumptions" ;
+    schema:domainIncludes pbpk:BiologicalSystem ; schema:rangeIncludes schema:Text .
+
+pbpk:applicabilityDomain a rdf:Property ; rdfs:label "Applicability domain" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:Text .
+
+pbpk:appliesToChemicals a rdf:Property ; rdfs:label "Applicable chemicals" ;
+    schema:domainIncludes pbpk:Parameter ; schema:rangeIncludes schema:Text .
+
+pbpk:appliesToCompartments a rdf:Property ; rdfs:label "Applicable compartments" ;
+    schema:domainIncludes pbpk:Parameter ; schema:rangeIncludes schema:DefinedTerm .
+
+pbpk:appliesToSpecies a rdf:Property ; rdfs:label "Applicable species" ;
+    schema:domainIncludes pbpk:Parameter ; schema:rangeIncludes schema:DefinedTerm .
+
+pbpk:artifactLocation a rdf:Property ; rdfs:label "Artifact location" ;
+    schema:domainIncludes schema:MediaObject ; schema:rangeIncludes schema:Text .
+
+pbpk:artifactType a rdf:Property ; rdfs:label "Artifact type" ;
+    schema:domainIncludes schema:MediaObject ; schema:rangeIncludes schema:Text .
+
+pbpk:biologicalReference a rdf:Property ; rdfs:label "Biological reference" ;
+    schema:domainIncludes pbpk:Compartment ; schema:rangeIncludes schema:DefinedTerm .
+
+pbpk:calibratedParameters a rdf:Property ; rdfs:label "Calibrated parameters" ;
+    schema:domainIncludes pbpk:Calibration ; schema:rangeIncludes schema:Text .
+
+pbpk:calibrationData a rdf:Property ; rdfs:label "Calibration data" ;
+    schema:domainIncludes pbpk:Calibration ; schema:rangeIncludes schema:Text .
+
+pbpk:chemicalRole a rdf:Property ; rdfs:label "Role in the model" ;
+    schema:domainIncludes schema:MolecularEntity ; schema:rangeIncludes schema:Text .
+
+pbpk:compartments a rdf:Property ; rdfs:label "Compartments" ;
+    schema:domainIncludes pbpk:BiologicalSystem ; schema:rangeIncludes schema:DefinedTerm .
+
+pbpk:confidenceStatement a rdf:Property ; rdfs:label "Confidence statement" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:Text .
+
+pbpk:connectionType a rdf:Property ; rdfs:label "Connection type" ;
+    schema:domainIncludes pbpk:Connection ; schema:rangeIncludes schema:Text .
+
+pbpk:connections a rdf:Property ; rdfs:label "Inter-compartmental connections" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:Connection .
+
+pbpk:evaluationData a rdf:Property ; rdfs:label "Evaluation data (reference)" ;
+    schema:domainIncludes pbpk:Evaluation ; schema:rangeIncludes schema:Text .
+
+pbpk:hasBiologicalSystem a rdf:Property ; rdfs:label "Biological system(s)" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:BiologicalSystem .
+
+pbpk:hasCalibration a rdf:Property ; rdfs:label "Calibration activities" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:Calibration .
+
+pbpk:hasChemical a rdf:Property ; rdfs:label "Chemical substance(s)" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:MolecularEntity, schema:ChemicalSubstance .
+
+pbpk:hasEvaluation a rdf:Property ; rdfs:label "Evaluation activities" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:Evaluation .
+
+pbpk:hasParameter a rdf:Property ; rdfs:label "Parameters" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:Parameter .
+
+pbpk:hasSUVAnalysis a rdf:Property ; rdfs:label "SUV analyses" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:SUVAnalysis .
+
+pbpk:implementation a rdf:Property ; rdfs:label "Model implementation reference(s)" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:Implementation .
+
+pbpk:implementationLocation a rdf:Property ; rdfs:label "Implementation location (relative path)" ;
+    schema:domainIncludes pbpk:Implementation ; schema:rangeIncludes schema:Text .
+
+pbpk:implementationType a rdf:Property ; rdfs:label "Implementation type" ;
+    schema:domainIncludes pbpk:Implementation ; schema:rangeIncludes schema:Text .
+
+pbpk:intendedUse a rdf:Property ; rdfs:label "Intended use" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:Text .
+
+pbpk:interpretation a rdf:Property ; rdfs:label "Metric interpretation" ;
+    schema:domainIncludes pbpk:PerformanceMetric ; schema:rangeIncludes schema:Text .
+
+pbpk:lifeStage a rdf:Property ; rdfs:label "Life stage(s)" ;
+    schema:domainIncludes pbpk:BiologicalSystem ; schema:rangeIncludes schema:Text .
+
+pbpk:limitations a rdf:Property ; rdfs:label "Limitations" ;
+    schema:domainIncludes pbpk:Evaluation, schema:SoftwareSourceCode ; schema:rangeIncludes schema:Text .
+
+pbpk:mathematicalRepresentation a rdf:Property ; rdfs:label "Mathematical representation" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:Text .
+
+pbpk:method a rdf:Property ; rdfs:label "Method" ;
+    schema:domainIncludes pbpk:Calibration, pbpk:Evaluation, pbpk:SUVAnalysis ; schema:rangeIncludes schema:Text .
+
+pbpk:modelStructureDescription a rdf:Property ; rdfs:label "Model structure description" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:Text .
+
+pbpk:notes a rdf:Property ; rdfs:label "Notes" ;
+    schema:domainIncludes pbpk:Calibration, pbpk:Parameter, pbpk:SUVAnalysis ; schema:rangeIncludes schema:Text .
+
+pbpk:optimizationCriteria a rdf:Property ; rdfs:label "Optimization criteria" ;
+    schema:domainIncludes pbpk:Calibration ; schema:rangeIncludes schema:Text .
+
+pbpk:outcome a rdf:Property ; rdfs:label "Outcome" ;
+    schema:domainIncludes pbpk:Evaluation, pbpk:SUVAnalysis ; schema:rangeIncludes schema:Text .
+
+pbpk:parameterCategory a rdf:Property ; rdfs:label "Parameter category" ;
+    schema:domainIncludes pbpk:Parameter ; schema:rangeIncludes schema:Text .
+
+pbpk:parameterSource a rdf:Property ; rdfs:label "Parameter source" ;
+    schema:domainIncludes pbpk:Parameter ; schema:rangeIncludes schema:Text .
+
+pbpk:performanceMetrics a rdf:Property ; rdfs:label "Performance metrics" ;
+    schema:domainIncludes pbpk:Evaluation ; schema:rangeIncludes pbpk:PerformanceMetric .
+
+pbpk:physicochemicalNotes a rdf:Property ; rdfs:label "Physicochemical notes" ;
+    schema:domainIncludes schema:MolecularEntity ; schema:rangeIncludes schema:Text .
+
+pbpk:physiologicalScope a rdf:Property ; rdfs:label "Physiological scope" ;
+    schema:domainIncludes pbpk:BiologicalSystem ; schema:rangeIncludes schema:Text .
+
+pbpk:populationDescription a rdf:Property ; rdfs:label "Population description" ;
+    schema:domainIncludes pbpk:BiologicalSystem ; schema:rangeIncludes schema:Text .
+
+pbpk:reproducibilityInstructions a rdf:Property ; rdfs:label "Reproducibility instructions" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:Text .
+
+pbpk:robustnessInterpretation a rdf:Property ; rdfs:label "Robustness interpretation" ;
+    schema:domainIncludes pbpk:SUVAnalysis ; schema:rangeIncludes schema:Text .
+
+pbpk:scope a rdf:Property ; rdfs:label "Parameter scope" ;
+    schema:domainIncludes pbpk:Parameter ; schema:rangeIncludes schema:Text .
+
+pbpk:sourceCompartment a rdf:Property ; rdfs:label "Source compartment" ;
+    schema:domainIncludes pbpk:Connection ; schema:rangeIncludes schema:Text .
+
+pbpk:sourceReference a rdf:Property ; rdfs:label "Source reference" ;
+    schema:domainIncludes pbpk:Parameter ; schema:rangeIncludes schema:Text .
+
+pbpk:species a rdf:Property ; rdfs:label "Species" ;
+    schema:domainIncludes pbpk:BiologicalSystem ; schema:rangeIncludes schema:DefinedTerm .
+
+pbpk:structuralCompartments a rdf:Property ; rdfs:label "Structural compartments" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:Compartment .
+
+pbpk:targetCompartment a rdf:Property ; rdfs:label "Target compartment" ;
+    schema:domainIncludes pbpk:Connection ; schema:rangeIncludes schema:Text .
+
+pbpk:Compartment a rdfs:Class ; rdfs:label "Compartment" .
+
+pbpk:Connection a rdfs:Class ; rdfs:label "Connection" .
+
+pbpk:Implementation a rdfs:Class ; rdfs:label "Implementation" .
+
+pbpk:BiologicalSystem a rdfs:Class ; rdfs:label "Biological system" .
+
+pbpk:Parameter a rdfs:Class ; rdfs:label "Parameter" .
+
+pbpk:Calibration a rdfs:Class ; rdfs:label "Calibration" .
+
+pbpk:Evaluation a rdfs:Class ; rdfs:label "Evaluation" .
+
+pbpk:PerformanceMetric a rdfs:Class ; rdfs:label "Performance metric" .
+
+pbpk:SUVAnalysis a rdfs:Class ; rdfs:label "Sensitivity, uncertainty or variability analysis" .
+
+form:SoftwareSourceCode a sh:NodeShape ;
+    form:path "models" ; sh:order 13 ;
+    sh:targetClass schema:SoftwareSourceCode ;
+    rdfs:label "Model" ;
+    sh:property [ sh:path schema:name ; sh:group form:modelGeneral ; sh:order 1 ; sh:name "Model name" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the model name, as ROBOT asks." ] ;
+    sh:property [ sh:path schema:version ; sh:group form:modelGeneral ; sh:order 2 ; sh:name "Model version" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the model version, as ROBOT asks." ] ;
+    sh:property [ sh:path schema:description ; sh:group form:modelGeneral ; sh:order 3 ; sh:name "Model description" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ; sh:severity sh:Warning ; sh:message "Add the model description, as ROBOT asks." ] ;
+    sh:property [ sh:path schema:creator ; sh:group form:modelGeneral ; sh:order 4 ; sh:name "Model author(s)" ; sh:minCount 1 ;
+        sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ; sh:severity sh:Warning ; sh:message "Add the model author(s), as ROBOT asks." ] ;
+    sh:property [ sh:path schema:programmingLanguage ; sh:group form:modelGeneral ; sh:order 5 ; sh:name "Software platform" ; sh:minCount 1 ;
+        sh:class schema:ComputerLanguage ; sh:node form:ComputerLanguage ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add the software platform, as ROBOT asks." ] ;
+    sh:property [ sh:path schema:codeRepository ; sh:group form:modelGeneral ; sh:order 6 ; sh:name "Model availability (URLs/DOIs)" ; sh:minCount 1 ;
+        sh:nodeKind sh:IRI ; sh:severity sh:Warning ; sh:message "Add the model availability (URLs/DOIs), as ROBOT asks." ] ;
+    sh:property [ sh:path schema:license ; sh:group form:modelGeneral ; sh:order 7 ; sh:name "License" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:severity sh:Warning ; sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ; form:publishedAs schema:CreativeWork ; sh:message "Add the license, chosen from SPDX; other values are kept." ] ;
+    sh:property [ sh:path schema:applicationCategory ; sh:group form:modelGeneral ; sh:order 8 ; sh:name "Intended application category" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the intended application category, as ROBOT asks." ] ;
+    sh:property [ sh:path schema:alternateName ; sh:group form:modelGeneral ; sh:order 9 ; sh:name "Other name" ; sh:datatype xsd:string ;
+        sh:description "Such as the model's name in its PBPK description, when its crate names its file." ] ;
+    sh:property [ sh:path pbpk:modelStructureDescription ; sh:group form:modelModelStructure ; sh:order 1 ; sh:name "Model structure description" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ; sh:severity sh:Warning ; sh:message "Add the model structure description, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:structuralCompartments ; sh:group form:modelModelStructure ; sh:order 2 ; sh:name "Structural compartments" ; sh:minCount 1 ;
+        sh:class pbpk:Compartment ; sh:node form:Compartment ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add the structural compartments, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:connections ; sh:group form:modelModelStructure ; sh:order 3 ; sh:name "Inter-compartmental connections" ; sh:minCount 1 ;
+        sh:class pbpk:Connection ; sh:node form:Connection ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add the inter-compartmental connections, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:mathematicalRepresentation ; sh:group form:modelModelStructure ; sh:order 4 ; sh:name "Mathematical representation" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "Ordinary differential equations" "Algebraic equations" "Hybrid ODE-algebraic system" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
+    sh:property [ sh:path pbpk:implementation ; sh:group form:modelModelStructure ; sh:order 5 ; sh:name "Model implementation reference(s)" ; sh:minCount 1 ;
+        sh:class pbpk:Implementation ; sh:node form:Implementation ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add the model implementation reference(s), as ROBOT asks." ] ;
+    sh:property [ sh:path bioschemas:input ; sh:group form:modelModelStructure ; sh:order 6 ; sh:name "Inputs" ;
+        sh:class bioschemas:FormalParameter ; sh:node form:FormalParameter ; sh:nodeKind sh:BlankNode ;
+        sh:description "What the model takes, such as doses or physiological parameters (RO-Crate's inputs)." ] ;
+    sh:property [ sh:path bioschemas:output ; sh:group form:modelModelStructure ; sh:order 7 ; sh:name "Outputs" ;
+        sh:class bioschemas:FormalParameter ; sh:node form:FormalParameter ; sh:nodeKind sh:BlankNode ;
+        sh:description "What the model gives, such as concentration-time profiles (RO-Crate's outputs)." ] ;
+    sh:property [ sh:path pbpk:hasChemical ; sh:group form:modelChemicals ; sh:order 1 ; sh:name "Chemical substance(s)" ; sh:minCount 1 ;
+        sh:or ( [ sh:class schema:MolecularEntity ; rdfs:label "Molecular entity" ] [ sh:class schema:ChemicalSubstance ; rdfs:label "Chemical substance" ] ) ; sh:node form:MolecularEntity ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add the chemical substance(s), as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:hasBiologicalSystem ; sh:group form:modelBiologicalSystem ; sh:order 1 ; sh:name "Biological system(s)" ; sh:minCount 1 ;
+        sh:class pbpk:BiologicalSystem ; sh:node form:BiologicalSystem ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add the biological system(s), as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:hasParameter ; sh:group form:modelParameterization ; sh:order 1 ; sh:name "Parameters" ; sh:minCount 1 ;
+        sh:class pbpk:Parameter ; sh:node form:Parameter ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add the parameters, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:hasCalibration ; sh:group form:modelCalibration ; sh:order 1 ; sh:name "Calibration activities" ;
+        sh:class pbpk:Calibration ; sh:node form:Calibration ; sh:nodeKind sh:BlankNode ] ;
+    sh:property [ sh:path pbpk:hasEvaluation ; sh:group form:modelValidation ; sh:order 1 ; sh:name "Evaluation activities" ; sh:minCount 1 ;
+        sh:class pbpk:Evaluation ; sh:node form:Evaluation ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add the evaluation activities, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:hasSUVAnalysis ; sh:group form:modelUncertainty ; sh:order 1 ; sh:name "SUV analyses" ;
+        sh:class pbpk:SUVAnalysis ; sh:node form:SUVAnalysis ; sh:nodeKind sh:BlankNode ] ;
+    sh:property [ sh:path pbpk:intendedUse ; sh:group form:modelApplicability ; sh:order 1 ; sh:name "Intended use" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ; sh:severity sh:Warning ; sh:message "Add the intended use, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:applicabilityDomain ; sh:group form:modelApplicability ; sh:order 2 ; sh:name "Applicability domain" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ; sh:severity sh:Warning ; sh:message "Add the applicability domain, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:confidenceStatement ; sh:group form:modelApplicability ; sh:order 3 ; sh:name "Confidence statement" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ; sh:severity sh:Warning ; sh:message "Add the confidence statement, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:limitations ; sh:group form:modelApplicability ; sh:order 4 ; sh:name "Known limitations" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ; sh:severity sh:Warning ; sh:message "Add the known limitations, as ROBOT asks." ] ;
+    sh:property [ sh:path schema:hasPart ; sh:group form:modelElectronicFiles ; sh:order 1 ; sh:name "Digital artifacts" ; sh:minCount 1 ;
+        sh:class schema:MediaObject ; sh:node form:MediaObject ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add the digital artifacts, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:reproducibilityInstructions ; sh:group form:modelElectronicFiles ; sh:order 2 ; sh:name "Reproducibility instructions" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ; sh:severity sh:Warning ; sh:message "Add the reproducibility instructions, as ROBOT asks." ] ;
+    sh:property [ sh:path schema:contributor ; sh:group form:modelLinks ; sh:order 1 ; sh:name "Contributors" ;
+        sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ] ;
+    sh:property [ sh:path schema:citation ; sh:group form:modelLinks ; sh:order 2 ; sh:name "Publications" ; sh:class schema:ScholarlyArticle ;
+        sh:description "The publications that describe the model; their pages link to their DOIs." ] ;
+    sh:property [ sh:path schema:funding ; sh:group form:modelLinks ; sh:order 3 ; sh:name "Funded by" ; sh:class schema:MonetaryGrant ] ;
+    sh:property [ sh:path schema:about ; sh:group form:modelLinks ; sh:order 4 ; sh:name "Topics" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
+        sh:message "Choose an ontology term, or register it." ;
+        sh:description "What the model deals with, such as its chemicals (ChEBI) and organisms." ] ;
+    sh:property [ sh:path schema:keywords ; sh:group form:modelLinks ; sh:order 5 ; sh:name "Keywords" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
+        sh:message "Choose a vocabulary term, or register it; text is kept until then." ] ;
+    sh:property [ sh:path glossary:VHP0000152 ; sh:group form:modelLinks ; sh:order 6 ; sh:name "Assessment steps" ;
+        sh:severity sh:Warning ; sh:nodeKind sh:IRI ; sh:in ( glossary:VHP0000153 glossary:VHP0000154 glossary:VHP0000155 glossary:VHP0000156 glossary:VHP0000158 ) ;
+        sh:message "Choose from the list; other values are not in the filters." ] ;
+    sh:property [ sh:path glossary:VHP0000151 ; sh:group form:modelLinks ; sh:order 7 ; sh:name "Case-study questions" ; sh:class schema:HowTo ] ;
+    sh:property [ sh:path schema:runtimePlatform ; sh:group form:modelLinks ; sh:order 8 ; sh:name "Runtime" ; sh:datatype xsd:string ;
+        sh:description "Such as R 4.1.0, or Berkeley Madonna 10.6.1." ] ;
+    sh:property [ sh:path schema:softwareRequirements ; sh:group form:modelLinks ; sh:order 9 ; sh:name "Requirements" ; sh:datatype xsd:string ;
+        sh:description "Packages the model needs, with their versions." ] ;
+    sh:property [ sh:path schema:datePublished ; sh:group form:modelLinks ; sh:order 10 ; sh:name "Published" ; sh:maxCount 1 ; sh:datatype xsd:date ] ;
+    sh:property [ sh:path schema:isBasedOn ; sh:group form:modelLinks ; sh:order 11 ; sh:name "Source record" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+        sh:description "The Zenodo record this one is made from." ] ;
+    sh:property [ sh:path schema:sameAs ; sh:group form:modelLinks ; sh:order 12 ; sh:name "DOI and other addresses" ; sh:nodeKind sh:IRI ] .
+
+form:Compartment a sh:NodeShape ;
+    sh:targetClass pbpk:Compartment ;
+    rdfs:label "Compartment" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Compartment name (model)" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the compartment name (model), as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:biologicalReference ; sh:order 2 ; sh:name "Biological reference" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:severity sh:Warning ; sh:class schema:DefinedTerm ; sh:message "Choose an ontology term, or register it; text is kept until then." ] ;
+    sh:property [ sh:path schema:description ; sh:order 3 ; sh:name "Compartment description" ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] .
+
+form:Connection a sh:NodeShape ;
+    sh:targetClass pbpk:Connection ;
+    rdfs:label "Connection" ;
+    sh:property [ sh:path pbpk:sourceCompartment ; sh:order 1 ; sh:name "Source compartment" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the source compartment, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:targetCompartment ; sh:order 2 ; sh:name "Target compartment" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the target compartment, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:connectionType ; sh:order 3 ; sh:name "Connection type" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "Blood flow" "Diffusion" "Permeation" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
+    sh:property [ sh:path schema:description ; sh:order 4 ; sh:name "Connection description" ; sh:maxCount 1 ; sh:datatype xsd:string ] .
+
+form:Implementation a sh:NodeShape ;
+    sh:targetClass pbpk:Implementation ;
+    rdfs:label "Implementation" ;
+    sh:property [ sh:path pbpk:implementationType ; sh:order 1 ; sh:name "Implementation type" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "SBML" "Python script" "R script" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
+    sh:property [ sh:path pbpk:implementationLocation ; sh:order 2 ; sh:name "Implementation location (relative path)" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the implementation location (relative path), as ROBOT asks." ] .
+
+form:ComputerLanguage a sh:NodeShape ;
+    sh:targetClass schema:ComputerLanguage ;
+    rdfs:label "Language" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the language's name, as RO-Crate asks." ;
+        sh:description "Such as R, Python, Stan or SBML." ] ;
+    sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Address" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ; sh:severity sh:Warning ; sh:message "Add the language's address, as RO-Crate asks." ] ;
+    sh:property [ sh:path schema:version ; sh:order 3 ; sh:name "Version" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the version the model was made with, as RO-Crate asks." ] ;
+    sh:property [ sh:path schema:alternateName ; sh:order 4 ; sh:name "Other name" ; sh:datatype xsd:string ] .
+
+form:MolecularEntity a sh:NodeShape ;
+    sh:targetClass schema:MolecularEntity ;
+    rdfs:label "Chemical" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Chemical name" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the chemical name, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:chemicalRole ; sh:order 2 ; sh:name "Role in the model" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "Parent compound" "Metabolite" "Co-exposure component" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
+    sh:property [ sh:path schema:identifier ; sh:order 3 ; sh:name "Chemical identifier(s)" ; sh:minCount 1 ;
+        sh:class schema:PropertyValue ; sh:node form:PropertyValue ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add the chemical identifier(s), as ROBOT asks." ] ;
+    sh:property [ sh:path schema:molecularWeight ; sh:order 4 ; sh:name "Molecular weight (g/mol)" ; sh:maxCount 1 ;
+        sh:datatype xsd:decimal ] ;
+    sh:property [ sh:path pbpk:physicochemicalNotes ; sh:order 5 ; sh:name "Physicochemical notes" ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] ;
+    sh:property [ sh:path schema:alternateName ; sh:order 6 ; sh:name "Other names" ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:description ; sh:order 7 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:inChI ; sh:order 8 ; sh:name "InChI" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:inChIKey ; sh:order 9 ; sh:name "InChIKey" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:smiles ; sh:order 10 ; sh:name "SMILES" ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:molecularFormula ; sh:order 11 ; sh:name "Molecular formula" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:sameAs ; sh:order 12 ; sh:name "Addresses elsewhere" ; sh:nodeKind sh:IRI ;
+        sh:description "Such as its ChEBI or PubChem page." ] .
+
+form:ChemicalSubstance a sh:NodeShape ;
+    sh:targetClass schema:ChemicalSubstance ;
+    rdfs:label "Chemical substance" ;
+    sh:node form:MolecularEntity .
+
+form:PropertyValue a sh:NodeShape ;
+    sh:targetClass schema:PropertyValue ;
+    rdfs:label "Identifier or value" ;
+    sh:property [ sh:path schema:propertyID ; sh:order 1 ; sh:name "Identifier type" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "CAS RN" "InChI" "InChIKey" "SMILES" "PubChem CID" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
+    sh:property [ sh:path schema:value ; sh:order 2 ; sh:name "Identifier value" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the identifier value, as ROBOT asks." ] .
+
+form:BiologicalSystem a sh:NodeShape ;
+    sh:targetClass pbpk:BiologicalSystem ;
+    rdfs:label "Biological system" ;
+    sh:property [ sh:path pbpk:species ; sh:order 1 ; sh:name "Species" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:severity sh:Warning ; sh:class schema:DefinedTerm ; sh:message "Choose an ontology term, or register it; text is kept until then." ] ;
+    sh:property [ sh:path pbpk:lifeStage ; sh:order 2 ; sh:name "Life stage(s)" ; sh:minCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "Adult" "Juvenile" "Neonate" "Pregnant" "Lactating" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
+    sh:property [ sh:path pbpk:physiologicalScope ; sh:order 3 ; sh:name "Physiological scope" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ; sh:severity sh:Warning ; sh:message "Add the physiological scope, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:compartments ; sh:order 4 ; sh:name "Compartments" ; sh:minCount 1 ;
+        sh:severity sh:Warning ; sh:class schema:DefinedTerm ; sh:message "Choose an ontology term, or register it; text is kept until then." ] ;
+    sh:property [ sh:path pbpk:populationDescription ; sh:order 5 ; sh:name "Population description" ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] ;
+    sh:property [ sh:path pbpk:anatomicalAssumptions ; sh:order 6 ; sh:name "Anatomical assumptions" ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] .
+
+form:Parameter a sh:NodeShape ;
+    sh:targetClass pbpk:Parameter ;
+    rdfs:label "Parameter" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Parameter name" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the parameter name, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:parameterCategory ; sh:order 2 ; sh:name "Parameter category" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "Physiological" "Biochemical" "Physicochemical" "Empirical" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
+    sh:property [ sh:path schema:value ; sh:order 3 ; sh:name "Parameter value" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:decimal ; sh:severity sh:Warning ; sh:message "Add the parameter value, as ROBOT asks." ] ;
+    sh:property [ sh:path schema:unitText ; sh:order 4 ; sh:name "Parameter unit" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the parameter unit, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:scope ; sh:order 5 ; sh:name "Parameter scope" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "Global" "Species-specific" "Compartment-specific" "Chemical-specific" ) ; sh:message "Choose from the list; other values are kept." ] ;
+    sh:property [ sh:path pbpk:appliesToSpecies ; sh:order 6 ; sh:name "Applicable species" ;
+        sh:severity sh:Warning ; sh:class schema:DefinedTerm ; sh:message "Choose an ontology term, or register it; text is kept until then." ] ;
+    sh:property [ sh:path pbpk:appliesToCompartments ; sh:order 7 ; sh:name "Applicable compartments" ;
+        sh:severity sh:Warning ; sh:class schema:DefinedTerm ; sh:message "Choose an ontology term, or register it; text is kept until then." ] ;
+    sh:property [ sh:path pbpk:appliesToChemicals ; sh:order 8 ; sh:name "Applicable chemicals" ;
+        sh:datatype xsd:string ] ;
+    sh:property [ sh:path pbpk:parameterSource ; sh:order 9 ; sh:name "Parameter source" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "Literature" "Experimental data" "In silico estimation" "Assumed" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
+    sh:property [ sh:path pbpk:sourceReference ; sh:order 10 ; sh:name "Source reference" ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] ;
+    sh:property [ sh:path pbpk:notes ; sh:order 11 ; sh:name "Parameter notes" ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] ;
+    sh:property [ sh:path schema:propertyID ; sh:order 12 ; sh:name "Symbol" ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:description "The parameter's symbol in the model's code, such as BW." ] .
+
+form:Calibration a sh:NodeShape ;
+    sh:targetClass pbpk:Calibration ;
+    sh:property [ sh:path schema:name ; sh:order 0 ; sh:name "Calibration name" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    rdfs:label "Calibration" ;
+    sh:property [ sh:path schema:description ; sh:order 1 ; sh:name "Calibration description" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ; sh:severity sh:Warning ; sh:message "Add the calibration description, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:method ; sh:order 2 ; sh:name "Calibration method" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "Manual fitting" "Least squares optimization" "Bayesian inference" "Visual inspection" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
+    sh:property [ sh:path pbpk:calibrationData ; sh:order 3 ; sh:name "Calibration data" ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] ;
+    sh:property [ sh:path pbpk:calibratedParameters ; sh:order 4 ; sh:name "Calibrated parameters" ;
+        sh:datatype xsd:string ] ;
+    sh:property [ sh:path pbpk:optimizationCriteria ; sh:order 5 ; sh:name "Optimization criteria" ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] ;
+    sh:property [ sh:path pbpk:notes ; sh:order 6 ; sh:name "Calibration notes" ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] .
+
+form:Evaluation a sh:NodeShape ;
+    sh:targetClass pbpk:Evaluation ;
+    sh:property [ sh:path schema:name ; sh:order 0 ; sh:name "Evaluation name" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    rdfs:label "Evaluation" ;
+    sh:property [ sh:path schema:description ; sh:order 1 ; sh:name "Evaluation description" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ; sh:severity sh:Warning ; sh:message "Add the evaluation description, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:evaluationData ; sh:order 2 ; sh:name "Evaluation data (reference)" ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] ;
+    sh:property [ sh:path pbpk:method ; sh:order 3 ; sh:name "Evaluation method" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "Visual comparison" "Statistical goodness-of-fit" "Observed vs predicted regression" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
+    sh:property [ sh:path pbpk:performanceMetrics ; sh:order 4 ; sh:name "Performance metrics" ;
+        sh:class pbpk:PerformanceMetric ; sh:node form:PerformanceMetric ; sh:nodeKind sh:BlankNode ] ;
+    sh:property [ sh:path pbpk:outcome ; sh:order 5 ; sh:name "Evaluation outcome" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ; sh:severity sh:Warning ; sh:message "Add the evaluation outcome, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:limitations ; sh:order 6 ; sh:name "Evaluation limitations" ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] .
+
+form:PerformanceMetric a sh:NodeShape ;
+    sh:targetClass pbpk:PerformanceMetric ;
+    rdfs:label "Performance metric" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Metric name" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the metric name, as ROBOT asks." ] ;
+    sh:property [ sh:path schema:value ; sh:order 2 ; sh:name "Metric value" ; sh:maxCount 1 ;
+        sh:datatype xsd:string ] ;
+    sh:property [ sh:path pbpk:interpretation ; sh:order 3 ; sh:name "Metric interpretation" ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] .
+
+form:SUVAnalysis a sh:NodeShape ;
+    sh:targetClass pbpk:SUVAnalysis ;
+    sh:property [ sh:path schema:name ; sh:order 0 ; sh:name "Analysis name" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    rdfs:label "Sensitivity, uncertainty or variability analysis" ;
+    sh:property [ sh:path pbpk:analysisType ; sh:order 1 ; sh:name "Analysis type" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "Sensitivity analysis" "Uncertainty analysis" "Variability analysis" "Combined analysis" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
+    sh:property [ sh:path pbpk:method ; sh:order 2 ; sh:name "Analysis method" ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] ;
+    sh:property [ sh:path pbpk:analyzedParameters ; sh:order 3 ; sh:name "Analyzed parameters" ;
+        sh:datatype xsd:string ] ;
+    sh:property [ sh:path pbpk:outcome ; sh:order 4 ; sh:name "Analysis results" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ; sh:severity sh:Warning ; sh:message "Add the analysis results, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:robustnessInterpretation ; sh:order 5 ; sh:name "Robustness interpretation" ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] ;
+    sh:property [ sh:path pbpk:notes ; sh:order 6 ; sh:name "Additional notes" ; sh:maxCount 1 ;
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] .
+
+form:MediaObject a sh:NodeShape ;
+    sh:targetClass schema:MediaObject ;
+    rdfs:label "File" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Artifact name" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the artifact name, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:artifactType ; sh:order 2 ; sh:name "Artifact type" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "Model code" "Simulation script" "Parameter file" "Dataset" "Documentation" "Notebook" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
+    sh:property [ sh:path schema:encodingFormat ; sh:order 3 ; sh:name "Artifact format" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the artifact format, as ROBOT asks." ] ;
+    sh:property [ sh:path pbpk:artifactLocation ; sh:order 4 ; sh:name "Artifact location" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the artifact location, as ROBOT asks." ] .

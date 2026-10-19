@@ -1,0 +1,29 @@
+@prefix schema: <https://schema.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
+
+form:Periodical a sh:NodeShape ;
+    sh:targetClass schema:Periodical ;
+    rdfs:label "Journal" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
+    sh:property [ sh:path schema:issn ; sh:order 2 ; sh:name "ISSN" ; sh:datatype xsd:string ; sh:pattern "^[0-9]{4}-[0-9]{3}[0-9X]$" ] .
+
+form:ScholarlyArticle a sh:NodeShape ;
+    form:path "publications" ; sh:order 4 ;
+    sh:targetClass schema:ScholarlyArticle ;
+    rdfs:label "Publication" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ; sh:or ( form:PlainText form:HTMLText ) ] ;
+    sh:property [ sh:path schema:author ; sh:order 2 ; sh:name "Authors" ;
+        sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ] ;
+    sh:property [ sh:path schema:datePublished ; sh:order 3 ; sh:name "Published" ; sh:maxCount 1 ;
+        sh:or ( [ sh:datatype xsd:date ; rdfs:label "Date" ] [ sh:datatype xsd:gYearMonth ; rdfs:label "Month" ] [ sh:datatype xsd:gYear ; rdfs:label "Year" ] ) ;
+        sh:description "A date, a month or a year, as precise as the publisher gives it." ] ;
+    sh:property [ sh:path schema:isPartOf ; sh:order 4 ; sh:name "Journal" ; sh:maxCount 1 ;
+        sh:class schema:Periodical ; sh:node form:Periodical ; sh:nodeKind sh:BlankNode ] ;
+    sh:property [ sh:path schema:sameAs ; sh:order 5 ; sh:name "DOI and other addresses" ; sh:minCount 1 ; sh:nodeKind sh:IRI ;
+        sh:message "DOI needed, starting with https://doi.org/10." ;
+        sh:description "The DOI as a web address, the Wikidata item, and other addresses." ] ;
+    sh:property [ sh:path schema:funding ; sh:order 6 ; sh:name "Funded by" ; sh:class schema:MonetaryGrant ;
+        sh:description "The grants it acknowledges; a project's page lists the publications of its grants." ] .

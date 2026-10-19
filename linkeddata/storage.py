@@ -15,7 +15,7 @@ from sqlalchemy import bindparam, column, select, table, text
 import database
 from database.tables import Record
 from linkeddata import patches
-from linkeddata.model import MODEL_DIR, settings
+from linkeddata.model import profile_text, settings
 
 # An HTML text that does not parse is flagged by the checks; rdflib's warning on each read is left out.
 logging.getLogger("rdflib.term").setLevel(logging.ERROR)
@@ -24,7 +24,7 @@ logging.getLogger("rdflib.term").setLevel(logging.ERROR)
 @cache
 def profile() -> str:
     """The application profile, whose prefixes name the tables and columns."""
-    return patches.inherited((MODEL_DIR / "profile.ttl").read_text(encoding="utf-8"))
+    return patches.inherited(profile_text())
 
 
 def names() -> list[str]:

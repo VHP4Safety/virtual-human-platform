@@ -17,6 +17,7 @@ from linkeddata import patches
 # The served release: its model is in model/<release>, its tables in database/<release>.
 RELEASE = "v1"
 MODEL_DIR = Path(__file__).parent / "model" / RELEASE
+PROFILE_DIR = MODEL_DIR / "profile"
 # The release's tables, written from its profile by `python -m linkeddata model`.
 TABLES = Path(__file__).parent.parent / "database" / RELEASE / "tables.sql"
 
@@ -98,7 +99,7 @@ def approved_schema() -> dict:
     config = settings()
     classes = sorted({str(kind) for kind in profile().objects(None, SH.targetClass)})
     # The profile is a vocabulary too: it declares the platform's own terms, such as its PBPK ones.
-    return patches.from_vocabulary(vocabularies(config) + [MODEL_DIR / "profile.ttl"], classes, MODEL_DIR / "profile.ttl").to_dict()
+    return patches.from_vocabulary(vocabularies(config) + profile_files(), classes, profile_text()).to_dict()
 
 
 def write_schema() -> Path:
@@ -115,7 +116,7 @@ def schema_problems() -> list[str]:
 
 
 def tables_sql() -> str:
-    return layout(patches.inherited((MODEL_DIR / "profile.ttl").read_text(encoding="utf-8"))).ddl()
+    return layout(patches.inherited(profile_text())).ddl()
 
 
 def write_tables() -> Path:
@@ -131,10 +132,21 @@ def tables_problems() -> list[str]:
     return []
 
 
+def profile_files() -> list[Path]:
+    """The application profile's modules: its header, and the shapes of each kind of record with its parts."""
+    return sorted(PROFILE_DIR.glob("*.ttl"))
+
+
+@cache
+def profile_text() -> str:
+    """The application profile's modules as one Turtle text."""
+    return "\n".join(path.read_text(encoding="utf-8") for path in profile_files())
+
+
 @cache
 def profile() -> Graph:
     """The application profile: required, fixed and single values, and the form's guidance."""
-    return Graph().parse(MODEL_DIR / "profile.ttl", format="turtle")
+    return Graph().parse(data=profile_text(), format="turtle")
 
 
 @cache
