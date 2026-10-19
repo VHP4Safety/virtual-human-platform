@@ -14,12 +14,8 @@
 <section class="container py-5">
     {# 
       Helper macros to access data:
-      - get(key): Gets value from method_json or method_details, returns empty string if "No response" or "NA"
-      - val(value, default): Returns value or default, filtering out "No response" and "NA"
       - format_date(iso): Converts ISO timestamp to readable format
     #}
-    {% macro val(v, default='—') %}{{ default if (not v or v == 'NA' or 'no response' in v.lower()) else v }}{% endmacro %}
-    {% macro get(key, default='—') %}{{ val(method_json.get(key) or method_details.get(key) or '', default) }}{% endmacro %}
     {% macro format_date(iso) %}{% if iso and iso != '—' %}{% set parts = iso[:10].split('-') %}{% set months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] %}{{ parts[2] | int }} {{ months[parts[1] | int - 1] }} {{ parts[0] }}{% else %}—{% endif %}{% endmacro %}
     
     {# Page header #}
@@ -63,9 +59,6 @@
 
             <h5 class="mt-3">Key details</h5>
             <dl class="row">
-              <!--<dt class="col-sm-4">Data producer</dt>
-              <dd class="col-sm-8">{{ get('data_producer_content') }}</dd> -->
-
               <dt class="col-sm-4">Vendor</dt>
               <dd class="col-sm-8">{{ names(method.provider) }}</dd>
 
@@ -111,26 +104,12 @@
 
           </div>
           <div class="col-md-4">
-            {% if method_details.screenshot or method_json.get('screenshot') %}
-              <img src="{{ (method_json.get('screenshot') or method_details.screenshot) | default('') }}" class="img-fluid rounded" alt="Method screenshot">
-            {% endif %}
-
             <div class="mt-3">
               <!-- Run / Instance button -->
-              {% if method_json.get('instance') and method_json.instance.get('url') %}
-                <a href="{{ method_json.instance.url }}" class="btn btn-vhpblue w-100 mb-2" target="_blank" rel="noopener">Run the method</a>
-              {% elif method_details.get('instance') and method_details.instance.get('url') %}
-                <a href="{{ method_details.instance.url }}" class="btn btn-vhpblue w-100 mb-2" target="_blank" rel="noopener">Run the method</a>
-              {% elif method.url %}
+              {% if method.url %}
                 <a href="{{ method.url }}" class="btn btn-outline-vhpblue w-100 mb-2" target="_blank" rel="noopener">Method webpage</a>
               {% else %}
                 <button class="btn btn-outline-secondary w-100 mb-2" disabled>No instance available</button>
-              {% endif %}
-
-              <!-- Metadata / MD file -->
-              {% set md = method_json.get('meta_data') or method_details.get('meta_data') or '' %}
-              {% if md %}
-                <button type="button" class="btn btn-outline-vhpblue w-100" onclick='showMetadata({{ (md or "") | tojson }}, {{ (title or "") | tojson }})'>View metadata</button>
               {% endif %}
             </div>
 

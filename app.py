@@ -272,8 +272,6 @@ def method_page(methodid):
     return render_template(
         "methods/method.html",
         method=method,
-        method_details=method,
-        method_json=method,
         updated=record.updated_at,
         page_title=f"{method_name} — VHP4Safety",
         meta_description=clip(descriptions[0] if descriptions else "")
