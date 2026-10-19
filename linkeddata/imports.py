@@ -268,6 +268,16 @@ def download(spec: dict, parser) -> dict[str, bytes]:
                     contents[f"{key}/{ending}"] = content
             except (requests.RequestException, zipfile.BadZipFile) as problem:
                 print(f"{spec['name']}: {key} not read ({problem})")
+    # A source of documents reads the files its parser names (documents: name → address), each under one of the
+    # addresses the source gives (its documents, by name), such as a repository's files at a pinned commit.
+    if "documents" in spec:
+        for name, url in parser.documents(contents, spec["documents"]).items():
+            if not url.startswith(tuple(spec["documents"].values())):
+                continue
+            try:
+                contents[name] = fetch(url)
+            except requests.RequestException as problem:
+                print(f"{spec['name']}: {name} not fetched ({problem})")
     # An enriching source has one answer per identified record, by the record's address.
     if "enriches" in spec:
         for iri, key in identified(spec):
@@ -290,7 +300,7 @@ def import_source(spec: dict) -> None:
     parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
     contents = download(spec, parser)
     # One file is given as is; several are given by name.
-    parsed = parser.parse(contents if "files" in spec or "entries" in spec or "terms" in spec or "members" in spec else contents[spec["name"]])
+    parsed = parser.parse(contents if "files" in spec or "entries" in spec or "terms" in spec or "members" in spec or "documents" in spec else contents[spec["name"]])
     data, queries = convert(spec, parsed, config["base"])
     found = records_of(data, [of_class for kind in config["kinds"].values() for of_class in catalogue.within(kind)], spec["name"])
     checksum = hashlib.sha256()
