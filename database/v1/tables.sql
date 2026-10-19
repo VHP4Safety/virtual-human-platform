@@ -113,6 +113,8 @@ CREATE TABLE IF NOT EXISTS "bioschemas_draft_study" (
   "schema_abstract__term" TEXT,
   "schema_description" TEXT,
   "schema_description__term" TEXT,
+  "schema_image" TEXT,
+  "schema_image__term" TEXT,
   "schema_name" TEXT,
   "schema_name__term" TEXT,
   "schema_text" TEXT,
@@ -548,6 +550,15 @@ CREATE TABLE IF NOT EXISTS "schema_organization" (
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_organization__record" ON "schema_organization" ("record");
+CREATE TABLE IF NOT EXISTS "schema_organization__schema_alternate_name" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_organization" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_organization__schema_alternate_name__record" ON "schema_organization__schema_alternate_name" ("record");
 CREATE TABLE IF NOT EXISTS "schema_organization__schema_same_as" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -632,6 +643,15 @@ CREATE TABLE IF NOT EXISTS "schema_research_project" (
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_research_project__record" ON "schema_research_project" ("record");
+CREATE TABLE IF NOT EXISTS "schema_research_project__schema_alternate_name" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_research_project" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_research_project__schema_alternate_name__record" ON "schema_research_project__schema_alternate_name" ("record");
 CREATE TABLE IF NOT EXISTS "schema_research_project__schema_funder" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -927,6 +947,8 @@ CREATE TABLE IF NOT EXISTS "schema_web_page_element" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
   "type" TEXT,
+  "schema_about" TEXT,
+  "schema_about__term" TEXT,
   "schema_creative_work_status" TEXT,
   "schema_creative_work_status__term" TEXT,
   "schema_name" TEXT,

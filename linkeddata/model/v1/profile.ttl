@@ -155,10 +155,12 @@ form:Organization a sh:NodeShape ;
     sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Website" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 3 ; sh:name "Elsewhere" ; sh:nodeKind sh:IRI ;
         sh:description "Its Wikidata or ROR item, and other addresses." ] ;
-    sh:property [ sh:path schema:description ; sh:order 4 ; sh:name "Description" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
-    sh:property [ sh:path schema:logo ; sh:order 5 ; sh:name "Logo" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+    sh:property [ sh:path schema:alternateName ; sh:order 4 ; sh:name "Other names" ; sh:datatype xsd:string ;
+        sh:description "Such as its full name, or its abbreviation." ] ;
+    sh:property [ sh:path schema:description ; sh:order 5 ; sh:name "Description" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
+    sh:property [ sh:path schema:logo ; sh:order 6 ; sh:name "Logo" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
         sh:description "Shown among the platform's partners." ] ;
-    sh:property [ sh:path schema:email ; sh:order 6 ; sh:name "Contact email" ; sh:maxCount 1 ; sh:datatype xsd:string ; form:private true ;
+    sh:property [ sh:path schema:email ; sh:order 7 ; sh:name "Contact email" ; sh:maxCount 1 ; sh:datatype xsd:string ; form:private true ;
         sh:description "A general address of the organisation." ] .
 
 # A research project, such as VHP4Safety: an organisation with its grants, videos, figures, research lines,
@@ -317,6 +319,8 @@ form:Study a sh:NodeShape ;
     sh:property [ sh:path schema:keywords ; sh:group form:casestudy ; sh:order 4 ; sh:name "Keywords" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
         sh:message "Choose a vocabulary term, or register it; text is kept until then." ;
         sh:description "What the case study deals with." ] ;
+    sh:property [ sh:path schema:image ; sh:group form:casestudy ; sh:order 7 ; sh:name "Icon" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+        sh:description "Shown on the case studies page." ] ;
     sh:property [ sh:path schema:abstract ; sh:group form:casestudy ; sh:order 5 ; sh:name "Introduction to the questions" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
     sh:property [ sh:path schema:text ; sh:group form:casestudy ; sh:order 6 ; sh:name "Text" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ;
         sh:description "The page's text in HTML, when not in sections." ] ;
@@ -393,7 +397,9 @@ form:WebPageElement a sh:NodeShape ;
     sh:property [ sh:path schema:creativeWorkStatus ; sh:order 6 ; sh:name "Status" ; sh:maxCount 1 ; sh:datatype xsd:string ;
         sh:description "\"hidden\": kept, but not shown." ] ;
     sh:property [ sh:path schema:hasPart ; sh:order 7 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
-        sh:description "Its own sections, shown as its items." ] .
+        sh:description "Its own sections, shown as its items." ] ;
+    sh:property [ sh:path schema:about ; sh:order 8 ; sh:name "Lists the outputs of" ; sh:maxCount 1 ; sh:class schema:MonetaryGrant ;
+        sh:description "A grant: the section lists the records that name it, such as its publications." ] .
 
 # A figure: an image's address and caption; it is part of the record that shows it.
 form:ImageObject a sh:NodeShape ;
