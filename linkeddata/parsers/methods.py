@@ -28,7 +28,9 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
     rows = []
     others = {}
     for key, entry in json.loads(contents["methods"]).items():
-        detail = {**entry, **(json.loads(contents[key]) if key in contents else {})}
+        detail = dict(entry)
+        if key in contents:
+            detail.update(json.loads(contents[key]))
         row = {"@id": "methods/" + entry["id"], "@type": "Method"}
         for field, given in (("method", "method"), ("description", "method_description_content"), ("assay", "assay_name_content"),
                              ("catalog_number", "catalog_number_content")):

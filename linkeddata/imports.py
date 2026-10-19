@@ -60,7 +60,12 @@ class Remote(io.RawIOBase):
         return self.at
 
     def seek(self, offset: int, whence: int = 0) -> int:
-        self.at = offset if whence == 0 else self.at + offset if whence == 1 else self.size + offset
+        if whence == 0:
+            self.at = offset
+        elif whence == 1:
+            self.at += offset
+        else:
+            self.at = self.size + offset
         return self.at
 
     def readinto(self, buffer) -> int:

@@ -1,6 +1,8 @@
 """Changes made on the platform, for editors. Each revision keeps the record before and after; a change
 is shown field by field, and as a diagram of the record's statements, with those added and removed."""
 
+from operator import itemgetter
+
 from rdflib import RDF, BNode, Graph, URIRef
 from rdflib.namespace import SDO
 
@@ -25,6 +27,11 @@ def key(graph: Graph, value) -> str:
     for predicate, given in graph.predicate_objects(value):
         held.append(f"{predicate} {key(graph, given)}")
     return "part " + " ".join(sorted(held))
+
+
+def edge_order(edge: dict) -> tuple:
+    """An edge's place: by its field's order, removed values first, then by value."""
+    return edge["order"], edge["status"] != "removed", edge["value"]
 
 
 def compared(before: Graph, after: Graph, old, new, kind: str | None) -> list[dict]:
@@ -64,7 +71,7 @@ def compared(before: Graph, after: Graph, old, new, kind: str | None) -> list[di
             else:
                 edge["parts"] = compared(before, after, value if (value, None, None) in before else None, value if (value, None, None) in after else None, str(part) if part is not None else None)
         edges.append(edge)
-    edges.sort(key=lambda edge: (edge["order"], edge["status"] != "removed", edge["value"]))
+    edges.sort(key=edge_order)
     return edges
 
 
@@ -129,7 +136,7 @@ def compare(revision: Revision) -> dict:
         "name": revision.name,
         "orcid": revision.orcid,
         "date": revision.created_at,
-        "fields": sorted(changed.values(), key=lambda field: field["order"]),
+        "fields": sorted(changed.values(), key=itemgetter("order")),
         "added": triples(after - before),
         "removed": triples(before - after),
         **graph,

@@ -5,6 +5,8 @@ of a term the page explains, named the glossary's way ("Toxicokinetics (Process 
 catalogue, for the home page: its kinds of records with their counts, its pages, and its publisher's partners.
 A kind's listing: a page of its records, found by name and filtered by its browsable fields, with counts."""
 
+from operator import itemgetter
+
 from rdflib import RDF, Graph, Literal, URIRef
 from rdflib.namespace import SDO, VOID
 
@@ -50,13 +52,13 @@ def outputs(grant) -> list[dict]:
         if record.type in organisations:
             continue
         listed.append({"address": record.iri, "name": record.name or record.iri, "kind": outline.kind_of(record.type)})
-    listed.sort(key=lambda found: found["name"].casefold())
+    listed.sort(key=outline.by_name)
     return listed
 
 
 def sections(found: Graph, node) -> list[dict]:
     """A node's sections by position, hidden ones left out."""
-    parts = sorted(found.objects(node, SDO.hasPart), key=lambda part: outline.placed(found, part))
+    parts = outline.in_order(found, found.objects(node, SDO.hasPart))
     listed = []
     for part in parts:
         if str(found.value(part, SDO.creativeWorkStatus) or "") == "hidden":
@@ -85,7 +87,7 @@ def subject(iri: str) -> dict:
     lines = []
     for line in found.objects(node, SDO.subOrganization):
         lines.append({"name": str(found.value(line, SDO.name) or ""), "description": str(found.value(line, SDO.description) or "")})
-    lines.sort(key=lambda line: line["name"])
+    lines.sort(key=itemgetter("name"))
     grants = []
     for funding in sorted(found.objects(node, SDO.funding)):
         grants.append(grant(str(funding)))
@@ -160,6 +162,11 @@ def listing(path: str, arguments) -> dict:
             "total": total, "page": number, "pages": (total + LISTED - 1) // LISTED, "query": query}
 
 
+def by_role(partner: dict) -> tuple:
+    """A partner's place: by its role, then by its name."""
+    return partner["role"], outline.by_name(partner)
+
+
 def partners(found: Graph, node) -> list[dict]:
     """A project's partners by role and name, then its co-funders by name; each with its name, logo and website."""
     held = []
@@ -172,8 +179,8 @@ def partners(found: Graph, node) -> list[dict]:
         organisation = URIRef(iri)
         listed.append({"role": role, "name": str(organisations.value(organisation, SDO.name) or iri), "address": iri,
                        "logo": str(organisations.value(organisation, SDO.logo) or ""), "url": str(organisations.value(organisation, SDO.url) or "")})
-    partnered = sorted([one for one in listed if one["role"]], key=lambda one: (one["role"], one["name"].casefold()))
-    return partnered + sorted([one for one in listed if not one["role"]], key=lambda one: one["name"].casefold())
+    partnered = sorted([one for one in listed if one["role"]], key=by_role)
+    return partnered + sorted([one for one in listed if not one["role"]], key=outline.by_name)
 
 
 def catalogue_of(record: Record) -> dict:
@@ -185,7 +192,7 @@ def catalogue_of(record: Record) -> dict:
     for name, of_class in settings()["kinds"].items():
         paths[of_class] = name
     kinds = []
-    for part in sorted(found.objects(node, VOID.classPartition), key=lambda part: outline.placed(found, part)):
+    for part in outline.in_order(found, found.objects(node, VOID.classPartition)):
         of_class = str(found.value(part, VOID["class"]) or "")
         kinds.append({"name": str(found.value(part, SDO.name) or ""), "description": text(found.value(part, SDO.description)),
                       "address": "/" + paths.get(of_class, ""), "count": catalogue.page(of_class, {}, "", 0, 1)[0] if of_class in paths else 0})

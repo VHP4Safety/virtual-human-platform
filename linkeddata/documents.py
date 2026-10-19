@@ -62,7 +62,13 @@ def values(document: dict, name: str) -> list:
     """The values of a field of a document: link addresses, texts and numbers."""
     given = document.get(name)
     found = []
-    for item in given if isinstance(given, list) else [] if given is None else [given]:
+    if isinstance(given, list):
+        items = given
+    elif given is None:
+        items = []
+    else:
+        items = [given]
+    for item in items:
         if isinstance(item, dict):
             item = item.get("@id", item.get("@value"))
         if item is not None:

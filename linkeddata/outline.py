@@ -38,6 +38,18 @@ def placed(found: Graph, node) -> tuple:
     return number, str(found.value(node, SDO.name) or "")
 
 
+def in_order(found: Graph, nodes) -> list:
+    """Nodes in the order of their places (placed)."""
+    def place(node):
+        return placed(found, node)
+    return sorted(nodes, key=place)
+
+
+def by_name(item: dict) -> str:
+    """An item's place in a list by its name, whatever its case."""
+    return item["name"].casefold()
+
+
 def node_outline(found: Graph, node, names: dict) -> dict:
     of_class = str(found.value(node, RDF.type) or "")
     shown = {"address": None if isinstance(node, BNode) else str(node), "name": str(found.value(node, SDO.name) or ""),
@@ -47,7 +59,7 @@ def node_outline(found: Graph, node, names: dict) -> dict:
         if field["iri"] in HEADING or not values:
             continue
         if field["part"]:
-            values.sort(key=lambda part: placed(found, part))
+            values = in_order(found, values)
             shown["parts"].append({"label": field["label"], "items": [node_outline(found, part, names) for part in values]})
         else:
             values.sort(key=str)
@@ -77,7 +89,7 @@ def named_on(record: Record) -> dict[str, list[dict]]:
             found.setdefault(labels.get(path) or documents.term(path), []).append(
                 {"address": holder.iri, "name": holder.name or holder.iri, "kind": kind_of(holder.type)})
     for listed in found.values():
-        listed.sort(key=lambda item: item["name"].casefold())
+        listed.sort(key=by_name)
     return found
 
 

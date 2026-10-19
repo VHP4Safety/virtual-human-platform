@@ -18,6 +18,11 @@ def field_labels() -> dict[tuple[str, str], str]:
     return labels
 
 
+def most_noted(group: dict) -> int:
+    """A group's place: the most notes first."""
+    return -len(group["notes"])
+
+
 def report() -> dict:
     """The completeness of each class's records, and the checks' notes by field and constraint."""
     with database.session() as db:
@@ -51,7 +56,7 @@ def report() -> dict:
             "reason": noted[0].reason,
             "notes": noted,
         })
-    groups.sort(key=lambda group: -len(group["notes"]))
+    groups.sort(key=most_noted)
     iris = []
     for note in notes:
         iris.append(note.iri)

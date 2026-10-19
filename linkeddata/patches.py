@@ -101,12 +101,17 @@ def merge(current: Graph, added: Graph, profile) -> Merged:
 
 # rdfsolve issue 15: MinedSchema.from_vocabulary sorts the texts of terms by term and predicate only, so two
 # texts of one term from two vocabularies come in either order, and so does the schema's identifier.
+def text_order(found) -> tuple:
+    """A term's text's place: by term, property, text and language."""
+    return found.term_iri, found.predicate, found.text.value, found.text.language or ""
+
+
 def from_vocabulary(vocabularies, classes, profile) -> MinedSchema:
     """MinedSchema.from_vocabulary, with the texts of each term sorted, and the identifier of the content
     made as rdfsolve makes it."""
     schema = MinedSchema.from_vocabulary(vocabularies, classes, profile=profile)
     for texts in (schema.enrichment.definitions, schema.enrichment.labels):
-        texts.sort(key=lambda found: (found.term_iri, found.predicate, found.text.value, found.text.language or ""))
+        texts.sort(key=text_order)
     content = schema.model_dump_json(exclude={"about"})
     schema.about.schema_id = str(uuid5(NAMESPACE_URL, "rdfsolve:vocabulary:" + sha256(content.encode()).hexdigest()))
     return schema

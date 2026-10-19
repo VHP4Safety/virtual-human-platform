@@ -2,6 +2,7 @@
 the shapes it builds on (sh:node), by section (sh:group) and order. The vocabularies' shapes only check values."""
 
 from functools import cache
+from operator import itemgetter
 
 from rdflib import RDFS, Literal, URIRef
 from rdflib.namespace import SH
@@ -74,5 +75,5 @@ def of(kind: str) -> list[dict]:
                 "position": (int(graph.value(group, SH.order) or 0) if group is not None else 0, str(group or ""), int(graph.value(field, SH.order) or 0)),
                 "section": str(graph.value(group, RDFS.label) or "") if group is not None else "",
             })
-    found.sort(key=lambda field: field["position"])
+    found.sort(key=itemgetter("position"))
     return found
