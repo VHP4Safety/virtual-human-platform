@@ -56,7 +56,7 @@ def node_outline(found: Graph, node, names: dict) -> dict:
             for value in given:
                 if "text" in value and (value["html"] or len(value["text"]) > SHORT):
                     long = True
-            shown["fields"].append({"name": field["name"], "label": field["label"], "values": given, "long": long})
+            shown["fields"].append({"name": field["name"], "label": field["label"], "values": given, "long": long, "section": field["section"]})
     return shown
 
 

@@ -14,6 +14,9 @@
 <table class="table mb-0">
   <tbody>
     {% for field in fields if field.name not in left_out %}
+    {% if field.section and (loop.first or loop.previtem.section != field.section) %}
+    <tr><th colspan="2" scope="rowgroup" class="h6 pt-3 text-vhpblue border-0">{{ field.section }}</th></tr>
+    {% endif %}
     <tr>
       <th scope="row" class="text-nowrap fw-semibold">{{ field.label }}</th>
       <td>{% for found in field["values"] %}{{ value(found) }}{% if not loop.last %}<br>{% endif %}{% endfor %}</td>

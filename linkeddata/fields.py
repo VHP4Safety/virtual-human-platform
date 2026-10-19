@@ -3,7 +3,7 @@ the shapes it builds on (sh:node), by section (sh:group) and order. The vocabula
 
 from functools import cache
 
-from rdflib import Literal, URIRef
+from rdflib import RDFS, Literal, URIRef
 from rdflib.namespace import SH
 
 from linkeddata import documents
@@ -24,7 +24,7 @@ def of(kind: str) -> list[dict]:
       (sh:hasValue); iris when the values are IRIs, not literals or nodes without an address;
     - part when the values are parts of the record (sh:node of a class without a kind, or sh:nodeKind
       sh:BlankNode), and addressed when parts have addresses (sh:nodeKind sh:IRI);
-    - position: section and order."""
+    - position: section and order, and section, the label of the field's section (sh:group)."""
     graph = profile()
     kinds = set(settings()["kinds"].values())
     shape = shape_of(kind)
@@ -72,6 +72,7 @@ def of(kind: str) -> list[dict]:
                     graph.value(field, SH.node) is not None and str(graph.value(field, SH["class"])) not in kinds),
                 "addressed": graph.value(field, SH.nodeKind) == SH.IRI,
                 "position": (int(graph.value(group, SH.order) or 0) if group is not None else 0, str(group or ""), int(graph.value(field, SH.order) or 0)),
+                "section": str(graph.value(group, RDFS.label) or "") if group is not None else "",
             })
     found.sort(key=lambda field: field["position"])
     return found
