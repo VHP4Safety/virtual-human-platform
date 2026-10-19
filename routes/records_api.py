@@ -34,7 +34,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 import database
 from admin import changes, tokens, writes
 from database import images, records
-from linkeddata import catalogue, checks, documents, fields as model_fields, markdown, patches, storage
+from linkeddata import catalogue, checks, documents, fields as model_fields, markdown, patches, storage, void
 from linkeddata.model import RELEASE, settings, shapes
 from routes import account, limiter
 from routes.record_pages import SERIALIZATIONS, data, markdown_of
@@ -452,7 +452,7 @@ def listing(of_class: str):
                 listed.append({"name": str(found.value(URIRef(iri), SDO.name) or iri), "address": iri,
                                "description": markdown.text({"text": str(description), "html": description.datatype == RDF.HTML}) if description else ""})
             kind = kind_of(None, {"@type": of_class}) or of_class
-            return Response(markdown.listing(kind.capitalize(), listed, settings()["license"]), content_type=markdown.MEDIA, headers={"Vary": "Accept"})
+            return Response(markdown.listing(kind.capitalize(), listed, void.platform()["license"]), content_type=markdown.MEDIA, headers={"Vary": "Accept"})
         if media == "application/ld+json":
             documented = []
             for iri in iris:
@@ -660,10 +660,20 @@ def upload_image():
 @blueprint.doc(responses={"200": {"description": "Every published statement, in N-Triples or Turtle, by the Accept header.", "content": {
     "application/n-triples": {"schema": {"type": "string"}}, "text/turtle": {"schema": {"type": "string"}}}}})
 def dump():
-    """Every record with a page, with its parts and the vocabulary terms they use, as one file; private fields
-    are left out. It is described at /.well-known/void."""
+    """Every record with a page, with its parts, as one file; private fields are left out. It is described at
+    /.well-known/void."""
     media = request.accept_mimetypes.best_match(["application/n-triples", "text/turtle"]) or "application/n-triples"
     return data(documents.published(), media)
+
+
+@blueprint.get("/dump/terms")
+@blueprint.doc(responses={"200": {"description": "The vocabulary terms that the records link to, in N-Triples or Turtle, by the Accept header.", "content": {
+    "application/n-triples": {"schema": {"type": "string"}}, "text/turtle": {"schema": {"type": "string"}}}}})
+def dump_terms():
+    """The vocabulary terms that the records link to, as one file, apart from the records: each vocabulary is their
+    source and licence (/.well-known/void)."""
+    media = request.accept_mimetypes.best_match(["application/n-triples", "text/turtle"]) or "application/n-triples"
+    return data(documents.published_terms(), media)
 
 
 @blueprint.get("/shapes.ttl")

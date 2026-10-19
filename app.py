@@ -21,7 +21,7 @@ from data.biostudies.search import BioStudiesExtractor
 from data.zenodo.search import ZenodoExtractor
 from data.mapping import normalize_all, scrub_draft
 from database import records
-from linkeddata import documents, outline, pages, storage
+from linkeddata import documents, outline, pages, storage, void
 from linkeddata.model import settings
 from routes.account import blueprint as account_blueprint
 from routes import limiter, records_api
@@ -83,7 +83,6 @@ CACHE_RESET_INTERVAL = 5 * 60  # seconds
 # routes override page_title / meta_description with page-specific values, and
 # inject_seo_defaults() falls back to these for anything that does not.
 DEFAULT_PAGE_TITLE = "VHP4Safety — Virtual Human Platform for safety assessment"
-DEFAULT_META_DESCRIPTION = settings()["description"]
 
 
 def clip(text, limit=160):
@@ -699,7 +698,7 @@ def inject_seo_defaults():
     """
     return {
         "page_title": DEFAULT_PAGE_TITLE,
-        "meta_description": DEFAULT_META_DESCRIPTION,
+        "meta_description": void.platform()["abstract"],
         "canonical_url": g.record.iri if "record" in g else records.address(request.path.strip("/")),
     }
 
@@ -721,7 +720,7 @@ def home():
         workflow=pages.page(workflow) if workflow is not None else None,
         process_flow_steps=get_process_flow_steps(),
         page_title=DEFAULT_PAGE_TITLE,
-        meta_description=platform["abstract"] or DEFAULT_META_DESCRIPTION,
+        meta_description=platform["abstract"],
     )
 
 

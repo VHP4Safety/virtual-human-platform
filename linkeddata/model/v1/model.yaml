@@ -1,16 +1,10 @@
 # Version 1 of the platform's data model.
 
-# The platform's name in its API, and what it is, for its pages and agents.
+# The platform's name in its API; what it is, and its records' licence, are given by its catalogue record (/).
 title: VHP4Safety Virtual Human Platform
-description: >-
-  The Virtual Human Platform (VHP4Safety) brings together tools, methods, data and case studies for animal-free,
-  human-based safety assessment of chemicals and pharmaceuticals.
 
 # A record with a page is identified by the page's address.
 base: https://platform.vhp4safety.nl/
-
-# The licence of the platform's records: the repository's (LICENSE.md, the GNU AGPL version 3).
-license: https://spdx.org/licenses/AGPL-3.0-only
 
 # Vocabularies are pinned to exact versions and kept in vocabularies/, with their SHA-256.
 vocabularies:

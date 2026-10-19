@@ -9,9 +9,11 @@ from uuid import NAMESPACE_URL, uuid5
 import requests
 from rdflib import RDF, RDFS, BNode, Graph, URIRef
 from rdflib.namespace import SH
-from rdfsolve.client.sql_tables import layout
+from rdfsolve.client.sql_tables import STATEMENTS, TERM_SUFFIX, layout
 from rdfsolve.ontology.service import Ontologies
 from rdfsolve.schema_models.core import MinedSchema
+from rdfsolve.schema_models.void_model import VoidClassPartition, VoidDatatypePartition, VoidPropertyPartition
+from sqlalchemy import column, func, literal, select, table, union_all
 
 
 @dataclass
@@ -148,6 +150,65 @@ def within(of_class: str, profile: str, hierarchy: Graph) -> list[str]:
     for other in layout(profile).classes:
         if other != of_class and URIRef(of_class) in hierarchy.transitive_objects(URIRef(other), RDFS.subClassOf):
             found.append(other)
+    return found
+
+
+# rdfsolve issue 20 (proposal): Layout.void(connection, records) -> list[VoidClassPartition]
+def void_partitions(profile: str, connection, records, left_out: set[str], name) -> list[VoidClassPartition]:
+    """The class partitions of the rows of some records (*records*, a select of their addresses), as rdfsolve's
+    VoID models give them: per class with rows, its entities (nodes with an address) and a property partition
+    per property, with its triples, the classes of the nodes its values are, and the datatypes of its texts.
+    Properties in *left_out*, such as private fields, are not counted; *name* makes a partition's address from
+    the IRIs it partitions by."""
+    shapes = layout(profile)
+    tables = {}
+    for table_name, columns in shapes.columns().items():
+        tables[table_name] = table(table_name, *[column(found) for found in columns])
+    # The class of each node, to partition the values that are nodes by their class.
+    classes = dict(connection.execute(union_all(*[select(tables[of_layout.name].c.iri, tables[of_layout.name].c.type) for of_layout in shapes.classes.values()])).all())
+    rest = tables[STATEMENTS]
+    found = []
+    for of_class, of_layout in sorted(shapes.classes.items()):
+        own = tables[of_layout.name]
+        total, entities = connection.execute(select(func.count(), func.count().filter(~own.c.iri.startswith("_:"))).where(own.c.record.in_(records))).one()
+        if not total:
+            continue
+        counted = {}
+        sources = []
+        for path, held in of_layout.single.items():
+            sources.append((path, own, own.c[held], own.c[held + TERM_SUFFIX], own.c[held].is_not(None)))
+        for path, held in of_layout.several.items():
+            listed = tables[of_layout.field_table(held)]
+            sources.append((path, listed, listed.c.value, listed.c.term, None))
+        for path, source, value, term, condition in sources:
+            statement = select(literal(path), term, value, func.count()).where(source.c.record.in_(records)).group_by(term, value)
+            if condition is not None:
+                statement = statement.where(condition)
+            counted.setdefault(path, []).extend(connection.execute(statement).all())
+        # Values that are no field of the class, or more than one of a single field, are in the statements table.
+        statement = (select(rest.c.property, rest.c.term, rest.c.value, func.count()).select_from(rest.join(own, own.c.iri == rest.c.iri))
+                     .where(rest.c.record.in_(records), rest.c.property != str(RDF.type)).group_by(rest.c.property, rest.c.term, rest.c.value))
+        for row in connection.execute(statement):
+            counted.setdefault(row[0], []).append(row)
+        properties = []
+        for path, rows in sorted(counted.items()):
+            if path in left_out or not rows:
+                continue
+            linked = {}
+            datatypes = {}
+            for _, kind, value, count in rows:
+                if kind in ("@id", "@blank"):
+                    of_value = classes.get(value)
+                    if of_value:
+                        linked[of_value] = linked.get(of_value, 0) + count
+                else:
+                    datatype = str(RDF.langString) if kind.startswith("@") else kind or "http://www.w3.org/2001/XMLSchema#string"
+                    datatypes[datatype] = datatypes.get(datatype, 0) + count
+            properties.append(VoidPropertyPartition(
+                uri=name(of_class, path), property_uri=path, triples=sum(row[3] for row in rows),
+                class_partitions=[VoidClassPartition(uri=name(of_class, path, of_value), class_uri=of_value, triples=count) for of_value, count in sorted(linked.items())],
+                datatype_partitions=[VoidDatatypePartition(uri=name(of_class, path, datatype), datatype_uri=datatype, triples=count) for datatype, count in sorted(datatypes.items())]))
+        found.append(VoidClassPartition(uri=name(of_class), class_uri=of_class, entities=entities, property_partitions=properties))
     return found
 
 OBO = "http://purl.obolibrary.org/obo/"

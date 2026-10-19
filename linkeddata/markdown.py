@@ -53,7 +53,8 @@ def node(found: dict, level: int) -> list[str]:
 
 
 def record(found: dict, formats: dict[str, str], licence: str) -> str:
-    """A record's outline in Markdown, with its address, its data in other formats (by name), and its licence."""
+    """A record's outline in Markdown, with its address, its data in other formats (by name), and its licence when
+    one is stated."""
     lines = node(found, 1)
     lines.insert(1, f"<{found['address']}>")
     if found["named_on"]:
@@ -67,7 +68,7 @@ def record(found: dict, formats: dict[str, str], licence: str) -> str:
     data = []
     for name, address in formats.items():
         data.append(f"[{name}]({address})")
-    lines.append("---\n\nData: " + " · ".join(data) + f"  \nLicence: <{licence}>")
+    lines.append("---\n\nData: " + " · ".join(data) + (f"  \nLicence: <{licence}>" if licence else ""))
     return "\n\n".join(lines) + "\n"
 
 
@@ -79,5 +80,6 @@ def listing(title: str, rows: list[dict], licence: str) -> str:
         described = f": {row['description']}" if row.get("description") else ""
         listed.append(f"- [{row['name']}]({row['address']}){described}")
     lines.append("\n".join(listed) if listed else "_None._")
-    lines.append(f"---\n\nLicence: <{licence}>")
+    if licence:
+        lines.append(f"---\n\nLicence: <{licence}>")
     return "\n\n".join(lines) + "\n"

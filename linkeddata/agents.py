@@ -14,12 +14,12 @@ from rdflib import URIRef
 from rdflib.namespace import SDO
 
 from database import records
-from linkeddata import catalogue, documents, fields, markdown, outline, storage
+from linkeddata import catalogue, documents, fields, markdown, outline, storage, void
 from linkeddata.model import settings
 
-server = MCPServer(settings()["title"], instructions=settings()["description"] + (
-    " Records are tools, methods, case studies, data, publications, organisations, people, pages, terms and "
-    "vocabularies. Find them with search or list_records, and read them with read."))
+server = MCPServer(settings()["title"], instructions=(
+    f"The records of the {settings()['title']}: tools, methods, case studies, data, publications, organisations, people, pages, "
+    "grants, terms and vocabularies. Find them with search or list_records, and read them with read."))
 READING = ToolAnnotations(readOnlyHint=True, openWorldHint=False)
 PAGE = 50
 
@@ -94,7 +94,7 @@ def read(address: str, format: str = "markdown") -> str:
     if format == "json-ld":
         return json.dumps(documents.document(documents.linked(record), record.iri), indent=1)
     formats = {"JSON-LD": record.iri + ".jsonld", "Turtle": record.iri + ".ttl", "N-Triples": record.iri + ".nt"}
-    return markdown.record(outline.outline(record), formats, settings()["license"])
+    return markdown.record(outline.outline(record), formats, void.platform()["license"])
 
 
 def run() -> None:

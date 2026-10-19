@@ -7,7 +7,7 @@ from functools import cache
 
 from pyld import jsonld
 from rdflib import RDF, Graph, Literal, URIRef
-from rdflib.namespace import SDO, SH
+from rdflib.namespace import SDO, SH, VOID
 
 import database
 from database import records
@@ -166,17 +166,21 @@ def public(found: Graph) -> Graph:
 
 def linked(record: Record) -> Graph:
     """A record's data as its page gives it: the record with its parts, and the class and name of each record it
-    links to; private fields are taken out."""
-    return public(storage.with_names(storage.graph([record.iri])))
+    links to, and the dataset it is part of (void:inDataset, the platform's address); private fields are taken
+    out."""
+    found = public(storage.with_names(storage.graph([record.iri])))
+    if record.iri != settings()["base"]:
+        found.add((URIRef(record.iri), VOID.inDataset, URIRef(settings()["base"])))
+    return found
 
 
 # The published statements, made again when a record changes.
 PUBLISHED = {}
 
 
-def published() -> Graph:
-    """Every record with a page, with its parts, and the records elsewhere that they link to, such as
-    vocabulary terms; private fields are taken out."""
+def published_all() -> dict:
+    """The records with a page, with their parts; and the records elsewhere that they link to, such as
+    vocabulary terms. Private fields are taken out."""
     latest = records.latest_change()
     if PUBLISHED.get("latest") != latest:
         own = []
@@ -187,9 +191,18 @@ def published() -> Graph:
         for value in found.objects():
             if isinstance(value, URIRef) and not str(value).startswith(settings()["base"]):
                 linked.add(str(value))
-        found += storage.graph(sorted(linked))
-        PUBLISHED.update(latest=latest, graph=public(found))
-    return PUBLISHED["graph"]
+        PUBLISHED.update(latest=latest, records=public(found), terms=public(storage.graph(sorted(linked))))
+    return PUBLISHED
+
+
+def published() -> Graph:
+    """Every record with a page, with its parts; private fields are taken out."""
+    return published_all()["records"]
+
+
+def published_terms() -> Graph:
+    """The records elsewhere that the records with a page link to, such as vocabulary terms."""
+    return published_all()["terms"]
 
 
 def view(record: Record) -> dict:

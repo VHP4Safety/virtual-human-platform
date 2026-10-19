@@ -18,7 +18,7 @@ from rdflib.namespace import SDO
 
 from database import records
 from database.tables import Record
-from linkeddata import catalogue, documents, markdown, outline, pages
+from linkeddata import catalogue, documents, markdown, outline, pages, void
 from linkeddata.model import settings
 
 FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "application/n-triples"}
@@ -62,7 +62,7 @@ def markdown_of(record: Record) -> Response:
     formats = {}
     for ending, name in FORMAT_NAMES.items():
         formats[name] = record.iri + ending
-    body = markdown.record(outline.outline(record), formats, settings()["license"])
+    body = markdown.record(outline.outline(record), formats, void.platform()["license"])
     return Response(body, content_type=markdown.MEDIA, headers={"Vary": "Accept"})
 
 
@@ -103,8 +103,9 @@ def negotiate():
     g.record = record
     if media == "text/markdown":
         return markdown_of(record)
+    # The platform's address is its dataset's: its data is the VoID description.
     if media != "text/html":
-        return data(documents.linked(record), media)
+        return data(void.described() if record.iri == settings()["base"] else documents.linked(record), media)
     # A record with no page of its own is shown on the general record page.
     if request.url_rule is None:
         return record_page(record)
@@ -121,9 +122,12 @@ def link_data(response):
         links.append(f'<{url_for("api.model_shapes")}>; rel="http://www.w3.org/ns/ldp#constrainedBy"; type="text/turtle"')
         links.append(f'<{page_path(g.record)}{MARKDOWN}>; rel="alternate"; type="text/markdown"')
         response.headers["Vary"] = "Accept"
-    # The records' licence, on their pages, their data and the API.
-    if "record" in g or "listing" in g or request.path.startswith("/api/"):
-        links.append(f'<{settings()["license"]}>; rel="license"')
+    # The records' licence, on their pages, their data and the API, as the platform's catalogue states it; and
+    # the dataset a record is part of (VoID).
+    if ("record" in g or "listing" in g or request.path.startswith("/api/")) and void.platform()["license"]:
+        links.append(f'<{void.platform()["license"]}>; rel="license"')
+    if "record" in g and g.record.iri != settings()["base"]:
+        links.append(f'<{settings()["base"]}>; rel="http://rdfs.org/ns/void#inDataset"')
     if links:
         given = response.headers.get("Link")
         response.headers["Link"] = ", ".join(([given] if given else []) + links)
