@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="/static/css/data.css" />
+<script src="https://cdn.jsdelivr.net/npm/citation-js@0.9.0" integrity="sha384-wop5NlY7ORa1+WSchJbyKhM2UGNF+nuCoelh0sH4SAaS31ho6ehlpFyULYk/Q9dC" crossorigin="anonymous"></script>
+
+{% with record = data.norm_metadata %}
+{# ---------------------------
+   Schema.org / Bioschemas JSON-LD
+   --------------------------- #}
+
+   <!-- todo -->
+
+</script>
+
+{# ---------------------------
+   Helper macros
+   --------------------------- #}
+{% macro val(v, default='—') %}
+  {%- if v is none -%}{{ default }}
+  {%- elif v is string and (v|trim == '' or v|lower == 'na' or v|lower == 'n/a' or 'no response' in v|lower) -%}{{ default }}
+  {%- elif v is sequence and (v is not string) and (v|length == 0) -%}{{ default }}
+  {%- else -%}{{ v }}
+  {%- endif -%}
+{% endmacro %}
+
+{% macro fmt_date(d, default='—') %}
+  {# expects YYYY-MM-DD or any string; show first 10 chars if ISO #}
+  {%- if not d -%}{{ default }}
+  {%- else -%}{{ d[:10] }}
+  {%- endif -%}
+{% endmacro %}
+
+{% macro bytes_mb(n, default='') %}
+  {%- if n is number -%}{{ (n / 1000000) | round(1) }} MB
+  {%- else -%}{{ default }}
+  {%- endif -%}
+{% endmacro %}
+
+{# ---------------------------
+   Page header
+   --------------------------- #}
+
+<section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
+    <div class="pb-2">
+        <h1><span class="text-vhpblue" id="collection-name">{{ val(record.title, 'Dataset') }}
+         <img src="/static/images/logos/icon/PNG/300ppi/VHP_Icon_HexaHead_300.png" alt="Developed by VHP" class="vhp-badge" data-bs-toggle="tooltip" data-bs-title="Developed by VHP" height="30px">
+        </span></h1>
+    </div>
+
+<div class="card">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <a class="nav-link text-vhpblue active" id="simple-tab-0" data-bs-toggle="tab" href="#simple-tabpanel-0" role="tab" aria-controls="simple-tabpanel-0" aria-selected="true">Overview</a>
+      </li>
+      <li class="nav-item" role="presentation">
+        <a class="nav-link text-vhpblue" id="simple-tab-2" data-bs-toggle="tab" href="#simple-tabpanel-1" role="tab" aria-controls="simple-tabpanel-2" aria-selected="false">Documentation</a>
+      </li>
+      <li class="nav-item" role="presentation">
+        <a class="nav-link text-vhpblue" id="simple-tab-3" data-bs-toggle="tab" href="#simple-tabpanel-2" role="tab" aria-controls="simple-tabpanel-3" aria-selected="false">Support</a>
+      </li>
+    </ul>
+  </div>
+  <div class="card-body">
+    <div class="tab-content" id="tab-content">
+      <!-- first tab -->
+      <div class="tab-pane active" id="simple-tabpanel-0" role="tabpanel" aria-labelledby="simple-tab-0">
+              <div class="card mb-3">
+                <div class="card-header py-2"><h5 class="m-0">Details</h5></div>
+                <div class="card-body p-0">
+                  <dl class="row ps-3 pe-3 pt-3 mb-0">
+                    <dt class="col-sm-3">Type</dt>
+                    <dd class="col-sm-9">
+                      <span class="badge bg-vhplight-blue text-secondary rounded-pill align-middle">{{ val(record.type) }}</span>
+                    </dd>
+
+                    <dt class="col-sm-3">Internal ID</dt>
+                    <dd class="col-sm-9">{{ val(record.id) }}</dd>
+
+                    <dt class="col-sm-3">Release date</dt>
+                    <dd class="col-sm-9">{{ fmt_date(record.ReleaseDate) }}</dd>
+
+                    <dt class="col-sm-3">Version</dt>
+                    <dd class="col-sm-9">{{ val(record.version) }}</dd>
+
+                    <dt class="col-sm-3">License</dt>
+                    <dd class="col-sm-9">{{ val(record.license) }}</dd>
+
+                    <dt class="col-sm-3">URL</dt>
+                    <dd class="col-sm-9">
+                      {% if record.url %}
+                        <a href="{{ record.url }}" target="_blank" rel="noopener" class="text-break">{{ record.url }}</a>
+                      {% else %}—{% endif %}
+                    </dd>
+
+                    <dt class="col-sm-3">DOI</dt>
+                    <dd class="col-sm-9">
+                      {% if record.doi_url %}
+                        <a href="{{ record.doi_url }}" target="_blank" rel="noopener">{{ record.doi }}</a>
+                      {% elif record.doi %}{{ record.doi }}
+                      {% else %}—{% endif %}
+                    </dd>
+
+                  </dl>
+                </div>
+              </div>
+
+              <div class="card overflow-hidden">
+                <div class="card-header py-2">
+                <h5 class="m-0">Files</h5>
+                </div>
+                <div class="card-body p-0">
+                  {% if record.files and record.files|length > 0 %}
+                    <ul class="list-group list-group-flush">
+                      {% for f in record.files %}
+                        <li class="list-group-item d-flex align-items-start gap-2">
+                          <i class="bi bi-file-earmark text-vhpblue"></i>
+                          <span>
+                          {% if f.url %}
+                            <a href="{{ f.url }}" target="_blank" rel="noopener">{{ val(f.name) }}</a>
+                          {% else %}
+                            {{ val(f.name) }}
+                          {% endif %}
+                          {% if f.size %} <span class="text-muted">({{ bytes_mb(f.size) }})</span>{% endif %}
+                          {% if f.checksum %}<br><span class="d-lg-block d-none text-muted">{{ f.checksum }}</span>{% endif %}
+                          </span>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <p class="text-muted p-3">No files listed.</p>
+                  {% endif %}
+                </div>
+              </div>
+
+      </div>
+      <!-- second tab -->
+      <div class="tab-pane" id="simple-tabpanel-1" role="tabpanel" aria-labelledby="simple-tab-1">
+        <div class="accordion accordion-flush" id="tool-documentation-accordion">
+
+        <div>
+                {% if record.description %}
+            <p class="text-secondary">{{ record.description | sanitize_html }}</p>
+        {% endif %}
+        </div>
+
+              <div class="card mb-3">
+                <div class="card-header py-2"><h5 class="m-0">Publications</h5></div>
+                <div class="card-body p-0">
+          {% if record.doi %}
+              <div class="accordion-body">
+                <div id="bibliography"></div>
+              </div>
+          <script src="https://cdn.jsdelivr.net/npm/citation-js@0.9.0" integrity="sha384-wop5NlY7ORa1+WSchJbyKhM2UGNF+nuCoelh0sH4SAaS31ho6ehlpFyULYk/Q9dC" crossorigin="anonymous"></script>
+          <script>var Cite = require('citation-js')</script>
+          <script>
+            const cite = new Cite();
+            dois = [];
+            dois.push("{{ record.doi }}");
+            Cite.async(dois).then(function(cite) {
+              content = cite.format('bibliography', {
+                format: 'html', template : 'apa',
+                prepend: function (entry) {
+                  return '<li><i class="bi bi-file-earmark"></i>&nbsp;'
+                },
+                append: function (entry) {
+                  return '<a href="https://doi.org/' + entry.DOI + '">CrossRef</a> <a href="https://scholia.toolforge.org/doi/' + entry.DOI + '">Scholia</a></li>'
+                }
+              })
+              document.getElementById('bibliography').innerHTML = "<ul>" + content + "</ul>"
+            })
+          </script>
+          {% endif %}
+                </div>
+              </div>
+
+        </div>
+      </div>
+      <!-- third tab -->
+      <div class="tab-pane" id="simple-tabpanel-2" role="tabpanel" aria-labelledby="simple-tab-3">
+            <div class="col-md-4">
+
+              <div class="card overflow-hidden">
+                <div class="card-header py-2">
+                  <h5 class="m-0">Authors</h5>
+                </div>
+
+                <div class="card-body p-0">
+                  {% if record.authors and record.authors|length > 0 %}
+                    <ul class="list-group list-group-flush">
+                      {% for a in record.authors %}
+                        <li class="list-group-item  d-flex align-items-start gap-2">
+                          <i class="bi bi-person-circle text-vhpblue"></i>
+
+                          <span class="small">
+                            <span class="fw-semibold">{{ val(a.name) }}</span>
+
+                            {% if a.affiliation %}
+                              <br>
+                              <span class="text-muted">{{ a.affiliation }}</span>
+                            {% endif %}
+
+                            {% if a.orcid %}
+                              <br>
+                              <a
+                                class="text-decoration-none d-inline-flex align-items-center gap-1"
+                                href="https://orcid.org/{{ a.orcid }}"
+                                target="_blank"
+                                rel="noopener"
+                                aria-label="View ORCID record - {{ a.orcid }}"
+                              >
+                                <img
+                                  width="16"
+                                  height="16"
+                                  src="/static/images/logos/icon/SVG/ORCID-iD_icon_vector.svg"
+                                  alt="ORCID iD"
+                                >
+                                <span>{{ a.orcid }}</span>
+                              </a>
+                            {% endif %}
+                          </span>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <p class="text-muted mb-0 p-3">No author information available.</p>
+                  {% endif %}
+                </div>
+              </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+  <script>
+  (function () {
+    if (typeof window.require !== 'function') return;
+    const Cite = window.require('citation-js');
+
+    document.querySelectorAll('.publication-entry').forEach(entry => {
+      const container = entry.querySelector('.pub-citation');
+      const doi = (entry.dataset.doi || '').trim();
+
+      if (!doi) {
+        container.innerHTML = '<p class="text-muted small mb-0">Citation details unavailable.</p>';
+        return;
+      }
+
+      Cite.async(doi).then(cite => {
+        let html = cite.format('bibliography', {
+          format: 'html',
+          template: 'apa',
+          lang: 'en-US'
+        });
+
+        // remove DOI from formatted citation (shown separately)
+        const doiNorm = doi.toLowerCase();
+        html = html.replace(
+          new RegExp(`https?://doi\\.org/${doiNorm.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}`, 'gi'),
+          ''
+        );
+
+        container.innerHTML = html;
+
+        container.querySelectorAll('.csl-entry').forEach(entry => {
+          const icon = document.createElement('i');
+          entry.classList.add();
+          entry.prepend(icon);
+        });
+      }).catch(() => {
+        container.innerHTML =
+          '<p class="text-muted small mb-0">Could not format citation automatically.</p>';
+      });
+    });
+  })();
+  </script>
+
+  <script>
+  (function () {
+    const el = document.getElementById('dataset-citation');
+    if (!el || typeof window.require !== 'function') return;
+    const doi = el.dataset.doi;
+    if (!doi) return;
+
+    const Cite = window.require('citation-js');
+    const btn = document.getElementById('copy-citation-btn');
+
+    Cite.async(doi).then(cite => {
+      el.innerHTML = cite.format('bibliography', {
+        format: 'html',
+        template: 'apa',
+        lang: 'en-US'
+      });
+
+      if (btn) {
+        btn.style.display = '';
+        btn.addEventListener('click', () => {
+          const text = cite.format('bibliography', { format: 'text', template: 'apa', lang: 'en-US' });
+          navigator.clipboard.writeText(text.trim()).then(() => {
+            btn.innerHTML = '<i class="bi bi-clipboard-check"></i>';
+            setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 2000);
+          });
+        });
+      }
+    }).catch(() => {
+      el.innerHTML =
+        '<p class="text-muted small mb-0">Could not format dataset citation.</p>';
+    });
+  })();
+  </script>
+
+
+
+</section>
+
+
+{% endwith %}
+{% endblock %}
