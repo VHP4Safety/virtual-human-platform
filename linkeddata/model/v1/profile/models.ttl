@@ -352,7 +352,7 @@ form:MolecularEntity a sh:NodeShape ;
 form:ChemicalSubstance a sh:NodeShape ;
     sh:targetClass schema:ChemicalSubstance ;
     rdfs:label "Chemical substance" ;
-    sh:node form:MolecularEntity .
+    sh:node form:Compound .
 
 form:PropertyValue a sh:NodeShape ;
     rdfs:label "Identifier or value" ;

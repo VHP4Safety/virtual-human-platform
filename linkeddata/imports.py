@@ -19,7 +19,8 @@ import yaml
 from rdfsolve import SchemaMiner
 from rdfsolve.api import Client
 from rdfsolve.conversion import Profile, Rule, write_query
-from rdflib import RDF, Graph, URIRef
+from rdfsolve.mining.wikibase_strategy import WikibaseScopeStrategy
+from rdflib import RDF, Graph, Literal, URIRef
 from rdflib.namespace import SDO
 from sqlalchemy import delete, func, insert, select
 
@@ -30,6 +31,7 @@ from linkeddata.model import MODEL_DIR, RELEASE, profile, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
 TARGET = f"VHP4Safety model {RELEASE}"
+ITEM = "http://wikiba.se/ontology#Item"
 
 
 def fetch(url: str, accept: str | None = None) -> bytes:
@@ -230,6 +232,36 @@ def identified(spec: dict) -> list[tuple[str, str]]:
     return keys
 
 
+def wikibase_items(wikibase: dict, items: list[str]) -> bytes:
+    """The given items of a Wikibase and the members of its class, read by rdfsolve, as JSON rows of their fields
+    (named by rdfsolve after the properties' labels): an item's address, texts without their language, other
+    values with their datatype."""
+    strategy = WikibaseScopeStrategy(items, classes=[wikibase["members"]], membership=wikibase["membership"],
+                                     prefix_classes={wikibase["entity"] + "Q": ITEM})
+    with SchemaMiner(wikibase["endpoint"], strategy=strategy, counts=False) as miner:
+        client = Client(miner.mine(dataset_name=wikibase["endpoint"]), wikibase["endpoint"])
+    members = client.select(f"SELECT ?item WHERE {{ ?item <{wikibase['membership']}> <{wikibase['members']}> }}", exhaustive=True)
+    every = set(items)
+    for row in members.rows:
+        every.add(row["item"].value)
+    rows = {}
+    for found in client.fetch(sorted(every), kind=ITEM).table().to_dict("records"):
+        row = {"item": str(found["Identifier"])}
+        for field, values in found.items():
+            if not isinstance(values, list):
+                continue
+            row[field] = []
+            for value in values:
+                if isinstance(value, URIRef):
+                    row[field].append({"@id": str(value)})
+                elif isinstance(value, Literal) and value.datatype is not None:
+                    row[field].append({"@value": str(value), "@type": str(value.datatype)})
+                else:
+                    row[field].append(str(value))
+        rows[row["item"]] = row
+    return json.dumps([rows[item] for item in sorted(rows)], indent=1, sort_keys=True).encode()
+
+
 def download(spec: dict, parser) -> dict[str, bytes]:
     """A source's files by name; with entries, also each entry's file by its key in the index (the JSON
     object's keys, or those its parser reads)."""
@@ -279,6 +311,9 @@ def download(spec: dict, parser) -> dict[str, bytes]:
                 contents[iri] = fetch(spec["answer"].format(key=quote(key, safe="/")), spec.get("accept"))
             except requests.RequestException as problem:
                 print(f"{spec['name']}: {iri} not fetched ({problem})")
+    # A source in a Wikibase gives the items its parser names (items) and the members of a class, read by rdfsolve.
+    if "wikibase" in spec:
+        contents["items"] = wikibase_items(spec["wikibase"], parser.items(contents))
     # A source of terms has one answer per linked term, by its address.
     if "terms" in spec:
         for iri in linked_terms():

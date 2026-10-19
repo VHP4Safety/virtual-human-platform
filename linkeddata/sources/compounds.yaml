@@ -1,0 +1,35 @@
+name: compounds
+title: Compounds
+parser: compounds
+# The glossary's table of chemicals at a pinned commit: the compounds it lists, by their Compound Wiki items.
+files:
+  chemicals: https://raw.githubusercontent.com/VHP4Safety/glossary/2c25a72f087c07bacfc5681d4e7185f3c499d593/templates/chemicals.tsv
+# Compound Wiki, read by rdfsolve: the glossary's compounds and the items that are part of VHP4Safety (P21).
+wikibase:
+  endpoint: https://compoundcloud.wikibase.cloud/query/sparql
+  entity: https://compoundcloud.wikibase.cloud/entity/
+  membership: https://compoundcloud.wikibase.cloud/prop/direct/P21
+  members: https://compoundcloud.wikibase.cloud/entity/Q2059
+
+# The rules of each kind of row: the arguments of rdfsolve's Rule.between.
+rules:
+  Compound:
+    - {predicate: a, value: "https://schema.org/MolecularEntity"}
+    - {predicate: "https://schema.org/name", object: label}
+    - {predicate: "https://schema.org/alternateName", object: alt_label}
+    - {predicate: "https://schema.org/alternateName", object: short_name}
+    - {predicate: "https://schema.org/alternateName", object: abbreviation}
+    - {predicate: "https://schema.org/description", object: description}
+    - {predicate: "https://schema.org/identifier", object: identifier}
+    - {predicate: "https://schema.org/inChI", object: inchi}
+    - {predicate: "https://schema.org/inChIKey", object: inchikey}
+    - {predicate: "https://schema.org/smiles", object: smiles}
+    - {predicate: "https://schema.org/smiles", object: smiles_without_stereochemistry}
+    - {predicate: "https://schema.org/molecularFormula", object: chemical_formula}
+    - {predicate: "https://schema.org/molecularWeight", object: mass}
+    - {predicate: "https://schema.org/sameAs", object: item}
+    - {predicate: "https://schema.org/sameAs", object: same_as}
+  Identifier:
+    - {predicate: a, value: "https://schema.org/PropertyValue"}
+    - {predicate: "https://schema.org/propertyID", object: kind}
+    - {predicate: "https://schema.org/value", object: value}
