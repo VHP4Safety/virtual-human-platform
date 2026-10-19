@@ -25,7 +25,7 @@ from linkeddata.parsers import link, marked, term, slug
 PROJECT = "organizations/vhp4safety"
 DECIMAL = "http://www.w3.org/2001/XMLSchema#decimal"
 # The pages, by the templates' route names, and the files read.
-PAGES = {"explore_our_work": "explore_our_work", "training": "training", "impact": "impact",
+PAGES = {"explore_our_work": "explore_our_work", "impact": "impact",
          "SafetyAssessmentWorkflow": "safety_assessment_workflow", "terms_of_service": "legal/terms_of_service",
          "privacypolicy": "legal/privacypolicy"}
 # Partner list headings that name co-funders, not partners.
@@ -235,7 +235,8 @@ def home(content: bytes, kinds: dict) -> tuple[dict, dict]:
     row["pages"] = []
     for anchor in about.select("a.btn"):
         named = re.search(r"url_for\('(\w+)'\)", anchor["href"])
-        row["pages"].append(link(PAGES[named.group(1)]))
+        if named.group(1) in PAGES:
+            row["pages"].append(link(PAGES[named.group(1)]))
     for found in [about.find("h1"), about.find(id="workflowTeaser"), about.select_one("a.btn").find_parent("div", class_="row")] + about.find_all("hr"):
         found.decompose()
     # The line under the heading is the description's first paragraph; the other large lines head its parts.
@@ -288,6 +289,10 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             if section.get("heading") == "Publications" and found.get("grants") and section.get("status") != "hidden":
                 section["about"] = found["grants"][0]
     platform, contact = home(contents["home"], kinds)
+    # The training page lists the training materials; its heading and sentence describe them in the catalogue.
+    name, description = heading(BeautifulSoup(contents["training"], "html.parser"))
+    platform["kinds"].append({"@type": "Kind", "class": link(kinds["training"]), "name": name, "description": description,
+                              "position": len(platform["kinds"]) + 1})
     found.update({key: value for key, value in contact.items() if value})
     described = organisation(contents["base"])
     for name in [described.get("alternateName")] if described.get("alternateName") else []:
