@@ -17,6 +17,7 @@ metadata (ro-crate-metadata.json) and, where its makers wrote one, a PBPK descri
   them; routes and scenarios tell the domain of applicability, and processes the structure, as the template's
   narrative fields do."""
 
+import copy
 import json
 import re
 from importlib.resources import files
@@ -36,6 +37,8 @@ RO_CRATE = json.loads((files("rocrate") / "data" / "ro-crate.jsonld").read_text(
 CONNECTION = re.compile(r"(.+?)\s*(<->|->)\s*(.+?)(?:\s*\((.+)\))?$")
 # The fields that link to records or terms; entities only the crate holds stay in it.
 LINKS = ("about", "citation", "funding", "creator", "author", "contributor", "license", "keywords", "codeRepository")
+# The fields of the crate's root that a model takes when its own entity lacks them.
+SHARED = ("license", "citation", "funding", "about", "creator", "author", "keywords")
 
 
 def crate_of(hit: dict) -> dict | None:
@@ -56,14 +59,40 @@ def packages(index: bytes) -> dict[str, str]:
 
 
 def listed(value) -> list:
-    return value if isinstance(value, list) else [value] if present(value) else []
+    """A value as a list: a list as it is, one value in a list, nothing as an empty list."""
+    if isinstance(value, list):
+        return value
+    if present(value):
+        return [value]
+    return []
+
+
+def joined(*parts) -> str:
+    """The parts that are given, as one text."""
+    return " ".join(str(part) for part in parts if present(part))
+
+
+def sentence(heading: str, items) -> str:
+    """A heading and its items as a sentence ("Processes: a; b."), or nothing without items."""
+    given = [str(item) for item in listed(items) if present(item)]
+    if not given:
+        return ""
+    return f"{heading}: {'; '.join(given)}."
+
+
+def fill(row: dict, field: str, value) -> None:
+    """A field the crate does not give, from the PBPK description."""
+    if field not in row and present(value) and value != []:
+        row[field] = value
 
 
 def entities(crate: dict) -> dict[str, dict]:
     """The crate's entities by address, as linked data."""
     contexts = []
     for context in listed(crate.get("@context")):
-        contexts.append(RO_CRATE if isinstance(context, str) and context.startswith("https://w3id.org/ro/crate/") else context)
+        if isinstance(context, str) and context.startswith("https://w3id.org/ro/crate/"):
+            context = RO_CRATE
+        contexts.append(context)
     found = {}
     for node in jsonld.flatten({**crate, "@context": contexts}, None, {"base": LOCAL}):
         found[node["@id"]] = node
@@ -93,35 +122,40 @@ def record(nodes: dict, node: dict, others: dict) -> dict | None:
     """The link to the record an entity is, adding its row: a person, organisation, grant or publication."""
     iri = node["@id"]
     found = kinds(node)
-    if "Person" in found and text(node, "name"):
-        address = "people/" + slug(text(node, "name"))
-        row = others.setdefault(address, {"@id": address, "@type": "Person", "name": text(node, "name")})
+    name = text(node, "name")
+    if "Person" in found and name:
+        address = "people/" + slug(name)
+        row = others.setdefault(address, {"@id": address, "@type": "Person", "name": name})
         if iri.startswith("https://orcid.org/"):
             row["same_as"] = link(iri)
         for affiliation in values(node, "affiliation"):
-            organisation = record(nodes, nodes.get(affiliation.get("@id"), {"@id": affiliation.get("@id", ""), "@type": ["Organization"]}), others)
-            if organisation is not None:
-                row["affiliation"] = organisation
+            organisation = nodes.get(affiliation.get("@id"))
+            if organisation is None:
+                continue
+            linked = record(nodes, organisation, others)
+            if linked is not None:
+                row["affiliation"] = linked
         return link(address)
-    if "Organization" in found and text(node, "name"):
-        address = "organizations/" + slug(text(node, "name"))
-        row = others.setdefault(address, {"@id": address, "@type": "Organization", "name": text(node, "name")})
+    if "Organization" in found and name:
+        address = "organizations/" + slug(name)
+        row = others.setdefault(address, {"@id": address, "@type": "Organization", "name": name})
         if iri.startswith(("http://", "https://")):
             row["same_as"] = link(iri)
         return link(address)
     if "Grant" in found and text(node, "identifier"):
         address = "grants/" + slug(text(node, "identifier"))
-        row = others.setdefault(address, {"@id": address, "@type": "Grant", "name": text(node, "name") or text(node, "identifier"),
+        row = others.setdefault(address, {"@id": address, "@type": "Grant", "name": name or text(node, "identifier"),
                                           "identifier": text(node, "identifier")})
         for url in values(node, "url"):
             row["url"] = link(url.get("@id") or url.get("@value"))
         for funder in values(node, "funder"):
             row["funder"] = converted(nodes, funder, others, frozenset({iri}))
         return link(address)
-    article = publication(iri) if {"ScholarlyArticle", "Article"} & set(found) else None
-    if article is not None:
-        others.setdefault(article["@id"], article)
-        return link(article["@id"])
+    if "ScholarlyArticle" in found or "Article" in found:
+        article = publication(iri)
+        if article is not None:
+            others.setdefault(article["@id"], article)
+            return link(article["@id"])
     return None
 
 
@@ -156,18 +190,23 @@ def converted(nodes: dict, value: dict, others: dict, seen: frozenset):
 
 
 def version_of(part) -> str:
-    """A requirement as a text: its name and version ("RStudio 1.4.1717")."""
-    if not isinstance(part, dict) or "@id" in part:
-        return str(part.get("@id") if isinstance(part, dict) else part)
-    return " ".join(str(value) for value in (part.get("name") or [""])[:1] + (part.get("version") or [])[:1] if present(value))
+    """A requirement as a text: its name and version ("RStudio 1.4.1717"), or its address."""
+    if not isinstance(part, dict):
+        return str(part)
+    if "@id" in part:
+        return part["@id"]
+    return joined(*part.get("name", [])[:1], *part.get("version", [])[:1])
 
 
 def identifiers(row: dict) -> None:
     """Identifiers such as "CAS:15663-27-1" or "PubChem CID 2730" as identifier and value."""
     found = []
     for value in row.pop("identifier", []):
-        kind, _, given = str(value).rpartition(":") if ":" in str(value) else str(value).rpartition(" ")
-        found.append({"@type": "PropertyValue", "propertyID": kind, "value": given} if isinstance(value, str) and kind and given else value)
+        if isinstance(value, str):
+            kind, _, given = value.rpartition(":" if ":" in value else " ")
+            if kind and given:
+                value = {"@type": "PropertyValue", "propertyID": kind, "value": given}
+        found.append(value)
     if found:
         row["identifier"] = found
 
@@ -181,18 +220,15 @@ def weight(row: dict) -> None:
 
 
 def number(value):
-    return {"@value": str(value), "@type": DECIMAL} if isinstance(value, (int, float)) and not isinstance(value, bool) else value
+    """A number as a decimal; other values as they are."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return value
+    return {"@value": str(value), "@type": DECIMAL}
 
 
-def sentence(heading: str, items) -> str:
-    found = [str(item) for item in listed(items) if present(item)]
-    return f"{heading}: {'; '.join(found)}." if found else ""
-
-
-def fill(row: dict, field: str, value) -> None:
-    """A field the crate does not give, from the PBPK description."""
-    if field not in row and present(value) and value != []:
-        row[field] = value
+def named_parts(kind: str, names) -> list[dict]:
+    """A part of a kind for each name, such as a compartment or an input."""
+    return [{"@type": kind, "name": str(name)} for name in listed(names)]
 
 
 def connections(given) -> list[dict]:
@@ -204,8 +240,14 @@ def connections(given) -> list[dict]:
             found.append({"@type": "Connection", "description": str(value)})
             continue
         source, way, target, how = written.groups()
-        for start, end in [(source, target)] + ([(target, source)] if way == "<->" else []):
-            found.append({"@type": "Connection", "sourceCompartment": start, "targetCompartment": end, **({"description": how} if how else {})})
+        ends = [(source, target)]
+        if way == "<->":
+            ends.append((target, source))
+        for start, end in ends:
+            part = {"@type": "Connection", "sourceCompartment": start, "targetCompartment": end}
+            if how:
+                part["description"] = how
+            found.append(part)
     return found
 
 
@@ -229,110 +271,237 @@ def roles(row: dict, named_roles: dict[str, list]) -> None:
                 chemical["chemicalRole"] = named_roles[str(name).casefold()]
 
 
+def system(described: dict, model: dict) -> list[dict]:
+    """The template's biological system, with the model's default subject in its population."""
+    given = described.get("biological_system_description") or {}
+    if not given:
+        return []
+    species = given.get("species") or {}
+    part = {"@type": "BiologicalSystem", "species": species.get("name"), "lifeStage": given.get("life_stage"),
+            "physiologicalScope": given.get("physiological_scope"),
+            "populationDescription": joined(given.get("population_description"), sentence("Sex", given.get("sex")), model.get("default_subject"))}
+    if present(species.get("ncbi_taxonomy")):
+        part["species"] = link(species["ncbi_taxonomy"])
+    return [part]
+
+
+def chemical_notes(row: dict, described: dict) -> None:
+    """The roles and physicochemical notes the template gives its chemical."""
+    chemical = described.get("chemical_description") or {}
+    if not present(chemical.get("name")):
+        return
+    name = str(chemical["name"]).casefold()
+    roles(row, {name: listed(chemical.get("role"))})
+    notes = []
+    if present(chemical.get("logP")):
+        notes.append(f"logP {chemical['logP']}.")
+    if present(chemical.get("pKa")):
+        notes.append(f"pKa {chemical['pKa']}.")
+    weighed = (chemical.get("molecular_weight_model_value") or {}).get("value")
+    if present(weighed):
+        notes.append(f"Molecular weight in the model: {weighed} g/mol.")
+    for part in row.get("hasChemical", []):
+        for given in part.get("name", []):
+            if str(given).casefold() == name:
+                fill(part, "physicochemicalNotes", " ".join(notes))
+
+
+def parameters(model: dict) -> list[dict]:
+    found = []
+    for parameter in listed(model.get("parameters")):
+        part = {"@type": "Parameter", "name": parameter.get("name"), "propertyID": parameter.get("symbol"), "value": number(parameter.get("value")),
+                "unitText": parameter.get("unit"), "parameterCategory": parameter.get("category"), "sourceReference": parameter.get("source_reference")}
+        notes = joined(sentence("Value expression", parameter.get("value_expression")), parameter.get("notes"))
+        if notes:
+            part["notes"] = notes
+        found.append(part)
+    return found
+
+
+def calibration(model: dict) -> list[dict]:
+    given = model.get("calibration") or {}
+    if not given:
+        return []
+    performed = given.get("performed")
+    if performed is True:
+        performed = "yes"
+    elif performed is False:
+        performed = "no"
+    return [{"@type": "Calibration", "description": given.get("description"), "notes": f"Performed: {performed}."}]
+
+
+def evaluations(described: dict, model: dict) -> list[dict]:
+    """The model's pharmacokinetic evaluation against the template's studies, and its QIVIVE."""
+    evaluated = described.get("model_evaluation_and_validation") or {}
+    found = []
+    studies = listed(evaluated.get("pharmacokinetic_evaluation_data"))
+    if present(model.get("evaluation_summary")) or studies:
+        lines = []
+        for study in studies:
+            details = []
+            for key in ("population", "dose", "follow_up", "data"):
+                if present(study.get(key)):
+                    details.append(str(study[key]))
+            lines.append(f"{study.get('reference')}: {'; '.join(details)}.")
+        found.append({"@type": "Evaluation", "name": "Pharmacokinetic evaluation", "description": evaluated.get("data_extraction"),
+                      "evaluationData": " ".join(lines), "outcome": model.get("evaluation_summary")})
+    qivive = evaluated.get("qivive_and_benchmark_dose") or {}
+    if qivive:
+        found.append({"@type": "Evaluation", "name": "QIVIVE and benchmark dose", "evaluationData": qivive.get("in_vitro_sources"),
+                      "description": joined(sentence("Dose metrics", qivive.get("dose_metrics")), sentence("Benchmark response", qivive.get("benchmark_response")),
+                                            sentence("Software", qivive.get("software"))),
+                      "outcome": qivive.get("key_result")})
+    return found
+
+
+def sensitivity(described: dict) -> list[dict]:
+    given = (described.get("model_evaluation_and_validation") or {}).get("local_sensitivity_analysis") or {}
+    if not given:
+        return []
+    return [{"@type": "SUVAnalysis", "analysisType": "Sensitivity analysis", "method": sentence("Local sensitivity analysis", given.get("perturbation")),
+             "outcome": given.get("key_result"),
+             "notes": joined(sentence("Scenario", given.get("scenario")), sentence("Output", given.get("output")),
+                             sentence("Substantial influence", given.get("substantial_influence_threshold")))}]
+
+
+def scenarios(row: dict, described: dict) -> str:
+    """The template's simulation scenarios as sentences; their outputs are the model's outputs."""
+    sentences = []
+    for scenario in listed(described.get("simulation_scenarios")):
+        details = []
+        for key, value in scenario.items():
+            if key == "name" or not present(value):
+                continue
+            if isinstance(value, list):
+                value = ", ".join(str(item) for item in value)
+            if key == "description":
+                details.append(str(value))
+            else:
+                details.append(f"{key.replace('_', ' ')} {value}")
+        sentences.append(sentence(scenario.get("name", "Scenario"), details))
+        for output in named_parts("FormalParameter", scenario.get("outputs")):
+            if output not in row.setdefault("output", []):
+                row["output"].append(output)
+    return " ".join(sentences)
+
+
 def template(row: dict, described: dict, model: dict) -> None:
     """ROBOT's fields from the PBPK Model Reporting Template (Tan et al. 2020), for one of its models."""
     general = described.get("general_model_information") or {}
+    structure = model.get("structure") or {}
+    kind = f"{structure['type']}." if present(structure.get("type")) else ""
     fill(row, "intendedUse", sentence("Intended applications", general.get("intended_application")))
     fill(row, "alternateName", model.get("model_name"))
     fill(row, "mathematicalRepresentation", listed(model.get("mathematical_representation")))
-    structure = model.get("structure") or {}
-    fill(row, "modelStructureDescription", " ".join(part for part in (
-        f"{structure['type']}." if present(structure.get("type")) else "", sentence("Renal clearance", structure.get("renal_clearance"))) if part))
-    fill(row, "structuralCompartments", [{"@type": "Compartment", "name": str(name)} for name in listed(structure.get("compartments"))])
+    fill(row, "modelStructureDescription", joined(kind, sentence("Renal clearance", structure.get("renal_clearance"))))
+    fill(row, "structuralCompartments", named_parts("Compartment", structure.get("compartments")))
     fill(row, "connections", connections(structure.get("connections")))
     fill(row, "implementation", implementations(model.get("implementation_files")))
-    system = described.get("biological_system_description") or {}
-    species = system.get("species") or {}
-    if system:
-        fill(row, "hasBiologicalSystem", [{
-            "@type": "BiologicalSystem", "species": link(species["ncbi_taxonomy"]) if present(species.get("ncbi_taxonomy")) else species.get("name"),
-            "lifeStage": system.get("life_stage"), "physiologicalScope": system.get("physiological_scope"),
-            "populationDescription": " ".join(str(part) for part in (system.get("population_description"), sentence("Sex", system.get("sex")),
-                                                                      model.get("default_subject")) if present(part))}])
-    chemical = described.get("chemical_description") or {}
-    if present(chemical.get("name")):
-        roles(row, {str(chemical["name"]).casefold(): listed(chemical.get("role"))})
-        for part in row.get("hasChemical", []):
-            if str(chemical["name"]).casefold() in [str(name).casefold() for name in part.get("name", [])]:
-                weighed = (chemical.get("molecular_weight_model_value") or {}).get("value")
-                fill(part, "physicochemicalNotes", " ".join(part for part in (
-                    f"logP {chemical['logP']}." if present(chemical.get("logP")) else "", f"pKa {chemical['pKa']}." if present(chemical.get("pKa")) else "",
-                    f"Molecular weight in the model: {weighed} g/mol." if present(weighed) else "") if part))
-    parameters = []
-    for parameter in listed(model.get("parameters")):
-        notes = " ".join(part for part in (sentence("Value expression", parameter.get("value_expression")), str(parameter.get("notes") or "")) if part)
-        parameters.append({"@type": "Parameter", "name": parameter.get("name"), "propertyID": parameter.get("symbol"), "value": number(parameter.get("value")),
-                           "unitText": parameter.get("unit"), "parameterCategory": parameter.get("category"), "sourceReference": parameter.get("source_reference"),
-                           "notes": notes or None})
-    fill(row, "hasParameter", parameters)
-    calibration = model.get("calibration") or {}
-    if calibration:
-        performed = calibration.get("performed")
-        fill(row, "hasCalibration", [{"@type": "Calibration", "description": calibration.get("description"),
-                                      "notes": f"Performed: {'yes' if performed is True else 'no' if performed is False else performed}."}])
-    evaluated = described.get("model_evaluation_and_validation") or {}
-    evaluations = []
-    if present(model.get("evaluation_summary")) or evaluated.get("pharmacokinetic_evaluation_data"):
-        data = []
-        for found in listed(evaluated.get("pharmacokinetic_evaluation_data")):
-            data.append(f"{found.get('reference')}: " + "; ".join(str(found[key]) for key in ("population", "dose", "follow_up", "data") if present(found.get(key))))
-        evaluations.append({"@type": "Evaluation", "name": "Pharmacokinetic evaluation", "description": evaluated.get("data_extraction"),
-                            "evaluationData": " ".join(f"{line}." for line in data), "outcome": model.get("evaluation_summary")})
-    qivive = evaluated.get("qivive_and_benchmark_dose") or {}
-    if qivive:
-        evaluations.append({"@type": "Evaluation", "name": "QIVIVE and benchmark dose", "evaluationData": qivive.get("in_vitro_sources"),
-                            "description": " ".join(part for part in (sentence("Dose metrics", qivive.get("dose_metrics")),
-                                                                      sentence("Benchmark response", qivive.get("benchmark_response")),
-                                                                      sentence("Software", qivive.get("software"))) if part),
-                            "outcome": qivive.get("key_result")})
-    fill(row, "hasEvaluation", evaluations)
-    sensitivity = evaluated.get("local_sensitivity_analysis") or {}
-    if sensitivity:
-        fill(row, "hasSUVAnalysis", [{"@type": "SUVAnalysis", "analysisType": "Sensitivity analysis", "method": sentence("Local sensitivity analysis", sensitivity.get("perturbation")),
-                                      "outcome": sensitivity.get("key_result"),
-                                      "notes": " ".join(part for part in (sentence("Scenario", sensitivity.get("scenario")), sentence("Output", sensitivity.get("output")),
-                                                                          sentence("Substantial influence", sensitivity.get("substantial_influence_threshold"))) if part)}])
-    scenarios = []
-    for scenario in listed(described.get("simulation_scenarios")):
-        scenarios.append(sentence(scenario.get("name", "Scenario"), [(key.replace("_", " ") + " " if key != "description" else "")
-                                                                    + (", ".join(map(str, value)) if isinstance(value, list) else str(value))
-                                                                    for key, value in scenario.items() if key != "name" and present(value)]))
-        for output in listed(scenario.get("outputs")):
-            if {"@type": "FormalParameter", "name": str(output)} not in row.setdefault("output", []):
-                row["output"].append({"@type": "FormalParameter", "name": str(output)})
+    fill(row, "hasBiologicalSystem", system(described, model))
+    chemical_notes(row, described)
+    fill(row, "hasParameter", parameters(model))
+    fill(row, "hasCalibration", calibration(model))
+    fill(row, "hasEvaluation", evaluations(described, model))
+    fill(row, "hasSUVAnalysis", sensitivity(described))
+    fill(row, "reproducibilityInstructions", scenarios(row, described))
     fill(row, "applicabilityDomain", sentence("Route of administration", model.get("route_of_administration")))
-    fill(row, "reproducibilityInstructions", " ".join(scenarios))
-    fill(row, "limitations", " ".join(str(line) for line in listed(described.get("limitations_and_uncertainties"))))
+    fill(row, "limitations", joined(*listed(described.get("limitations_and_uncertainties"))))
 
 
 def curated(row: dict, described: dict) -> None:
     """ROBOT's fields from the curated layout of one model."""
     model = described.get("model") or {}
-    fill(row, "intendedUse", model.get("purpose"))
-    types = [str(kind) for kind in listed(model.get("model_type"))]
-    fill(row, "applicationCategory", types[:1])
-    if any("ordinary differential equation" in kind.lower() for kind in types):
-        fill(row, "mathematicalRepresentation", "Ordinary differential equations")
-    fill(row, "hasBiologicalSystem", [{"@type": "BiologicalSystem", "species": str(species)} for species in listed(model.get("species"))])
-    fill(row, "structuralCompartments", [{"@type": "Compartment", "name": str(name)}
-                                         for name in listed(model.get("gastrointestinal_structure")) + listed(model.get("systemic_compartments"))])
-    fill(row, "modelStructureDescription", " ".join(part for part in (sentence("Processes", model.get("processes")),
-                                                                      sentence("Modelled entities", model.get("modelled_entity_classes")),
-                                                                      sentence("Partition coefficient methods", model.get("partition_methods"))) if part))
-    fill(row, "input", [{"@type": "FormalParameter", "name": str(name)} for name in listed(model.get("inputs"))])
-    fill(row, "output", [{"@type": "FormalParameter", "name": str(name)} for name in listed(model.get("outputs"))])
-    fill(row, "applicabilityDomain", " ".join(part for part in (sentence("Exposure routes", model.get("exposure_routes")),
-                                                                sentence("Exposure pattern", model.get("exposure_pattern"))) if part))
-    fill(row, "implementation", implementations((described.get("implementation") or {}).get("entry_points")))
     evaluation = described.get("evaluation") or {}
+    types = []
+    for kind in listed(model.get("model_type")):
+        types.append(str(kind))
+        if "ordinary differential equation" in str(kind).lower():
+            fill(row, "mathematicalRepresentation", "Ordinary differential equations")
+    fill(row, "intendedUse", model.get("purpose"))
+    fill(row, "applicationCategory", types[:1])
+    fill(row, "hasBiologicalSystem", [{"@type": "BiologicalSystem", "species": str(species)} for species in listed(model.get("species"))])
+    fill(row, "structuralCompartments", named_parts("Compartment", listed(model.get("gastrointestinal_structure")) + listed(model.get("systemic_compartments"))))
+    fill(row, "modelStructureDescription", joined(sentence("Processes", model.get("processes")), sentence("Modelled entities", model.get("modelled_entity_classes")),
+                                                  sentence("Partition coefficient methods", model.get("partition_methods"))))
+    fill(row, "input", named_parts("FormalParameter", model.get("inputs")))
+    fill(row, "output", named_parts("FormalParameter", model.get("outputs")))
+    fill(row, "applicabilityDomain", joined(sentence("Exposure routes", model.get("exposure_routes")), sentence("Exposure pattern", model.get("exposure_pattern"))))
+    fill(row, "implementation", implementations((described.get("implementation") or {}).get("entry_points")))
     roles(row, {str(name).casefold(): ["Parent compound"] for name in listed(evaluation.get("parent_pesticides"))})
     if evaluation:
-        metrics = []
-        for key, value in (evaluation.get("reported_results") or {}).items():
-            metrics.append({"@type": "PerformanceMetric", "name": key.replace("_", " "), "value": str(value)})
+        metrics = [{"@type": "PerformanceMetric", "name": key.replace("_", " "), "value": str(value)} for key, value in (evaluation.get("reported_results") or {}).items()]
         fill(row, "hasEvaluation", [{"@type": "Evaluation", "description": evaluation.get("criteria"), "performanceMetrics": metrics,
                                      "evaluationData": sentence("Observables", evaluation.get("observables"))}])
-    fill(row, "limitations", " ".join(str(line) for line in listed(described.get("limitations"))))
+    fill(row, "limitations", joined(*listed(described.get("limitations"))))
+
+
+def chemicals(nodes: dict, others: dict) -> list[dict]:
+    """The crate's chemicals, with their identifiers as identifier and value and their weight as a number."""
+    found = []
+    for node in nodes.values():
+        if "MolecularEntity" in kinds(node) or "ChemicalSubstance" in kinds(node):
+            chemical = {"@type": ["Chemical", *kinds(node)], **fields(nodes, node, others)}
+            chemical.setdefault("sameAs", []).append(link(node["@id"]))
+            identifiers(chemical)
+            weight(chemical)
+            found.append(chemical)
+    return found
+
+
+def model_row(nodes: dict, root: dict, main: dict, address: str, others: dict) -> dict:
+    """A model's row: its entity's fields, then the crate's it lacks; its links to records and terms, its
+    citations as publications and its requirements as texts."""
+    row = {"@id": address, "@type": "Model", **fields(nodes, main, others)}
+    for field in SHARED:
+        fill(row, field, [converted(nodes, value, others, frozenset({LOCAL})) for value in values(root, field)])
+    for field in LINKS:
+        if field in row:
+            row[field] = [value for value in row[field] if not isinstance(value, dict) or "@id" in value]
+    for cited in row.get("citation", []):
+        if isinstance(cited, dict):
+            article = publication(cited.get("@id", ""))
+            if article is not None:
+                others.setdefault(article["@id"], article)
+                cited["@id"] = article["@id"]
+    row["softwareRequirements"] = [version_of(part) for part in row.get("softwareRequirements", [])]
+    return row
+
+
+def zenodo(row: dict, hit: dict, nodes: dict, others: dict) -> None:
+    """The fields of the model's Zenodo record: its page, DOI and date; its name, license, keywords and
+    creators where the crate has none."""
+    metadata = hit["metadata"]
+    fill(row, "name", [metadata["title"]])
+    licences = [licence(value["@id"]) for value in row.get("license", []) if isinstance(value, dict) and "@id" in value]
+    row["license"] = licences
+    if not any(str(value.get("@id", "")).startswith("https://spdx.org/") for value in licences) and isinstance(metadata.get("license"), dict):
+        row["license"] = [licence(metadata["license"]["id"])]
+    fill(row, "keywords", metadata.get("keywords") or [])
+    keywords = []
+    for keyword in row.get("keywords", []):
+        keywords.append(term(keyword, "glossary") if isinstance(keyword, str) else keyword)
+    row["keywords"] = keywords
+    row["page"] = link(hit["links"]["self_html"])
+    if present(hit.get("doi")):
+        row["doi"] = link("https://doi.org/" + hit["doi"])
+    if present(metadata.get("publication_date")):
+        row["published"] = {"@value": metadata["publication_date"], "@type": DATE}
+    if "creator" in row or "author" in row:
+        return
+    for creator in metadata.get("creators") or []:
+        last, _, first = str(creator.get("name", "")).partition(", ")
+        person = {"@id": "zenodo", "@type": ["Person"], "https://schema.org/name": [{"@value": f"{first} {last}" if first else last}]}
+        if present(creator.get("orcid")):
+            person["@id"] = "https://orcid.org/" + creator["orcid"]
+        row.setdefault("creator", []).append(record(nodes, person, others))
+
+
+def reported(described: dict, main: dict) -> dict | None:
+    """The template's model whose files include the crate's main entity."""
+    for model in listed(described.get("models")):
+        if main["@id"].removeprefix(LOCAL) in listed(model.get("implementation_files")):
+            return model
+    return None
 
 
 def parse(contents: dict[str, bytes]) -> list[dict]:
@@ -345,57 +514,26 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             continue
         nodes = entities(json.loads(contents[f"{key}/ro-crate-metadata.json"]))
         root = nodes.get(LOCAL, {"@id": LOCAL})
+        described = {}
+        if f"{key}/pbpk-model-metadata.json" in contents:
+            described = json.loads(contents[f"{key}/pbpk-model-metadata.json"])
         mains = [nodes[main["@id"]] for main in values(root, "mainEntity") if main.get("@id") in nodes]
-        described = json.loads(contents[f"{key}/pbpk-model-metadata.json"]) if f"{key}/pbpk-model-metadata.json" in contents else {}
-        found = CRATE.match(crate_file["key"])
-        metadata = hit["metadata"]
-        chemicals = []
-        for node in nodes.values():
-            if {"MolecularEntity", "ChemicalSubstance"} & set(kinds(node)):
-                chemical = {"@type": ["Chemical", *kinds(node)], **fields(nodes, node, others)}
-                chemical.setdefault("sameAs", []).append(link(node["@id"]))
-                identifiers(chemical)
-                weight(chemical)
-                chemicals.append(chemical)
-        taxa = [link(node["@id"]) for node in nodes.values() if "Taxon" in kinds(node)]
+        crate_name = CRATE.match(crate_file["key"])
+        found_chemicals = chemicals(nodes, others)
+        taxa = [{"@type": "BiologicalSystem", "species": link(node["@id"])} for node in nodes.values() if "Taxon" in kinds(node)]
         for main in mains:
-            reported = [model for model in listed(described.get("models")) if main["@id"].removeprefix(LOCAL) in listed(model.get("implementation_files"))]
-            name = (reported[0].get("model_name") if reported else "") or text(main, "name") or metadata["title"]
-            row = {"@id": "models/" + slug(found.group(1) if found and len(mains) == 1 else name), "@type": "Model", **fields(nodes, main, others)}
-            for field in ("license", "citation", "funding", "about", "creator", "author", "keywords"):
-                fill(row, field, [converted(nodes, value, others, frozenset({LOCAL})) for value in values(root, field)])
-            for field in LINKS:
-                if field in row:
-                    row[field] = [value for value in row[field] if not isinstance(value, dict) or "@id" in value]
-            for cited in row.get("citation", []):
-                article = publication(cited.get("@id", "")) if isinstance(cited, dict) else None
-                if article is not None:
-                    others.setdefault(article["@id"], article)
-                    cited["@id"] = article["@id"]
-            fill(row, "name", [metadata["title"]])
-            row["softwareRequirements"] = [version_of(part) for part in row.get("softwareRequirements", [])]
-            row["license"] = [licence(value["@id"]) for value in row.get("license", []) if isinstance(value, dict) and "@id" in value]
-            if not any(str(value.get("@id", "")).startswith("https://spdx.org/") for value in row["license"]) and isinstance(metadata.get("license"), dict):
-                row["license"] = [licence(metadata["license"]["id"])]
-            fill(row, "keywords", metadata.get("keywords") or [])
-            row["keywords"] = [term(keyword, "glossary") if isinstance(keyword, str) else keyword for keyword in row.get("keywords", [])]
-            row["page"] = link(hit["links"]["self_html"])
-            if present(hit.get("doi")):
-                row["doi"] = link("https://doi.org/" + hit["doi"])
-            if present(metadata.get("publication_date")):
-                row["published"] = {"@value": metadata["publication_date"], "@type": DATE}
-            if "creator" not in row and "author" not in row:
-                for creator in metadata.get("creators") or []:
-                    last, _, first = str(creator.get("name", "")).partition(", ")
-                    person = {"@id": "zenodo", "@type": ["Person"], "https://schema.org/name": [{"@value": f"{first} {last}" if first else last}]}
-                    if present(creator.get("orcid")):
-                        person["@id"] = "https://orcid.org/" + creator["orcid"]
-                    row.setdefault("creator", []).append(record(nodes, person, others))
-            fill(row, "hasChemical", [json.loads(json.dumps(chemical)) for chemical in chemicals])
-            if reported:
-                template(row, described, reported[0])
+            model = reported(described, main)
+            if crate_name and len(mains) == 1:
+                name = crate_name.group(1)
+            else:
+                name = (model or {}).get("model_name") or text(main, "name") or hit["metadata"]["title"]
+            row = model_row(nodes, root, main, "models/" + slug(name), others)
+            zenodo(row, hit, nodes, others)
+            fill(row, "hasChemical", copy.deepcopy(found_chemicals))
+            if model is not None:
+                template(row, described, model)
             elif "model" in described:
                 curated(row, described)
-            fill(row, "hasBiologicalSystem", [{"@type": "BiologicalSystem", "species": taxon} for taxon in taxa])
+            fill(row, "hasBiologicalSystem", taxa)
             rows.append(row)
     return rows + list(others.values())
