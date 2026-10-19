@@ -20,12 +20,12 @@ from rdfsolve import SchemaMiner
 from rdfsolve.api import Client
 from rdfsolve.conversion import Profile, Rule, write_query
 from rdflib import RDF, Graph, URIRef
-from rdflib.namespace import SDO, SH
+from rdflib.namespace import SDO
 from sqlalchemy import delete, func, insert, select
 
 import database
 from database.tables import PLATFORM, Note, Record, Revision, Source, now
-from linkeddata import catalogue, checks, documents, patches, storage
+from linkeddata import catalogue, checks, documents, fields, patches, storage
 from linkeddata.model import MODEL_DIR, RELEASE, profile, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
@@ -183,30 +183,24 @@ ENTRY = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
 def linked_terms() -> list[str]:
-    """The addresses in term fields (sh:class schema:DefinedTerm, alone or in sh:or) at any depth, except
-    terms of the model's vocabularies."""
-    graph = profile()
-    paths = set()
-    for field in graph.objects(None, SH.property):
-        classes = set(graph.objects(field, SH["class"]))
-        for alternatives in graph.objects(field, SH["or"]):
-            for alternative in graph.items(alternatives):
-                classes.update(graph.objects(alternative, SH["class"]))
-        if SDO.DefinedTerm in classes:
-            paths.add(graph.value(field, SH.path))
+    """The addresses in the term fields (sh:class schema:DefinedTerm, alone or in sh:or) of each record and
+    part, by its own class's shape, except the records and terms of the model's vocabularies."""
     vocabularies = []
     for spec in specs():
         if "vocabulary" in spec:
             vocabularies.append(spec["name"])
     with database.session() as db:
-        iris = list(db.scalars(select(Record.iri).where(Record.part_of.is_(None), Record.removed_at.is_(None))))
+        iris = list(db.scalars(select(Record.iri).where(Record.part_of.is_(None), Record.removed_at.is_(None), Record.source.not_in(vocabularies))))
         given = set(db.scalars(select(Record.iri).where(Record.source.in_(vocabularies))))
     found = storage.graph(iris)
     terms = set()
-    for path in paths:
-        for value in found.objects(None, path):
-            if isinstance(value, URIRef) and str(value) not in given:
-                terms.add(str(value))
+    for node, of_class in found.subject_objects(RDF.type):
+        for field in fields.of(str(of_class)):
+            if str(SDO.DefinedTerm) not in field["classes"]:
+                continue
+            for value in found.objects(node, URIRef(field["iri"])):
+                if isinstance(value, URIRef) and str(value) not in given:
+                    terms.add(str(value))
     return sorted(terms)
 
 
