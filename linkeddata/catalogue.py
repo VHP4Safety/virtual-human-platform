@@ -42,6 +42,26 @@ def sources(of_class: str, path: str) -> list[dict]:
     return found
 
 
+def naming(iri: str) -> set[tuple[str, str]]:
+    """The nodes whose fields hold an address, each with the field's property: one select of each table
+    and column that holds values, as rdfsolve's layout places them."""
+    rest = tables()[STATEMENTS]
+    selects = [select(rest.c.iri, rest.c.property).where(rest.c.value == iri)]
+    for of_layout in layout(storage.profile()).classes.values():
+        own = tables()[of_layout.name]
+        for path, name in of_layout.single.items():
+            selects.append(select(own.c.iri, literal(path)).where(own.c[name] == iri))
+        for path, name in of_layout.several.items():
+            listed = tables()[of_layout.field_table(name)]
+            selects.append(select(listed.c.iri, literal(path)).where(listed.c.value == iri))
+    found = set()
+    with database.engine().connect() as connection:
+        # SQLite takes up to 500 selects in one union.
+        for first in range(0, len(selects), 400):
+            found.update(connection.execute(union_all(*selects[first:first + 400])).all())
+    return found
+
+
 def holders(of_class: str, path: str, wanted: list[str]):
     """The select of the nodes of a class that have one of the wanted values of a field."""
     selects = []

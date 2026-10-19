@@ -10,12 +10,12 @@ forwards (301). A record without a page of its own is shown on a general record 
 import json
 
 from flask import Blueprint, Response, current_app, g, redirect, render_template, request, url_for
-from rdflib import Graph
+from rdflib import RDFS, Graph
 
 from database import records
 from database.tables import Record
-from linkeddata import documents, fields, storage
-from linkeddata.model import settings
+from linkeddata import catalogue, documents, fields, storage
+from linkeddata.model import profile, settings
 
 FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "application/n-triples"}
 SERIALIZATIONS = {"text/turtle": "turtle", "application/n-triples": "nt"}
@@ -116,6 +116,27 @@ def page_link(iri: str) -> str:
     return iri
 
 
+def named_on(record: Record) -> dict[str, list[dict]]:
+    """The records that name this one, by the label of the field that names it on them; each with its
+    name and kind."""
+    fields_of = {}
+    for holder, path in catalogue.naming(record.iri):
+        fields_of.setdefault(holder, []).append(path)
+    found = {}
+    for holder in records.kept(list(fields_of)):
+        if holder.iri == record.iri:
+            continue
+        labels = {}
+        for field in fields.of(holder.type):
+            labels[field["iri"]] = field["label"]
+        kind = profile().value(fields.shape_of(holder.type), RDFS.label)
+        for path in fields_of[holder.iri]:
+            found.setdefault(labels.get(path) or documents.term(path), []).append({"iri": holder.iri, "name": holder.name or holder.iri, "kind": str(kind or "")})
+    for listed in found.values():
+        listed.sort(key=lambda item: item["name"].casefold())
+    return found
+
+
 def record_page(record: Record):
     statements = storage.graph([record.iri])
     shown = []
@@ -132,6 +153,7 @@ def record_page(record: Record):
         "records/record.html",
         record={"iri": record.iri, "name": record.name, "description": descriptions[0] if descriptions else None, "image": images[0] if images else None},
         fields=shown,
+        named_on=named_on(record),
         names=records.names(links),
         page_title=f"{name} — VHP4Safety",
         meta_description=(descriptions[0] if descriptions else "")[:160] or f"{name}, a record of the VHP4Safety Virtual Human Platform.",

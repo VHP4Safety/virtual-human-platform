@@ -37,6 +37,29 @@
     </div>
   </div>
 
+  {% if named_on %}
+  <div class="card mt-3">
+    <div class="card-body">
+      <h2 class="h5 mb-3">Named on other records</h2>
+      <table class="table mb-0">
+        <tbody>
+          {% for label, holders in named_on.items() %}
+          <tr>
+            <th scope="row" class="text-nowrap fw-semibold">{{ label }}</th>
+            <td>
+              {% for holder in holders[:100] %}
+              {% if holder.kind %}<span class="badge text-bg-light border fw-normal me-1">{{ holder.kind }}</span>{% endif %}<a class="link-vhpblue text-break" href="{{ holder.iri|page_link }}">{{ holder.name }}</a>{% if not loop.last %}<br>{% endif %}
+              {% endfor %}
+              {% if holders|length > 100 %}<br><span class="text-secondary">and {{ holders|length - 100 }} more</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
   {% include "records/_data_links.html" %}
 </section>
 {% endblock %}

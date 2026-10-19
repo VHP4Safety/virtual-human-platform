@@ -64,6 +64,12 @@ def search(text: str, classes: list[str], within: str = "", parts: bool = True, 
         return list(db.scalars(statement.order_by(func.lower(Record.name), Record.iri).limit(limit)))
 
 
+def kept(iris: list[str]) -> list[Record]:
+    """The records and parts at these addresses that are not removed or moved."""
+    with database.session() as db:
+        return list(db.scalars(select(Record).where(Record.iri.in_(iris), Record.removed_at.is_(None), Record.moved_to.is_(None))))
+
+
 def names(iris: list[str]) -> dict[str, str]:
     """The names of the records at these addresses, and the labels of vocabulary terms."""
     with database.session() as db:
