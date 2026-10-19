@@ -67,6 +67,13 @@ def search(text: str, classes: list[str], within: str = "", parts: bool = True, 
         return list(db.scalars(statement.order_by(func.lower(Record.name), Record.iri).limit(limit)))
 
 
+def latest_change() -> str:
+    """When a record was last written, removed or moved, in UTC (ISO 8601)."""
+    with database.session() as db:
+        found = [db.scalar(select(func.max(Record.updated_at))), db.scalar(select(func.max(Record.removed_at)))]
+    return max([value for value in found if value] or [""])
+
+
 def with_pages() -> list[tuple[str, str]]:
     """The address and last change of each record with a page on the platform: not a part, not removed or
     moved, at the platform's base."""

@@ -9,6 +9,7 @@ forwards (301). A record without a page of its own is shown on a general record 
 """
 
 import json
+from datetime import datetime, timezone
 
 from flask import Blueprint, Response, current_app, g, redirect, render_template, request, url_for
 from rdflib import Graph
@@ -25,6 +26,8 @@ MARKDOWN = ".md"
 SERIALIZATIONS = {"text/turtle": "turtle", "application/n-triples": "nt"}
 
 blueprint = Blueprint("pages", __name__)
+# A page also changes with the code that makes it, as after a new release.
+STARTED = datetime.now(timezone.utc).replace(microsecond=0)
 
 
 def page_path(record: Record) -> str:
@@ -106,7 +109,19 @@ def link_data(response):
     if links:
         given = response.headers.get("Link")
         response.headers["Link"] = ", ".join(([given] if given else []) + links)
+    if "record" in g and request.method in ("GET", "HEAD") and response.status_code == 200:
+        conditional(response)
     return response
+
+
+def conditional(response) -> None:
+    """A record's page or data answers 304 Not Modified when nothing changed since the client's copy: no record
+    (as a page shows the records it links to and those that name it), and not the platform itself."""
+    latest = records.latest_change()
+    changed = max(datetime.fromisoformat(latest) if latest else STARTED, STARTED)
+    response.set_etag(f"{latest}-{int(STARTED.timestamp())}-{response.mimetype}", weak=True)
+    response.last_modified = changed
+    response.make_conditional(request)
 
 
 @blueprint.app_context_processor
