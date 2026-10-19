@@ -151,6 +151,12 @@ def public(found: Graph) -> Graph:
     return found
 
 
+def linked(record: Record) -> Graph:
+    """A record's data as its page gives it: the record with its parts, and the class and name of each record it
+    links to; private fields are taken out."""
+    return public(storage.with_names(storage.graph([record.iri])))
+
+
 # The published statements, made again when a record changes.
 PUBLISHED = {}
 

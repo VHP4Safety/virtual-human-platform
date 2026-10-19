@@ -116,10 +116,11 @@ def graph(iris: list[str]) -> Graph:
 
 
 def with_names(found: Graph) -> Graph:
-    """The statements with the class and name of the records they link to, so the links are named."""
+    """The statements with the class and name of the records they link to, so the links are named. An address
+    of the same thing elsewhere (sameAs) is an address, not a record to name."""
     linked = set()
-    for value in found.objects():
-        if isinstance(value, URIRef) and (value, None, None) not in found:
+    for _, predicate, value in found:
+        if isinstance(value, URIRef) and predicate != SDO.sameAs and (value, None, None) not in found:
             linked.add(str(value))
     named = Graph() + found
     with database.session() as db:

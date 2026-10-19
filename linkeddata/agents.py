@@ -92,7 +92,7 @@ def read(address: str, format: str = "markdown") -> str:
     with its parts and the records that name it, or its linked data in JSON-LD (format "json-ld")."""
     record = found_record(address)
     if format == "json-ld":
-        return json.dumps(documents.document(documents.public(storage.linked_graph(record)), record.iri), indent=1)
+        return json.dumps(documents.document(documents.linked(record), record.iri), indent=1)
     formats = {"JSON-LD": record.iri + ".jsonld", "Turtle": record.iri + ".ttl", "N-Triples": record.iri + ".nt"}
     return markdown.record(outline.outline(record), formats, settings()["license"])
 

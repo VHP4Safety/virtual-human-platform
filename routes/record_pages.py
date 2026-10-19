@@ -16,7 +16,7 @@ from rdflib import Graph
 
 from database import records
 from database.tables import Record
-from linkeddata import documents, markdown, outline, storage
+from linkeddata import documents, markdown, outline
 from linkeddata.model import settings
 
 FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "application/n-triples"}
@@ -107,7 +107,7 @@ def negotiate():
     if media == "text/markdown":
         return markdown_of(record)
     if media != "text/html":
-        return data(documents.public(storage.linked_graph(record)), media)
+        return data(documents.linked(record), media)
     # A record with no page of its own is shown on the general record page.
     if request.url_rule is None:
         return record_page(record)
@@ -158,7 +158,7 @@ def record_context() -> dict:
     for ending, media in FORMATS.items():
         formats[media] = page_path(g.record) + ending
     try:
-        document = documents.document(documents.public(storage.linked_graph(g.record)))
+        document = documents.document(documents.linked(g.record), g.record.iri)
     except ValueError as problem:
         current_app.logger.warning("The record %s does not fit the model: %s", g.record.iri, problem)
         document = None
