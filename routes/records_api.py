@@ -35,6 +35,7 @@ import database
 from admin import changes, tokens, writes
 from database import images, records
 from linkeddata import catalogue, checks, documents, fields as model_fields, markdown, patches, storage, void
+from linkeddata.catalogue import browsed
 from linkeddata.model import RELEASE, settings, shapes
 from routes import account, limiter
 from routes.record_pages import SERIALIZATIONS, data, markdown_of
@@ -307,12 +308,6 @@ JSON_TYPES = {str(XSD.integer): {"type": "integer"}, str(XSD.boolean): {"type": 
               str(XSD.date): {"type": "string", "format": "date"}, str(XSD.dateTime): {"type": "string", "format": "date-time"}}
 
 
-def browsed(field: dict) -> bool:
-    """Whether a catalogue is browsed by a field: a list (sh:in), or links to records or terms (sh:class,
-    sh:or), without parts or fixed values."""
-    return bool(field["values"] or field["classes"]) and not field["part"] and not field["fixed"]
-
-
 def resource(of_class: str) -> str:
     """The API resource listing a class's records: its kind's, or the search for the class."""
     for kind, of_kind in settings()["kinds"].items():
@@ -427,17 +422,9 @@ def row(found: Graph, node, of_class: str) -> dict:
     return answer
 
 
-def filters_of(of_class: str, given: dict) -> dict:
-    found = {}
-    for field in model_fields.of(of_class):
-        if browsed(field) and given.get(field["name"]):
-            found[field["iri"]] = given[field["name"]]
-    return found
-
-
 def listing(of_class: str):
     def listed(given, pagination_parameters):
-        total, iris = catalogue.page(of_class, filters_of(of_class, given), given["search"], pagination_parameters.first_item, pagination_parameters.page_size)
+        total, iris = catalogue.page(of_class, catalogue.filters(of_class, given), given["search"], pagination_parameters.first_item, pagination_parameters.page_size)
         pagination_parameters.item_count = total
         found = readable(storage.graph(iris), kind_of(None, {"@type": of_class}))
         # A kind's page passes on the format it was asked for, also by an ending (/tools.md).
@@ -466,31 +453,7 @@ def listing(of_class: str):
 
 def faceting(of_class: str):
     def counted(given):
-        browsed_fields = [field for field in model_fields.of(of_class) if browsed(field)]
-        counts = catalogue.facets(of_class, [field["iri"] for field in browsed_fields], filters_of(of_class, given), given["search"])
-        every = []
-        for field in browsed_fields:
-            every.extend(field["values"])
-            for value, iri in counts[field["iri"]]:
-                if iri:
-                    every.append(value)
-        names = records.names(every)
-        found = {}
-        for field in browsed_fields:
-            # List values are counted even when no record has them.
-            values = {}
-            for value in field["values"]:
-                values[(value, field["iris"])] = 0
-            for key, count in counts[field["iri"]].items():
-                values[key] = values.get(key, 0) + count
-            listed = []
-            for (value, iri), count in values.items():
-                # A value fits as an IRI where IRIs belong, and as one of the field's list.
-                fits = iri == field["iris"] and (value in field["values"] or not field["values"])
-                listed.append({"value": value, "name": (names.get(value) if iri else None) or value, "count": count, "fits": fits})
-            listed.sort(key=lambda item: (not item["fits"], -item["count"], item["name"]))
-            found[field["name"]] = listed
-        return found
+        return catalogue.counted(of_class, given)
 
     return counted
 

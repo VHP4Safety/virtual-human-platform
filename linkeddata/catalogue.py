@@ -9,8 +9,9 @@ from rdfsolve.client.sql_tables import STATEMENTS, TERM_SUFFIX, layout
 from sqlalchemy import column, func, literal, or_, select, table, union_all
 
 import database
+from database import records as stored
 from database.tables import Record
-from linkeddata import patches, storage
+from linkeddata import fields, patches, storage
 from linkeddata.model import hierarchy
 
 RECORDS = Record.__table__
@@ -156,3 +157,53 @@ def facets(of_class: str, paths: list[str], filters: dict, search: str = "") -> 
         for path, value, iri, records in connection.execute(union_all(*branches)):
             counted[path][(value, bool(iri))] = counted[path].get((value, bool(iri)), 0) + records
     return counted
+
+
+def browsed(field: dict) -> bool:
+    """Whether a catalogue is browsed by a field: a list (sh:in), or links to records or terms (sh:class,
+    sh:or), without parts or fixed values."""
+    return bool(field["values"] or field["classes"]) and not field["part"] and not field["fixed"]
+
+
+def filters(of_class: str, given: dict) -> dict:
+    """The values asked for of each browsed field, by its name in *given*, by the field's property."""
+    found = {}
+    for field in fields.of(of_class):
+        if browsed(field) and given.get(field["name"]):
+            found[field["iri"]] = given[field["name"]]
+    return found
+
+
+def ranked(value: dict) -> tuple:
+    """A facet value's place: values that fit first, then the most used, then by name."""
+    return (not value["fits"], -value["count"], value["name"])
+
+
+def counted(of_class: str, given: dict) -> dict:
+    """Each browsed field's values, by the field's name, with their names and counts of records found (as
+    filtered and searched in *given*), and whether they fit the field."""
+    browsed_fields = [field for field in fields.of(of_class) if browsed(field)]
+    counts = facets(of_class, [field["iri"] for field in browsed_fields], filters(of_class, given), given["search"])
+    every = []
+    for field in browsed_fields:
+        every.extend(field["values"])
+        for value, iri in counts[field["iri"]]:
+            if iri:
+                every.append(value)
+    names = stored.names(every)
+    found = {}
+    for field in browsed_fields:
+        # List values are counted even when no record has them.
+        values = {}
+        for value in field["values"]:
+            values[(value, field["iris"])] = 0
+        for key, count in counts[field["iri"]].items():
+            values[key] = values.get(key, 0) + count
+        listed = []
+        for (value, iri), count in values.items():
+            # A value fits as an IRI where IRIs belong, and as one of the field's list.
+            fits = iri == field["iris"] and (value in field["values"] or not field["values"])
+            listed.append({"value": value, "name": (names.get(value) if iri else None) or value, "count": count, "fits": fits})
+        listed.sort(key=ranked)
+        found[field["name"]] = listed
+    return found
