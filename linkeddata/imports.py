@@ -442,7 +442,8 @@ def import_all() -> list[str]:
                 enrich(spec)
             else:
                 import_source(spec)
-        except (Refused, requests.RequestException, OSError, ValueError) as problem:
+        # A parser's KeyError or TypeError is an upstream file that changed its shape.
+        except (Refused, requests.RequestException, OSError, ValueError, KeyError, TypeError) as problem:
             note_problem(spec, problem)
             problems.append(f"{spec['name']}: {problem}")
     # Records are checked after the enrichments; an enriching source has no records, and its notes are the
