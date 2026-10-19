@@ -6,7 +6,8 @@ import json
 from functools import cache
 
 from pyld import jsonld
-from rdflib import Graph, URIRef
+from rdflib import Graph, Literal, URIRef
+from rdflib.namespace import SH
 
 import database
 from database.tables import Record
@@ -115,9 +116,28 @@ def page_context(of_class: str) -> dict:
     return {**context(settings()), **patches.context(profile(), of_class, term)}
 
 
+@cache
+def private() -> set[URIRef]:
+    """The properties of fields kept off the pages (form:private true in the profile)."""
+    graph = profile()
+    marked = URIRef(dict(graph.namespaces())["form"] + "private")
+    found = set()
+    for field in graph.subjects(marked, Literal(True)):
+        found.add(graph.value(field, SH.path))
+    return found
+
+
+def public(found: Graph) -> Graph:
+    """The statements as pages show them: the values of private fields, such as email addresses, are taken
+    out."""
+    for predicate in private():
+        found.remove((None, predicate, None))
+    return found
+
+
 def view(record: Record) -> dict:
     """The record with the profile's field names, with its linked records embedded so their names can be shown."""
-    statements = storage.linked_graph(record).serialize(format="nt")
+    statements = public(storage.linked_graph(record)).serialize(format="nt")
     expanded = jsonld.from_rdf(statements, {"format": "application/n-quads"})
     framed = jsonld.frame(expanded, {"@context": page_context(record.type), "@id": record.iri, "@embed": "@always"})
     found = framed["@graph"][0] if "@graph" in framed else framed

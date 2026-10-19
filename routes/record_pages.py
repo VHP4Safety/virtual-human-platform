@@ -61,7 +61,7 @@ def negotiate():
     if record.removed_at:
         return render_template("records/gone.html", record=record, page_title="Removed — VHP4Safety"), 410
     if media != "text/html":
-        return data(storage.linked_graph(record), media)
+        return data(documents.public(storage.linked_graph(record)), media)
     g.record = record
     # A record with no page of its own is shown on the general record page.
     if request.url_rule is None:
@@ -90,7 +90,7 @@ def record_context() -> dict:
     for ending, media in FORMATS.items():
         formats[media] = page_path(g.record) + ending
     try:
-        document = documents.document(storage.linked_graph(g.record))
+        document = documents.document(documents.public(storage.linked_graph(g.record)))
     except ValueError as problem:
         current_app.logger.warning("The record %s does not fit the model: %s", g.record.iri, problem)
         document = None
@@ -138,7 +138,7 @@ def named_on(record: Record) -> dict[str, list[dict]]:
 
 
 def record_page(record: Record):
-    statements = storage.graph([record.iri])
+    statements = documents.public(storage.graph([record.iri]))
     shown = []
     links = []
     for field in fields.of(record.type):

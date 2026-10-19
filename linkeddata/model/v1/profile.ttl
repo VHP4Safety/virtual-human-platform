@@ -13,6 +13,7 @@
 # - sh:minCount: required; with sh:severity sh:Warning, recommended (shown, but a save is not stopped).
 # - sh:hasValue: a fixed value. dash:singleLine false: a longer text.
 # - sh:message: shown when a value is missing or does not fit.
+# - form:private true: kept off the pages and their data; editors see it.
 # The required fields of tools are the minimum of the Bioschemas ComputationalTool profile.
 
 @prefix schema: <https://schema.org/> .
@@ -158,7 +159,7 @@ form:Person a sh:NodeShape ;
     sh:targetClass schema:Person ;
     rdfs:label "Person" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
-    sh:property [ sh:path schema:email ; sh:order 2 ; sh:name "Email address" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:email ; sh:order 2 ; sh:name "Email address" ; sh:maxCount 1 ; sh:datatype xsd:string ; form:private true ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 3 ; sh:name "Elsewhere" ; sh:nodeKind sh:IRI ;
         sh:description "ORCID iD or Wikidata item, as a web address." ] ;
     sh:property [ sh:path schema:affiliation ; sh:order 4 ; sh:name "Affiliation" ; sh:class schema:Organization ] .
