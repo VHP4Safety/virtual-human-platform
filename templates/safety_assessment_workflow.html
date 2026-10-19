@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block head %}
+  <!-- Page-specific CSS for home page -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
+{% endblock %}
+
+{% block content %}
+  <!-- Workflow description -->
+  <section class="container py-md-5 py-3" id="about-section">
+    <h1 class="text-vhppurple">Safety Assessment Workflow</h1>
+    <p class="text-secondary fs-5">
+      The Virtual Human Platform uses a generic safety assessment workflow as a five-step process to collect information critical for risk characterisation.
+    </p>
+
+    <p>Each step in the generic Safety Assessment Workflow represents a critical process where relevant information is gathered to enable innovative, user-driven risk characterisation. The workflow steps are not strictly sequential. The risk characterisation outcome depends on the specific tools applied, the nature and quality of the information collected, and the way uncertainties are addressed and balanced. The workflow aligns with international concepts, such as the WHO human health risk assessment toolkit and the ASPA workflow. Expand a step below to learn more.</p>
+    <div class="accordion accordion-flush" id="process-flow-accordion">
+      {% for v in process_flow_steps.values() %}
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="definition-{{ v.slug }}"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ v.slug }}" aria-expanded="false" aria-controls="collapse-{{ v.slug }}">{{ v.label }}</button></h2>
+          <div id="collapse-{{ v.slug }}" class="accordion-collapse collapse" aria-labelledby="definition-{{ v.slug }}" data-bs-parent="#process-flow-accordion">
+            <div class="accordion-body">{{ v.description }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  {# Open the accordion item referenced by the URL hash (e.g. #heading-VHP0000158),
+     using the native Bootstrap Collapse API. Runs on load and on hash changes. #}
+  <script>
+    (function () {
+      function openAccordionFromHash() {
+        const hash = window.location.hash;
+        if (!hash) return;
+        let target;
+        try {
+          target = document.querySelector(hash);
+        } catch (e) {
+          return; // malformed selector in the hash
+        }
+        if (!target) return
+    
+        // Resolve the .accordion-collapse panel whether the hash points at the
+        // header, the toggle button, or the panel itself.
+        let panel = target.closest(".accordion-collapse");
+        if (!panel) {
+          const button = target.matches('[data-bs-toggle="collapse"]')
+            ? target
+            : target.querySelector('[data-bs-toggle="collapse"]');
+          if (button) {
+            panel = document.querySelector(button.getAttribute("data-bs-target"));
+          }
+        }
+        if (panel) {
+          bootstrap.Collapse.getOrCreateInstance(panel).show()
+        }
+      }
+      window.addEventListener("DOMContentLoaded", openAccordionFromHash);
+      window.addEventListener("hashchange", openAccordionFromHash);
+    })();
+  </script>
+{% endblock %}
