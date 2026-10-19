@@ -53,6 +53,11 @@ export function outline(form, nav) {
     }
     window.requestAnimationFrame(function () {
       target.scrollIntoView({ block: "start", behavior: "smooth" });
+      // Its first field takes the focus, so the preview shows the same part.
+      const first = target.querySelector(".property-instance .shown, .property-instance .editor:not([type=hidden])");
+      if (first) {
+        first.focus({ preventScroll: true });
+      }
       target.classList.add("index-shown");
       window.setTimeout(function () { target.classList.remove("index-shown"); }, 1600);
     });
