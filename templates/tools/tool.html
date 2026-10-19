@@ -4,12 +4,12 @@
 <link rel="stylesheet" property="stylesheet" href="https://elixirtess.github.io/TeSS_widgets/css/tess-widget.css"/>
 
 {% macro text(value) %}{{ value["@value"]|striptags if value is mapping else value }}{% endmacro %}
-{% set developers = tool_details.developers|default([])|selectattr("id")|map(attribute="id")|map("page_link")|list %}
-{% set providers = tool_details.providers|default([])|selectattr("id")|map(attribute="id")|map("page_link")|list %}
-{% set asked = tool_details.questions|default([])|selectattr("id")|map(attribute="id")|join(" ") %}
-{% set tess = tool_details.tess|default([])|join(" ") %}
+{% set developers = tool_details.creator|default([])|selectattr("id")|map(attribute="id")|map("page_link")|list %}
+{% set providers = tool_details.provider|default([])|selectattr("id")|map(attribute="id")|map("page_link")|list %}
+{% set asked = tool_details.regulatoryQuestion|default([])|selectattr("id")|map(attribute="id")|join(" ") %}
+{% set tess = tool_details.keywords or "" %}
 {# Where the tool runs: its install address, else its website when hosted by VHP4Safety. #}
-{% set run = tool_details.run or (tool_details.url if "/organizations/vhp4safety" in providers else none) %}
+{% set run = tool_details.installUrl or (tool_details.url if "/organizations/vhp4safety" in providers else none) %}
 {% macro case_studies() %}
         {% if asked %}
         <div style="margin-top: 5px">
@@ -57,11 +57,11 @@
     <div class="tab-content" id="tab-content">
       <!-- first tab -->
       <div class="tab-pane active" id="simple-tabpanel-0" role="tabpanel" aria-labelledby="simple-tab-0">
-        {% if tool_details.screenshot %}
+        {% if tool_details.image %}
         <div class="row">
           <div class="col-md-6">
             <p>{{ text(tool_details.description) }}
-        {% for stage in tool_details.stages|default([]) if stage.id in process_flow_steps %}
+        {% for stage in tool_details.processFlowStep|default([]) if stage.id in process_flow_steps %}
           {% set step = process_flow_steps[stage.id] %}
           <div style="margin-top: 5px">
             <a href="{{ url_for('SafetyAssessmentWorkflow') }}#definition-{{ step.slug }}"
@@ -76,9 +76,9 @@
           </div>
           <div class="col-md-6 pt-md-0 pt-2 mt-md-0 mt-1">
             {% if run %}
-            <a href="{{ run }}" target="_blank"><img src="{{ tool_details.screenshot|page_link }}" class="card-img-bottom" alt="Image showing the logo or screenshot of the project."></a>
+            <a href="{{ run }}" target="_blank"><img src="{{ tool_details.image|page_link }}" class="card-img-bottom" alt="Image showing the logo or screenshot of the project."></a>
             {% else %}
-            <img src="{{ tool_details.screenshot|page_link }}" class="card-img-bottom" alt="Image showing the logo or screenshot of the project.">
+            <img src="{{ tool_details.image|page_link }}" class="card-img-bottom" alt="Image showing the logo or screenshot of the project.">
             {% endif %}
           </div>
         </div>
@@ -88,7 +88,7 @@
         {{ case_studies() }}
         </div>
         {% endif %}
-        {% for address in tool_details.same_as|default([]) if "wikipedia.org/" in address %}
+        {% for address in tool_details.sameAs|default([]) if "wikipedia.org/" in address %}
           <p>More at <a href="{{ address }}">Wikipedia</a>.</p>
         {% endfor %}
         <!-- Instance Page -->
@@ -106,7 +106,7 @@
       <div class="tab-pane" id="simple-tabpanel-1" role="tabpanel" aria-labelledby="simple-tab-1">
         <div class="accordion accordion-flush" id="tool-documentation-accordion">
 
-          {% if tool_details.help or tool_details.workflows %}
+          {% if tool_details.softwareHelp or tool_details.subjectOf %}
           <div class="accordion-item">
             <h2 class="accordion-header" id="doc-heading-vhp-info">
               <button class="accordion-button collapsed" type="button"
@@ -120,10 +120,10 @@
                  data-bs-parent="#tool-documentation-accordion">
               <div class="accordion-body">
                 <ul style="list-style-type:disc">
-                  {% for page in tool_details.help|default([]) %}
+                  {% for page in tool_details.softwareHelp|default([]) %}
                   <li><a href="{{ page.url }}">{{ page.name }}</a></li>
                   {% endfor %}
-                  {% for page in tool_details.workflows|default([]) %}
+                  {% for page in tool_details.subjectOf|default([]) %}
                   <li>Workflow: <a href="{{ page.url }}">{{ page.name }}</a></li>
                   {% endfor %}
                 </ul>
@@ -132,7 +132,7 @@
           </div>
           {% endif %}
 
-          {% if tool_details.videos %}
+          {% if tool_details.video %}
           <div class="accordion-item">
             <h2 class="accordion-header" id="doc-heading-videos">
               <button class="accordion-button collapsed" type="button"
@@ -145,7 +145,7 @@
                  aria-labelledby="doc-heading-videos"
                  data-bs-parent="#tool-documentation-accordion">
               <div class="accordion-body">
-                {% for video in tool_details.videos %}
+                {% for video in tool_details.video %}
                 <h3>{{ video.name }}</h3>
                 <div style="position: relative; padding-top: 56.25%;"><iframe title="{{ video.name }}" width="100%" height="100%" src="{{ video.url }}" allow="fullscreen" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" style="border: 0px; position: absolute; inset: 0px;"></iframe></div>
                 {% endfor %}
@@ -190,7 +190,7 @@
           </div>
           {% endif %}
 
-          {% for address in tool_details.same_as|default([]) if "bio.tools/" in address %}
+          {% for address in tool_details.sameAs|default([]) if "bio.tools/" in address %}
           <div class="accordion-item">
             <h2 class="accordion-header" id="doc-heading-biotools">
               <button class="accordion-button collapsed" type="button"
@@ -212,8 +212,8 @@
           {% endfor %}
 
           {% set cited = namespace(dois=[]) %}
-          {% for citation in tool_details.citations|default([]) if citation is mapping %}
-            {% for address in citation.same_as|default([]) if "doi.org/" in address %}{% set cited.dois = cited.dois + [address.split("doi.org/")[1]] %}{% endfor %}
+          {% for citation in [tool_details.citation] if citation is mapping %}
+            {% for address in citation.sameAs|default([]) if "doi.org/" in address %}{% set cited.dois = cited.dois + [address.split("doi.org/")[1]] %}{% endfor %}
           {% endfor %}
           {% set dois = cited.dois %}
           {% if dois %}
@@ -253,7 +253,7 @@
           </script>
           {% endif %}
 
-          {% if tool_details.version or tool_details.licenses or tool_details.sources or tool_details.downloads %}
+          {% if tool_details.softwareVersion or tool_details.license or tool_details.isBasedOn or tool_details.downloadUrl %}
           <div class="accordion-item">
             <h2 class="accordion-header" id="doc-heading-technical">
               <button class="accordion-button collapsed" type="button"
@@ -267,17 +267,17 @@
                  data-bs-parent="#tool-documentation-accordion">
               <div class="accordion-body">
                 <ul>
-                  {% if tool_details.version %}<li>Version: {{ tool_details.version }}</li>{% endif %}
-                  {% for license in tool_details.licenses|default([]) %}<li>License: {{ license.name if license is mapping else license }}</li>{% endfor %}
-                  {% for source in tool_details.sources|default([]) %}<li>Source code: <a href="{{ source }}">{{ source }}</a></li>{% endfor %}
-                  {% for download in tool_details.downloads|default([]) %}<li>Download: <a href="{{ download }}">{{ download }}</a></li>{% endfor %}
+                  {% if tool_details.softwareVersion %}<li>Version: {{ tool_details.softwareVersion }}</li>{% endif %}
+                  {% if tool_details.license %}<li>License: {{ tool_details.license.name if tool_details.license is mapping else tool_details.license }}</li>{% endif %}
+                  {% for source in tool_details.isBasedOn|default([]) %}<li>Source code: <a href="{{ source }}">{{ source }}</a></li>{% endfor %}
+                  {% for download in tool_details.downloadUrl|default([]) %}<li>Download: <a href="{{ download }}">{{ download }}</a></li>{% endfor %}
                 </ul>
               </div>
             </div>
           </div>
           {% endif %}
 
-          {% for address in tool_details.same_as|default([]) if "research-software-directory.org/" in address %}
+          {% for address in tool_details.sameAs|default([]) if "research-software-directory.org/" in address %}
           <div class="accordion-item">
             <h2 class="accordion-header" id="doc-heading-other">
               <button class="accordion-button collapsed" type="button"
@@ -304,10 +304,10 @@
       <div class="tab-pane" id="simple-tabpanel-2" role="tabpanel" aria-labelledby="simple-tab-3">
         <h2 class="pt-2">Contact</h2>
         <ul>
-          {% for person in tool_details.contacts|default([]) if person is mapping %}
+          {% for person in tool_details.maintainer|default([]) if person is mapping %}
             <li>{% if person.email %}<a href="mailto:{{ person.email }}">{{ person.name }}</a>{% else %}{{ person.name }}{% endif %}</li>
           {% endfor %}
-          {% for organization in tool_details.providers|default([]) if organization is mapping and organization.id|page_link != "/organizations/vhp4safety" %}
+          {% for organization in tool_details.provider|default([]) if organization is mapping and organization.id|page_link != "/organizations/vhp4safety" %}
             <li>{{ organization.name }}</li>
           {% endfor %}
         </ul>

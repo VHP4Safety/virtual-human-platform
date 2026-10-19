@@ -81,6 +81,31 @@ def merge(current: Graph, added: Graph, profile) -> Merged:
     return merged
 
 
+# rdfsolve proposal P7: rdfsolve.client.sql_tables.context(profile, of_class, term) -> dict
+def context(profile: Graph, of_class: str, term) -> dict:
+    """JSON-LD term definitions for records of a class, from the profile: each property named by *term*,
+    and a list (@set) where several values are taken. The class's own count is used; a property only of
+    linked records is a list unless every class takes one value."""
+    classes = layout(profile).classes
+    single = set()
+    several = set()
+    for found in classes.values():
+        single.update(found.single)
+        several.update(found.several)
+    own = classes.get(of_class)
+    terms = {"id": "@id", "type": "@type"}
+    for iri in sorted(single | several):
+        if own is not None and (iri in own.single or iri in own.several):
+            listed = iri in own.several
+        else:
+            listed = iri in several
+        definition = {"@id": iri}
+        if listed:
+            definition["@container"] = "@set"
+        terms[term(iri)] = definition
+    return terms
+
+
 OBO = "http://purl.obolibrary.org/obo/"
 ENTITY = "http://www.wikidata.org/entity/"
 # Vocabulary registries, by rdfsolve's service name.

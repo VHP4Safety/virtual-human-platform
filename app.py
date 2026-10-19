@@ -1572,12 +1572,11 @@ def methods():
 
 @app.route("/methods/<methodid>")
 def method_page(methodid):
-    """Render a method page (templates/methods/method.html) from its record, with the keys of
-    templates/methods/method.context.jsonld."""
+    """Render a method page (templates/methods/method.html) from its record, with the profile's field names."""
     record = records.get(records.address(f"methods/{methodid}"))
     if record is None:
         abort(404)
-    method = documents.view(record, "methods/method")
+    method = documents.view(record)
     method_name = record.name or methodid
     descriptions = documents.stored_values(storage.graph([record.iri]), record.iri, "description")
     return render_template(
@@ -1594,12 +1593,11 @@ def method_page(methodid):
 
 @app.route("/tools/<toolname>")
 def tool_page(toolname):
-    """Render a tool page (templates/tools/tool.html) from its record, with the keys of
-    templates/tools/tool.context.jsonld."""
+    """Render a tool page (templates/tools/tool.html) from its record, with the profile's field names."""
     record = records.get(records.address(f"tools/{toolname}"))
     if record is None:
         abort(404)
-    tool = documents.view(record, "tools/tool")
+    tool = documents.view(record)
     tool_name = record.name or toolname
     description = tool.get("description")
     if isinstance(description, dict):

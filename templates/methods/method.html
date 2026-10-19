@@ -1,14 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
 <link rel="stylesheet" href="/static/css/tool.css" />
-<link rel="stylesheet" property="stylesheet" href="https://elixirtess.github.io/TeSS_widgets/css/tess-widget.css"/>
 <!-- Terminology Service Suite CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ts4nfdi/terminology-service-suite@3298f2d4c938b8a108ef8dd32b8baa6dfaeba33c/js-modules/latest/terminology-service-suite.min.css" integrity="sha384-CRw3xuZVsoeRqhmRBujMUtmHrdhRKj9esQLPz1mmaQOMSZyz4lVGvR5xTTbB6vfj" crossorigin="anonymous"/>
 
 {% macro text(value) %}{{ value["@value"]|striptags if value is mapping else value }}{% endmacro %}
 {# The names of linked records and terms, or the texts given, else a dash. #}
 {% macro names(values) %}{% for value in values|default([]) %}{{ value.name if value is mapping else value }}{% if not loop.last %}, {% endif %}{% else %}—{% endfor %}{% endmacro %}
-{% set type_iris = method.types|default([])|map(attribute="id")|select|list + method.types|default([])|reject("mapping")|list %}
+{% set type_iris = method.additionalType|default([])|map(attribute="id")|select|list + method.additionalType|default([])|reject("mapping")|list %}
 
 
 <section class="container py-5">
@@ -58,7 +57,7 @@
 
             {# Extract key details - using val() for fields needing special handling #}
             {% set catalog_url = method.url or '' %}
-            {% set sop_url = method.sops|default([])|first|default('') %}
+            {% set sop_url = method.subjectOf|default([])|first|default('') %}
             {% set type_iri = type_iris|first|default('') %}
 
             <h5 class="mt-3">Key details</h5>
@@ -67,14 +66,14 @@
               <dd class="col-sm-8">{{ get('data_producer_content') }}</dd> -->
 
               <dt class="col-sm-4">Vendor</dt>
-              <dd class="col-sm-8">{{ names(method.vendors) }}</dd>
+              <dd class="col-sm-8">{{ names(method.provider) }}</dd>
 
               <dt class="col-sm-4">Catalog number</dt>
               <dd class="col-sm-8">
                 {%- if catalog_url -%}
-                  <a href="{{ catalog_url }}" target="_blank">{{ method.catalog_number or catalog_url }}</a>
+                  <a href="{{ catalog_url }}" target="_blank">{{ method.identifier or catalog_url }}</a>
                 {%- else -%}
-                  {{ method.catalog_number or '—' }}
+                  {{ method.identifier or '—' }}
                 {%- endif -%}
               </dd>
 
@@ -91,22 +90,22 @@
               </dd>
 
               <dt class="col-sm-4">Citation</dt>
-              <dd class="col-sm-8">{{ names(method.citations) }}</dd>
+              <dd class="col-sm-8">{{ names(method.citation) }}</dd>
 
               <dt class="col-sm-4">Last updated</dt>
               <dd class="col-sm-8">{{ format_date(updated) }}</dd>
             </dl>
 
             <h5 class="mt-3">Safety Assessment Workflow</h5>
-            {% set stage = names(method.stages) %}
-            {% set substage = names(method.topics) if method.topics else '' %}
+            {% set stage = names(method.processFlowStep) %}
+            {% set substage = names(method.about) if method.about else '' %}
             <p>
               <span class="badge bg-vhppurple me-2">{{ stage or '—' }}</span>
               {% if substage %}<small class="text-muted">{{ substage }}</small>{% endif %}
             </p>
 
             <h5 class="mt-3">Regulatory question</h5>
-            {% set reg_text = names(method.questions) %}
+            {% set reg_text = names(method.regulatoryQuestion) %}
             <p>{{ reg_text }}</p>
 
           </div>
@@ -136,83 +135,17 @@
 
             <div class="mt-4 small text-muted">
               <strong>Provider</strong><br>
-              {{ names(method.producers) }}
+              {{ names(method.creator) }}
             </div>
           </div>
         </div>
       </div>
 
-      <div class="tab-pane" id="simple-tabpanel-1" role="tabpanel" aria-labelledby="simple-tab-1">
-        {% if (method_json.get('ELIXIR') and method_json.ELIXIR.get('tess')) or (method_details.get('ELIXIR') and method_details.ELIXIR.get('tess')) %}
-        <h2 class="pt-2">Taxila.nl</h2>
-        <div id="taxila-widget-materials-table" class="tess-widget tess-widget-faceted-table"></div>
-        <h2 class="pt-2">ELIXIR TeSS</h2>
-        <div id="tess-widget-materials-table" class="tess-widget tess-widget-faceted-table"></div>
-        {% else %}
-        At this moment no documentation is (known to be) registered in <a href="https://taxila.nl/">Taxila.nl</a> or
-        <a href="https://tess.elixir-europe.org/">ELIXIR TeSS</a>.
-        {% endif %}
-      </div>
-
-      <div class="tab-pane" id="simple-tabpanel-2" role="tabpanel" aria-labelledby="simple-tab-2">
-        <ul style="list-style-type:disc">
-        {% if method_json.get('intro') %}
-          <li>Intro: <a href="{{ method_json.intro.url }}">{{ method_json.intro.title }}</a></li>
-        {% elif method_details.get('intro') %}
-          <li>Intro: <a href="{{ method_details.intro.url }}">{{ method_details.intro.title }}</a></li>
-        {% endif %}
-        {% if method_json.get('demo') %}
-          <li>Demo: <a href="{{ method_json.demo.url }}">{{ method_json.demo.title }}</a></li>
-        {% elif method_details.get('demo') %}
-          <li>Demo: <a href="{{ method_details.demo.url }}">{{ method_details.demo.title }}</a></li>
-        {% endif %}
-        {% if method_json.get('workflow') %}
-          <li>Workflow: <a href="{{ method_json.workflow.url }}">{{ method_json.workflow.title }}</a></li>
-        {% elif method_details.get('workflow') %}
-          <li>Workflow: <a href="{{ method_details.workflow.url }}">{{ method_details.workflow.title }}</a></li>
-        {% endif %}
-      </ul>
-      </div>
-
-      <div class="tab-pane" id="simple-tabpanel-3" role="tabpanel" aria-labelledby="simple-tab-3">
-        <h2 class="pt-2">Contact</h2>
-        <ul>
-          {% set provider_name = (method_json.get('provider', {}).get('name') or method_details.get('provider', {}).get('name') or '') %}
-          {% set contact = (method_json.get('provider', {}).get('contact') or method_details.get('provider', {}).get('contact') or {}) %}
-          {% if contact %}
-            {% if contact.get('name') %}
-              <li>{{ contact.get('name') }}{% if provider_name %} ({{ provider_name }}){% endif %}</li>
-            {% elif provider_name %}
-              <li>{{ provider_name }}</li>
-            {% endif %}
-          {% else %}
-            <li>No contact information available.</li>
-          {% endif %}
-        </ul>    
-      </div>
-
-      <div class="tab-pane" id="simple-tabpanel-4" role="tabpanel" aria-labelledby="simple-tab-4">
-        {% if method_json.get('instance') or method_details.get('instance') %}
-        <ul>
-          {% set inst = method_json.get('instance') or method_details.get('instance') %}
-          {% if inst.get('version') %}<li>Version: {{ inst.get('version') }}</li>{% endif %}
-          {% if inst.get('license') %}<li>License: {{ inst.get('license') }}</li>{% endif %}
-          {% if inst.get('source') %}<li>Source code: <a href="{{ inst.get('source') }}">{{ inst.get('source') }}</a></li>{% endif %}
-          {% if inst.get('docker') %}<li>Docker: <a href="{{ inst.get('docker') }}">{{ inst.get('docker') }}</a></li>{% endif %}
-        </ul>
-        {% endif %}
-        {% if (method_json.get('ELIXIR') and method_json.ELIXIR.get('biomethods')) or (method_details.get('ELIXIR') and method_details.ELIXIR.get('biomethods')) %}
-        <h2 class="pt-2">Technical documentation</h2>
-        <ul>
-          <li><a href="https://bio.methods/{{ (method_json.get('ELIXIR') or method_details.get('ELIXIR')).get('biomethods') }}">bio.methods</a></li>
-        </ul>
-        {% endif %}
-      </div>
       <div class="tab-pane" id="simple-tabpanel-5" role="tabpanel" aria-labelledby="simple-tab-5">
         {% set cited = namespace(dois=[]) %}
-        {% for citation in method.citations|default([]) %}
+        {% for citation in method.citation|default([]) %}
           {% if citation is mapping %}
-            {% for address in citation.same_as|default([]) if "doi.org/" in address %}{% set cited.dois = cited.dois + [address.split("doi.org/")[1]] %}{% endfor %}
+            {% for address in citation.sameAs|default([]) if "doi.org/" in address %}{% set cited.dois = cited.dois + [address.split("doi.org/")[1]] %}{% endfor %}
           {% elif citation.startswith("10.") or "doi.org/" in citation %}
             {% set cited.dois = cited.dois + [citation.split("doi.org/")[-1]] %}
           {% endif %}
@@ -263,62 +196,6 @@
   });
 </script>
 
-<script>
-function initTeSSWidgets() {
-    if (typeof TessWidget === 'undefined' || !TessWidget.Materials) {
-        console.warn('TeSS widget library not available, skipping initialization.');
-        return;
-    }
-
-    const taxilaContainer = document.getElementById('taxila-widget-materials-table');
-    if (!taxilaContainer) {
-        console.warn('No Taxila widget container found.');
-        return;
-    }
-
-    TessWidget.Materials(taxilaContainer, 'FacetedTable', {
-        opts: {
-            columns: [
-                { name: 'Name', field: 'title' },
-                { name: 'Description', field: 'description' }
-            ],
-            allowedFacets: ['scientific-topics', 'target-audience'],
-            facetOptionLimit: 5
-        },
-        params: {
-            pageSize: 5,
-            q: '{{ (method_json.get("ELIXIR", {}) or method_details.get("ELIXIR", {})).get("tess", "") }}'
-        },
-        baseUrl: 'https://taxila.nl'
-    });
-
-    const tessContainer = document.getElementById('tess-widget-materials-table');
-    if (!tessContainer) {
-        console.warn('No TeSS widget container found.');
-        return;
-    }
-
-    TessWidget.Materials(tessContainer, 'FacetedTable', {
-        opts: {
-            columns: [
-                { name: 'Name', field: 'title' },
-                { name: 'Description', field: 'description' }
-            ],
-            allowedFacets: ['scientific-topics', 'target-audience'],
-            facetOptionLimit: 5
-        },
-        params: {
-            pageSize: 5,
-            q: '{{ (method_json.get("ELIXIR", {}) or method_details.get("ELIXIR", {})).get("tess", "") }}'
-        }
-    });
-}
-</script>
-
-
-<script async defer src="https://elixirtess.github.io/TeSS_widgets/js/tess-widget-standalone.js"
-        onload="if (typeof initTeSSWidgets === 'function') initTeSSWidgets();">
-</script>
 
 <!-- Terminology Service Suite -->
 {% set ontology_iri_script = type_iris|first|default('') %}

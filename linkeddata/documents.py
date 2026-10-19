@@ -1,19 +1,17 @@
 """Records as JSON-LD documents, compacted with the platform's context: https://schema.org/name is "name",
-and http://purl.org/dc/terms/conformsTo is "dct:conformsTo". Page templates use their own contexts."""
+and http://purl.org/dc/terms/conformsTo is "dct:conformsTo". Pages use the same names, with lists where the
+profile takes several values."""
 
 import json
 from functools import cache
-from pathlib import Path
 
 from pyld import jsonld
 from rdflib import Graph, URIRef
 
 import database
 from database.tables import Record
-from linkeddata import storage
-from linkeddata.model import settings
-
-TEMPLATES = Path(__file__).parent.parent / "templates"
+from linkeddata import patches, storage
+from linkeddata.model import profile, settings
 
 
 def context(config: dict) -> dict:
@@ -110,17 +108,29 @@ def document_of(iri: str) -> str | None:
 
 
 @cache
-def template_context(template: str) -> dict:
-    """The JSON-LD context of a page template, in a file next to it (methods/method.context.jsonld for
-    methods/method.html), with the keys the template uses."""
-    return json.loads((TEMPLATES / f"{template}.context.jsonld").read_text(encoding="utf-8"))
+@cache
+def page_context(of_class: str) -> dict:
+    """The context of a record's page: the platform's names, and a list for each field that takes several
+    values."""
+    return {**context(settings()), **patches.context(profile(), of_class, term)}
 
 
-def view(record: Record, template: str) -> dict:
-    """The record with the keys of *template*, with its linked records embedded so their names can be shown."""
+def view(record: Record) -> dict:
+    """The record with the profile's field names, with its linked records embedded so their names can be shown."""
     statements = storage.linked_graph(record).serialize(format="nt")
     expanded = jsonld.from_rdf(statements, {"format": "application/n-quads"})
-    framed = jsonld.frame(expanded, {"@context": template_context(template), "@id": record.iri, "@embed": "@always"})
+    framed = jsonld.frame(expanded, {"@context": page_context(record.type), "@id": record.iri, "@embed": "@always"})
     found = framed["@graph"][0] if "@graph" in framed else framed
     found.pop("@context", None)
+    return addresses(found)
+
+
+def addresses(found):
+    """A framed document whose links to nodes without statements, such as web pages, are addresses."""
+    if isinstance(found, list):
+        return [addresses(value) for value in found]
+    if isinstance(found, dict):
+        if list(found) == ["id"]:
+            return found["id"]
+        return {key: addresses(value) for key, value in found.items()}
     return found
