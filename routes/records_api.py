@@ -24,7 +24,7 @@ import re
 from functools import cache
 from urllib.parse import quote
 
-from flask import Response, current_app, jsonify, redirect, request, url_for
+from flask import Response, current_app, g, jsonify, redirect, request, url_for
 from flask_smorest import Api, Blueprint, abort
 from marshmallow import INCLUDE, Schema, fields
 from rdflib import RDF, Graph, Literal, URIRef
@@ -439,7 +439,8 @@ def listing(of_class: str):
         total, iris = catalogue.page(of_class, filters_of(of_class, given), given["search"], pagination_parameters.first_item, pagination_parameters.page_size)
         pagination_parameters.item_count = total
         found = readable(storage.graph(iris), kind_of(None, {"@type": of_class}))
-        media = request.accept_mimetypes.best_match(MEDIA, "application/json")
+        # A kind's page passes on the format it was asked for, also by an ending (/tools.md).
+        media = g.get("media") or request.accept_mimetypes.best_match(MEDIA, "application/json")
         if media == "application/json":
             return [row(found, URIRef(iri), of_class) for iri in iris]
         if media == "text/markdown":

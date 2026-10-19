@@ -71,6 +71,11 @@ def negotiate():
             media = ending_media
     if media is None:
         media = request.accept_mimetypes.best_match(["text/html", *FORMATS.values(), "application/json", "text/markdown"], "text/html")
+    # A kind's page (/tools) lists its records as the API does, in the formats the API answers.
+    if path in settings()["kinds"] and media != "text/html":
+        g.listing = path
+        g.media = media
+        return current_app.view_functions[f"api.list_{path}"]()
     record = records.get(records.address(path))
     if record is None:
         return None
@@ -104,7 +109,7 @@ def link_data(response):
         links.append(f'<{page_path(g.record)}{MARKDOWN}>; rel="alternate"; type="text/markdown"')
         response.headers["Vary"] = "Accept"
     # The records' licence, on their pages, their data and the API.
-    if "record" in g or request.path.startswith("/api/"):
+    if "record" in g or "listing" in g or request.path.startswith("/api/"):
         links.append(f'<{settings()["license"]}>; rel="license"')
     if links:
         given = response.headers.get("Link")
@@ -112,7 +117,7 @@ def link_data(response):
     if "record" in g and request.method in ("GET", "HEAD") and response.status_code == 200:
         conditional(response)
     # Scripts of other sites may read public data; without credentials, so as visitors.
-    if request.method in ("GET", "HEAD") and (request.path.startswith("/api/") or ("record" in g and response.mimetype != "text/html")):
+    if request.method in ("GET", "HEAD") and (request.path.startswith("/api/") or "listing" in g or ("record" in g and response.mimetype != "text/html")):
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Access-Control-Expose-Headers"] = "Link, ETag, Last-Modified, X-Pagination"
     return response
