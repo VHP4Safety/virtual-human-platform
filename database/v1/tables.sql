@@ -504,6 +504,186 @@ CREATE TABLE IF NOT EXISTS "schema_computer_language__schema_alternate_name" (
   FOREIGN KEY ("iri") REFERENCES "schema_computer_language" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_computer_language__schema_alternate_name__record" ON "schema_computer_language__schema_alternate_name" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_date_modified" TEXT,
+  "schema_date_modified__term" TEXT,
+  "schema_date_published" TEXT,
+  "schema_date_published__term" TEXT,
+  "schema_description" TEXT,
+  "schema_description__term" TEXT,
+  "schema_educational_level" TEXT,
+  "schema_educational_level__term" TEXT,
+  "schema_license" TEXT,
+  "schema_license__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  "schema_time_required" TEXT,
+  "schema_time_required__term" TEXT,
+  "schema_url" TEXT,
+  "schema_url__term" TEXT,
+  "schema_video" TEXT,
+  "schema_video__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__record" ON "schema_course" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__dct_conforms_to" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__dct_conforms_to__record" ON "schema_course__dct_conforms_to" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__schema_about" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__schema_about__record" ON "schema_course__schema_about" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__schema_author" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__schema_author__record" ON "schema_course__schema_author" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__schema_competency_required" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__schema_competency_required__record" ON "schema_course__schema_competency_required" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__schema_course_prerequisites" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__schema_course_prerequisites__record" ON "schema_course__schema_course_prerequisites" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__schema_has_course_instance" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__schema_has_course_instance__record" ON "schema_course__schema_has_course_instance" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__schema_has_part" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__schema_has_part__record" ON "schema_course__schema_has_part" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__schema_in_language" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__schema_in_language__record" ON "schema_course__schema_in_language" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__schema_is_part_of" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__schema_is_part_of__record" ON "schema_course__schema_is_part_of" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__schema_keywords" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__schema_keywords__record" ON "schema_course__schema_keywords" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__schema_learning_resource_type" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__schema_learning_resource_type__record" ON "schema_course__schema_learning_resource_type" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__schema_mentions" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__schema_mentions__record" ON "schema_course__schema_mentions" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__schema_provider" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__schema_provider__record" ON "schema_course__schema_provider" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__schema_same_as" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__schema_same_as__record" ON "schema_course__schema_same_as" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__schema_teaches" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__schema_teaches__record" ON "schema_course__schema_teaches" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course_instance" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_end_date" TEXT,
+  "schema_end_date__term" TEXT,
+  "schema_start_date" TEXT,
+  "schema_start_date__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course_instance__record" ON "schema_course_instance" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course_instance__schema_location" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course_instance" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course_instance__schema_location__record" ON "schema_course_instance__schema_location" ("record");
 CREATE TABLE IF NOT EXISTS "schema_data_catalog" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -707,6 +887,17 @@ CREATE TABLE IF NOT EXISTS "schema_defined_term_set__schema_same_as" (
   FOREIGN KEY ("iri") REFERENCES "schema_defined_term_set" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_defined_term_set__schema_same_as__record" ON "schema_defined_term_set__schema_same_as" ("record");
+CREATE TABLE IF NOT EXISTS "schema_digital_document" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  "schema_url" TEXT,
+  "schema_url__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_digital_document__record" ON "schema_digital_document" ("record");
 CREATE TABLE IF NOT EXISTS "schema_how_to" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -811,6 +1002,139 @@ CREATE TABLE IF NOT EXISTS "schema_image_object" (
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_image_object__record" ON "schema_image_object" ("record");
+CREATE TABLE IF NOT EXISTS "schema_learning_resource" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_date_modified" TEXT,
+  "schema_date_modified__term" TEXT,
+  "schema_date_published" TEXT,
+  "schema_date_published__term" TEXT,
+  "schema_description" TEXT,
+  "schema_description__term" TEXT,
+  "schema_educational_level" TEXT,
+  "schema_educational_level__term" TEXT,
+  "schema_license" TEXT,
+  "schema_license__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  "schema_time_required" TEXT,
+  "schema_time_required__term" TEXT,
+  "schema_url" TEXT,
+  "schema_url__term" TEXT,
+  "schema_video" TEXT,
+  "schema_video__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_learning_resource__record" ON "schema_learning_resource" ("record");
+CREATE TABLE IF NOT EXISTS "schema_learning_resource__dct_conforms_to" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_learning_resource__dct_conforms_to__record" ON "schema_learning_resource__dct_conforms_to" ("record");
+CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_about" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_learning_resource__schema_about__record" ON "schema_learning_resource__schema_about" ("record");
+CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_author" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_learning_resource__schema_author__record" ON "schema_learning_resource__schema_author" ("record");
+CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_competency_required" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_learning_resource__schema_competency_required__record" ON "schema_learning_resource__schema_competency_required" ("record");
+CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_has_part" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_learning_resource__schema_has_part__record" ON "schema_learning_resource__schema_has_part" ("record");
+CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_in_language" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_learning_resource__schema_in_language__record" ON "schema_learning_resource__schema_in_language" ("record");
+CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_is_part_of" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_learning_resource__schema_is_part_of__record" ON "schema_learning_resource__schema_is_part_of" ("record");
+CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_keywords" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_learning_resource__schema_keywords__record" ON "schema_learning_resource__schema_keywords" ("record");
+CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_learning_resource_type" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_learning_resource__schema_learning_resource_type__record" ON "schema_learning_resource__schema_learning_resource_type" ("record");
+CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_mentions" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_learning_resource__schema_mentions__record" ON "schema_learning_resource__schema_mentions" ("record");
+CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_same_as" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_learning_resource__schema_same_as__record" ON "schema_learning_resource__schema_same_as" ("record");
+CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_teaches" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_learning_resource__schema_teaches__record" ON "schema_learning_resource__schema_teaches" ("record");
 CREATE TABLE IF NOT EXISTS "schema_media_object" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -1578,10 +1902,14 @@ CREATE TABLE IF NOT EXISTS "schema_video_object" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
   "type" TEXT,
+  "schema_duration" TEXT,
+  "schema_duration__term" TEXT,
   "schema_embed_url" TEXT,
   "schema_embed_url__term" TEXT,
   "schema_name" TEXT,
   "schema_name__term" TEXT,
+  "schema_thumbnail_url" TEXT,
+  "schema_thumbnail_url__term" TEXT,
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_video_object__record" ON "schema_video_object" ("record");
@@ -1630,6 +1958,8 @@ CREATE TABLE IF NOT EXISTS "schema_web_page_element" (
   "schema_position__term" TEXT,
   "schema_text" TEXT,
   "schema_text__term" TEXT,
+  "schema_url" TEXT,
+  "schema_url__term" TEXT,
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_web_page_element__record" ON "schema_web_page_element" ("record");

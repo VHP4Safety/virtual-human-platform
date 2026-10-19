@@ -1,0 +1,38 @@
+name: courses
+title: VHP4Safety courses on GitHub
+# Each course's repository tree at one commit; the parser names the repository, README and agenda to read, under
+# these addresses (linkeddata/parsers/courses.py).
+files:
+  modelling_hazard_assessment: https://api.github.com/repos/VHP4Safety/modelling_hazard_assessment/git/trees/145b2a0a339b3ca02d1acccfb9ab4591194317fe?recursive=1
+  github_intro_training: https://api.github.com/repos/VHP4Safety/github_intro_training/git/trees/018b9d23e8c0ae6756d572ff34aafd5d791a69a8?recursive=1
+documents:
+  modelling_hazard_assessment: https://raw.githubusercontent.com/VHP4Safety/modelling_hazard_assessment/145b2a0a339b3ca02d1acccfb9ab4591194317fe/
+  github_intro_training: https://raw.githubusercontent.com/VHP4Safety/github_intro_training/018b9d23e8c0ae6756d572ff34aafd5d791a69a8/
+  repositories: https://api.github.com/repos/VHP4Safety/
+parser: courses
+
+# The rows of people are shaped as BioStudies' and take its rules.
+uses: [biostudies]
+rules:
+  Course:
+    - {predicate: a, value: "https://schema.org/Course"}
+    - {predicate: "https://schema.org/name", object: name}
+    - {predicate: "https://schema.org/description", object: description}
+    - {predicate: "https://schema.org/url", object: url}
+    - {predicate: "https://schema.org/keywords", object: keywords}
+    - {predicate: "https://schema.org/license", object: license}
+    - {predicate: "https://schema.org/sameAs", object: sameAs}
+    - {predicate: "https://schema.org/author", object: author}
+    - {predicate: "https://schema.org/teaches", object: teaches}
+    - {predicate: "https://schema.org/learningResourceType", object: learningResourceType}
+    - {predicate: "https://schema.org/hasCourseInstance", object: hasCourseInstance}
+    - {predicate: "https://schema.org/hasPart", object: hasPart}
+    - {predicate: "http://purl.org/dc/terms/conformsTo", object: conformsTo}
+  Given:
+    - {predicate: a, value: "https://schema.org/CourseInstance"}
+    - {predicate: "https://schema.org/startDate", object: startDate}
+    - {predicate: "https://schema.org/endDate", object: endDate}
+  File:
+    - {predicate: a, value: "https://schema.org/DigitalDocument"}
+    - {predicate: "https://schema.org/name", object: name}
+    - {predicate: "https://schema.org/url", object: url}

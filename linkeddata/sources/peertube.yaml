@@ -1,0 +1,29 @@
+name: peertube
+title: VHP4Safety videos on video.edu.nl (PeerTube)
+url: https://video.edu.nl/api/v1/accounts/vhp4safety/videos?count=100
+# Each video's own answer, with its whole description, by its identifier.
+entries: https://video.edu.nl/api/v1/videos/{key}
+parser: peertube
+
+rules:
+  Video:
+    - {predicate: a, value: "https://schema.org/LearningResource"}
+    - {predicate: "https://schema.org/name", object: name}
+    - {predicate: "https://schema.org/description", object: description}
+    - {predicate: "https://schema.org/url", object: url}
+    - {predicate: "https://schema.org/learningResourceType", object: learningResourceType}
+    - {predicate: "https://schema.org/inLanguage", object: inLanguage}
+    - {predicate: "https://schema.org/license", object: license}
+    - {predicate: "https://schema.org/datePublished", object: datePublished}
+    - {predicate: "https://schema.org/dateModified", object: dateModified}
+    - {predicate: "https://schema.org/timeRequired", object: timeRequired}
+    - {predicate: "https://schema.org/keywords", object: keywords}
+    - {predicate: "https://schema.org/author", object: author}
+    - {predicate: "https://schema.org/video", object: video}
+    - {predicate: "http://purl.org/dc/terms/conformsTo", object: conformsTo}
+  Player:
+    - {predicate: a, value: "https://schema.org/VideoObject"}
+    - {predicate: "https://schema.org/name", object: name}
+    - {predicate: "https://schema.org/embedUrl", object: embedUrl}
+    - {predicate: "https://schema.org/thumbnailUrl", object: thumbnailUrl}
+    - {predicate: "https://schema.org/duration", object: duration}
