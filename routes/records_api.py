@@ -191,7 +191,7 @@ def store(address: str, body: dict, preview: bool = False, page: bool = False):
     who = writer(kind)
     if "@context" in body:
         body = documents.document(Graph().parse(data=json.dumps(body), format="json-ld"), address)
-    kind = settings()["kinds"][kind]
+    kind = writes.class_of(settings()["kinds"][kind], body)
     try:
         found = documents.statements(writes.document(kind, address, body))
     except ValueError as problem:

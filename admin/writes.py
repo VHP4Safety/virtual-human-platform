@@ -14,7 +14,7 @@ from sqlalchemy import delete, insert, select
 import database
 from database import records
 from database.tables import PLATFORM, Record, Revision, now
-from linkeddata import documents, fields, storage
+from linkeddata import catalogue, documents, fields, storage
 from linkeddata.documents import context
 from linkeddata.model import settings
 
@@ -22,6 +22,19 @@ from linkeddata.model import settings
 def version() -> str:
     """A record's version: its last write time, to the microsecond, so two writes differ."""
     return datetime.now(timezone.utc).isoformat()
+
+
+def class_of(kind: str, body: dict) -> str:
+    """The class of a written record: the one its body gives when it is its kind's or within it, such as an
+    about page among the pages; else its kind's."""
+    given = body.get("@type")
+    for name in given if isinstance(given, list) else [given]:
+        if not isinstance(name, str):
+            continue
+        of_class = name if name.startswith(("http://", "https://")) else documents.expand(name)
+        if of_class in catalogue.within(kind):
+            return of_class
+    return kind
 
 
 def document(kind: str, address: str, body: dict) -> dict:
