@@ -216,6 +216,8 @@ CREATE TABLE IF NOT EXISTS "pbpk_calibration" (
   "pbpk_optimization_criteria__term" TEXT,
   "schema_description" TEXT,
   "schema_description__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "pbpk_calibration__record" ON "pbpk_calibration" ("record");
@@ -251,6 +253,8 @@ CREATE TABLE IF NOT EXISTS "pbpk_connection" (
   "pbpk_source_compartment__term" TEXT,
   "pbpk_target_compartment" TEXT,
   "pbpk_target_compartment__term" TEXT,
+  "schema_description" TEXT,
+  "schema_description__term" TEXT,
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "pbpk_connection__record" ON "pbpk_connection" ("record");
@@ -268,6 +272,8 @@ CREATE TABLE IF NOT EXISTS "pbpk_evaluation" (
   "pbpk_outcome__term" TEXT,
   "schema_description" TEXT,
   "schema_description__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "pbpk_evaluation__record" ON "pbpk_evaluation" ("record");
@@ -307,6 +313,8 @@ CREATE TABLE IF NOT EXISTS "pbpk_parameter" (
   "pbpk_source_reference__term" TEXT,
   "schema_name" TEXT,
   "schema_name__term" TEXT,
+  "schema_property_id" TEXT,
+  "schema_property_id__term" TEXT,
   "schema_unit_text" TEXT,
   "schema_unit_text__term" TEXT,
   "schema_value" TEXT,
@@ -368,6 +376,8 @@ CREATE TABLE IF NOT EXISTS "pbpk_suv_analysis" (
   "pbpk_outcome__term" TEXT,
   "pbpk_robustness_interpretation" TEXT,
   "pbpk_robustness_interpretation__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "pbpk_suv_analysis__record" ON "pbpk_suv_analysis" ("record");
@@ -413,6 +423,87 @@ CREATE TABLE IF NOT EXISTS "schema_about_page__schema_has_part" (
   FOREIGN KEY ("iri") REFERENCES "schema_about_page" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_about_page__schema_has_part__record" ON "schema_about_page__schema_has_part" ("record");
+CREATE TABLE IF NOT EXISTS "schema_chemical_substance" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "pbpk_chemical_role" TEXT,
+  "pbpk_chemical_role__term" TEXT,
+  "pbpk_physicochemical_notes" TEXT,
+  "pbpk_physicochemical_notes__term" TEXT,
+  "schema_description" TEXT,
+  "schema_description__term" TEXT,
+  "schema_in_ch_i" TEXT,
+  "schema_in_ch_i__term" TEXT,
+  "schema_in_ch_i_key" TEXT,
+  "schema_in_ch_i_key__term" TEXT,
+  "schema_molecular_formula" TEXT,
+  "schema_molecular_formula__term" TEXT,
+  "schema_molecular_weight" TEXT,
+  "schema_molecular_weight__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_chemical_substance__record" ON "schema_chemical_substance" ("record");
+CREATE TABLE IF NOT EXISTS "schema_chemical_substance__schema_alternate_name" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_chemical_substance" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_chemical_substance__schema_alternate_name__record" ON "schema_chemical_substance__schema_alternate_name" ("record");
+CREATE TABLE IF NOT EXISTS "schema_chemical_substance__schema_identifier" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_chemical_substance" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_chemical_substance__schema_identifier__record" ON "schema_chemical_substance__schema_identifier" ("record");
+CREATE TABLE IF NOT EXISTS "schema_chemical_substance__schema_same_as" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_chemical_substance" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_chemical_substance__schema_same_as__record" ON "schema_chemical_substance__schema_same_as" ("record");
+CREATE TABLE IF NOT EXISTS "schema_chemical_substance__schema_smiles" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_chemical_substance" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_chemical_substance__schema_smiles__record" ON "schema_chemical_substance__schema_smiles" ("record");
+CREATE TABLE IF NOT EXISTS "schema_computer_language" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  "schema_url" TEXT,
+  "schema_url__term" TEXT,
+  "schema_version" TEXT,
+  "schema_version__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_computer_language__record" ON "schema_computer_language" ("record");
+CREATE TABLE IF NOT EXISTS "schema_computer_language__schema_alternate_name" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_computer_language" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_computer_language__schema_alternate_name__record" ON "schema_computer_language__schema_alternate_name" ("record");
 CREATE TABLE IF NOT EXISTS "schema_data_catalog" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -743,6 +834,14 @@ CREATE TABLE IF NOT EXISTS "schema_molecular_entity" (
   "pbpk_chemical_role__term" TEXT,
   "pbpk_physicochemical_notes" TEXT,
   "pbpk_physicochemical_notes__term" TEXT,
+  "schema_description" TEXT,
+  "schema_description__term" TEXT,
+  "schema_in_ch_i" TEXT,
+  "schema_in_ch_i__term" TEXT,
+  "schema_in_ch_i_key" TEXT,
+  "schema_in_ch_i_key__term" TEXT,
+  "schema_molecular_formula" TEXT,
+  "schema_molecular_formula__term" TEXT,
   "schema_molecular_weight" TEXT,
   "schema_molecular_weight__term" TEXT,
   "schema_name" TEXT,
@@ -750,6 +849,15 @@ CREATE TABLE IF NOT EXISTS "schema_molecular_entity" (
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_molecular_entity__record" ON "schema_molecular_entity" ("record");
+CREATE TABLE IF NOT EXISTS "schema_molecular_entity__schema_alternate_name" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_molecular_entity" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_molecular_entity__schema_alternate_name__record" ON "schema_molecular_entity__schema_alternate_name" ("record");
 CREATE TABLE IF NOT EXISTS "schema_molecular_entity__schema_identifier" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -759,6 +867,24 @@ CREATE TABLE IF NOT EXISTS "schema_molecular_entity__schema_identifier" (
   FOREIGN KEY ("iri") REFERENCES "schema_molecular_entity" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_molecular_entity__schema_identifier__record" ON "schema_molecular_entity__schema_identifier" ("record");
+CREATE TABLE IF NOT EXISTS "schema_molecular_entity__schema_same_as" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_molecular_entity" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_molecular_entity__schema_same_as__record" ON "schema_molecular_entity__schema_same_as" ("record");
+CREATE TABLE IF NOT EXISTS "schema_molecular_entity__schema_smiles" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_molecular_entity" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_molecular_entity__schema_smiles__record" ON "schema_molecular_entity__schema_smiles" ("record");
 CREATE TABLE IF NOT EXISTS "schema_monetary_amount" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -1214,6 +1340,24 @@ CREATE TABLE IF NOT EXISTS "schema_software_source_code" (
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_software_source_code__record" ON "schema_software_source_code" ("record");
+CREATE TABLE IF NOT EXISTS "schema_software_source_code__bioschemas_input" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_software_source_code" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_software_source_code__bioschemas_input__record" ON "schema_software_source_code__bioschemas_input" ("record");
+CREATE TABLE IF NOT EXISTS "schema_software_source_code__bioschemas_output" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_software_source_code" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_software_source_code__bioschemas_output__record" ON "schema_software_source_code__bioschemas_output" ("record");
 CREATE TABLE IF NOT EXISTS "schema_software_source_code__glossary_vhp0000151" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -1322,6 +1466,15 @@ CREATE TABLE IF NOT EXISTS "schema_software_source_code__schema_about" (
   FOREIGN KEY ("iri") REFERENCES "schema_software_source_code" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_software_source_code__schema_about__record" ON "schema_software_source_code__schema_about" ("record");
+CREATE TABLE IF NOT EXISTS "schema_software_source_code__schema_alternate_name" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_software_source_code" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_software_source_code__schema_alternate_name__record" ON "schema_software_source_code__schema_alternate_name" ("record");
 CREATE TABLE IF NOT EXISTS "schema_software_source_code__schema_citation" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,

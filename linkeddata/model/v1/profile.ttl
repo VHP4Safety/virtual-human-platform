@@ -642,7 +642,7 @@ pbpk:hasBiologicalSystem a rdf:Property ; rdfs:label "Biological system(s)" ;
 pbpk:hasCalibration a rdf:Property ; rdfs:label "Calibration activities" ;
     schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:Calibration .
 pbpk:hasChemical a rdf:Property ; rdfs:label "Chemical substance(s)" ;
-    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:MolecularEntity .
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:MolecularEntity, schema:ChemicalSubstance .
 pbpk:hasEvaluation a rdf:Property ; rdfs:label "Evaluation activities" ;
     schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:Evaluation .
 pbpk:hasParameter a rdf:Property ; rdfs:label "Parameters" ;
@@ -728,13 +728,15 @@ form:SoftwareSourceCode a sh:NodeShape ;
     sh:property [ sh:path schema:creator ; sh:group form:modelGeneral ; sh:order 4 ; sh:name "Model author(s)" ; sh:minCount 1 ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ; sh:severity sh:Warning ; sh:message "Add the model author(s), as ROBOT asks." ] ;
     sh:property [ sh:path schema:programmingLanguage ; sh:group form:modelGeneral ; sh:order 5 ; sh:name "Software platform" ; sh:minCount 1 ;
-        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "SBML" "Python" "R" "MATLAB" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
+        sh:class schema:ComputerLanguage ; sh:node form:ComputerLanguage ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add the software platform, as ROBOT asks." ] ;
     sh:property [ sh:path schema:codeRepository ; sh:group form:modelGeneral ; sh:order 6 ; sh:name "Model availability (URLs/DOIs)" ; sh:minCount 1 ;
         sh:nodeKind sh:IRI ; sh:severity sh:Warning ; sh:message "Add the model availability (URLs/DOIs), as ROBOT asks." ] ;
     sh:property [ sh:path schema:license ; sh:group form:modelGeneral ; sh:order 7 ; sh:name "License" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:severity sh:Warning ; sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ; form:publishedAs schema:CreativeWork ; sh:message "Add the license, chosen from SPDX; other values are kept." ] ;
     sh:property [ sh:path schema:applicationCategory ; sh:group form:modelGeneral ; sh:order 8 ; sh:name "Intended application category" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the intended application category, as ROBOT asks." ] ;
+    sh:property [ sh:path schema:alternateName ; sh:group form:modelGeneral ; sh:order 9 ; sh:name "Other name" ; sh:datatype xsd:string ;
+        sh:description "Such as the model's name in its PBPK description, when its crate names its file." ] ;
     sh:property [ sh:path pbpk:modelStructureDescription ; sh:group form:modelModelStructure ; sh:order 1 ; sh:name "Model structure description" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ; sh:severity sh:Warning ; sh:message "Add the model structure description, as ROBOT asks." ] ;
     sh:property [ sh:path pbpk:structuralCompartments ; sh:group form:modelModelStructure ; sh:order 2 ; sh:name "Structural compartments" ; sh:minCount 1 ;
@@ -745,8 +747,14 @@ form:SoftwareSourceCode a sh:NodeShape ;
         sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "Ordinary differential equations" "Algebraic equations" "Hybrid ODE-algebraic system" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
     sh:property [ sh:path pbpk:implementation ; sh:group form:modelModelStructure ; sh:order 5 ; sh:name "Model implementation reference(s)" ; sh:minCount 1 ;
         sh:class pbpk:Implementation ; sh:node form:Implementation ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add the model implementation reference(s), as ROBOT asks." ] ;
+    sh:property [ sh:path bioschemas:input ; sh:group form:modelModelStructure ; sh:order 6 ; sh:name "Inputs" ;
+        sh:class bioschemas:FormalParameter ; sh:node form:FormalParameter ; sh:nodeKind sh:BlankNode ;
+        sh:description "What the model takes, such as doses or physiological parameters (RO-Crate's inputs)." ] ;
+    sh:property [ sh:path bioschemas:output ; sh:group form:modelModelStructure ; sh:order 7 ; sh:name "Outputs" ;
+        sh:class bioschemas:FormalParameter ; sh:node form:FormalParameter ; sh:nodeKind sh:BlankNode ;
+        sh:description "What the model gives, such as concentration-time profiles (RO-Crate's outputs)." ] ;
     sh:property [ sh:path pbpk:hasChemical ; sh:group form:modelChemicals ; sh:order 1 ; sh:name "Chemical substance(s)" ; sh:minCount 1 ;
-        sh:class schema:MolecularEntity ; sh:node form:MolecularEntity ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add the chemical substance(s), as ROBOT asks." ] ;
+        sh:or ( [ sh:class schema:MolecularEntity ; rdfs:label "Molecular entity" ] [ sh:class schema:ChemicalSubstance ; rdfs:label "Chemical substance" ] ) ; sh:node form:MolecularEntity ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add the chemical substance(s), as ROBOT asks." ] ;
     sh:property [ sh:path pbpk:hasBiologicalSystem ; sh:group form:modelBiologicalSystem ; sh:order 1 ; sh:name "Biological system(s)" ; sh:minCount 1 ;
         sh:class pbpk:BiologicalSystem ; sh:node form:BiologicalSystem ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add the biological system(s), as ROBOT asks." ] ;
     sh:property [ sh:path pbpk:hasParameter ; sh:group form:modelParameterization ; sh:order 1 ; sh:name "Parameters" ; sh:minCount 1 ;
@@ -812,7 +820,8 @@ form:Connection a sh:NodeShape ;
     sh:property [ sh:path pbpk:targetCompartment ; sh:order 2 ; sh:name "Target compartment" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the target compartment, as ROBOT asks." ] ;
     sh:property [ sh:path pbpk:connectionType ; sh:order 3 ; sh:name "Connection type" ; sh:minCount 1 ; sh:maxCount 1 ;
-        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "Blood flow" "Diffusion" "Permeation" "Other" ) ; sh:message "Choose from the list; other values are kept." ] .
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "Blood flow" "Diffusion" "Permeation" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
+    sh:property [ sh:path schema:description ; sh:order 4 ; sh:name "Connection description" ; sh:maxCount 1 ; sh:datatype xsd:string ] .
 
 # Implementation: part of a model's record.
 form:Implementation a sh:NodeShape ;
@@ -822,6 +831,18 @@ form:Implementation a sh:NodeShape ;
         sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "SBML" "Python script" "R script" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
     sh:property [ sh:path pbpk:implementationLocation ; sh:order 2 ; sh:name "Implementation location (relative path)" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the implementation location (relative path), as ROBOT asks." ] .
+
+# Language: part of a model's record. RO-Crate asks for its name, address and version.
+form:ComputerLanguage a sh:NodeShape ;
+    sh:targetClass schema:ComputerLanguage ;
+    rdfs:label "Language" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "SBML" "Python" "R" "MATLAB" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
+    sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Address" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ; sh:severity sh:Warning ; sh:message "Add the language's address, as RO-Crate asks." ] ;
+    sh:property [ sh:path schema:version ; sh:order 3 ; sh:name "Version" ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the version the model was made with, as RO-Crate asks." ] ;
+    sh:property [ sh:path schema:alternateName ; sh:order 4 ; sh:name "Other name" ; sh:datatype xsd:string ] .
 
 # Chemical: part of a model's record.
 form:MolecularEntity a sh:NodeShape ;
@@ -836,7 +857,21 @@ form:MolecularEntity a sh:NodeShape ;
     sh:property [ sh:path schema:molecularWeight ; sh:order 4 ; sh:name "Molecular weight (g/mol)" ; sh:maxCount 1 ;
         sh:datatype xsd:decimal ] ;
     sh:property [ sh:path pbpk:physicochemicalNotes ; sh:order 5 ; sh:name "Physicochemical notes" ; sh:maxCount 1 ;
-        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] .
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] ;
+    sh:property [ sh:path schema:alternateName ; sh:order 6 ; sh:name "Other names" ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:description ; sh:order 7 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:inChI ; sh:order 8 ; sh:name "InChI" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:inChIKey ; sh:order 9 ; sh:name "InChIKey" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:smiles ; sh:order 10 ; sh:name "SMILES" ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:molecularFormula ; sh:order 11 ; sh:name "Molecular formula" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:sameAs ; sh:order 12 ; sh:name "Addresses elsewhere" ; sh:nodeKind sh:IRI ;
+        sh:description "Such as its ChEBI or PubChem page." ] .
+
+# Chemical substance: a chemical its crate states as a substance; its fields are a chemical's.
+form:ChemicalSubstance a sh:NodeShape ;
+    sh:targetClass schema:ChemicalSubstance ;
+    rdfs:label "Chemical substance" ;
+    sh:node form:MolecularEntity .
 
 # Identifier or value: part of a model's record.
 form:PropertyValue a sh:NodeShape ;
@@ -889,11 +924,14 @@ form:Parameter a sh:NodeShape ;
     sh:property [ sh:path pbpk:sourceReference ; sh:order 10 ; sh:name "Source reference" ; sh:maxCount 1 ;
         sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] ;
     sh:property [ sh:path pbpk:notes ; sh:order 11 ; sh:name "Parameter notes" ; sh:maxCount 1 ;
-        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] .
+        sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ] ;
+    sh:property [ sh:path schema:propertyID ; sh:order 12 ; sh:name "Symbol" ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:description "The parameter's symbol in the model's code, such as BW." ] .
 
 # Calibration: part of a model's record.
 form:Calibration a sh:NodeShape ;
     sh:targetClass pbpk:Calibration ;
+    sh:property [ sh:path schema:name ; sh:order 0 ; sh:name "Calibration name" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     rdfs:label "Calibration" ;
     sh:property [ sh:path schema:description ; sh:order 1 ; sh:name "Calibration description" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ; sh:severity sh:Warning ; sh:message "Add the calibration description, as ROBOT asks." ] ;
@@ -911,6 +949,7 @@ form:Calibration a sh:NodeShape ;
 # Evaluation: part of a model's record.
 form:Evaluation a sh:NodeShape ;
     sh:targetClass pbpk:Evaluation ;
+    sh:property [ sh:path schema:name ; sh:order 0 ; sh:name "Evaluation name" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     rdfs:label "Evaluation" ;
     sh:property [ sh:path schema:description ; sh:order 1 ; sh:name "Evaluation description" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:or ( form:PlainText form:HTMLText ) ; dash:singleLine false ; sh:severity sh:Warning ; sh:message "Add the evaluation description, as ROBOT asks." ] ;
@@ -939,6 +978,7 @@ form:PerformanceMetric a sh:NodeShape ;
 # Sensitivity, uncertainty or variability analysis: part of a model's record.
 form:SUVAnalysis a sh:NodeShape ;
     sh:targetClass pbpk:SUVAnalysis ;
+    sh:property [ sh:path schema:name ; sh:order 0 ; sh:name "Analysis name" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     rdfs:label "Sensitivity, uncertainty or variability analysis" ;
     sh:property [ sh:path pbpk:analysisType ; sh:order 1 ; sh:name "Analysis type" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:datatype xsd:string ; sh:severity sh:Warning ; sh:in ( "Sensitivity analysis" "Uncertainty analysis" "Variability analysis" "Combined analysis" "Other" ) ; sh:message "Choose from the list; other values are kept." ] ;
