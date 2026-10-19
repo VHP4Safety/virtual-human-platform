@@ -1,0 +1,14 @@
+name: ror
+title: Research Organization Registry (ROR)
+# Organisations without a ROR identifier are looked up by their name; only an organisation ROR chooses with
+# confidence, and whose names include the asked one, is taken (linkeddata/parsers/ror.py).
+enriches: organizations
+by: name
+identifier: https://ror.org/
+answer: https://api.ror.org/v2/organizations?affiliation={key}
+parser: ror
+
+# The rules of each kind of row: the arguments of rdfsolve's Rule.between.
+rules:
+  Organization:
+    - {predicate: "https://schema.org/sameAs", object: ror}

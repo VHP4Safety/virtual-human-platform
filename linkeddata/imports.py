@@ -154,16 +154,25 @@ def linked_terms() -> list[str]:
 
 def identified(spec: dict) -> list[tuple[str, str]]:
     """The records of the kind a source enriches, except those written on the platform, each with its key:
-    the end of its sameAs address after the source's identifier, when it matches the source's keys."""
+    the end of its sameAs address after the source's identifier, when it matches the source's keys; or, for a
+    source that finds records by name (by: name), the name of each record without such an address."""
     with database.session() as db:
         iris = list(db.scalars(select(Record.iri).where(
             Record.type == settings()["kinds"][spec["enriches"]], Record.part_of.is_(None), Record.removed_at.is_(None), Record.source != PLATFORM)))
     found = storage.read(iris)
     keys = []
     for iri in iris:
+        addresses = []
         for value in sorted(found.objects(URIRef(iri), SDO.sameAs)):
-            key = str(value).removeprefix(spec["identifier"])
-            if str(value).startswith(spec["identifier"]) and re.fullmatch(spec["keys"], key):
+            if str(value).startswith(spec["identifier"]):
+                addresses.append(str(value).removeprefix(spec["identifier"]))
+        if spec.get("by") == "name":
+            name = found.value(URIRef(iri), SDO.name)
+            if not addresses and name is not None:
+                keys.append((iri, str(name).strip()))
+            continue
+        for key in addresses:
+            if re.fullmatch(spec["keys"], key):
                 keys.append((iri, key))
                 break
     return keys
