@@ -9,6 +9,7 @@ forwards (301). A record without a page of its own is shown on a general record 
 """
 
 import json
+import re
 from datetime import datetime, timezone
 
 from flask import Blueprint, Response, current_app, g, redirect, render_template, request, url_for
@@ -174,6 +175,19 @@ def short_iri(iri: str) -> str:
                 return iri.removeprefix(namespace)
             return prefix + ":" + iri.removeprefix(namespace)
     return iri
+
+
+@blueprint.app_template_filter("issue_tracker")
+def issue_tracker(addresses) -> str:
+    """Where to ask about something on GitHub: an issue itself, or the issues of the first repository among the
+    addresses; empty when none is on GitHub."""
+    for address in addresses or []:
+        found = re.match(r"https://github\.com/([^/]+)/([^/#?]+)(/issues/\d+)?", str(address))
+        if found and found.group(3):
+            return found.group(0)
+        if found:
+            return f"https://github.com/{found.group(1)}/{found.group(2).removesuffix('.git')}/issues"
+    return ""
 
 
 @blueprint.app_template_filter("page_link")

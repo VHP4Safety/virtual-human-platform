@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "records/_contact.html" as contacting %}
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css') }}">
 <link rel="stylesheet" property="stylesheet" href="https://elixirtess.github.io/TeSS_widgets/css/tess-widget.css"/>
@@ -303,14 +304,9 @@
       <!-- third tab -->
       <div class="tab-pane" id="simple-tabpanel-2" role="tabpanel" aria-labelledby="simple-tab-3">
         <h2 class="pt-2">Contact</h2>
-        <ul>
-          {% for person in tool_details.maintainer|default([]) if person is mapping %}
-            <li>{% if person.email %}<a href="mailto:{{ person.email }}">{{ person.name }}</a>{% else %}{{ person.name }}{% endif %}</li>
-          {% endfor %}
-          {% for organization in tool_details.provider|default([]) if organization is mapping and organization.id|page_link != "/organizations/vhp4safety" %}
-            <li>{{ organization.name }}</li>
-          {% endfor %}
-        </ul>
+        {% set addresses = tool_details.isBasedOn|default([]) + tool_details.downloadUrl|default([]) + [tool_details.url or ""] %}
+        {{ contacting.contact(addresses|issue_tracker, "Open an issue on GitHub", tool_details.maintainer|default([]),
+                              [("Provided by", tool_details.provider|default([])), ("Developed by", tool_details.creator|default([]))]) }}
       </div>
     </div>
   </div>

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "records/_contact.html" as contacting %}
 {% block content %}
 <link rel="stylesheet" href="/static/css/tool.css" />
 <!-- Terminology Service Suite CSS -->
@@ -133,9 +134,10 @@
               {% endif %}
             </div>
 
-            <div class="mt-4 small text-muted">
-              <strong>Provider</strong><br>
-              {{ names(method.creator) }}
+            <div class="mt-4">
+              <h5>Contact</h5>
+              {{ contacting.contact(method.isBasedOn|default([])|issue_tracker, "Discuss this method on GitHub", method.creator|default([]),
+                                    [("Vendor", method.provider|default([]))]) }}
             </div>
           </div>
         </div>
