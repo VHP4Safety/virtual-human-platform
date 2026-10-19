@@ -27,11 +27,8 @@ def allowed() -> bool:
     """Editors see the changes, logged in or with a write token."""
     if current_editor() is not None:
         return True
-    header = request.headers.get("Authorization", "")
-    if header.startswith("Bearer "):
-        token = tokens.find(header.removeprefix("Bearer ").strip())
-        return token is not None and token.orcid in accounts.editors()
-    return False
+    token = tokens.find(tokens.bearer(request.headers.get("Authorization", "")))
+    return token is not None and token.orcid in accounts.editors()
 
 
 @blueprint.before_request

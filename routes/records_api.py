@@ -100,9 +100,9 @@ def kind_of(address: str | None, body: dict) -> str | None:
 
 def identity(kind: str):
     """The requester (a token, or a logged-in editor), when allowed to write records of *kind*."""
-    header = request.headers.get("Authorization", "")
-    if header.startswith("Bearer "):
-        return tokens.check(header.removeprefix("Bearer ").strip(), kind)
+    secret = tokens.bearer(request.headers.get("Authorization", ""))
+    if secret is not None:
+        return tokens.check(secret, kind)
     return account.editor_of_request(kind)
 
 
@@ -111,9 +111,9 @@ def reader(kind: str | None) -> bool:
     or with a write token. Reading needs no form token, as nothing is changed."""
     if kind is None:
         return False
-    header = request.headers.get("Authorization", "")
-    if header.startswith("Bearer "):
-        return tokens.check(header.removeprefix("Bearer ").strip(), kind) is not None
+    secret = tokens.bearer(request.headers.get("Authorization", ""))
+    if secret is not None:
+        return tokens.check(secret, kind) is not None
     editor = account.current_editor()
     return editor is not None and kind in editor.kinds
 
@@ -245,8 +245,7 @@ class Registry(Schema):
 def registered() -> None:
     """Registries answer editors only (logged in, or with a valid write token), as they are asked on their
     behalf."""
-    header = request.headers.get("Authorization", "")
-    token = tokens.find(header.removeprefix("Bearer ").strip()) if header.startswith("Bearer ") else None
+    token = tokens.find(tokens.bearer(request.headers.get("Authorization", "")))
     if account.current_editor() is None and token is None:
         abort(401, message="Login or write token needed.")
 

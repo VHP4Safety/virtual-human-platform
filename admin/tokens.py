@@ -40,8 +40,15 @@ def usable(token: Token | None) -> Token | None:
     return token
 
 
-def find(secret: str) -> Token | None:
+def bearer(header: str) -> str | None:
+    """The secret of an Authorization header ("Bearer <secret>"), or None."""
+    return header.removeprefix("Bearer ").strip() if header.startswith("Bearer ") else None
+
+
+def find(secret: str | None) -> Token | None:
     """The token of the secret when it is neither revoked nor expired."""
+    if not secret:
+        return None
     with database.session() as db:
         return usable(db.scalars(select(Token).where(Token.token_hash == hash_token(secret))).first())
 
