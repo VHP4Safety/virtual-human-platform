@@ -69,7 +69,8 @@ def approved_schema() -> dict:
     """The approved schema of the profile's classes, from the vocabularies and the profile."""
     config = settings()
     classes = sorted({str(kind) for kind in profile().objects(None, SH.targetClass)})
-    return patches.from_vocabulary(vocabularies(config), classes, MODEL_DIR / "profile.ttl").to_dict()
+    # The profile is a vocabulary too: it declares the platform's own terms, such as its PBPK ones.
+    return patches.from_vocabulary(vocabularies(config) + [MODEL_DIR / "profile.ttl"], classes, MODEL_DIR / "profile.ttl").to_dict()
 
 
 def write_schema() -> Path:

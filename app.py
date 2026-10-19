@@ -41,7 +41,6 @@ BIOSTUDIES_COLLECTION = "VHP4Safety"  # Replace with "EU-ToxRisk" to test
 BIOSTUDIES_COLLECTION_NAME = "VHP4Safety"  # Display name for the page
 ZENODO_COMMUNITY = "vhp4safety"  # zenodo community
 ZENODO_RECORD_TYPE = "dataset"  # only show datasets
-ZENODO_RECORD_TYPE_MODEL = "model"  # only show datasets
 
 # Non-glossary "stage" labels. The five Process Flow Step stages are resolved
 # from the glossary's records (see get_process_flow_steps); these legacy
@@ -537,76 +536,6 @@ def get_repository_data(
         return exc.args[0]
 
 
-@cache.memoize(timeout=CACHE_TIMEOUT)
-def _get_repository_model_cached(
-    search_query: str,
-    page: int = 1,
-    page_size: int = 18,
-    filters: list | None = None,
-    load_metadata: bool = True,
-) -> tuple[dict, dict]:
-    """Fetch from Zenodo. The extractors swallow network failures
-    and return {"error": "..."} dicts rather than raising, so we check the
-    result here and raise if BOTH halves errored -- otherwise cache.memoize
-    would store the dual-error tuple for CACHE_TIMEOUT and every subsequent
-    request would see the same stale failure. Partial success is cacheable
-    (the errored half stays until the timeout, but the working half remains
-    usable).
-    """
-    zen_extractor = ZenodoExtractor(
-        community=ZENODO_COMMUNITY, record_type=ZENODO_RECORD_TYPE_MODEL
-    )
-    if not filters:
-        # We currently do no filter Zenodo datasets.
-        if search_query:
-            zen_result = zen_extractor.search_records(
-                search_query, page=page, size=page_size, load_metadata=load_metadata
-            )
-        else:
-            # load metadata needed for is_rocrate filtering in template
-            zen_result = zen_extractor.list_records(
-                page=page,
-                size=page_size,
-                include_urls=True,
-                load_metadata=load_metadata,
-            )
-    else:
-        zen_result = {"hits": [], "total": 0, "error": None}
-
-    # Both extractors errored -> bypass the cache by raising. The wrapper
-    # catches and returns the same tuple to the caller (contract preserved),
-    # but the next request will retry instead of getting the cached failure.
-    if zen_result.get("error"):
-        raise _RepositoryFetchAllFailed(zen_result)
-
-    return zen_result
-
-
-def get_repository_model(
-    search_query: str,
-    page: int = 1,
-    page_size: int = 18,
-    filters: list | None = None,
-    load_metadata: bool = True,
-) -> tuple[dict, dict]:
-    """Return (bs_results, zen_result) from the two repositories.
-
-    Each half is the extractor's raw response: a {"hits", "total"} dict on
-    success or a {"error": "..."} dict on failure. A dual-failure result is
-    NOT cached so the next request retries; partial success is cached as-is.
-    """
-    try:
-        return _get_repository_model_cached(
-            search_query,
-            page=page,
-            page_size=page_size,
-            filters=filters,
-            load_metadata=load_metadata,
-        )
-    except _RepositoryFetchAllFailed as exc:
-        return exc.args[0]
-
-
 # Provide methods list to all templates for the Methods dropdown in the navbar
 @app.context_processor
 def inject_methods_menu():
@@ -971,91 +900,6 @@ def data_detail(dataid):
         page_title=f"{rec_title} — VHP4Safety data",
         meta_description=clip(rec_desc)
         or f"{rec_title}: a dataset in the VHP4Safety data collection.",
-    )
-
-
-################################################################################
-### Pages under 'Models'
-@app.route("/models_page")
-def models():
-    # Get query parameters for pagination and search
-    page, page_size = page_args(18)
-    search_query = request.args.get("query", "", type=str)
-
-    # Get filter parameters
-    filter_case_study = request.args.get("filter_case_study", "", type=str)
-    filter_regulatory_question = request.args.get(
-        "filter_regulatory_question", "", type=str
-    )
-    filter_flow_step = request.args.get("filter_flow_step", "", type=str)
-
-    # Build filter list (only include non-empty filters)
-    filters = []
-    if filter_case_study:
-        filters.append(("case_study", filter_case_study))
-    if filter_regulatory_question:
-        filters.append(("regulatory_question", filter_regulatory_question))
-    if filter_flow_step:
-        filters.append(("flow_step", filter_flow_step))
-
-    # Initialize extractor
-    extractor = BioStudiesExtractor(collection=BIOSTUDIES_COLLECTION)
-
-    # Fetch data based on search query or list all
-    if search_query:
-        results = extractor.search_studies(
-            search_query, page=page, page_size=page_size, filters=filters
-        )
-    else:
-        results = extractor.list_studies(
-            page=page, page_size=page_size, include_urls=True, filters=filters
-        )
-
-    # Extract studies and metadata
-    studies = results.get("hits", [])
-    total = results.get("total", 0)
-    error = results.get("error", None)
-
-    # Get filtering metadata (if filters were applied)
-    filters_applied = results.get("filters_applied", False)
-    hits_returned = results.get("hits_returned", len(studies))
-    pages_fetched = results.get("pages_fetched", 1)
-    page_size_met = results.get("page_size_met", True)
-
-    # Calculate pagination info
-    has_next = (page * page_size) < total
-    has_prev = page > 1
-
-    # Pass model data to template
-    return render_template(
-        "models_page.html",
-        page_title="Models — VHP4Safety",
-        meta_description=(
-            "Explore computational models in the VHP4Safety Virtual Human Platform "
-            "for animal-free safety assessment of chemicals and pharmaceuticals."
-        ),
-        studies=studies,
-        total=total,
-        page=page,
-        page_size=page_size,
-        search_query=search_query,
-        collection_name=BIOSTUDIES_COLLECTION_NAME,
-        collection=BIOSTUDIES_COLLECTION,
-        error=error,
-        has_next=has_next,
-        has_prev=has_prev,
-        filter_case_study=filter_case_study,
-        filter_regulatory_question=filter_regulatory_question,
-        filter_flow_step=filter_flow_step,
-        filters_applied=filters_applied,
-        hits_returned=hits_returned,
-        pages_fetched=pages_fetched,
-        page_size_met=page_size_met,
-        stage_explanations=get_stage_explanations(),
-        reg_question_explanations=get_reg_question_explanations(),
-        reg_question_cases={v["label"]: v.get("case", "") for v in get_reg_questions().values()},
-        reg_questions={v["label"]: k for k, v in get_reg_questions().items()},
-        case_studies=list(get_casestudies()),
     )
 
 
@@ -1437,39 +1281,6 @@ def tool_page(toolname):
         meta_description=clip(description)
         or f"{tool_name}, a tool in the VHP4Safety Virtual Human Platform.",
     )
-
-
-@app.route("/model/<modelid>")
-def model_page(modelid):
-    if not re.fullmatch(DATA_ID_PATTERN, modelid):
-        abort(404)
-    zen_results = get_repository_model(modelid)
-
-    # Extract datasets and metadata from Zenodo
-    datasets = zen_results.get("hits", [])
-    zen_total = zen_results.get("total", 0)
-    zen_error: str | None = zen_results.get("error", None)
-
-    studies, datasets = normalize_all([], datasets)
-    for s in studies:
-        scrub_draft(s)
-    for d in datasets:
-        scrub_draft(d)
-
-    if zen_total != 1:
-        return abort(404)
-    # reg-question records store the canonical reg_q_Xy key; map key -> label so
-    # the badges show the human-readable question.
-    reg_q_labels = {k: v["label"] for k, v in get_reg_questions().items()}
-    if studies:
-        return render_template(
-            "models/model.html", data=studies[0], reg_q_labels=reg_q_labels
-        )
-    elif datasets:
-        return render_template(
-            "models/model.html", data=datasets[0], reg_q_labels=reg_q_labels
-        )
-    return abort(404)
 
 
 ################################################################################

@@ -1,0 +1,45 @@
+name: models
+title: Zenodo community vhp4safety, models
+url: https://zenodo.org/api/records?communities=vhp4safety&type=model&size=25&sort=newest
+# From each model's RO-Crate zip, only these files are read (linkeddata/parsers/models.py).
+members: [ro-crate-metadata.json, pbpk-model-metadata.json]
+parser: models
+
+# The rows of people, organisations and publications are shaped as BioStudies' and take its rules.
+uses: [biostudies]
+rules:
+  Model:
+    - {predicate: a, value: "https://schema.org/SoftwareSourceCode"}
+    - {predicate: "https://schema.org/name", object: name}
+    - {predicate: "https://schema.org/description", object: description}
+    - {predicate: "https://schema.org/version", object: version}
+    - {predicate: "https://schema.org/creator", object: creators}
+    - {predicate: "https://schema.org/codeRepository", object: repositories}
+    - {predicate: "https://schema.org/programmingLanguage", object: languages}
+    - {predicate: "https://schema.org/runtimePlatform", object: runtime}
+    - {predicate: "https://schema.org/softwareRequirements", object: requirements}
+    - {predicate: "https://schema.org/license", object: license}
+    - {predicate: "https://schema.org/citation", object: references}
+    - {predicate: "https://schema.org/funding", object: grants}
+    - {predicate: "https://schema.org/about", object: topics}
+    - {predicate: "https://schema.org/keywords", object: keywords}
+    - {predicate: "https://schema.org/datePublished", object: published}
+    - {predicate: "https://schema.org/isBasedOn", object: page}
+    - {predicate: "https://schema.org/sameAs", object: doi}
+    - {predicate: "https://schema.org/applicationCategory", object: category}
+    - {predicate: "https://platform.vhp4safety.nl/model/v1/pbpk#intendedUse", object: purpose}
+    - {predicate: "https://platform.vhp4safety.nl/model/v1/pbpk#mathematicalRepresentation", object: representation}
+    - {predicate: "https://platform.vhp4safety.nl/model/v1/pbpk#hasBiologicalSystem", object: systems}
+    - {predicate: "https://platform.vhp4safety.nl/model/v1/pbpk#structuralCompartments", object: compartments}
+    - {predicate: "https://platform.vhp4safety.nl/model/v1/pbpk#modelStructureDescription", object: structure}
+  BiologicalSystem:
+    - {predicate: a, value: "https://platform.vhp4safety.nl/model/v1/pbpk#BiologicalSystem"}
+    - {predicate: "https://platform.vhp4safety.nl/model/v1/pbpk#species", object: species}
+  Compartment:
+    - {predicate: a, value: "https://platform.vhp4safety.nl/model/v1/pbpk#Compartment"}
+    - {predicate: "https://schema.org/name", object: name}
+  Grant:
+    - {predicate: a, value: "https://schema.org/MonetaryGrant"}
+    - {predicate: "https://schema.org/name", object: name}
+    - {predicate: "https://schema.org/identifier", object: identifier}
+    - {predicate: "https://schema.org/url", object: url}
