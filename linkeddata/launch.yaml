@@ -4,12 +4,13 @@ corrections:
   - record: casestudies/kidney
     why: Datasets are moved from tools to data.
     move:
-      - {field: tool, to: supply, values: ["Clinical data", "Cell viability data"]}
+      - {field: tool, to: supply, as: HowToSupply, values: ["Clinical data", "Cell viability data"]}
   - record: casestudies/parkinson
     why: Datasets are moved from tools to data.
     move:
       - field: tool
         to: supply
+        as: HowToSupply
         values: ["Rotenone transcriptomic data (LUHMES cells)", "Epidemiological data", "Dietary exposure dataset for pesticides",
                  "Environmental exposure dataset for pesticides", "Occupational exposure dataset for pesticides"]
   - record: casestudies/thyroid

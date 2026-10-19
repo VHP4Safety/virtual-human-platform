@@ -272,12 +272,14 @@ function processFlow(container, state, level) {
   return header;
 }
 
-// A page's tools and methods, then its data, by name: each a link to its record, or a name without one.
+// A page's tools and methods, then its data, by name: each a link to its record, or a name without one. Each use
+// is a part (HowToTool, HowToSupply) whose item is the record.
 function items(state, page) {
   const found = [];
   for (const name of ["tool", "supply"]) {
     const listed = [];
-    for (const value of all(page, name)) {
+    for (const part of all(page, name)) {
+      const value = part && typeof part === "object" && part.item !== undefined ? all(part, "item")[0] : part;
       if (value && typeof value === "object" && value["@id"]) {
         const record = state.nodes.get(value["@id"]) || value;
         listed.push({ name: first(record, "name") || value["@id"].split("/").pop(), address: value["@id"], field: name });

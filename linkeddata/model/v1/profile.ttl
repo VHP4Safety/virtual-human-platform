@@ -357,21 +357,33 @@ form:HowTo a sh:NodeShape ;
     sh:property [ sh:path schema:step ; sh:group form:parts ; sh:order 2 ; sh:name "Steps" ;
         sh:class schema:HowTo ; sh:node form:HowTo ; sh:nodeKind sh:IRI ;
         sh:description "Each a page under this page's address; a question's are its process flow steps." ] ;
-    sh:property [ sh:path schema:tool ; sh:group form:parts ; sh:order 3 ; sh:name "Tools and methods" ; sh:nodeKind sh:IRI ;
-        sh:or ( [ sh:class schema:SoftwareApplication ; rdfs:label "Tool" ] [ sh:class bioschemas_draft:LabProtocol ; rdfs:label "Method" ] ) ;
-        form:publishedAs schema:HowToTool ;
-        sh:message "Link a tool or method." ;
-        sh:description "Tools and methods the page uses; names and descriptions come from their records." ] ;
-    sh:property [ sh:path schema:supply ; sh:group form:parts ; sh:order 4 ; sh:name "Data" ; sh:nodeKind sh:IRI ; sh:class schema:Dataset ;
-        form:publishedAs schema:HowToSupply ;
-        sh:message "Link a dataset." ;
-        sh:description "Datasets the page uses; names and descriptions come from their records." ] ;
+    sh:property [ sh:path schema:tool ; sh:group form:parts ; sh:order 3 ; sh:name "Tools and methods" ;
+        sh:class schema:HowToTool ; sh:node form:HowToTool ; sh:nodeKind sh:BlankNode ;
+        sh:description "Each use of a tool or method on the page; names and descriptions come from their records." ] ;
+    sh:property [ sh:path schema:supply ; sh:group form:parts ; sh:order 4 ; sh:name "Data" ;
+        sh:class schema:HowToSupply ; sh:node form:HowToSupply ; sh:nodeKind sh:BlankNode ;
+        sh:description "Each use of a dataset on the page; names and descriptions come from their records." ] ;
     sh:property [ sh:path bioschemas:input ; sh:group form:parts ; sh:order 5 ; sh:name "Input" ;
         sh:class bioschemas:FormalParameter ; sh:node form:FormalParameter ; sh:nodeKind sh:BlankNode ;
         sh:description "What a step takes, such as an estimated daily intake." ] ;
     sh:property [ sh:path bioschemas:output ; sh:group form:parts ; sh:order 6 ; sh:name "Output" ;
         sh:class bioschemas:FormalParameter ; sh:node form:FormalParameter ; sh:nodeKind sh:BlankNode ;
         sh:description "What a step gives, such as an exposure calculation." ] .
+
+# A use of a tool or method on a workflow page; it is part of its case study's record.
+form:HowToTool a sh:NodeShape ;
+    sh:targetClass schema:HowToTool ;
+    rdfs:label "Tool or method used" ;
+    sh:property [ sh:path schema:item ; sh:order 1 ; sh:name "Tool or method" ; sh:minCount 1 ; sh:maxCount 1 ; sh:severity sh:Warning ; sh:nodeKind sh:IRI ;
+        sh:or ( [ sh:class schema:SoftwareApplication ; rdfs:label "Tool" ] [ sh:class bioschemas_draft:LabProtocol ; rdfs:label "Method" ] ) ;
+        sh:message "Link a tool or method." ] .
+
+# A use of a dataset on a workflow page; it is part of its case study's record.
+form:HowToSupply a sh:NodeShape ;
+    sh:targetClass schema:HowToSupply ;
+    rdfs:label "Data used" ;
+    sh:property [ sh:path schema:item ; sh:order 1 ; sh:name "Dataset" ; sh:minCount 1 ; sh:maxCount 1 ; sh:severity sh:Warning ; sh:nodeKind sh:IRI ; sh:class schema:Dataset ;
+        sh:message "Link a dataset." ] .
 
 # A workflow step (the value of a schema:step) is expected to state its input and output.
 form:WorkflowStep a sh:NodeShape ;

@@ -1,12 +1,12 @@
 """Corrections made once when the platform goes live, after the first import, as listed in launch.yaml.
-A correction moves a field's values to another field, or replaces text in a field's values, in a record and
-its parts. Each is saved as a revision named with its reason; the record then belongs to the platform and is
+A correction moves a field's values, or the parts that hold them, to another field (as another class, when given),
+or replaces text in a field's values, in a record and its parts. Each is saved as a revision named with its reason; the record then belongs to the platform and is
 left alone by imports. What the checks still find is printed for editors to fix."""
 
 from pathlib import Path
 
 import yaml
-from rdflib import Graph, Literal, URIRef
+from rdflib import RDF, BNode, Graph, Literal, URIRef
 
 from admin import writes
 from database import records
@@ -23,9 +23,13 @@ def corrected(found: Graph, correction: dict) -> int:
         field = URIRef(documents.expand(move["field"]))
         to = URIRef(documents.expand(move["to"]))
         for subject, value in list(found.subject_objects(field)):
-            if str(value) in move["values"]:
+            # A value, or a part that holds it, such as a tool's use whose item is that text.
+            held = [str(given) for predicate, given in found.predicate_objects(value) if predicate != RDF.type] if isinstance(value, BNode) else [str(value)]
+            if set(held) & set(move["values"]):
                 found.remove((subject, field, value))
                 found.add((subject, to, value))
+                if "as" in move:
+                    found.set((value, RDF.type, URIRef(documents.expand(move["as"]))))
                 changed += 1
     for replace in correction.get("replace") or []:
         field = URIRef(documents.expand(replace["field"]))

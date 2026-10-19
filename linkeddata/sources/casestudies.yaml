@@ -53,3 +53,9 @@ rules:
     - {predicate: "https://schema.org/name", object: title}
     - {predicate: "https://schema.org/text", object: text}
     - {predicate: "https://schema.org/position", object: position}
+  Tool:
+    - {predicate: a, value: "https://schema.org/HowToTool"}
+    - {predicate: "https://schema.org/item", object: item}
+  Supply:
+    - {predicate: a, value: "https://schema.org/HowToSupply"}
+    - {predicate: "https://schema.org/item", object: item}

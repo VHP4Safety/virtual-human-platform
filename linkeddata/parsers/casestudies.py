@@ -99,7 +99,8 @@ def fill(row: dict, node: dict, levels: list[dict], depth: int, path: list[str],
             continue
         used = item_link(entry) or entry.get("label")
         if present(used):
-            row.setdefault("supplies" if entry.get("type") == "data" else "tools", []).append(used)
+            part = {"@type": "Supply" if entry.get("type") == "data" else "Tool", "item": used}
+            row.setdefault("supplies" if entry.get("type") == "data" else "tools", []).append(part)
     return rows
 
 

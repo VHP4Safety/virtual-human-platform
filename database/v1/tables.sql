@@ -691,6 +691,24 @@ CREATE TABLE IF NOT EXISTS "schema_how_to__schema_tool" (
   FOREIGN KEY ("iri") REFERENCES "schema_how_to" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_how_to__schema_tool__record" ON "schema_how_to__schema_tool" ("record");
+CREATE TABLE IF NOT EXISTS "schema_how_to_supply" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_item" TEXT,
+  "schema_item__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_how_to_supply__record" ON "schema_how_to_supply" ("record");
+CREATE TABLE IF NOT EXISTS "schema_how_to_tool" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_item" TEXT,
+  "schema_item__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_how_to_tool__record" ON "schema_how_to_tool" ("record");
 CREATE TABLE IF NOT EXISTS "schema_image_object" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
