@@ -57,7 +57,7 @@ def node_outline(found: Graph, node, names: dict) -> dict:
              "kind": kind_of(of_class), "fields": [], "parts": []}
     for field in fields.of(of_class):
         values = list(found.objects(node, URIRef(field["iri"])))
-        if field["iri"] in HEADING or not values:
+        if field["iri"] in HEADING or not values or not field["shown"]:
             continue
         if field["part"]:
             values = in_order(found, values)

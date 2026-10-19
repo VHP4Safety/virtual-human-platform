@@ -140,6 +140,15 @@ CREATE TABLE IF NOT EXISTS "bioschemas_draft_study__schema_about" (
   FOREIGN KEY ("iri") REFERENCES "bioschemas_draft_study" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "bioschemas_draft_study__schema_about__record" ON "bioschemas_draft_study__schema_about" ("record");
+CREATE TABLE IF NOT EXISTS "bioschemas_draft_study__schema_creator" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "bioschemas_draft_study" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "bioschemas_draft_study__schema_creator__record" ON "bioschemas_draft_study__schema_creator" ("record");
 CREATE TABLE IF NOT EXISTS "bioschemas_draft_study__schema_has_part" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,

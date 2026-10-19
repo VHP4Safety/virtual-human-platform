@@ -20,7 +20,7 @@ def shape_of(kind: str) -> URIRef | None:
 def of(kind: str) -> list[dict]:
     """Each field of a class:
     - name (in JSON-LD), iri, label, description and message;
-    - single (sh:maxCount 1), required, and warning or recommended (sh:Warning);
+    - single (sh:maxCount 1), required, and warning or recommended (sh:Warning); shown, unless form:shown false;
     - values (sh:in), classes (sh:class, sh:or), datatype, address (web addresses), pattern and fixed
       (sh:hasValue); iris when the values are IRIs, not literals or nodes without an address;
     - part when the values are parts of the record (sh:node of a class without a kind, or sh:nodeKind
@@ -66,6 +66,7 @@ def of(kind: str) -> list[dict]:
                 "pattern": str(graph.value(field, SH.pattern) or ""),
                 "required": graph.value(field, SH.minCount) is not None and graph.value(field, SH.severity) != SH.Warning,
                 "warning": graph.value(field, SH.severity) == SH.Warning,
+                "shown": graph.value(field, URIRef(dict(graph.namespaces())["form"] + "shown")) != Literal(False),
                 "recommended": graph.value(field, SH.minCount) is not None and graph.value(field, SH.severity) == SH.Warning,
                 "message": str(graph.value(field, SH.message) or ""),
                 "fixed": fixed,

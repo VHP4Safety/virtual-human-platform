@@ -14,6 +14,7 @@
 # - sh:hasValue: a fixed value. dash:singleLine false: a longer text.
 # - sh:message: shown when a value is missing or does not fit.
 # - form:private true: kept off the pages and their data; editors see it.
+# - form:shown false: kept in the data, but not shown on the pages; editors see it.
 # - form:path, sh:order (on a node shape): the class's records are a kind, with pages at /<path>/<name>, in
 #   this order among the kinds.
 # - form:term: the JSON-LD name of a property of another vocabulary, such as the glossary's.
@@ -349,6 +350,9 @@ form:Study a sh:NodeShape ;
     form:path "casestudies" ; sh:order 3 ;
     sh:targetClass bioschemas_draft:Study ;
     rdfs:label "Case study" ;
+    sh:property [ sh:path schema:creator ; sh:group form:casestudy ; sh:order 0 ; sh:name "Authors" ; form:shown false ;
+        sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ;
+        sh:description "The people and organisations who wrote the case study (Bioschemas' creator); kept in its data, not shown on its page." ] ;
     sh:property [ sh:path schema:name ; sh:group form:casestudy ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
     sh:property [ sh:path schema:description ; sh:group form:casestudy ; sh:order 2 ; sh:name "Aim" ; sh:maxCount 1 ; sh:datatype xsd:string ;
         sh:description "In one sentence." ] ;
