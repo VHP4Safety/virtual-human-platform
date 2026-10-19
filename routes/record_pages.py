@@ -23,6 +23,7 @@ FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "appl
 FORMAT_NAMES = {".jsonld": "JSON-LD", ".ttl": "Turtle", ".nt": "N-Triples"}
 # A page in Markdown, for readers of plain text such as agents.
 MARKDOWN = ".md"
+OFFERED = ["text/html", *FORMATS.values(), "application/json", "text/markdown"]
 SERIALIZATIONS = {"text/turtle": "turtle", "application/n-triples": "nt"}
 
 blueprint = Blueprint("pages", __name__)
@@ -49,6 +50,16 @@ def pages() -> list[tuple[str, str]]:
     return records.with_pages()
 
 
+def not_acceptable() -> Response:
+    """The formats an address answers in, when none of those asked for (Accept) is one of them."""
+    lines = ["None of the formats asked for is given here. This address answers in:", "- text/html"]
+    for ending, media in FORMATS.items():
+        lines.append(f"- {media}, or with the ending {ending}")
+    lines.append("- application/json (its JSON-LD)")
+    lines.append(f"- text/markdown, or with the ending {MARKDOWN}")
+    return Response("\n".join(lines) + "\n", status=406, content_type="text/plain; charset=utf-8", headers={"Vary": "Accept"})
+
+
 def markdown_of(record: Record) -> Response:
     """A record's page in Markdown, with links to its data."""
     formats = {}
@@ -69,9 +80,12 @@ def negotiate():
         if path.endswith(ending):
             path = path.removesuffix(ending)
             media = ending_media
+    # A request without Accept takes the page; one asking only for other formats is told those given.
     if media is None:
-        media = request.accept_mimetypes.best_match(["text/html", *FORMATS.values(), "application/json", "text/markdown"], "text/html")
+        media = request.accept_mimetypes.best_match(OFFERED) if request.accept_mimetypes else "text/html"
     # A kind's page (/tools) lists its records as the API does, in the formats the API answers.
+    if path in settings()["kinds"] and media is None:
+        return not_acceptable()
     if path in settings()["kinds"] and media != "text/html":
         g.listing = path
         g.media = media
@@ -79,6 +93,8 @@ def negotiate():
     record = records.get(records.address(path))
     if record is None:
         return None
+    if media is None:
+        return not_acceptable()
     if record.moved_to:
         ending = request.path.removeprefix("/" + path) if request.path.startswith("/" + path) else ""
         target = page_link(record.moved_to) + ending
