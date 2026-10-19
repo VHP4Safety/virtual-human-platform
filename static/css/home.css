@@ -31,26 +31,6 @@
 }
 
 
-/* --- setting for dropdownmenu in homepage --- */
-.dropdown-menu.dropdown-scroll {
-  max-height: 200px;
-  overflow-y: scroll;
-  overflow-x: hidden;
-  white-space: normal;
-  word-wrap: break-word;
-  word-break: break-word;
-  width: 100%;      
-  min-width: 100%;   
-  max-width: none;  
-  padding: 5px 0;
-}
-
-.dropdown-menu.dropdown-scroll .dropdown-item {
-  white-space: normal;
-  line-height: 1.2;
-  padding: 6px 12px;
-}
-
 /* Mobile phone screens ≤ 375px */
 @media (max-width: 408px) {
 
