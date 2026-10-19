@@ -89,22 +89,29 @@ class Refused(Exception):
 
 
 def store(source: Source, found: list[tuple[list[dict], Graph]]) -> None:
-    """A source's records replace its earlier ones; records written on the platform or given by another
-    source are kept. An import of no records, or of less than half the earlier ones, is refused."""
+    """A source's records replace its earlier ones; records written on the platform are kept, and records
+    given by another source keep their values and take the new ones the profile allows (as an enrichment
+    does). An import of no records, or of less than half the earlier ones, is refused."""
     with database.session() as db, db.begin():
         before = db.scalar(select(func.count()).select_from(Record).where(Record.source == source.name, Record.part_of.is_(None)))
         if not found or (before >= 10 and len(found) < before / 2):
             raise Refused(f"{len(found)} records given, {before} before; the records are kept")
         written = set(db.scalars(select(Record.iri).where(Record.source != source.name)))
+        given = set(db.scalars(select(Record.iri).where(Record.source.not_in([source.name, PLATFORM]), Record.part_of.is_(None))))
         for iri in db.scalars(select(Record.iri).where(Record.source == source.name, Record.part_of.is_(None))):
             storage.delete(db, iri)
         db.execute(delete(Record).where(Record.source == source.name))
         kept = {}
         for listed, statements in found:
-            if listed[0]["iri"] not in written:
+            iri = listed[0]["iri"]
+            if iri in given:
+                merged = patches.merge(storage.read([iri]), statements, storage.profile())
+                if merged.added:
+                    storage.save(db, merged.graph, iri)
+            elif iri not in written:
                 for row in listed:
                     kept[row["iri"]] = row
-                storage.save(db, statements, listed[0]["iri"])
+                storage.save(db, statements, iri)
         if kept:
             db.execute(insert(Record), list(kept.values()))
         db.merge(source)
