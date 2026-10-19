@@ -42,6 +42,18 @@ def sources(of_class: str, path: str) -> list[dict]:
     return found
 
 
+def values(of_class: str, path: str) -> list[tuple[str, str]]:
+    """Each node of a class with each of its values of a field."""
+    selects = []
+    for source in sources(of_class, path):
+        found = select(source["table"].c.iri, source["value"])
+        if source["where"] is not None:
+            found = found.where(source["where"])
+        selects.append(found)
+    with database.engine().connect() as connection:
+        return list(connection.execute(selects[0] if len(selects) == 1 else union_all(*selects)).all())
+
+
 def naming(iri: str) -> set[tuple[str, str]]:
     """The nodes whose fields hold an address, each with the field's property: one select of each table
     and column that holds values, as rdfsolve's layout places them."""

@@ -19,5 +19,7 @@ rules:
   Vocabulary:
     - {predicate: a, value: "https://schema.org/DefinedTermSet"}
     - {predicate: "https://schema.org/name", object: name}
-    - {predicate: "https://schema.org/url", object: namespace}
+    - {predicate: "http://rdfs.org/ns/void#uriSpace", object: namespace}
+    - {predicate: "https://schema.org/url", object: home}
+    - {predicate: "https://schema.org/sameAs", object: same_as}
     - {predicate: "https://schema.org/description", object: description}

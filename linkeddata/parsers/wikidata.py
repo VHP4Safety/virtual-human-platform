@@ -1,6 +1,8 @@
 """Parser of a Wikidata API answer (wbgetentities, with English labels, descriptions and aliases), such as
 the technology readiness levels (a workaround, see linkeddata/parsers). The first item is the vocabulary,
-and the others are its terms. A term's first alias is its code; the others are other names."""
+and the others are its terms; as any Wikidata item has their namespace, the vocabulary has none. A term's
+first alias is its code; the others are other names. Labels are lower case on Wikidata, so the
+vocabulary's name starts with a capital."""
 
 import json
 
@@ -23,8 +25,10 @@ def parse(content: bytes) -> list[dict]:
     items = list(json.loads(content)["entities"].values())
     if not items:
         return []
-    vocabulary = "vocabularies/" + slug(english(items[0], "labels")[0])
-    rows = [{"@id": vocabulary, "@type": "Vocabulary", "name": english(items[0], "labels")[0], "namespace": link(ENTITY)}]
+    label = english(items[0], "labels")[0]
+    vocabulary = "vocabularies/" + slug(label)
+    rows = [{"@id": vocabulary, "@type": "Vocabulary", "name": label[:1].upper() + label[1:],
+             "home": link("https://www.wikidata.org/wiki/" + items[0]["id"]), "same_as": link(ENTITY + items[0]["id"])}]
     for description in english(items[0], "descriptions"):
         rows[0]["description"] = description
     for item in items[1:]:

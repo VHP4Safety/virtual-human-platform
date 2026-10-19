@@ -18,6 +18,7 @@
 @prefix schema: <https://schema.org/> .
 @prefix bioschemas_draft: <https://bioschemas.org/draft_terms/> .
 @prefix bioschemas: <https://bioschemas.org/terms/> .
+@prefix void: <http://rdfs.org/ns/void#> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -413,12 +414,16 @@ form:DefinedTerm a sh:NodeShape ;
         sh:description "The same term in another vocabulary, or another address, such as a license's text." ] ;
     sh:property [ sh:path schema:description ; sh:order 4 ; sh:name "Definition" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] .
 
-# A vocabulary or ontology, at /vocabularies/<name>; its terms' addresses start with its namespace.
+# A vocabulary or ontology, at /vocabularies/<name>; its terms name it (inDefinedTermSet), and their
+# addresses may share a namespace.
 form:DefinedTermSet a sh:NodeShape ;
     sh:targetClass schema:DefinedTermSet ;
     rdfs:label "Vocabulary" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
-    sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Namespace" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
-        sh:message "One namespace needed, such as http://purl.obolibrary.org/obo/NCBITaxon_." ;
-        sh:description "The start of its terms' addresses." ] ;
-    sh:property [ sh:path schema:description ; sh:order 3 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] .
+    sh:property [ sh:path void:uriSpace ; sh:order 2 ; sh:name "Namespace" ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:pattern "^https?://" ;
+        sh:message "One web address start, such as http://purl.obolibrary.org/obo/NCBITaxon_." ;
+        sh:description "The start of its terms' addresses, when they share one." ] ;
+    sh:property [ sh:path schema:url ; sh:order 3 ; sh:name "Home page" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+    sh:property [ sh:path schema:sameAs ; sh:order 4 ; sh:name "Same as" ; sh:nodeKind sh:IRI ;
+        sh:description "Its own address elsewhere, such as its Wikidata item." ] ;
+    sh:property [ sh:path schema:description ; sh:order 5 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] .

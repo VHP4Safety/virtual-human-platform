@@ -10,6 +10,9 @@ const TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 const TARGET = "http://www.w3.org/ns/shacl#targetClass";
 const NAME = "https://schema.org/name";
 const TERM = "https://schema.org/DefinedTerm";
+const IN_SET = "https://schema.org/inDefinedTermSet";
+// A vocabulary's namespace, as the API names it.
+const SPACE = "void:uriSpace";
 const STRING = "http://www.w3.org/2001/XMLSchema#string";
 const HTML = "http://www.w3.org/1999/02/22-rdf-syntax-ns#HTML";
 const editor = JSON.parse(document.getElementById("editor").textContent);
@@ -201,7 +204,7 @@ async function addVocabulary(platform, added) {
 
   async function keep(found, button) {
     for (const vocabulary of platform) {
-      if (vocabulary.url && vocabulary.url["@id"] === found.namespace) {
+      if (found.namespace && vocabulary[SPACE] === found.namespace) {
         shown.dialog.close();
         added(vocabulary["@id"]);
         return;
@@ -209,7 +212,10 @@ async function addVocabulary(platform, added) {
     }
     const working = busy(button, "Adding…", shown.body);
     try {
-      const body = { name: found.title, url: { "@id": found.namespace } };
+      const body = { name: found.title };
+      if (found.namespace) {
+        body[SPACE] = found.namespace;
+      }
       if (found.description) {
         body.description = found.description;
       }
@@ -275,7 +281,7 @@ function registerTerm(text, vocabulary, added) {
   const label = make("input", "form-control form-control-sm");
   label.value = text;
   const address = make("input", "form-control form-control-sm");
-  address.value = vocabulary.url ? vocabulary.url["@id"] : "";
+  address.value = vocabulary[SPACE] || "";
   const add = make("button", "btn btn-success btn-sm mt-2", "Register the term");
   add.type = "button";
   add.addEventListener("click", async function () {
@@ -461,11 +467,13 @@ class RecordLink extends Plugin {
           vocabularies.append(new Option(found.name, found["@id"], false, found["@id"] === selected));
         }
         vocabularies.append(new Option("Add a vocabulary…", ""));
-        // A held term is shown in the vocabulary whose namespace starts its address; a field of one
-        // vocabulary (sh:pattern ^<namespace>) shows only that one.
+        // A held term is shown in its own vocabulary, else in the one whose namespace starts its address; a
+        // field of one vocabulary (sh:pattern ^<namespace>) shows only that one.
         const only = template.pattern && template.pattern.startsWith("^") ? template.pattern.slice(1).replace(/\\(.)/g, "$1") : "";
+        const own = value ? store.getObjects(value.value, IN_SET, null).map(function (found) { return found.value; }) : [];
         const current = listed.find(function (found) {
-          return found.url && ((only && found.url["@id"] === only) || (value && value.value.startsWith(found.url["@id"])));
+          const space = found[SPACE];
+          return (only && space === only) || own.includes(found["@id"]) || (value && space && value.value.startsWith(space));
         });
         if (current && !selected) {
           vocabularies.value = current["@id"];
@@ -519,21 +527,26 @@ class RecordLink extends Plugin {
             chosen.dispatchEvent(new Event("change", { bubbles: true }));
             return;
           }
-          const within = vocabulary && vocabulary.url ? vocabulary.url["@id"] : "";
+          const space = vocabulary ? vocabulary[SPACE] || "" : "";
           const searching = make("div", "record-link-busy", "Searching…");
           options.append(searching);
           heldOptions(text);
           const seen = new Set();
           for (const of_class of Object.keys(classes)) {
-            const found = await api("GET", "/api/search?" + query({ text: text, class: of_class, within: within }));
+            // A term is searched in the chosen vocabulary.
+            const asked = { text: text, class: of_class };
+            if (of_class === TERM && vocabulary) {
+              asked.vocabulary = vocabulary["@id"];
+            }
+            const found = await api("GET", "/api/search?" + query(asked));
             for (const record of found["@graph"]) {
               seen.add(record["@id"]);
               option([make("span", "record-link-kind", classes[of_class]), record.name], function () { choose(record["@id"], record.name); });
             }
           }
           // Registry terms not on the platform yet; registered with label, definition and code when chosen.
-          if (classes[TERM] && within) {
-            const matched = await api("GET", "/api/registries/terms?" + query({ text: text, namespace: within }));
+          if (classes[TERM] && space) {
+            const matched = await api("GET", "/api/registries/terms?" + query({ text: text, namespace: space }));
             for (const found of matched.terms) {
               if (seen.has(found["@id"])) {
                 continue;

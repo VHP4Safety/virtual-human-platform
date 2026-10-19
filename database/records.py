@@ -47,9 +47,10 @@ def moved(kind: str) -> set[str]:
         return {iri.removeprefix(prefix) for iri in db.scalars(statement)}
 
 
-def search(text: str, classes: list[str], within: str = "", parts: bool = True, limit: int | None = 20) -> list[Record]:
+def search(text: str, classes: list[str], within: str = "", parts: bool = True, limit: int | None = 20, among=None) -> list[Record]:
     """The records of these classes or their subclasses (parts too, unless *parts* is false) whose name or
-    address has *text* and whose address starts with *within*, such as a vocabulary namespace; by name."""
+    address has *text*, whose address starts with *within*, such as a vocabulary namespace, and that are
+    *among* a select of addresses, such as a vocabulary's terms; by name."""
     every = set(classes)
     for of_class in classes:
         every |= {str(sub) for sub in hierarchy().transitive_subjects(RDFS.subClassOf, URIRef(of_class))}
@@ -58,6 +59,8 @@ def search(text: str, classes: list[str], within: str = "", parts: bool = True, 
         statement = statement.where(func.lower(Record.name).contains(text.lower()) | Record.iri.contains(text))
     if within:
         statement = statement.where(Record.iri.startswith(within))
+    if among is not None:
+        statement = statement.where(Record.iri.in_(among))
     if not parts:
         statement = statement.where(Record.part_of.is_(None))
     with database.session() as db:

@@ -49,6 +49,7 @@ prefixes:
   bioschemas_draft: https://bioschemas.org/draft_terms/
   bioschemas: https://bioschemas.org/terms/
   dct: http://purl.org/dc/terms/
+  void: http://rdfs.org/ns/void#
 
 # JSON-LD names of the glossary's properties.
 terms:

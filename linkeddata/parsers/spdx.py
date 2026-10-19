@@ -12,7 +12,7 @@ VOCABULARY = "vocabularies/spdx-license-list"
 
 def parse(content: bytes) -> list[dict]:
     found = json.loads(content)
-    rows = [{"@id": VOCABULARY, "@type": "Vocabulary", "name": "SPDX License List", "namespace": link(LICENSES),
+    rows = [{"@id": VOCABULARY, "@type": "Vocabulary", "name": "SPDX License List", "namespace": LICENSES, "home": link(LICENSES),
              "description": f"The licences of the Software Package Data Exchange, version {found['licenseListVersion']}."}]
     for licence in found["licenses"]:
         row = {"@id": LICENSES + licence["licenseId"], "@type": "Term", "label": licence["name"], "code": licence["licenseId"], "vocabulary": link(VOCABULARY)}

@@ -7,6 +7,8 @@ import re
 
 from linkeddata.parsers import link, present
 
+OLS = "https://www.ebi.ac.uk/ols4/ontologies/"
+
 
 def namespace_of(iri: str, ontology: dict) -> str:
     """A term's namespace: the base address of its ontology that it starts with, or else its address
@@ -36,7 +38,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         vocabulary = "vocabularies/" + term["ontology_name"]
         if vocabulary not in rows:
             rows[vocabulary] = {"@id": vocabulary, "@type": "Vocabulary", "name": ontology.get("title") or term["ontology_name"],
-                                "namespace": link(namespace_of(iri, ontology))}
+                                "namespace": namespace_of(iri, ontology), "home": link(OLS + term["ontology_name"])}
             if present(ontology.get("description")):
                 rows[vocabulary]["description"] = ontology["description"]
         row = {"@id": iri, "@type": "Term", "code": term.get("obo_id") or term.get("short_form"), "vocabulary": link(vocabulary)}

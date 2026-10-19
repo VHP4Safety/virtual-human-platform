@@ -3,12 +3,12 @@ shacl-form builds forms from (the profile, the vocabularies' class hierarchy, an
 
 from rdflib import RDF, RDFS, XSD, BNode, Graph, Literal, URIRef
 from rdflib.collection import Collection
-from rdflib.namespace import SH
+from rdflib.namespace import SDO, SH
 from sqlalchemy import func, select
 
 import database
 from database.tables import PLATFORM, Note, Record
-from linkeddata import documents, fields, storage
+from linkeddata import catalogue, documents, fields, storage
 from linkeddata.model import hierarchy, profile, settings, terms
 
 
@@ -64,7 +64,8 @@ def root_shape(kind: str) -> str:
 
 
 def form_graph() -> Graph:
-    """The profile, the class hierarchy, and every record and listed term (sh:in) with its name. An sh:or of
+    """The profile, the class hierarchy, every record and listed term (sh:in) with its name, and each term's
+    vocabulary. An sh:or of
     classes gets two more choices, a text and an address, so the form shows a bare name or an address that is
     no record; neither takes a value (an empty sh:in), so the form flags it with the field's message."""
     found = Graph() + profile() + hierarchy()
@@ -89,6 +90,9 @@ def form_graph() -> Graph:
         for iri, kind, name in db.execute(select(Record.iri, Record.type, Record.name).where(Record.removed_at.is_(None), Record.moved_to.is_(None))):
             found.add((URIRef(iri), RDF.type, URIRef(kind)))
             found.add((URIRef(iri), RDFS.label, Literal(name or iri)))
+    # Each term's vocabulary, so a term is shown in its own.
+    for iri, vocabulary in catalogue.values(str(SDO.DefinedTerm), str(SDO.inDefinedTermSet)):
+        found.add((URIRef(iri), SDO.inDefinedTermSet, URIRef(vocabulary)))
     listed = []
     for collection in profile().objects(None, SH["in"]):
         for value in Collection(profile(), collection):

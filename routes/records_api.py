@@ -205,6 +205,7 @@ class Search(Schema):
     text = fields.String(load_default="", metadata={"description": "Text in the name or address."})
     of_class = fields.List(fields.Url(metadata={"format": "iri"}), data_key="class", load_default=list, metadata={"description": "Class IRIs of the records or terms; subclasses included."})
     within = fields.String(load_default="", metadata={"description": "The address start, such as a vocabulary namespace."})
+    vocabulary = fields.Url(load_default="", metadata={"format": "iri", "description": "The vocabulary whose terms are searched."})
     limit = fields.Integer(load_default=20, validate=lambda number: 1 <= number <= 200)
 
 
@@ -257,7 +258,8 @@ def registry_terms(given):
 def search(given):
     """Records, parts and vocabulary terms found by name or address, in JSON-LD: address, class and name."""
     found = []
-    for record in records.search(given["text"], given["of_class"] or list(settings()["kinds"].values()), given["within"], limit=given["limit"]):
+    among = catalogue.holders(str(SDO.DefinedTerm), str(SDO.inDefinedTermSet), [given["vocabulary"]]) if given["vocabulary"] else None
+    for record in records.search(given["text"], given["of_class"] or list(settings()["kinds"].values()), given["within"], limit=given["limit"], among=among):
         found.append({"@id": record.iri, "@type": documents.term(record.type), "name": record.name or record.iri})
     return jsonify({"@context": documents.context(settings()), "@graph": found})
 

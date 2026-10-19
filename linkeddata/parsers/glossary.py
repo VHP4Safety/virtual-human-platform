@@ -12,7 +12,8 @@ VOCABULARY = "vocabularies/vhp4safety-glossary"
 
 def parse(content: bytes) -> list[dict]:
     graph = Graph().parse(data=content, format="turtle")
-    rows = [{"@id": VOCABULARY, "@type": "Vocabulary", "name": "VHP4Safety glossary", "namespace": link(NAMESPACE)}]
+    rows = [{"@id": VOCABULARY, "@type": "Vocabulary", "name": "VHP4Safety glossary", "namespace": NAMESPACE,
+             "home": link(NAMESPACE.rstrip("#"))}]
     for term in sorted(graph.subjects(RDF.type, OWL.Class)):
         if not str(term).startswith(NAMESPACE):
             continue

@@ -260,6 +260,8 @@ CREATE TABLE IF NOT EXISTS "schema_defined_term_set" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
   "type" TEXT,
+  "void_uri_space" TEXT,
+  "void_uri_space__term" TEXT,
   "schema_description" TEXT,
   "schema_description__term" TEXT,
   "schema_name" TEXT,
@@ -269,6 +271,15 @@ CREATE TABLE IF NOT EXISTS "schema_defined_term_set" (
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_defined_term_set__record" ON "schema_defined_term_set" ("record");
+CREATE TABLE IF NOT EXISTS "schema_defined_term_set__schema_same_as" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_defined_term_set" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_defined_term_set__schema_same_as__record" ON "schema_defined_term_set__schema_same_as" ("record");
 CREATE TABLE IF NOT EXISTS "schema_how_to_section" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
