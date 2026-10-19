@@ -1593,38 +1593,22 @@ def method_page(methodid):
 
 @app.route("/tools/<toolname>")
 def tool_page(toolname):
-    # get the tools metadata:
-    try:
-        catalogue = get_json_dict(SERVICES_URL)
-        tools = linked_tools(catalogue)
-        # Geting the service_list.json in the dictionary format.
-        # Converting the dictionary to a list object.
-    except Exception:
-        app.logger.exception("Tool page failed")
-        return "Error processing service data", 500
-
-    # Map toolname to the correct JSON file in the new tool folder
-    if toolname not in tools:
+    """Render a tool page (templates/tools/tool.html) from its record, with the keys of
+    templates/tools/tool.context.jsonld."""
+    record = records.get(records.address(f"tools/{toolname}"))
+    if record is None:
         abort(404)
-
-    # Tools added on the platform are not in the catalogue; their record page shows them
-    if toolname not in catalogue:
-        abort(404)
-
-    # get the tools metadata:
-    tool_details = get_service_detail(toolname)
-    if not tool_details:
-        return "Error fetching service details", 503
-
-    tool_meta = tools[toolname]
-    tool_name = tool_meta.get("service") or tool_meta.get("title") or toolname
+    tool = documents.view(record, "tools/tool")
+    tool_name = record.name or toolname
+    description = tool.get("description")
+    if isinstance(description, dict):
+        description = description.get("@value")
     return render_template(
         "tools/tool.html",
-        tool_json=tool_meta,
-        tool_details=tool_details,
+        tool_details=tool,
         process_flow_steps=get_process_flow_steps(),
         page_title=f"{tool_name} — VHP4Safety",
-        meta_description=clip(tool_meta.get("description"))
+        meta_description=clip(description)
         or f"{tool_name}, a tool in the VHP4Safety Virtual Human Platform.",
     )
 
