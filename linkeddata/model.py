@@ -7,8 +7,8 @@ from pathlib import Path
 
 import requests
 import yaml
-from rdflib import RDF, Graph, URIRef
-from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SH
+from rdflib import RDF, Graph, Namespace, URIRef
+from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SH, VOID
 from rdfsolve.client.sql_tables import layout
 from rdfsolve.schema_models import MinedSchema
 
@@ -21,9 +21,37 @@ MODEL_DIR = Path(__file__).parent / "model" / RELEASE
 TABLES = Path(__file__).parent.parent / "database" / RELEASE / "tables.sql"
 
 
+FORM = Namespace("https://platform.vhp4safety.nl/model/v1/form#")
+SOURCES_DIR = Path(__file__).parent / "sources"
+
+
 @cache
 def settings() -> dict:
-    return yaml.safe_load((MODEL_DIR / "model.yaml").read_text(encoding="utf-8"))
+    """The model's settings, as its profile states them: its title and the address space of its records (the
+    ontology's label and void:uriSpace), the files it is built from (owl:imports, each with form:file and
+    form:sha256) and those its sources read (pinned in sources/<name>.yaml), its kinds of records (node shapes
+    with form:path, in sh:order), the prefixes of its JSON-LD (sh:declare) and the JSON-LD names of other
+    vocabularies' properties (form:term)."""
+    graph = profile()
+    header = graph.value(None, RDF.type, OWL.Ontology)
+    files = {}
+    for imported in graph.objects(header, OWL.imports):
+        files[str(graph.value(imported, FORM.file))] = {"url": str(imported), "sha256": str(graph.value(imported, FORM.sha256))}
+    for path in sorted(SOURCES_DIR.glob("*.yaml")):
+        spec = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if "pinned" in spec:
+            files[spec["vocabulary"]] = {"url": spec["pinned"]["url"], "sha256": str(spec["pinned"]["sha256"])}
+    kinds = []
+    for shape, path in graph.subject_objects(FORM.path):
+        kinds.append((int(graph.value(shape, SH.order) or 0), str(path), str(graph.value(shape, SH.targetClass))))
+    prefixes = {}
+    for declared in graph.objects(header, SH.declare):
+        prefixes[str(graph.value(declared, SH.prefix))] = str(graph.value(declared, SH.namespace))
+    terms = {}
+    for iri, name in graph.subject_objects(FORM["term"]):
+        terms[str(name)] = str(iri)
+    return {"title": str(graph.value(header, RDFS.label)), "base": str(graph.value(header, VOID.uriSpace)), "vocabularies": files,
+            "kinds": {path: of_class for _, path, of_class in sorted(kinds)}, "prefixes": prefixes, "terms": dict(sorted(terms.items()))}
 
 
 def vocabularies(config: dict) -> list[Path]:
@@ -40,7 +68,7 @@ def vocabularies(config: dict) -> list[Path]:
 
 
 def pinned_problems() -> list[str]:
-    """The vocabulary files that are missing or do not match their SHA-256 in model.yaml."""
+    """The vocabulary files that are missing or do not match the SHA-256 the profile or their source pins."""
     problems = []
     for name, pinned in settings()["vocabularies"].items():
         path = MODEL_DIR / "vocabularies" / name
@@ -49,7 +77,7 @@ def pinned_problems() -> list[str]:
             continue
         found = hashlib.sha256(path.read_bytes()).hexdigest()
         if found != pinned.get("sha256"):
-            problems.append(f"{path} has SHA-256 {found}, where model.yaml pins {pinned.get('sha256')}.")
+            problems.append(f"{path} has SHA-256 {found}, where it is pinned as {pinned.get('sha256')}.")
     return problems
 
 

@@ -14,6 +14,9 @@
 # - sh:hasValue: a fixed value. dash:singleLine false: a longer text.
 # - sh:message: shown when a value is missing or does not fit.
 # - form:private true: kept off the pages and their data; editors see it.
+# - form:path, sh:order (on a node shape): the class's records are a kind, with pages at /<path>/<name>, in
+#   this order among the kinds.
+# - form:term: the JSON-LD name of a property of another vocabulary, such as the glossary's.
 # - form:publishedAs: a class its values also have on the pages and their data, as schema.org expects (a
 #   licence is a CreativeWork); the records keep their own.
 # The required fields of tools are the minimum of the Bioschemas ComputationalTool profile.
@@ -31,7 +34,32 @@
 @prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
 @prefix glossary: <https://vhp4safety.github.io/glossary#> .
 @prefix wd: <http://www.wikidata.org/entity/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix pbpk: <https://platform.vhp4safety.nl/model/v1/pbpk#> .
+
+# The model: its name, the address space of its records, the vocabularies it is built from (each pinned to a
+# file with its SHA-256), and the prefixes of its JSON-LD (sh:declare).
+<https://platform.vhp4safety.nl/model/v1> a owl:Ontology ;
+    rdfs:label "VHP4Safety Virtual Human Platform" ;
+    void:uriSpace "https://platform.vhp4safety.nl/" ;
+    owl:imports <https://schema.org/version/30.1/schemaorg-current-https.ttl>,
+        <https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/e5c27dbd2b1269a79fbe8f26e0173a9dc390aff0/pages/_types/bioschemas_draft_types.jsonld>,
+        <https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/e5c27dbd2b1269a79fbe8f26e0173a9dc390aff0/pages/_types/bioschemas_types.jsonld>,
+        <https://raw.githubusercontent.com/VHP4Safety/glossary/34f9389a7f1f0073b67161e1ca6e6a6cf95c7371/glossary.owl> ;
+    sh:declare [ sh:prefix "schema" ; sh:namespace "https://schema.org/"^^xsd:anyURI ],
+        [ sh:prefix "bioschemas_draft" ; sh:namespace "https://bioschemas.org/draft_terms/"^^xsd:anyURI ],
+        [ sh:prefix "bioschemas" ; sh:namespace "https://bioschemas.org/terms/"^^xsd:anyURI ],
+        [ sh:prefix "dct" ; sh:namespace "http://purl.org/dc/terms/"^^xsd:anyURI ],
+        [ sh:prefix "void" ; sh:namespace "http://rdfs.org/ns/void#"^^xsd:anyURI ],
+        [ sh:prefix "pbpk" ; sh:namespace "https://platform.vhp4safety.nl/model/v1/pbpk#"^^xsd:anyURI ] .
+<https://schema.org/version/30.1/schemaorg-current-https.ttl> form:file "schemaorg-30.1.ttl" ; form:sha256 "7f15ca89398c4f235f478a4b3b8d1f975d63c5a860b77c8a8fce01f791b7ae2f" .
+<https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/e5c27dbd2b1269a79fbe8f26e0173a9dc390aff0/pages/_types/bioschemas_draft_types.jsonld> form:file "bioschemas-draft-types-e5c27db.jsonld" ; form:sha256 "420b235d76aaafa92e72a6ed730457222166b455c7ff0df5f4365dd2dd887de8" .
+<https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/e5c27dbd2b1269a79fbe8f26e0173a9dc390aff0/pages/_types/bioschemas_types.jsonld> form:file "bioschemas-types-e5c27db.jsonld" ; form:sha256 "be2561e882eb0999d4a6b5d9baec4d848c6413c32108aff88b77f2ca39c6f9c4" .
+<https://raw.githubusercontent.com/VHP4Safety/glossary/34f9389a7f1f0073b67161e1ca6e6a6cf95c7371/glossary.owl> form:file "vhp4safety-glossary-34f9389.ttl" ; form:sha256 "88e9c00b8de4c2c69d9b3120525530dbff9536f0e3cebcef7a41cbec1745feff" .
+
+# The JSON-LD names of the glossary's properties that records use.
+<https://vhp4safety.github.io/glossary#VHP0000152> form:term "processFlowStep" .
+<https://vhp4safety.github.io/glossary#VHP0000151> form:term "regulatoryQuestion" .
 
 form:about a sh:PropertyGroup ; sh:order 1 ; rdfs:label "About the tool" .
 form:method a sh:PropertyGroup ; sh:order 1 ; rdfs:label "About the method" .
@@ -49,6 +77,7 @@ form:PlainText a sh:NodeShape ; rdfs:label "Text" ; sh:datatype xsd:string ; sh:
 form:HTMLText a sh:NodeShape ; rdfs:label "HTML" ; sh:datatype rdf:HTML .
 
 form:SoftwareApplication a sh:NodeShape ;
+    form:path "tools" ; sh:order 1 ;
     sh:targetClass schema:SoftwareApplication ;
     rdfs:label "Tool" ;
     rdfs:comment "Tools state their Bioschemas profile (ComputationalTool)." ;
@@ -150,6 +179,7 @@ form:SoftwareApplication a sh:NodeShape ;
         sh:message "ComputationalTool 1.0-RELEASE expected." ] .
 
 form:Organization a sh:NodeShape ;
+    form:path "organizations" ; sh:order 6 ;
     sh:targetClass schema:Organization ;
     rdfs:label "Organisation" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
@@ -191,6 +221,7 @@ form:OrganizationRole a sh:NodeShape ;
 # A grant, at /grants/<name>, with its funder, number and amount; the records that name it (schema:funding)
 # are what it funds.
 form:MonetaryGrant a sh:NodeShape ;
+    form:path "grants" ; sh:order 11 ;
     sh:targetClass schema:MonetaryGrant ;
     rdfs:label "Grant" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
@@ -213,6 +244,7 @@ form:MonetaryAmount a sh:NodeShape ;
 # The platform, at its own address: a catalogue of the records, with its publisher, licence and kinds of
 # records. Its VoID description (/.well-known/void, and the platform's address in Turtle) is made from it.
 form:DataCatalog a sh:NodeShape ;
+    form:path "platform" ; sh:order 12 ;
     sh:targetClass schema:DataCatalog ;
     rdfs:label "Platform" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
@@ -240,6 +272,7 @@ form:ClassPartition a sh:NodeShape ;
         sh:description "Its place among the kinds on the home page; 1 is first." ] .
 
 form:Person a sh:NodeShape ;
+    form:path "people" ; sh:order 7 ;
     sh:targetClass schema:Person ;
     rdfs:label "Person" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
@@ -249,6 +282,7 @@ form:Person a sh:NodeShape ;
     sh:property [ sh:path schema:affiliation ; sh:order 4 ; sh:name "Affiliation" ; sh:class schema:Organization ] .
 
 form:LabProtocol a sh:NodeShape ;
+    form:path "methods" ; sh:order 2 ;
     sh:targetClass bioschemas_draft:LabProtocol ;
     rdfs:label "Method" ;
     rdfs:comment "Methods state their Bioschemas profile (LabProtocol)." ;
@@ -312,6 +346,7 @@ form:LabProtocol a sh:NodeShape ;
 
 # A case study, at /casestudies/<case>, with its regulatory questions (Bioschemas Study, a CreativeWork).
 form:Study a sh:NodeShape ;
+    form:path "casestudies" ; sh:order 3 ;
     sh:targetClass bioschemas_draft:Study ;
     rdfs:label "Case study" ;
     sh:property [ sh:path schema:name ; sh:group form:casestudy ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
@@ -434,6 +469,7 @@ form:Periodical a sh:NodeShape ;
 
 # A publication, at /publications/<DOI>, with the DOI's address in sameAs.
 form:ScholarlyArticle a sh:NodeShape ;
+    form:path "publications" ; sh:order 4 ;
     sh:targetClass schema:ScholarlyArticle ;
     rdfs:label "Publication" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ; sh:or ( form:PlainText form:HTMLText ) ] ;
@@ -453,6 +489,7 @@ form:ScholarlyArticle a sh:NodeShape ;
 # A page of the platform, with its text in sections; or a page elsewhere, such as a tool's guide, as part
 # of the tool's record.
 form:WebPage a sh:NodeShape ;
+    form:path "pages" ; sh:order 8 ;
     sh:targetClass schema:WebPage ;
     rdfs:label "Page" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
@@ -482,6 +519,7 @@ form:VideoObject a sh:NodeShape ;
 
 # A dataset, at /data/<identifier>, based on a BioStudies study or a Zenodo record (schema:isBasedOn).
 form:Dataset a sh:NodeShape ;
+    form:path "data" ; sh:order 5 ;
     sh:targetClass schema:Dataset ;
     rdfs:label "Dataset" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One title needed." ] ;
@@ -516,6 +554,7 @@ form:Dataset a sh:NodeShape ;
 # A vocabulary or ontology term, at its own address, with its label and vocabulary, so that records can
 # be about it.
 form:DefinedTerm a sh:NodeShape ;
+    form:path "terms" ; sh:order 9 ;
     sh:targetClass schema:DefinedTerm ;
     rdfs:label "Term" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Label" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One label needed." ] ;
@@ -532,6 +571,7 @@ form:DefinedTerm a sh:NodeShape ;
 # A vocabulary or ontology, at /vocabularies/<name>; its terms name it (inDefinedTermSet), and their
 # addresses may share a namespace.
 form:DefinedTermSet a sh:NodeShape ;
+    form:path "vocabularies" ; sh:order 10 ;
     sh:targetClass schema:DefinedTermSet ;
     rdfs:label "Vocabulary" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
@@ -676,6 +716,7 @@ pbpk:SUVAnalysis a rdfs:Class ; rdfs:label "Sensitivity, uncertainty or variabil
 # A computational model, at /models/<name>, with the fields of ROBOT's PBPK form and its links on the platform;
 # its RO-Crate is made from it (/models/<name>/ro-crate-metadata.json).
 form:SoftwareSourceCode a sh:NodeShape ;
+    form:path "models" ; sh:order 13 ;
     sh:targetClass schema:SoftwareSourceCode ;
     rdfs:label "Model" ;
     sh:property [ sh:path schema:name ; sh:group form:modelGeneral ; sh:order 1 ; sh:name "Model name" ; sh:minCount 1 ; sh:maxCount 1 ;
