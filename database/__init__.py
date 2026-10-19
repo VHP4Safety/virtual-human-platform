@@ -5,11 +5,12 @@ tables (tables.py) are made on first use.
 import os
 import sqlite3
 import threading
-from contextlib import closing
+from contextlib import closing, contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path
 
-from sqlalchemy import Engine, create_engine, event
+from sqlalchemy import Engine, StaticPool, create_engine, event
 from sqlalchemy.orm import Session
 
 from database.tables import Base
@@ -19,6 +20,8 @@ STATE_DIR = Path(os.environ.get("PLATFORM_STATE", "instance"))
 _engines = {}
 # The engine is made once, by the first request of any thread.
 _making = threading.Lock()
+# An in-memory copy used instead of the database, such as for a page preview.
+_copy: ContextVar[Engine | None] = ContextVar("copy", default=None)
 
 
 def columns(connection: sqlite3.Connection) -> dict[str, list[str]]:
@@ -49,6 +52,8 @@ def differences(path: Path) -> list[str]:
 def engine() -> Engine:
     """The database engine; the file and tables are made on first use. A database whose tables differ from
     the release's is refused."""
+    if _copy.get() is not None:
+        return _copy.get()
     path = STATE_DIR / "platform.sqlite"
     with _making:
         if path not in _engines:
@@ -87,6 +92,23 @@ def backup(keep: int = 14) -> Path:
     for old in sorted(folder.glob("platform-*.sqlite"))[:-keep]:
         old.unlink()
     return target
+
+
+@contextmanager
+def copied():
+    """Within this context, an in-memory copy of the database is used, and dropped at its end."""
+    engine()
+    copy = sqlite3.connect(":memory:", check_same_thread=False)
+    with closing(sqlite3.connect(STATE_DIR / "platform.sqlite")) as source:
+        source.backup(copy)
+    made = create_engine("sqlite://", creator=lambda: copy, poolclass=StaticPool)
+    token = _copy.set(made)
+    try:
+        yield
+    finally:
+        _copy.reset(token)
+        made.dispose()
+        copy.close()
 
 
 def session() -> Session:

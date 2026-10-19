@@ -16,7 +16,7 @@ A record is written in JSON-LD, with the platform's context names ("name", "url"
 record that does not fit is refused, with each field's problems. Writes need a write token, or an editor's
 login. A record's ETag is its version: a write that sends it in If-Match is refused when the record has
 changed since. With preview=true, nothing is saved; the statements before and after, and each field's
-problems, are given back.
+problems, are given back; with page=true too, the record's page as saved, in HTML.
 """
 
 import json
@@ -24,7 +24,7 @@ import re
 from functools import cache
 from urllib.parse import quote
 
-from flask import Response, jsonify, redirect, request, url_for
+from flask import Response, current_app, jsonify, redirect, request, url_for
 from flask_smorest import Api, Blueprint, abort
 from marshmallow import INCLUDE, Schema, fields
 from rdflib import RDF, Graph, Literal, URIRef
@@ -53,6 +53,7 @@ class Record(Schema.from_dict({"@type": fields.Raw(metadata={"description": "The
 
 class Writing(Schema):
     preview = fields.Boolean(load_default=False, metadata={"description": "Nothing is saved; the changes are shown."})
+    page = fields.Boolean(load_default=False, metadata={"description": "With preview, the page as saved, in HTML."})
 
 
 class Removal(Schema):
@@ -133,7 +134,28 @@ def whole(record) -> None:
         abort(409, message=f"Part of {record.part_of}; written with it.")
 
 
-def store(address: str, body: dict, preview: bool = False):
+def saved(address: str, found: Graph, kind: str, who):
+    """The record is saved, and the new records it holds are saved on their own."""
+    created = writes.separate(found)
+    # A record added in another's form, such as a person, needs write access to its own kind.
+    for _, of_kind, _ in created:
+        writer(kind_of(None, {"@type": of_kind}))
+    for iri, of_kind, own in created:
+        writes.save(documents.document(own, iri), of_kind, who.name, who.orcid)
+    return writes.save(documents.document(found, address), kind, who.name, who.orcid)
+
+
+def rendered(address: str, found: Graph, kind: str, who) -> Response:
+    """The record's page as saving makes it, from a copy of the database with the record saved."""
+    with database.copied():
+        saved(address, found, kind, who)
+        path = "/" + address.removeprefix(settings()["base"])
+        with current_app.app_context(), current_app.test_request_context(path, base_url=request.host_url):
+            answer = current_app.full_dispatch_request()
+    return Response(answer.get_data(), status=answer.status_code, mimetype="text/html")
+
+
+def store(address: str, body: dict, preview: bool = False, page: bool = False):
     """A request body's record is checked and saved at *address*."""
     kind = kind_of(address, body)
     if kind is None:
@@ -148,6 +170,8 @@ def store(address: str, body: dict, preview: bool = False):
         abort(422, message=str(problem))
     writes.addressed(found)
     found, problems, warnings = checks.checked(documents.document(found, address))
+    if preview and page:
+        return rendered(address, found, kind, who)
     if preview:
         before = changes.statements(documents.document_of(address))
         labels = {}
@@ -158,13 +182,7 @@ def store(address: str, body: dict, preview: bool = False):
     unchanged(address)
     if problems:
         abort(422, message=str(checks.NotFitting(problems)), errors=problems)
-    created = writes.separate(found)
-    # A record added in another's form, such as a person, needs write access to its own kind.
-    for _, of_kind, _ in created:
-        writer(kind_of(None, {"@type": of_kind}))
-    for iri, of_kind, own in created:
-        writes.save(documents.document(own, iri), of_kind, who.name, who.orcid)
-    revision = writes.save(documents.document(found, address), kind, who.name, who.orcid)
+    revision = saved(address, found, kind, who)
     return done(address, revision, 201 if revision.action == "Added" else 200, warnings)
 
 
@@ -516,7 +534,7 @@ def replace(given, body, path):
         abort(409, message="Address of a moved or removed record; not reused.")
     if request.mimetype == "text/turtle":
         body = documents.document(Graph().parse(data=request.get_data(as_text=True), format="turtle"), address)
-    return store(address, body, given["preview"])
+    return store(address, body, given["preview"], given["page"])
 
 
 @blueprint.delete("/<path:path>")
