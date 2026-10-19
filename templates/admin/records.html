@@ -82,11 +82,11 @@
     <aside class="editor-preview card d-none" id="preview-column" aria-label="Preview">
       <div class="card-header bg-white d-flex align-items-center gap-2">
         <div class="btn-group btn-group-sm" role="tablist">
-          <button type="button" class="btn btn-outline-vhppurple" role="tab" data-view="page"><i class="bi bi-window"></i> Page</button>
+          <button type="button" class="btn btn-outline-vhppurple" role="tab" data-view="page"{% if not selected.startswith(base) %} disabled title="Not a page of the platform"{% endif %}><i class="bi bi-window"></i> Page</button>
           <button type="button" class="btn btn-outline-vhppurple" role="tab" data-view="data"><i class="bi bi-diagram-3"></i> Linked data</button>
         </div>
         <span class="small text-secondary text-truncate me-auto" id="preview-caption"></span>
-        {% if record %}<a class="link-secondary" href="{{ selected|page_link }}" target="_blank" rel="noopener" title="Published page"><i class="bi bi-box-arrow-up-right"></i></a>{% endif %}
+        {% if record and selected.startswith(base) %}<a class="link-secondary" href="{{ selected|page_link }}" target="_blank" rel="noopener" title="Published page"><i class="bi bi-box-arrow-up-right"></i></a>{% endif %}
         <button type="button" class="btn-close" id="hide-preview" aria-label="Hide the preview"></button>
       </div>
       <div class="editor-preview-body" id="page-view">

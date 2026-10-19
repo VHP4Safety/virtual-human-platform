@@ -344,9 +344,10 @@ import { outline } from "./record-index.js";
     }
   }
 
-  // The preview is shown on its page or its linked data, or hidden; the choice is remembered.
+  // The preview is shown on its page or its linked data, or hidden; the choice is remembered. A record
+  // elsewhere, such as an ontology term, has no page here.
   function choose(next, shown) {
-    view = next;
+    view = panel.querySelector("[data-view=page]").disabled ? "data" : next;
     panel.classList.toggle("d-none", !shown);
     document.getElementById("show-preview").classList.toggle("d-none", shown);
     document.getElementById("layout").classList.toggle("with-preview", shown);
