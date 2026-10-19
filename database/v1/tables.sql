@@ -387,6 +387,8 @@ CREATE TABLE IF NOT EXISTS "schema_defined_term_set" (
   "void_uri_space__term" TEXT,
   "schema_description" TEXT,
   "schema_description__term" TEXT,
+  "schema_license" TEXT,
+  "schema_license__term" TEXT,
   "schema_name" TEXT,
   "schema_name__term" TEXT,
   "schema_url" TEXT,

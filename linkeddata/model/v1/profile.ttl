@@ -120,9 +120,9 @@ form:SoftwareApplication a sh:NodeShape ;
         sh:path schema:softwareVersion ; sh:group form:technical ; sh:order 1 ; sh:name "Version" ; sh:maxCount 1 ; sh:datatype xsd:string ;
         sh:description "As its developers number it." ] ;
     sh:property [
-        sh:path schema:license ; sh:group form:technical ; sh:order 2 ; sh:name "License" ; sh:maxCount 1 ;
+        sh:path schema:license ; sh:group form:technical ; sh:order 2 ; sh:name "License" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:severity sh:Warning ; sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ; form:publishedAs schema:CreativeWork ;
-        sh:message "Choose an SPDX license; other values are kept." ;
+        sh:message "Add the license, chosen from SPDX; other values are kept." ;
         sh:description "The tool's license." ] ;
     sh:property [
         sh:path schema:isBasedOn ; sh:group form:technical ; sh:order 3 ; sh:name "Source code" ; sh:nodeKind sh:IRI ;
@@ -490,9 +490,9 @@ form:Dataset a sh:NodeShape ;
         sh:message "Choose a term, such as from BAO, or register it." ;
         sh:description "Assays the data was measured with, as terms of BAO or other ontologies." ] ;
     sh:property [ sh:path schema:citation ; sh:order 10 ; sh:name "Publications" ; sh:class schema:ScholarlyArticle ] ;
-    sh:property [ sh:path schema:license ; sh:order 11 ; sh:name "License" ; sh:maxCount 1 ; sh:severity sh:Warning ;
+    sh:property [ sh:path schema:license ; sh:order 11 ; sh:name "License" ; sh:minCount 1 ; sh:maxCount 1 ; sh:severity sh:Warning ;
         sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ; form:publishedAs schema:CreativeWork ;
-        sh:message "Choose an SPDX license; other values are kept." ] ;
+        sh:message "Add the license, chosen from SPDX; other values are kept." ] ;
     sh:property [ sh:path schema:isBasedOn ; sh:order 12 ; sh:name "Source record" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
         sh:description "The BioStudies or Zenodo record this one is made from, every night." ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 13 ; sh:name "DOI and other addresses" ; sh:nodeKind sh:IRI ] ;
@@ -527,4 +527,7 @@ form:DefinedTermSet a sh:NodeShape ;
     sh:property [ sh:path schema:url ; sh:order 3 ; sh:name "Home page" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 4 ; sh:name "Same as" ; sh:nodeKind sh:IRI ;
         sh:description "Its own address elsewhere, such as its Wikidata item." ] ;
-    sh:property [ sh:path schema:description ; sh:order 5 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] .
+    sh:property [ sh:path schema:description ; sh:order 5 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:license ; sh:order 6 ; sh:name "License" ; sh:minCount 1 ; sh:maxCount 1 ; sh:severity sh:Warning ; sh:nodeKind sh:IRI ;
+        sh:message "Add the license of its terms: an SPDX license, or the address of its terms of use." ;
+        sh:description "The terms that records link to are published with it, under this license." ] .
