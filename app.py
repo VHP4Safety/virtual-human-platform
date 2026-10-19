@@ -4,22 +4,17 @@ import json
 import os
 import re
 import secrets
-import time
 
 import nh3
 import requests
 import urllib.parse
 from flask import Flask, abort, g, jsonify, render_template, request, Response, url_for
-from flask_caching import Cache
 from jinja2 import TemplateNotFound
 from markupsafe import Markup
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BaseConverter
 
 # Import BioStudies extractor
-from data.biostudies.search import BioStudiesExtractor
-from data.zenodo.search import ZenodoExtractor
-from data.mapping import normalize_all, scrub_draft
 from database import records
 from linkeddata import documents, outline, pages, storage, void
 from linkeddata.model import hierarchy, settings
@@ -34,49 +29,6 @@ from routes.record_pages import blueprint as pages_blueprint
 from routes.record_pages import listing_page, page_link, record_page
 
 ################################################################################
-CACHE_TIMEOUT = 60 * 60 * 24 * 5  # 5 days
-### Configuration for BioStudies Integration
-# Change these variables to switch between collections
-BIOSTUDIES_COLLECTION = "VHP4Safety"  # Replace with "EU-ToxRisk" to test
-BIOSTUDIES_COLLECTION_NAME = "VHP4Safety"  # Display name for the page
-ZENODO_COMMUNITY = "vhp4safety"  # zenodo community
-ZENODO_RECORD_TYPE = "dataset"  # only show datasets
-
-# Non-glossary "stage" labels. The five Process Flow Step stages are resolved
-# from the glossary's records (see get_process_flow_steps); these legacy
-# labels stay hardcoded because the data/models pages still reference them by
-# literal key and their data sources have not migrated to the glossary URIs.
-STAGE_EXPLANATIONS_LEGACY = {
-    "Other": "Other or unknown category.",
-    "ADME": "Absorption, distribution, metabolism, and excretion of a substance (toxic or not) in a living organism, following exposure to this substance.",
-    "Hazard Assessment": "The process of assessing the intrinsic hazard a substance poses to human health and/or the environment",
-    "Chemical Information": "Information about chemical properties and identity.",
-    "General": "Not specific to a flow step.",
-    "(External) exposure": "External exposure assessment.",
-    "Generic": "Generic category.",
-}
-
-# Legacy glossary-URI -> stage-label mappings, superseded by the Process Flow
-# Step URIs that get_process_flow_steps() gives from the glossary's records.
-STAGE_MAPPING_LEGACY = {
-    "https://vhp4safety.github.io/glossary#VHP0000056": "ADME",
-    "https://vhp4safety.github.io/glossary#VHP0000102": "Hazard Assessment",
-    "https://vhp4safety.github.io/glossary#VHP0000148": "Chemical Information",
-    "https://vhp4safety.github.io/glossary#VHP0000149": "General",
-}
-METHODS_URL = "https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/methods_index.json"
-# TOOLS and SERVICES are synonymous
-SERVICES_URL = "https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/service_index.json"
-CASESTUDIES_URL = (
-    "https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/"
-    "refs/heads/main/ro-crate-metadata.json"
-)
-# Case-study content is only fetched from the config repository.
-CASESTUDY_CONTENT_PREFIX = "https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/"
-# BioStudies accessions (S-VHPS21, E-MTAB-1234) and Zenodo record ids (1234567).
-DATA_ID_PATTERN = r"S-[A-Z]+\d+|E-[A-Z]+-\d+|\d+"
-MAX_PAGE_SIZE = 48
-CACHE_RESET_INTERVAL = 5 * 60  # seconds
 
 # SEO defaults. Every page renders a <title>/<meta description> (see base.html);
 # routes override page_title / meta_description with page-specific values, and
@@ -89,12 +41,6 @@ def clip(text, limit=160):
     text = " ".join((text or "").split())
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
 
-
-def page_args(default_size: int) -> tuple[int, int]:
-    """Read ?page and ?page_size from the request, kept within sensible bounds."""
-    page = max(request.args.get("page", 1, type=int), 1)
-    page_size = request.args.get("page_size", default_size, type=int)
-    return page, min(max(page_size, 1), MAX_PAGE_SIZE)
 
 ################################################################################
 class RegexConverter(BaseConverter):
@@ -113,14 +59,9 @@ class RegexConverter(BaseConverter):
         self.regex = items[0]
 
 
-cache_config = {
-    "CACHE_TYPE": "SimpleCache",  # Flask-Caching related configs
-    "CACHE_DEFAULT_TIMEOUT": CACHE_TIMEOUT,  # 60 min chaching
-}
 app = Flask(__name__)
 # The scheme and host are taken from the reverse proxy, for the ORCID login.
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-app.config.from_mapping(cache_config)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 if not os.environ.get("SECRET_KEY"):
     app.logger.warning("SECRET_KEY is not set: logins end on restart, and fail with several workers.")
@@ -138,25 +79,8 @@ app.register_blueprint(discovery_blueprint)
 # Google Search Console verification token (rendered as a <meta> tag in
 # base.html when set). Kept out of the repo -- set it in the service env.
 app.config["GOOGLE_SITE_VERIFICATION"] = os.environ.get("GOOGLE_SITE_VERIFICATION", "")
-cache = Cache(app)
 # The vocabularies' class hierarchy is read once, as the app starts, not by its first request.
 hierarchy()
-
-
-_last_cache_reset = 0.0
-
-
-@app.before_request
-def handle_cache_reset():
-    """Clear the entire server-side cache when ?reset_cache is in the URL.
-
-    Open to anyone, but the cache is cleared at most once every
-    CACHE_RESET_INTERVAL seconds, as each reset refetches every upstream source.
-    """
-    global _last_cache_reset
-    if "reset_cache" in request.args and time.time() - _last_cache_reset > CACHE_RESET_INTERVAL:
-        _last_cache_reset = time.time()
-        cache.clear()
 
 
 @app.after_request
@@ -173,184 +97,7 @@ def sanitize_html(value) -> Markup:
     return Markup(nh3.clean(str(value or "")))
 
 
-@cache.memoize(timeout=CACHE_TIMEOUT)
-def _get_json_dict_cached(url: str, timeout: int = 5) -> dict:
-    """Fetch xxxx_index.json from the cloud repo and return as a dictionary."""
-    resp = requests.get(url, timeout=timeout)
-    if resp.status_code != 200:
-        raise ValueError(f"Unexpected status code {resp.status_code} for {url}")
-    data = resp.json()
-    if not isinstance(data, dict):
-        raise ValueError(f"Unexpected JSON type for {url}")
-    return data
-
-
-def get_json_dict(url: str, timeout: int = 5) -> dict:
-    """Fetch xxxx_index.json from the cloud repo and return as a dictionary.
-    Return an empty dict on any error to avoid breaking pages that depend on it.
-    """
-    try:
-        return _get_json_dict_cached(url, timeout=timeout)
-    except Exception:
-        return {}
-
-
-@cache.memoize(timeout=CACHE_TIMEOUT)
-def _get_service_detail_cached(tool_id: str, timeout: int = 5) -> dict:
-    """Fetch a tool/service detail JSON from the cloud repo."""
-    detail_url = f"https://cloud.vhp4safety.nl/service/{tool_id}.json"
-    return _get_json_dict_cached(detail_url, timeout=timeout)
-
-
-def get_service_detail(tool_id: str, timeout: int = 5) -> dict:
-    """Fetch service detail and return an empty dict on any error."""
-    if not tool_id:
-        return {}
-    if not re.match(r"^[A-Za-z0-9._-]+$", tool_id):
-        return {}
-    try:
-        return _get_service_detail_cached(tool_id, timeout=timeout)
-    except Exception:
-        return {}
-
-
 # --- Case studies & regulatory questions -----------------------------------
-# (case slug, question index) -> reg_q_Xy upstream field name. This is the
-# only remaining hardcoded artifact: the keys must match upstream tool/method
-# index field names (used to filter records) and the casestudy config files
-# do not currently record them. If a field like `upstreamField` were added to
-# each question in <case>_content.json's step1Contents.questions[], this map
-# could be derived from the config too.
-_REG_QUESTION_KEYS = {
-    ("kidney", 0): "reg_q_1a",
-    ("kidney", 1): "reg_q_1b",
-    ("parkinson", 0): "reg_q_2a",
-    ("parkinson", 1): "reg_q_2b",
-    ("thyroid", 0): "reg_q_3a",
-    ("thyroid", 1): "reg_q_3b",
-}
-
-
-@cache.memoize(timeout=CACHE_TIMEOUT)
-def _get_casestudies_cached() -> dict:
-    """Fetch + parse case studies. Raises on failure so the cache does not
-    store an empty/poisoned result (a transient HTTP/SSL hiccup must not stick
-    around for CACHE_TIMEOUT). Public wrapper get_casestudies() catches.
-    """
-    resp = requests.get(CASESTUDIES_URL, timeout=5)
-    resp.raise_for_status()
-    data = resp.json()
-
-    studies = {}
-    for entry in data.get("@graph", []):
-        types = entry.get("@type", [])
-        if isinstance(types, str):
-            types = [types]
-        if "File" not in types:
-            continue
-        if entry.get("encodingFormat") != "application/json":
-            continue
-        slug = entry.get("identifier")
-        if not slug:
-            continue
-        studies[slug] = {
-            "name": entry.get("name", ""),
-            "description": entry.get("description", ""),
-            "content_url": entry.get("contentUrl", ""),
-        }
-    if not studies:
-        raise ValueError("no case studies found in RO-Crate @graph")
-    return studies
-
-
-def get_casestudies() -> dict:
-    """Return case studies from VHP4Safety/ui-casestudy-config's RO-Crate.
-
-    The upstream metadata is an RO-Crate (`ro-crate-metadata.json`) whose
-    `@graph` lists every file in the repo. Case studies are the JSON `File`
-    entities with an `identifier` (the slug) and a `contentUrl` to the
-    per-case content JSON.
-
-    Returns {slug: {"name", "description", "content_url"}}. Iteration yields
-    slugs, so callers that just need the slug list can do `for c in
-    get_casestudies()`. Returns an empty dict on any error so callers degrade
-    safely; failures are NOT cached so the next request retries.
-    """
-    try:
-        return _get_casestudies_cached()
-    except Exception:
-        return {}
-
-
-@cache.memoize(timeout=CACHE_TIMEOUT)
-def _get_casestudy_content_cached(url: str) -> dict:
-    """Fetch the per-case content JSON. Raises on failure so the cache does
-    not store an empty/poisoned result. Public wrapper get_casestudy_content()
-    catches.
-    """
-    resp = requests.get(url, timeout=5)
-    resp.raise_for_status()
-    data = resp.json()
-    if not data:
-        raise ValueError(f"empty case-study content at {url}")
-    return data
-
-
-def get_casestudy_content(slug: str) -> dict:
-    """Fetch the per-case `<slug>_content.json` from the config repo.
-
-    Returns an empty dict on any error so callers degrade safely; failures
-    are NOT cached so the next request retries. The url-not-found case skips
-    the fetch entirely (returning {} without going through the cache).
-    """
-    url = get_casestudies().get(slug, {}).get("content_url")
-    if not url or not url.startswith(CASESTUDY_CONTENT_PREFIX):
-        return {}
-    try:
-        return _get_casestudy_content_cached(url)
-    except Exception:
-        return {}
-
-
-def get_reg_questions() -> dict:
-    """Build {reg_q_Xy: {"label", "explanation"}} from per-case content JSONs.
-
-    Keys come from _REG_QUESTION_KEYS (upstream field names). Labels and
-    explanations come from each case's step1Contents.questions[] entries in
-    the remote casestudy config (label and description fields respectively).
-    """
-    result = {}
-    for slug in get_casestudies():
-        content = get_casestudy_content(slug)
-        questions = (content.get("step1Contents") or {}).get("questions") or []
-        for i, q in enumerate(questions[:2]):
-            key = _REG_QUESTION_KEYS.get((slug, i))
-            if not key:
-                continue
-            value = q.get("value") or f"Q{i + 1}"
-            steps = ((content.get("step2Contents") or {}).get(value) or {}).get("steps") or []
-            result[key] = {
-                "label": q.get("label") or f"{slug.title()} Q{i + 1}",
-                "explanation": q.get("description", ""),
-                "case": slug,
-                # the case-study page keys questions by value ("Q2"), not label
-                "url": f"/casestudies/{slug}/{value}",
-                # process-flow steps (lowercased) whose button is enabled there;
-                # data-tab pills for any other step link to the glossary term
-                "enabled_steps": [
-                    (s.get("value") or "").lower()
-                    for s in steps
-                    if s.get("state") != "disabled"
-                ],
-            }
-    return result
-
-
-def get_reg_question_explanations() -> dict:
-    """{label: explanation} for templates that look up by hardcoded label."""
-    return {v["label"]: v["explanation"] for v in get_reg_questions().values()}
-
-
 # The glossary term whose kinds are the process flow steps.
 PROCESS_FLOW_STEP = "https://vhp4safety.github.io/glossary#VHP0000152"
 
@@ -364,178 +111,9 @@ def get_process_flow_steps() -> dict:
     return steps
 
 
-def get_stage_explanations() -> dict:
-    """Stage label -> explanation: the glossary Process Flow Steps merged with
-    the non-glossary legacy labels still used by the data/models pages.
-    """
-    glossary = {
-        step["label"]: step["description"] for step in get_process_flow_steps().values()
-    }
-    return {**glossary, **STAGE_EXPLANATIONS_LEGACY}
-
-
-def get_stage_mapping() -> dict:
-    """Glossary URI -> stage label: the Process Flow Step URIs resolved from the
-    glossary merged with the legacy URI mappings.
-    """
-    glossary = {uri: step["label"] for uri, step in get_process_flow_steps().items()}
-    return {**glossary, **STAGE_MAPPING_LEGACY}
-
-
-def linked_tools(catalogue: dict) -> dict:
-    """The cloud catalogue's tools with their records' values; tools removed or
-    moved on the platform are left out, and tools added on it are put in.
-    """
-    removed = records.removed("tools") | records.moved("tools")
-    tools = {}
-    for tool_id, tool in catalogue.items():
-        if tool_id not in removed:
-            tools[tool_id] = dict(tool)
-    stage_mapping = get_stage_mapping()
-    listed = records.of_kind("tools")
-    statements = storage.graph([record.iri for record in listed])
-    for record in listed:
-        tool_id = record.iri.rsplit("/", 1)[-1]
-        tool = tools.setdefault(tool_id, {"id": tool_id, "stage": "Unknown", "main_url": "no_url"})
-        descriptions = documents.stored_values(statements, record.iri, "description")
-        urls = documents.stored_values(statements, record.iri, "url")
-        images = documents.stored_values(statements, record.iri, "image")
-        about = documents.stored_values(statements, record.iri, "about")
-        tool["service"] = record.name or tool_id
-        tool["description"] = descriptions[0] if descriptions else ""
-        tool["main_url"] = urls[0] if urls else "no_url"
-        tool["png_file_name"] = page_link(images[0]) if images else None
-        for iri in about:
-            if iri in stage_mapping:
-                tool["stage"] = iri
-        # The regulatory questions a record links become the catalogue's reg_q_Xy flags.
-        for (case, number), field in _REG_QUESTION_KEYS.items():
-            tool[field] = str(records.address(f"casestudies/{case}/Q{number + 1}") in about).lower()
-    return tools
-
-
-def linked_methods() -> dict:
-    """The platform's method records, shaped as the cloud catalogue's methods index for the methods pages."""
-    stage_mapping = get_stage_mapping()
-    cases = records.address("casestudies/")
-    methods = {}
-    listed = records.of_kind("methods")
-    statements = storage.graph([record.iri for record in listed])
-    for record in listed:
-        method_id = record.iri.rsplit("/", 1)[-1]
-        descriptions = documents.stored_values(statements, record.iri, "description")
-        urls = documents.stored_values(statements, record.iri, "url")
-        method = {
-            "id": method_id,
-            "method": record.name or method_id,
-            "method_description_content": descriptions[0] if descriptions else "",
-            "catalog_webpage_url": urls[0] if urls else "",
-        }
-        stages = []
-        for value in documents.stored_values(statements, record.iri, "about"):
-            if value.startswith(cases):
-                case, question = value.removeprefix(cases).split("/")[:2]
-                method["case_study"] = case
-                if question[1:].isdigit():
-                    method["regulatory_question"] = _REG_QUESTION_KEYS.get((case, int(question[1:]) - 1), "")
-            elif value in stage_mapping or value in stage_mapping.values():
-                stages.append(value)
-        method["vhp4safety_workflow_stage_content"] = ", ".join(stages)
-        methods[method_id] = method
-    return methods
-
-
 class _RepositoryFetchAllFailed(Exception):
     """Both extractors returned error-shaped dicts. Carries the original
     tuple so the public wrapper can return it without re-fetching."""
-
-
-@cache.memoize(timeout=CACHE_TIMEOUT)
-def _get_repository_data_cached(
-    search_query: str,
-    page: int = 1,
-    page_size: int = 18,
-    filters: list | None = None,
-    load_metadata: bool = True,
-) -> tuple[dict, dict]:
-    """Fetch from BioStudies + Zenodo. The extractors swallow network failures
-    and return {"error": "..."} dicts rather than raising, so we check the
-    result here and raise if BOTH halves errored -- otherwise cache.memoize
-    would store the dual-error tuple for CACHE_TIMEOUT and every subsequent
-    request would see the same stale failure. Partial success is cacheable
-    (the errored half stays until the timeout, but the working half remains
-    usable).
-    """
-    bs_extractor = BioStudiesExtractor(collection=BIOSTUDIES_COLLECTION)
-    if search_query:
-        bs_results = bs_extractor.search_studies(
-            search_query,
-            page=page,
-            page_size=page_size,
-            filters=filters,
-            load_metadata=load_metadata,
-        )
-    else:
-        bs_results = bs_extractor.list_studies(
-            page=page,
-            page_size=page_size,
-            include_urls=True,
-            filters=filters,
-            load_metadata=load_metadata,
-        )
-
-    zen_extractor = ZenodoExtractor(
-        community=ZENODO_COMMUNITY, record_type=ZENODO_RECORD_TYPE
-    )
-    if not filters:
-        # We currently do no filter Zenodo datasets.
-        if search_query:
-            zen_result = zen_extractor.search_records(
-                search_query, page=page, size=page_size, load_metadata=load_metadata
-            )
-        else:
-            # load metadata needed for is_rocrate filtering in template
-            zen_result = zen_extractor.list_records(
-                page=page,
-                size=page_size,
-                include_urls=True,
-                load_metadata=load_metadata,
-            )
-    else:
-        zen_result = {"hits": [], "total": 0, "error": None}
-
-    # Both extractors errored -> bypass the cache by raising. The wrapper
-    # catches and returns the same tuple to the caller (contract preserved),
-    # but the next request will retry instead of getting the cached failure.
-    if bs_results.get("error") and zen_result.get("error"):
-        raise _RepositoryFetchAllFailed((bs_results, zen_result))
-
-    return bs_results, zen_result
-
-
-def get_repository_data(
-    search_query: str,
-    page: int = 1,
-    page_size: int = 18,
-    filters: list | None = None,
-    load_metadata: bool = True,
-) -> tuple[dict, dict]:
-    """Return (bs_results, zen_result) from the two repositories.
-
-    Each half is the extractor's raw response: a {"hits", "total"} dict on
-    success or a {"error": "..."} dict on failure. A dual-failure result is
-    NOT cached so the next request retries; partial success is cached as-is.
-    """
-    try:
-        return _get_repository_data_cached(
-            search_query,
-            page=page,
-            page_size=page_size,
-            filters=filters,
-            load_metadata=load_metadata,
-        )
-    except _RepositoryFetchAllFailed as exc:
-        return exc.args[0]
 
 
 def menu(kind: str) -> list[dict]:
@@ -553,22 +131,6 @@ def menu(kind: str) -> list[dict]:
 def inject_menus():
     """The tools, methods and data of the navigation menus and the search bar, from their records."""
     return {"tools_menu": menu("tools"), "methods_menu": menu("methods"), "data_menu": menu("data")}
-
-
-def data_hit_id(hit: dict) -> str:
-    """Return the identifier to use in a /data/<id> URL for a repository hit.
-
-    BioStudies hits resolve to their accession; Zenodo hits to their numeric
-    recid. doi_url is intentionally never used -- it contains slashes the
-    /data/<dataid> route's string converter cannot match.
-    """
-    return (
-        hit.get("accession")
-        or hit.get("accno")
-        or hit.get("id")
-        or hit.get("recid")
-        or ""
-    )
 
 
 @app.context_processor
@@ -605,22 +167,6 @@ def home():
         process_flow_steps=get_process_flow_steps(),
         page_title=DEFAULT_PAGE_TITLE,
         meta_description=platform["abstract"],
-    )
-
-
-def data_hit_id(hit: dict) -> str:
-    """Return the identifier to use in a /data/<id> URL for a repository hit.
-
-    BioStudies hits resolve to their accession; Zenodo hits to their numeric
-    recid. doi_url is intentionally never used -- it contains slashes the
-    /data/<dataid> route's string converter cannot match.
-    """
-    return (
-        hit.get("accession")
-        or hit.get("accno")
-        or hit.get("id")
-        or hit.get("recid")
-        or ""
     )
 
 
@@ -684,26 +230,6 @@ def data():
 
 ################################################################################
 ### DataSet detail view
-
-
-@app.template_filter("split_text_int")
-def split_text_int(value: None | str) -> tuple[str, None | int]:
-    """
-    Splits trailing integer from a string.
-    'S-VHPS21' -> ('S-VHPS', 21)
-    'ABC'      -> ('ABC', None)
-    'X-12A'    -> ('X-12A', None)   # only splits if digits are at the very end
-    """
-    # used to construct ftp file link *POTENTIALLY BRITTLE*
-    if value is None:
-        return ("", None)
-
-    s = str(value)
-    m = re.match(r"^(.*?)(\d+)$", s)
-    if not m:
-        return (s, None)
-
-    return (m.group(1), int(m.group(2)))
 
 
 @app.route("/data/<dataid>")

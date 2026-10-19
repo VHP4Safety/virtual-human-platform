@@ -1,5 +1,4 @@
 flask>=3.1.3
-flask-caching==2.3.1
 requests>=2.33.0
 #wikidataintegrator==0.9.30
 werkzeug>=3.0.6

@@ -18,9 +18,5 @@ def folders(tmp_path, monkeypatch):
 def site(monkeypatch):
     import app as platform
 
-    monkeypatch.setattr(platform, "get_json_dict", lambda url, timeout=5: {})
-    monkeypatch.setattr(platform, "get_service_detail", lambda tool_id, timeout=5: {})
-    monkeypatch.setattr(platform, "get_repository_data", lambda *a, **k: ({}, {}))
-    monkeypatch.setattr(platform, "get_casestudies", lambda: {})
     monkeypatch.setattr(platform, "get_process_flow_steps", lambda: {})
     return platform.app.test_client()
