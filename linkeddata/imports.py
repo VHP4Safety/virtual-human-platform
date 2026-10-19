@@ -6,10 +6,12 @@ import, such as nightly."""
 
 import hashlib
 import importlib
+import io
 import json
 import re
+import zipfile
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 import pyoxigraph as ox
 import requests
@@ -37,6 +39,50 @@ def fetch(url: str, accept: str | None = None) -> bytes:
     response = requests.get(url, timeout=60, headers=headers)
     response.raise_for_status()
     return response.content
+
+
+class Remote(io.RawIOBase):
+    """A file on the web read in parts (HTTP Range), so that a few files of a large zip are read without
+    downloading it."""
+
+    def __init__(self, url: str):
+        self.url = url
+        self.at = 0
+        self.size = int(requests.head(url, allow_redirects=True, timeout=60, headers={"User-Agent": "VHP4Safety platform build"}).headers["Content-Length"])
+
+    def readable(self) -> bool:
+        return True
+
+    def seekable(self) -> bool:
+        return True
+
+    def tell(self) -> int:
+        return self.at
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        self.at = offset if whence == 0 else self.at + offset if whence == 1 else self.size + offset
+        return self.at
+
+    def readinto(self, buffer) -> int:
+        end = min(self.at + len(buffer), self.size) - 1
+        if end < self.at:
+            return 0
+        response = requests.get(self.url, timeout=60, headers={"Range": f"bytes={self.at}-{end}", "User-Agent": "VHP4Safety platform build"})
+        response.raise_for_status()
+        buffer[:len(response.content)] = response.content
+        self.at += len(response.content)
+        return len(response.content)
+
+
+def members(url: str, endings: list[str]) -> dict[str, bytes]:
+    """The files of a zip on the web whose names end as given, by their ending."""
+    found = {}
+    with zipfile.ZipFile(io.BufferedReader(Remote(url), buffer_size=1 << 16)) as packed:
+        for name in packed.namelist():
+            for ending in endings:
+                if name.endswith(ending) and ending not in found:
+                    found[ending] = packed.read(name)
+    return found
 
 
 def lift(rows: list[dict], vocabulary: str, base: str) -> ox.Dataset:
@@ -205,6 +251,18 @@ def download(spec: dict, parser) -> dict[str, bytes]:
                 contents[key] = fetch(spec["entries"].format(key=key))
             except requests.RequestException as problem:
                 print(f"{spec['name']}: {key} not fetched ({problem})")
+    # A source of packages reads some files of each entry's zip (members), by "<key>/<file>"; the parser gives
+    # the zips, which must be on the source's own site.
+    if "members" in spec:
+        site = "https://" + urlsplit(spec["url"]).netloc + "/"
+        for key, url in parser.packages(contents[spec["name"]]).items():
+            if not ENTRY.fullmatch(key) or not url.startswith(site):
+                continue
+            try:
+                for ending, content in members(url, spec["members"]).items():
+                    contents[f"{key}/{ending}"] = content
+            except (requests.RequestException, zipfile.BadZipFile) as problem:
+                print(f"{spec['name']}: {key} not read ({problem})")
     # An enriching source has one answer per identified record, by the record's address.
     if "enriches" in spec:
         for iri, key in identified(spec):
@@ -227,7 +285,7 @@ def import_source(spec: dict) -> None:
     parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
     contents = download(spec, parser)
     # One file is given as is; several are given by name.
-    parsed = parser.parse(contents if "files" in spec or "entries" in spec or "terms" in spec else contents[spec["name"]])
+    parsed = parser.parse(contents if "files" in spec or "entries" in spec or "terms" in spec or "members" in spec else contents[spec["name"]])
     data, queries = convert(spec, parsed, config["base"])
     found = records_of(data, [of_class for kind in config["kinds"].values() for of_class in catalogue.within(kind)], spec["name"])
     checksum = hashlib.sha256()
