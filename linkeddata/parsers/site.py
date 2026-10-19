@@ -5,12 +5,15 @@ workaround, see linkeddata/parsers): the main branch's templates at one commit, 
   out is kept as a hidden section. Images and videos in a text are figures and videos of their section.
 - The home page gives the platform's catalogue: its name, heading, sentence and description, the cards of its
   kinds of records, the pages it links to, and its publisher's contact links.
+- Every page's organisation data (base.html's JSON-LD) adds to the project's record its other names, logo,
+  one-line description and addresses elsewhere, and the funder's website.
 - The project page's first tab gives the project's record: the first item's text is its description; an
   item's video is its video, a list with a figure its research lines and figure, and a grant link its grant.
 - The partner list gives the project's partners by role, its co-funders, and their websites and logos.
 - The case studies page gives each case study's image.
 - A Publications tab lists the outputs of the project's grant."""
 
+import json
 import re
 from urllib.parse import quote
 
@@ -251,6 +254,16 @@ def home(content: bytes, kinds: dict) -> tuple[dict, dict]:
     return row, contact
 
 
+def organisation(content: bytes) -> dict:
+    """The organisation that every page described in its JSON-LD, with the platform's address for the page's."""
+    soup = BeautifulSoup(content, "html.parser")
+    for script in soup.find_all("script", type="application/ld+json"):
+        written = script.string or ""
+        if '"Organization"' in written and "{{ record_document" not in written:
+            return json.loads(written.replace("{{ request.url_root }}", settings()["base"]))
+    return {}
+
+
 def case_studies(content: bytes) -> list[dict]:
     """Each case study's image, from its card."""
     soup = BeautifulSoup(content, "html.parser")
@@ -276,6 +289,21 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 section["about"] = found["grants"][0]
     platform, contact = home(contents["home"], kinds)
     found.update({key: value for key, value in contact.items() if value})
+    described = organisation(contents["base"])
+    for name in [described.get("alternateName")] if described.get("alternateName") else []:
+        found.setdefault("full_name", [])
+        found["full_name"] = ([found["full_name"]] if isinstance(found["full_name"], str) else found["full_name"]) + [name]
+    if described.get("logo"):
+        found["logo"] = link(described["logo"])
+    if described.get("description"):
+        found["summary"] = described["description"]
+    for address in described.get("sameAs") or []:
+        if link(address) not in found.setdefault("elsewhere", []):
+            found["elsewhere"].append(link(address))
+    funder = described.get("funder") or {}
+    for row in others:
+        if row["@type"] == "Organization" and funder.get("url"):
+            row["url"] = link(funder["url"])
     organisations, roles, funders = partners(contents["partners"])
     found["partners"] = roles
     found["cofunders"] = funders

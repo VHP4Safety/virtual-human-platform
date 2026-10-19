@@ -163,6 +163,12 @@ def conditional(response) -> None:
 
 
 @blueprint.app_context_processor
+def publisher_context() -> dict:
+    """The platform's publisher, as its record gives it, for every page's head."""
+    return {"publisher_document": void.platform()["publisher"]}
+
+
+@blueprint.app_context_processor
 def record_context() -> dict:
     """The page record's JSON-LD and data addresses, for the page head."""
     if "record" not in g:

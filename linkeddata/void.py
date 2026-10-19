@@ -38,13 +38,16 @@ PLATFORM = {}
 
 
 def platform() -> dict:
-    """The platform's name, sentence and licence, from its catalogue record; empty until it has one."""
+    """The platform's name, sentence and licence, from its catalogue record, and its publisher's JSON-LD document;
+    empty until it has one."""
     latest = records.latest_change()
     if PLATFORM.get("latest") != latest:
         found = storage.graph([settings()["base"]])
         node = URIRef(settings()["base"])
+        publisher = records.get(str(found.value(node, SDO.publisher) or ""))
         PLATFORM.update(latest=latest, name=str(found.value(node, SDO.name) or ""), abstract=str(found.value(node, SDO.abstract) or ""),
-                        license=str(found.value(node, SDO.license) or ""))
+                        license=str(found.value(node, SDO.license) or ""),
+                        publisher=documents.document(documents.linked(publisher), publisher.iri, named=True) if publisher is not None else None)
     return PLATFORM
 
 

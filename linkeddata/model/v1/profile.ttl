@@ -159,6 +159,7 @@ form:Organization a sh:NodeShape ;
     sh:property [ sh:path schema:alternateName ; sh:order 4 ; sh:name "Other names" ; sh:datatype xsd:string ;
         sh:description "Such as its full name, or its abbreviation." ] ;
     sh:property [ sh:path schema:description ; sh:order 5 ; sh:name "Description" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
+    sh:property [ sh:path schema:disambiguatingDescription ; sh:order 5 ; sh:name "In one sentence" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:logo ; sh:order 6 ; sh:name "Logo" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
         sh:description "Shown among the platform's partners." ] ;
     sh:property [ sh:path schema:email ; sh:order 7 ; sh:name "Contact email" ; sh:maxCount 1 ; sh:datatype xsd:string ; form:private true ;

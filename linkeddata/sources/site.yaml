@@ -4,6 +4,7 @@ title: Website pages
 # partner list; read once, when the platform first goes live (linkeddata/parsers/site.py).
 files:
   home: https://raw.githubusercontent.com/VHP4Safety/virtual-human-platform/36575d738685a90303a78e7e315aac5235873669/templates/home.html
+  base: https://raw.githubusercontent.com/VHP4Safety/virtual-human-platform/36575d738685a90303a78e7e315aac5235873669/templates/base.html
   explore_our_work: https://raw.githubusercontent.com/VHP4Safety/virtual-human-platform/36575d738685a90303a78e7e315aac5235873669/templates/implementation/explore_our_work.html
   training: https://raw.githubusercontent.com/VHP4Safety/virtual-human-platform/36575d738685a90303a78e7e315aac5235873669/templates/implementation/training.html
   impact: https://raw.githubusercontent.com/VHP4Safety/virtual-human-platform/36575d738685a90303a78e7e315aac5235873669/templates/implementation/impact.html
@@ -65,6 +66,8 @@ rules:
     - {predicate: "https://schema.org/name", object: name}
     - {predicate: "https://schema.org/alternateName", object: full_name}
     - {predicate: "https://schema.org/description", object: description}
+    - {predicate: "https://schema.org/disambiguatingDescription", object: summary}
+    - {predicate: "https://schema.org/logo", object: logo}
     - {predicate: "https://schema.org/email", object: email}
     - {predicate: "https://schema.org/sameAs", object: elsewhere}
     - {predicate: "https://schema.org/funding", object: grants}

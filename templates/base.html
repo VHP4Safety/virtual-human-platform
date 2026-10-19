@@ -32,35 +32,10 @@
     <meta name="google-site-verification" content="{{ config.GOOGLE_SITE_VERIFICATION }}" />
     {% endif %}
 
-    <!-- Organization entity for search engines (brand recognition) -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "VHP4Safety",
-      "alternateName": "Virtual Human Platform for Safety Assessment",
-      "url": "{{ request.url_root }}",
-      "logo": "{{ request.url_root }}static/images/logos/logo/PNG/300ppi/VHP_Logo_Long_02_300.png",
-      "description": "VHP4Safety develops the Virtual Human Platform for animal-free, human-based safety assessment of chemicals and pharmaceuticals.",
-      "email": "vhp4safety@uu.nl",
-      "sameAs": [
-        "https://github.com/VHP4Safety",
-        "https://www.linkedin.com/company/vhp4safety",
-        "https://www.youtube.com/@VHP4Safety",
-        "https://video.edu.nl/a/vhp4safety"
-      ],
-      "funder": {
-        "@type": "Organization",
-        "name": "Dutch Research Council (NWO)",
-        "url": "https://www.nwo.nl"
-      },
-      "funding": {
-        "@type": "Grant",
-        "identifier": "NWA.1292.19.272",
-        "url": "https://www.nwo.nl/en/projects/nwa129219272"
-      }
-    }
-    </script>
+    {% if publisher_document %}
+    <!-- The organisation that publishes the platform, as its record gives it, for search engines -->
+    <script type="application/ld+json">{{ publisher_document|tojson }}</script>
+    {% endif %}
 
     {% if record_document %}
     <!-- The page's record, as the platform publishes it -->
