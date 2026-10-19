@@ -370,7 +370,25 @@ function sections(state, page) {
   return accordion;
 }
 
-// A page: heading, summary, buttons, text and sections. It slides in from its side, as on the website.
+// A step's inputs and outputs, by name, in a box of their own.
+function parameters(state, page) {
+  const box = make("div", "case-study-parameters card mb-4");
+  const body = make("div", "card-body py-2");
+  for (const [name, label] of [["bioschemas:input", "Input"], ["bioschemas:output", "Output"]]) {
+    const found = parts(state, page, name);
+    if (found.length) {
+      const line = make("div", "");
+      line.dataset.field = name.split(":").pop();
+      line.append(make("strong", "", label + ": "), document.createTextNode(found.map(function (part) { return first(part, "name"); }).join("; ")));
+      body.append(line);
+    }
+  }
+  box.append(body);
+  return body.children.length ? box : null;
+}
+
+// A page: heading, summary, buttons, text, inputs and outputs, and sections. It slides in from its side, as
+// on the website.
 function view(container, state, page, level, direction) {
   const shown = make("div", "case-study-page py-md-5 py-3" + (direction ? " case-study-" + direction : ""));
   const top = make("div", "container");
@@ -400,6 +418,10 @@ function view(container, state, page, level, direction) {
     text.dataset.field = "text";
     text.append(safeHtml(first(page, "text"), state.options));
     bottom.append(text);
+  }
+  const given = parameters(state, page);
+  if (given) {
+    bottom.append(given);
   }
   bottom.append(sections(state, page));
   shown.append(top, bottom);

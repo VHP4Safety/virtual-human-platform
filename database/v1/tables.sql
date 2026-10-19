@@ -105,6 +105,17 @@ CREATE TABLE IF NOT EXISTS "bioschemas_draft_lab_protocol__schema_subject_of" (
   FOREIGN KEY ("iri") REFERENCES "bioschemas_draft_lab_protocol" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "bioschemas_draft_lab_protocol__schema_subject_of__record" ON "bioschemas_draft_lab_protocol__schema_subject_of" ("record");
+CREATE TABLE IF NOT EXISTS "bioschemas_formal_parameter" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_description" TEXT,
+  "schema_description__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "bioschemas_formal_parameter__record" ON "bioschemas_formal_parameter" ("record");
 CREATE TABLE IF NOT EXISTS "schema_dataset" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -275,6 +286,24 @@ CREATE TABLE IF NOT EXISTS "schema_how_to_section" (
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_how_to_section__record" ON "schema_how_to_section" ("record");
+CREATE TABLE IF NOT EXISTS "schema_how_to_section__bioschemas_input" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_how_to_section" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_how_to_section__bioschemas_input__record" ON "schema_how_to_section__bioschemas_input" ("record");
+CREATE TABLE IF NOT EXISTS "schema_how_to_section__bioschemas_output" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_how_to_section" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_how_to_section__bioschemas_output__record" ON "schema_how_to_section__bioschemas_output" ("record");
 CREATE TABLE IF NOT EXISTS "schema_how_to_section__schema_about" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,

@@ -14,6 +14,9 @@ vocabularies:
   bioschemas-draft-types-e5c27db.jsonld:
     url: https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/e5c27dbd2b1269a79fbe8f26e0173a9dc390aff0/pages/_types/bioschemas_draft_types.jsonld
     sha256: 420b235d76aaafa92e72a6ed730457222166b455c7ff0df5f4365dd2dd887de8
+  bioschemas-types-e5c27db.jsonld:
+    url: https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/e5c27dbd2b1269a79fbe8f26e0173a9dc390aff0/pages/_types/bioschemas_types.jsonld
+    sha256: be2561e882eb0999d4a6b5d9baec4d848c6413c32108aff88b77f2ca39c6f9c4
   vhp4safety-glossary-34f9389.ttl:
     url: https://raw.githubusercontent.com/VHP4Safety/glossary/34f9389a7f1f0073b67161e1ca6e6a6cf95c7371/glossary.owl
     sha256: 88e9c00b8de4c2c69d9b3120525530dbff9536f0e3cebcef7a41cbec1745feff
@@ -44,6 +47,7 @@ kinds:
 prefixes:
   schema: https://schema.org/
   bioschemas_draft: https://bioschemas.org/draft_terms/
+  bioschemas: https://bioschemas.org/terms/
   dct: http://purl.org/dc/terms/
 
 # JSON-LD names of the glossary's properties.

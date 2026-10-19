@@ -17,6 +17,7 @@
 
 @prefix schema: <https://schema.org/> .
 @prefix bioschemas_draft: <https://bioschemas.org/draft_terms/> .
+@prefix bioschemas: <https://bioschemas.org/terms/> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -281,8 +282,16 @@ form:HowToSection a sh:NodeShape ;
     sh:property [ sh:path schema:step ; sh:group form:parts ; sh:order 1 ; sh:name "Steps" ;
         sh:class schema:HowToSection ; sh:node form:HowToSection ; sh:nodeKind sh:IRI ;
         sh:description "Each a page under this page's address." ] ;
-    sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 4 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
+    sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 6 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
         sh:description "Page sections, each with a heading, an HTML text and a position." ] ;
+    sh:property [ sh:path bioschemas:input ; sh:group form:parts ; sh:order 4 ; sh:name "Input" ; sh:minCount 1 ; sh:severity sh:Warning ;
+        sh:class bioschemas:FormalParameter ; sh:node form:FormalParameter ; sh:nodeKind sh:BlankNode ;
+        sh:message "Add the input." ;
+        sh:description "What the step takes, such as an estimated daily intake." ] ;
+    sh:property [ sh:path bioschemas:output ; sh:group form:parts ; sh:order 5 ; sh:name "Output" ; sh:minCount 1 ; sh:severity sh:Warning ;
+        sh:class bioschemas:FormalParameter ; sh:node form:FormalParameter ; sh:nodeKind sh:BlankNode ;
+        sh:message "Add the output." ;
+        sh:description "What the step gives, such as an exposure calculation." ] ;
     sh:property [ sh:path schema:about ; sh:group form:workflow ; sh:order 5 ; sh:name "Glossary term" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
         sh:pattern "^https://vhp4safety\\.github\\.io/glossary#" ;
         sh:message "Choose a glossary term, such as Toxicokinetics (Process Flow Step)." ;
@@ -298,6 +307,13 @@ form:HowToSection a sh:NodeShape ;
     sh:property [ sh:path schema:supply ; sh:group form:parts ; sh:order 3 ; sh:name "Data" ; sh:nodeKind sh:IRI ; sh:class schema:Dataset ;
         sh:message "Link a dataset." ;
         sh:description "Datasets the page uses; names and descriptions come from their records." ] .
+
+# An input or output of a workflow step, by name. It is part of its step's record.
+form:FormalParameter a sh:NodeShape ;
+    sh:targetClass bioschemas:FormalParameter ;
+    rdfs:label "Input or output" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
+    sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] .
 
 # A page section: heading, HTML text and position. It is part of its page's record.
 form:WebPageElement a sh:NodeShape ;

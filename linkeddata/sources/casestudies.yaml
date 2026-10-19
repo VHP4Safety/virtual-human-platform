@@ -43,6 +43,11 @@ rules:
     - {predicate: "https://schema.org/tool", object: tools}
     - {predicate: "https://schema.org/supply", object: supplies}
     - {predicate: "https://schema.org/hasPart", object: sections}
+    - {predicate: "https://bioschemas.org/terms/input", object: inputs}
+    - {predicate: "https://bioschemas.org/terms/output", object: outputs}
+  Parameter:
+    - {predicate: a, value: "https://bioschemas.org/terms/FormalParameter"}
+    - {predicate: "https://schema.org/name", object: name}
   Section:
     - {predicate: a, value: "https://schema.org/WebPageElement"}
     - {predicate: "https://schema.org/name", object: title}

@@ -7,6 +7,7 @@ kept as a label without one)."""
 
 import json
 import re
+from html import unescape
 
 from linkeddata.parsers import link, marked, present, slug, term, web_link
 
@@ -15,6 +16,9 @@ PAGES = {"process-flow-step", "workflow step", "workflow-step", "workflow subste
 # Some tags have typographic quotes around their attribute values.
 TAG = re.compile(r"<[a-zA-Z][^>]*>")
 STRAIGHT = str.maketrans({"\u201c": '"', "\u201d": '"', "\u2018": "'", "\u2019": "'"})
+# A page's inputs and outputs are listed in a section of their own: <li><strong>Input:</strong> ...
+PARAMETERS = re.compile(r"<strong>\s*(Input|Output)\s*:?\s*</strong>(.*?)(?=<li|</ul>|$)", re.S | re.I)
+PLACEHOLDER = re.compile(r"plac\w*holder", re.I)
 
 
 def straight(tag) -> str:
@@ -26,13 +30,24 @@ def html(value):
     return marked(TAG.sub(straight, str(value)))
 
 
+def parameters(row: dict, description) -> None:
+    """The inputs and outputs a section lists, as parts of the page; placeholder texts are left out."""
+    for kind, given in PARAMETERS.findall(str(description or "")):
+        name = " ".join(unescape(re.sub(r"<[^>]+>", " ", given)).split())
+        if present(name) and not PLACEHOLDER.search(name):
+            row.setdefault("inputs" if kind.lower() == "input" else "outputs", []).append({"@type": "Parameter", "name": name})
+
+
 def text(row: dict, content) -> None:
-    """A page's text: in HTML, or in sections, each with a heading and an HTML text."""
+    """A page's text: in HTML, or in sections, each with a heading and an HTML text. A section of inputs and
+    outputs gives the page's inputs and outputs instead."""
     if isinstance(content, str) and present(content):
         row["content"] = html(content)
     elif isinstance(content, list):
         for position, section in enumerate(content, start=1):
-            if isinstance(section, dict):
+            if isinstance(section, dict) and str(section.get("section") or "").strip().lower() == "input and resulting output":
+                parameters(row, section.get("description"))
+            elif isinstance(section, dict):
                 found = {"@type": "Section", "position": position, "title": section.get("section")}
                 if present(section.get("description")):
                     found["text"] = html(section["description"])
