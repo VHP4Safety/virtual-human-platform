@@ -123,6 +123,12 @@ def ro_crate(path: str):
                     "Link": f'<{crates.PROFILE}>; rel="profile", <{record.iri}>; rel="cite-as"'})
 
 
+# A case study's page takes the next parts of its address (app.py), so its crate's address is named here.
+@blueprint.get("/casestudies/<case>/ro-crate-metadata.json")
+def case_study_crate(case: str):
+    return ro_crate("casestudies/" + case)
+
+
 @blueprint.after_app_request
 def link_data(response):
     links = []
