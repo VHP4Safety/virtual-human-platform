@@ -67,6 +67,15 @@ def search(text: str, classes: list[str], within: str = "", parts: bool = True, 
         return list(db.scalars(statement.order_by(func.lower(Record.name), Record.iri).limit(limit)))
 
 
+def with_pages() -> list[tuple[str, str]]:
+    """The address and last change of each record with a page on the platform: not a part, not removed or
+    moved, at the platform's base."""
+    with database.session() as db:
+        return list(db.execute(select(Record.iri, Record.updated_at).where(
+            Record.iri.startswith(settings()["base"]), Record.part_of.is_(None), Record.removed_at.is_(None),
+            Record.moved_to.is_(None)).order_by(Record.iri)).all())
+
+
 def kept(iris: list[str]) -> list[Record]:
     """The records and parts at these addresses that are not removed or moved."""
     with database.session() as db:

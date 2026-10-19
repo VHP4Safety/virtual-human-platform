@@ -41,6 +41,11 @@ def data(found: Graph, media: str, iri: str | None = None) -> Response:
     return Response(body, mimetype=media, headers={"Vary": "Accept"})
 
 
+def pages() -> list[tuple[str, str]]:
+    """The records' pages for the sitemap: each page's address and last change."""
+    return records.with_pages()
+
+
 def markdown_of(record: Record) -> Response:
     """A record's page in Markdown, with links to its data."""
     formats = {}

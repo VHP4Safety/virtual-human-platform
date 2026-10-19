@@ -9,7 +9,7 @@ import time
 import nh3
 import requests
 import urllib.parse
-from flask import Flask, abort, jsonify, render_template, request, Response, url_for
+from flask import Flask, abort, g, jsonify, render_template, request, Response, url_for
 from flask_caching import Cache
 from jinja2 import TemplateNotFound
 from markupsafe import Markup
@@ -28,6 +28,7 @@ from routes.changes import blueprint as changes_blueprint
 from routes.sources import blueprint as sources_blueprint
 from routes.editor import blueprint as admin_blueprint
 from routes.images import blueprint as images_blueprint
+from routes import record_pages
 from routes.record_pages import blueprint as pages_blueprint
 from routes.record_pages import page_link
 
@@ -809,12 +810,13 @@ def inject_seo_defaults():
 
     Routes override page_title / meta_description via render_template kwargs
     (explicit context wins over context processors). canonical_url defaults to
-    the current URL without its query string (request.base_url).
+    a record's own address on its page, else the page's path at the platform's
+    address, so that copies of the platform are not indexed as the platform.
     """
     return {
         "page_title": DEFAULT_PAGE_TITLE,
         "meta_description": DEFAULT_META_DESCRIPTION,
-        "canonical_url": request.base_url,
+        "canonical_url": g.record.iri if "record" in g else records.address(request.path.strip("/")),
     }
 
 
@@ -871,16 +873,16 @@ def data_hit_id(hit: dict) -> str:
 ################################################################################
 ### The sitemap.xml for search engines
 @app.route("/sitemap.xml")
-@cache.memoize(timeout=CACHE_TIMEOUT)
 def sitemap():
+    """The static pages, and each record's page with its last change."""
     BASE = "https://platform.vhp4safety.nl"
 
     # Static, parameter-less GET pages, derived from the URL map so new pages
     # are picked up automatically. Machine endpoints are excluded. Routes with
     # <params> are skipped and handled below.
     EXCLUDED_ENDPOINTS = {"sitemap", "robots", "static"}
-    # The pages for editors (login, tokens, editing, changes) are left out.
-    EXCLUDED_BLUEPRINTS = {"account", "admin", "changes"}
+    # The pages for editors (login, tokens, editing, changes) and the API are left out.
+    EXCLUDED_BLUEPRINTS = {"account", "admin", "changes", "api", "api-docs"}
     paths = sorted(
         rule.rule.rstrip("/") or "/"
         for rule in app.url_map.iter_rules()
@@ -889,63 +891,14 @@ def sitemap():
         and rule.endpoint.split(".")[0] not in EXCLUDED_BLUEPRINTS
         and "GET" in (rule.methods or set())
     )
-
-    # Tool detail pages
-    tools = linked_tools(get_json_dict(SERVICES_URL))
-    if isinstance(tools, dict):
-        paths += [f"/tools/{urllib.parse.quote(str(k))}" for k in tools]
-
-    # Method detail pages
-    methods = linked_methods()
-    if isinstance(methods, dict):
-        paths += [f"/methods/{urllib.parse.quote(str(k))}" for k in methods]
-
-    # Dataset detail pages (BioStudies + Zenodo). Fetched in pages of 25 (the
-    # Zenodo API rejects larger page sizes) and looped until both sources are
-    # exhausted. load_metadata=False keeps this cheap (no per-file HEAD requests).
-    # A repo failure must never 500 the sitemap; tools/methods/case studies still
-    # serve.
-    DATA_PAGE_SIZE = 25
-    try:
-        page = 1
-        while True:
-            bs_results, zen_results = get_repository_data(
-                search_query="",
-                page=page,
-                page_size=DATA_PAGE_SIZE,
-                load_metadata=False,
-            )
-            bs_hits = (bs_results or {}).get("hits", [])
-            zen_hits = (zen_results or {}).get("hits", [])
-            for hit in bs_hits + zen_hits:
-                hit_id = data_hit_id(hit)
-                if hit_id:
-                    paths.append(f"/data/{urllib.parse.quote(str(hit_id))}")
-            total = max(
-                (bs_results or {}).get("total") or 0,
-                (zen_results or {}).get("total") or 0,
-            )
-            if (not bs_hits and not zen_hits) or page * DATA_PAGE_SIZE >= total:
-                break
-            page += 1
-    except Exception:
-        pass
-
-    # Case study detail pages
-    paths += [f"/casestudies/{urllib.parse.quote(c)}" for c in get_casestudies()]
-
-    # Dedupe while preserving order
-    seen = set()
-    unique_paths = [p for p in paths if not (p in seen or seen.add(p))]
-
-    url_entries = "\n".join(
-        f"  <url>\n    <loc>{BASE}{p}</loc>\n  </url>" for p in unique_paths
-    )
+    entries = [f"  <url>\n    <loc>{BASE}{p}</loc>\n  </url>" for p in paths]
+    for address, changed in record_pages.pages():
+        entries.append(f"  <url>\n    <loc>{address}</loc>\n    <lastmod>{changed}</lastmod>\n  </url>")
     sitemapContent = (
         '<?xml version="1.0" encoding="utf-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        f"{url_entries}\n"
-        "</urlset>\n"
+        + "\n".join(entries)
+        + "\n</urlset>\n"
     )
     return Response(sitemapContent, mimetype="text/xml")
 
@@ -957,6 +910,7 @@ def robots():
     robotsContent = (
         "User-agent: *\n"
         "Allow: /\n"
+        "Disallow: /admin/\n"
         "\n"
         "Sitemap: https://platform.vhp4safety.nl/sitemap.xml\n"
     )
