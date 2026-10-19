@@ -2,14 +2,15 @@
 position, hidden ones left out, each with its text, figures, videos and items; the description, videos,
 research lines and grants of an about page's subject; the records that name a section's grant; and the kinds
 of a term the page explains, named the glossary's way ("Toxicokinetics (Process Flow Step)"). The platform's
-catalogue, for the home page: its kinds of records with their counts, its pages, and its publisher's partners."""
+catalogue, for the home page: its kinds of records with their counts, its pages, and its publisher's partners.
+A kind's listing: a page of its records, found by name and filtered by its browsable fields, with counts."""
 
 from rdflib import RDF, Graph, Literal, URIRef
 from rdflib.namespace import SDO, VOID
 
 from database import records
 from database.tables import Record
-from linkeddata import catalogue, documents, outline, storage
+from linkeddata import catalogue, documents, fields, outline, storage
 from linkeddata.model import settings
 
 
@@ -116,6 +117,47 @@ def page(record: Record) -> dict:
     return {"name": str(found.value(node, SDO.name) or record.name or ""), "description": str(found.value(node, SDO.description) or ""),
             "sections": shown, "tabbed": any(section["heading"] for section in shown),
             "subject": subject(str(main)) if main is not None else None, "kinds": kinds(str(about)) if about is not None else []}
+
+
+# Records on a page of a kind's listing.
+LISTED = 12
+
+
+def kind(of_class: str) -> dict:
+    """A kind's name and description, from the platform's catalogue."""
+    base = URIRef(settings()["base"])
+    found = documents.public(storage.graph([str(base)]))
+    for part in found.objects(base, VOID.classPartition):
+        if str(found.value(part, VOID["class"])) == of_class:
+            return {"name": str(found.value(part, SDO.name) or ""), "description": text(found.value(part, SDO.description))}
+    return {"name": "", "description": ""}
+
+
+def listing(path: str, arguments) -> dict:
+    """A kind's page of records (*arguments*: search, page, and values of browsed fields by their names),
+    with the values of the browsed fields that find records or are chosen, and their counts."""
+    of_class = settings()["kinds"][path]
+    given = {"search": arguments.get("search", "").strip()}
+    browsed = []
+    for field in fields.of(of_class):
+        if catalogue.browsed(field):
+            browsed.append(field)
+            given[field["name"]] = arguments.getlist(field["name"])
+    number = max(arguments.get("page", 1, type=int), 1)
+    total, iris = catalogue.page(of_class, catalogue.filters(of_class, given), given["search"], (number - 1) * LISTED, LISTED)
+    found = documents.public(storage.graph(iris))
+    listed = []
+    for iri in iris:
+        listed.append({"address": iri, "name": str(found.value(URIRef(iri), SDO.name) or iri), "description": text(found.value(URIRef(iri), SDO.description))})
+    counts = catalogue.counted(of_class, given)
+    filters = []
+    for field in browsed:
+        shown = [value for value in counts[field["name"]] if value["count"] or value["value"] in given[field["name"]]]
+        if shown:
+            filters.append({"name": field["name"], "label": field["label"], "values": shown})
+    query = [(name, value) for name in arguments for value in arguments.getlist(name) if name != "page"]
+    return {**kind(of_class), "path": path, "search": given["search"], "chosen": given, "filters": filters, "listed": listed,
+            "total": total, "page": number, "pages": (total + LISTED - 1) // LISTED, "query": query}
 
 
 def partners(found: Graph, node) -> list[dict]:
