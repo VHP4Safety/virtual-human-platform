@@ -22,7 +22,7 @@ from data.zenodo.search import ZenodoExtractor
 from data.mapping import normalize_all, scrub_draft
 from database import records
 from linkeddata import documents, outline, pages, storage, void
-from linkeddata.model import settings
+from linkeddata.model import hierarchy, settings
 from routes.account import blueprint as account_blueprint
 from routes import limiter, records_api
 from routes.changes import blueprint as changes_blueprint
@@ -139,6 +139,8 @@ app.register_blueprint(discovery_blueprint)
 # base.html when set). Kept out of the repo -- set it in the service env.
 app.config["GOOGLE_SITE_VERIFICATION"] = os.environ.get("GOOGLE_SITE_VERIFICATION", "")
 cache = Cache(app)
+# The vocabularies' class hierarchy is read once, as the app starts, not by its first request.
+hierarchy()
 
 
 _last_cache_reset = 0.0
@@ -536,46 +538,21 @@ def get_repository_data(
         return exc.args[0]
 
 
-# Provide methods list to all templates for the Methods dropdown in the navbar
-@app.context_processor
-def inject_methods_menu():
-    """Fetch methods_index.json and expose a simple list of {id, title} to templates.
-    Return an empty list on any error to avoid breaking pages.
-    """
-    data = linked_methods()
-    if data:
-        items = []
-        for key, val in data.items() if isinstance(data, dict) else []:
-            title = (
-                val.get("method")
-                or val.get("method_name_content")
-                or val.get("method_name")
-                or key
-            )
-            items.append({"id": key, "title": title})
-        # sort by title
-        items = sorted(items, key=lambda x: x["title"].lower())
-        return {"methods_menu": items}
-    else:
-        return {"methods_menu": []}
+def menu(kind: str) -> list[dict]:
+    """A kind's records for the navigation menus and the search bar: each one's identifier, name and page, by
+    name."""
+    listed = []
+    for record in records.of_kind(kind):
+        if record.part_of is None:
+            listed.append({"id": record.iri.rsplit("/", 1)[-1], "title": record.name or record.iri, "url": page_link(record.iri)})
+    listed.sort(key=lambda item: item["title"].lower())
+    return listed
 
 
 @app.context_processor
-def inject_tools_menu():
-    """Fetch methods_index.json and expose a simple list of {id, title} to templates.
-    Return an empty list on any error to avoid breaking pages.
-    """
-    data = linked_tools(get_json_dict(SERVICES_URL))
-    if data:
-        items = []
-        for key, val in data.items() if isinstance(data, dict) else []:
-            title = val.get("service") or key
-            items.append({"id": key, "title": title})
-        # sort by title
-        items = sorted(items, key=lambda x: x["title"].lower())
-        return {"tools_menu": items}
-    else:
-        return {"tools_menu": []}
+def inject_menus():
+    """The tools, methods and data of the navigation menus and the search bar, from their records."""
+    return {"tools_menu": menu("tools"), "methods_menu": menu("methods"), "data_menu": menu("data")}
 
 
 def data_hit_id(hit: dict) -> str:
@@ -592,28 +569,6 @@ def data_hit_id(hit: dict) -> str:
         or hit.get("recid")
         or ""
     )
-
-
-@app.context_processor
-def inject_data_menu():
-    """Fetch methods_index.json and expose a simple list of {id, title} to templates.
-    Return an empty list on any error to avoid breaking pages.
-    """
-    bs_results, zen_results = get_repository_data(search_query="")
-    hits: list = bs_results.get("hits", [])
-    hits.extend(zen_results.get("hits", []))
-    if hits:
-        items = []
-        for hit in hits:
-            title = hit.get("title")
-            id = hit.get("accession", "") or hit.get("doi_url", "") or hit.get("id", "")
-            url = hit.get("url", "") or hit.get("doi_url")
-            items.append({"id": id, "title": title, "url": url})
-        # sort by title
-        items = sorted(items, key=lambda x: x["title"].lower())
-        return {"data_menu": items}
-    else:
-        return {"data_menu": []}
 
 
 @app.context_processor
