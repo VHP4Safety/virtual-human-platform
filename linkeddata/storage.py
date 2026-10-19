@@ -3,6 +3,7 @@ ways by rdfsolve (rdfsolve.client.sql_tables) and written by pandas. Each row na
 included (nodes without an address, and addresses under the record's), so a record is read and removed by
 its address."""
 
+import logging
 from functools import cache
 
 import pandas as pd
@@ -14,6 +15,9 @@ from sqlalchemy import bindparam, column, select, table, text
 import database
 from database.tables import Record
 from linkeddata.model import MODEL_DIR, settings
+
+# An HTML text that does not parse is flagged by the checks; rdflib's warning on each read is left out.
+logging.getLogger("rdflib.term").setLevel(logging.ERROR)
 
 
 @cache
