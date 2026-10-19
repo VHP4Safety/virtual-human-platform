@@ -2,12 +2,15 @@
 proposals. Each is replaced by its rdfsolve call once that exists."""
 
 from dataclasses import dataclass, field
+from hashlib import sha256
 from pathlib import Path
+from uuid import NAMESPACE_URL, uuid5
 
 import requests
 from rdflib import RDF, BNode, Graph, URIRef
 from rdfsolve.client.sql_tables import layout
 from rdfsolve.ontology.service import Ontologies
+from rdfsolve.schema_models.core import MinedSchema
 
 
 @dataclass
@@ -79,6 +82,19 @@ def merge(current: Graph, added: Graph, profile) -> Merged:
             merged.graph.add((subject, predicate, value))
             merged.added.append((subject, predicate, value))
     return merged
+
+
+# rdfsolve issue 15: MinedSchema.from_vocabulary sorts the texts of terms by term and predicate only, so two
+# texts of one term from two vocabularies come in either order, and so does the schema's identifier.
+def from_vocabulary(vocabularies, classes, profile) -> MinedSchema:
+    """MinedSchema.from_vocabulary, with the texts of each term sorted, and the identifier of the content
+    made as rdfsolve makes it."""
+    schema = MinedSchema.from_vocabulary(vocabularies, classes, profile=profile)
+    for texts in (schema.enrichment.definitions, schema.enrichment.labels):
+        texts.sort(key=lambda found: (found.term_iri, found.predicate, found.text.value, found.text.language or ""))
+    content = schema.model_dump_json(exclude={"about"})
+    schema.about.schema_id = str(uuid5(NAMESPACE_URL, "rdfsolve:vocabulary:" + sha256(content.encode()).hexdigest()))
+    return schema
 
 
 # rdfsolve proposal P7: rdfsolve.client.sql_tables.context(profile, of_class, term) -> dict

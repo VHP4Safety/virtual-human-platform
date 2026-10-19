@@ -12,6 +12,8 @@ from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SH
 from rdfsolve.client.sql_tables import layout
 from rdfsolve.schema_models import MinedSchema
 
+from linkeddata import patches
+
 # The served release: its model is in model/<release>, its tables in database/<release>.
 RELEASE = "v1"
 MODEL_DIR = Path(__file__).parent / "model" / RELEASE
@@ -67,7 +69,7 @@ def approved_schema() -> dict:
     """The approved schema of the profile's classes, from the vocabularies and the profile."""
     config = settings()
     classes = sorted({str(kind) for kind in profile().objects(None, SH.targetClass)})
-    return MinedSchema.from_vocabulary(vocabularies(config), classes, profile=MODEL_DIR / "profile.ttl").to_dict()
+    return patches.from_vocabulary(vocabularies(config), classes, MODEL_DIR / "profile.ttl").to_dict()
 
 
 def write_schema() -> Path:

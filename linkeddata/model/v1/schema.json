@@ -91072,11 +91072,151 @@
    "endpoint": null,
    "definitions": [
     {
+     "term_iri": "http://purl.org/dc/terms/conformsTo",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
+     "text": {
+      "kind": "literal",
+      "value": "Used to state the Bioschemas profile that the markup relates to. The versioned URL of the profile must be used. Note that we use a CURIE in the table here but the full URL for Dublin Core terms must be used in the markup (http://purl.org/dc/terms/conformsTo), see example.",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
      "term_iri": "https://bioschemas.org/draft_terms/LabProtocol",
      "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
      "text": {
       "kind": "literal",
       "value": "An experimental lab protocol is a sequence of tasks and operations executed to perform experimental research in wet- or dry-labs. \n\nVersion: v0.5 \n\nChangelog: \n* Add DefinedTerm and PropertyValue for labEquipment, bioSample, sample, reagent and computationalTool so it works better with the coming LabPeocess\n\nPrepared by: Leyla Jael Castro",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/bioSample",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
+     "text": {
+      "kind": "literal",
+      "value": "BioSample used in the protocol. It could be a record in a Dataset describing the sample or a physical object corresponding to the sample or a URL pointing to the type of sample used.",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/computationalTool",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
+     "text": {
+      "kind": "literal",
+      "value": "Computational tool or workflow used to complete a part of this protocol.",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/ethicalLegalSocial",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
+     "text": {
+      "kind": "literal",
+      "value": "Considerations wrt ethical, legal and social aspects.",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/intendedUse",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
+     "text": {
+      "kind": "literal",
+      "value": "Purpose and intended use stated to enable users to make a decision as to the suitability of this creative work (e.g., lab protocol, machine learning model, software) to their experimental problem or own use case.",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/labEquipment",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
+     "text": {
+      "kind": "literal",
+      "value": "A laboratory equipment used by a person to follow one or more steps described in this LabProtocol.",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/protocolAdvantage",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
+     "text": {
+      "kind": "literal",
+      "value": "Situations where the LabProtocol has been successfully employed including advantageous elements (e.g. better yield, shorter running time).",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/protocolApplication",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
+     "text": {
+      "kind": "literal",
+      "value": "Applications of the protocol list the full diversity of the applications of the method and support if is possible to extend the range of applications of the protocol. e.g. northern blot assays, sequencing, etc. ",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/protocolLimitation",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
+     "text": {
+      "kind": "literal",
+      "value": "Situations where the Protocol would be unreliable or otherwise unsuccessful.",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/protocolOutcome",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
+     "text": {
+      "kind": "literal",
+      "value": "Actual outcome or result by a protocol execution. The shape of the expected outcome/result can be described using the property 'output'.",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/reagent",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
+     "text": {
+      "kind": "literal",
+      "value": "Reagents used in the protocol. DefinedTerm is preferred whenever possible, e.g., ChEBI and PubChem entities can be used whenever available. Commercial names are also acceptable. A reagent is defined as \u2018A substance used in a chemical reaction to detect, measure, examine, or produce other substances\u2019 in [CHEBI:33893](https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:33893).",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/sample",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
+     "text": {
+      "kind": "literal",
+      "value": "Sample used in the protocol. It could be a record in a Dataset describing the sample or a physical object corresponding to the sample or a URL pointing to the type of sample used.",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/terms/input",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
+     "text": {
+      "kind": "literal",
+      "value": "Specification of a consumed input.",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/terms/output",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
+     "text": {
+      "kind": "literal",
+      "value": "Specification of a produced output.",
       "datatype": null,
       "language": null
      }
@@ -92077,146 +92217,6 @@
      "text": {
       "kind": "literal",
       "value": "A web page element, like a table or an image.",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "http://purl.org/dc/terms/conformsTo",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
-     "text": {
-      "kind": "literal",
-      "value": "Used to state the Bioschemas profile that the markup relates to. The versioned URL of the profile must be used. Note that we use a CURIE in the table here but the full URL for Dublin Core terms must be used in the markup (http://purl.org/dc/terms/conformsTo), see example.",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/bioSample",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
-     "text": {
-      "kind": "literal",
-      "value": "BioSample used in the protocol. It could be a record in a Dataset describing the sample or a physical object corresponding to the sample or a URL pointing to the type of sample used.",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/computationalTool",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
-     "text": {
-      "kind": "literal",
-      "value": "Computational tool or workflow used to complete a part of this protocol.",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/ethicalLegalSocial",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
-     "text": {
-      "kind": "literal",
-      "value": "Considerations wrt ethical, legal and social aspects.",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/intendedUse",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
-     "text": {
-      "kind": "literal",
-      "value": "Purpose and intended use stated to enable users to make a decision as to the suitability of this creative work (e.g., lab protocol, machine learning model, software) to their experimental problem or own use case.",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/labEquipment",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
-     "text": {
-      "kind": "literal",
-      "value": "A laboratory equipment used by a person to follow one or more steps described in this LabProtocol.",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/protocolAdvantage",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
-     "text": {
-      "kind": "literal",
-      "value": "Situations where the LabProtocol has been successfully employed including advantageous elements (e.g. better yield, shorter running time).",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/protocolApplication",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
-     "text": {
-      "kind": "literal",
-      "value": "Applications of the protocol list the full diversity of the applications of the method and support if is possible to extend the range of applications of the protocol. e.g. northern blot assays, sequencing, etc. ",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/protocolLimitation",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
-     "text": {
-      "kind": "literal",
-      "value": "Situations where the Protocol would be unreliable or otherwise unsuccessful.",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/protocolOutcome",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
-     "text": {
-      "kind": "literal",
-      "value": "Actual outcome or result by a protocol execution. The shape of the expected outcome/result can be described using the property 'output'.",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/reagent",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
-     "text": {
-      "kind": "literal",
-      "value": "Reagents used in the protocol. DefinedTerm is preferred whenever possible, e.g., ChEBI and PubChem entities can be used whenever available. Commercial names are also acceptable. A reagent is defined as \u2018A substance used in a chemical reaction to detect, measure, examine, or produce other substances\u2019 in [CHEBI:33893](https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:33893).",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/sample",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
-     "text": {
-      "kind": "literal",
-      "value": "Sample used in the protocol. It could be a record in a Dataset describing the sample or a physical object corresponding to the sample or a URL pointing to the type of sample used.",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/terms/input",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
-     "text": {
-      "kind": "literal",
-      "value": "Specification of a consumed input.",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/terms/output",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#comment",
-     "text": {
-      "kind": "literal",
-      "value": "Specification of a produced output.",
       "datatype": null,
       "language": null
      }
@@ -95654,11 +95654,151 @@
    ],
    "labels": [
     {
+     "term_iri": "http://purl.org/dc/terms/conformsTo",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
+     "text": {
+      "kind": "literal",
+      "value": "conformsTo",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
      "term_iri": "https://bioschemas.org/draft_terms/LabProtocol",
      "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
      "text": {
       "kind": "literal",
       "value": "LabProtocol",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/bioSample",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
+     "text": {
+      "kind": "literal",
+      "value": "bioSample",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/computationalTool",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
+     "text": {
+      "kind": "literal",
+      "value": "computationalTool",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/ethicalLegalSocial",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
+     "text": {
+      "kind": "literal",
+      "value": "ethicalLegalSocial",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/intendedUse",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
+     "text": {
+      "kind": "literal",
+      "value": "intendedUse",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/labEquipment",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
+     "text": {
+      "kind": "literal",
+      "value": "labEquipment",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/protocolAdvantage",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
+     "text": {
+      "kind": "literal",
+      "value": "protocolAdvantage",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/protocolApplication",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
+     "text": {
+      "kind": "literal",
+      "value": "protocolApplication",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/protocolLimitation",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
+     "text": {
+      "kind": "literal",
+      "value": "protocolLimitation",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/protocolOutcome",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
+     "text": {
+      "kind": "literal",
+      "value": "protocolOutcome",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/reagent",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
+     "text": {
+      "kind": "literal",
+      "value": "reagent",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/draft_terms/sample",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
+     "text": {
+      "kind": "literal",
+      "value": "sample",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/terms/input",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
+     "text": {
+      "kind": "literal",
+      "value": "input",
+      "datatype": null,
+      "language": null
+     }
+    },
+    {
+     "term_iri": "https://bioschemas.org/terms/output",
+     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
+     "text": {
+      "kind": "literal",
+      "value": "output",
       "datatype": null,
       "language": null
      }
@@ -96659,146 +96799,6 @@
      "text": {
       "kind": "literal",
       "value": "WebPageElement",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "http://purl.org/dc/terms/conformsTo",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
-     "text": {
-      "kind": "literal",
-      "value": "conformsTo",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/bioSample",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
-     "text": {
-      "kind": "literal",
-      "value": "bioSample",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/computationalTool",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
-     "text": {
-      "kind": "literal",
-      "value": "computationalTool",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/ethicalLegalSocial",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
-     "text": {
-      "kind": "literal",
-      "value": "ethicalLegalSocial",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/intendedUse",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
-     "text": {
-      "kind": "literal",
-      "value": "intendedUse",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/labEquipment",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
-     "text": {
-      "kind": "literal",
-      "value": "labEquipment",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/protocolAdvantage",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
-     "text": {
-      "kind": "literal",
-      "value": "protocolAdvantage",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/protocolApplication",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
-     "text": {
-      "kind": "literal",
-      "value": "protocolApplication",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/protocolLimitation",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
-     "text": {
-      "kind": "literal",
-      "value": "protocolLimitation",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/protocolOutcome",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
-     "text": {
-      "kind": "literal",
-      "value": "protocolOutcome",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/reagent",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
-     "text": {
-      "kind": "literal",
-      "value": "reagent",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/draft_terms/sample",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
-     "text": {
-      "kind": "literal",
-      "value": "sample",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/terms/input",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
-     "text": {
-      "kind": "literal",
-      "value": "input",
-      "datatype": null,
-      "language": null
-     }
-    },
-    {
-     "term_iri": "https://bioschemas.org/terms/output",
-     "predicate": "http://www.w3.org/2000/01/rdf-schema#label",
-     "text": {
-      "kind": "literal",
-      "value": "output",
       "datatype": null,
       "language": null
      }
@@ -100422,7 +100422,7 @@
   "value_parts": null,
   "shapes": null,
   "about": {
-   "schema_id": "2b555eca-dfa8-57f9-a6a8-d62a45b1c703",
+   "schema_id": "362a3597-d5dd-5874-9a55-0c18a2bb041c",
    "schema_version": "",
    "snapshot_id": null,
    "retrieved_at": null,
