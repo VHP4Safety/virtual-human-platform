@@ -1,0 +1,29 @@
+name: nwopen
+title: NWO projects (NWOpen API)
+# The NWO projects the platform follows, each by the platform's address of its grant (linkeddata/parsers/nwopen.py).
+files:
+  grants/nwa-orc-1292-19-272: https://nwopen-api.nwo.nl/NWOpen-API/api/Projects?project_id=NWA.1292.19.272
+parser: nwopen
+
+# The rules of each kind of row: the arguments of rdfsolve's Rule.between.
+rules:
+  Grant:
+    - {predicate: a, value: "https://schema.org/MonetaryGrant"}
+    - {predicate: "https://schema.org/name", object: name}
+    - {predicate: "https://schema.org/identifier", object: identifier}
+    - {predicate: "https://schema.org/funder", object: funder}
+    - {predicate: "https://schema.org/amount", object: amount}
+  Amount:
+    - {predicate: a, value: "https://schema.org/MonetaryAmount"}
+    - {predicate: "https://schema.org/value", object: value}
+    - {predicate: "https://schema.org/currency", object: currency}
+  Organization:
+    - {predicate: a, value: "https://schema.org/Organization"}
+    - {predicate: "https://schema.org/name", object: name}
+    - {predicate: "https://schema.org/sameAs", object: same_as}
+  Publication:
+    - {predicate: a, value: "https://schema.org/ScholarlyArticle"}
+    - {predicate: "https://schema.org/sameAs", object: doi}
+    - {predicate: "https://schema.org/name", object: title}
+    - {predicate: "https://schema.org/datePublished", object: year}
+    - {predicate: "https://schema.org/funding", object: grants}
