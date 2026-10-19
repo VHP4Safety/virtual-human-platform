@@ -1,6 +1,8 @@
 // The record editor: the form is built by shacl-form from the model's shapes and saved through the records
-// API (Graph Store Protocol) with the record's version. The linked data beside it shows what is published.
+// API (Graph Store Protocol) with the record's version. The preview beside it shows what is published: the
+// record's page, or its linked data.
 import { busy } from "./busy.js";
+import { outline } from "./record-index.js";
 
 (function () {
   const editor = JSON.parse(document.getElementById("editor").textContent);
@@ -10,7 +12,6 @@ import { busy } from "./busy.js";
   const graph = "/api/" + encodeURI(path).replace(/#/g, "%23");
   const form = document.querySelector("shacl-form");
   const column = document.getElementById("main-column");
-  const showRdf = document.getElementById("show-rdf");
   const SCHEMA = "https://schema.org/";
   let previewTimer = null;
   let previewRequest = null;
@@ -158,10 +159,23 @@ import { busy } from "./busy.js";
   }
 
   // What saving publishes, previewed without saving; only the latest answer is drawn. Until the form is
-  // edited, the published record is drawn, as shacl-form sends no change on load.
+  // edited, the published record is shown, as shacl-form sends no change on load.
   let edited = false;
+  const panel = document.getElementById("preview-column");
+  const caption = document.getElementById("preview-caption");
+  const pageView = document.getElementById("page-view");
+  const frame = document.getElementById("page-frame");
+  let view = "page";
 
-  // The case study's page under the form (static/js/case-study.js): the published record, then each preview.
+  function say(text, working) {
+    caption.replaceChildren();
+    if (working) {
+      caption.append(make("span", "spinner-border spinner-border-sm me-1"));
+    }
+    caption.append(document.createTextNode(text));
+  }
+
+  // The case study's page (static/js/case-study.js): the published record, then each preview.
   const caseStudy = document.getElementById("case-study");
   let caseStudyComponent = null;
 
@@ -177,10 +191,9 @@ import { busy } from "./busy.js";
       linkTarget: "_blank",
       openDisabled: true,
       onNavigate: function () {
-        caseStudy.scrollTop = 0;
+        pageView.scrollTop = 0;
       },
     });
-    document.getElementById("case-study-caption").textContent = edited ? "Unsaved changes" : "As published";
   }
 
   // The focused field is marked on the page of the nearest node with an address. A node without one,
@@ -225,11 +238,38 @@ import { busy } from "./busy.js";
     }
   }
 
+  // Any other record's page is shown in a frame: the published page, or the one made from the form. Its
+  // links open in a new tab, and its scroll is kept.
+  function showPage(html) {
+    const top = frame.contentWindow ? frame.contentWindow.scrollY : 0;
+    frame.addEventListener("load", function () {
+      const base = frame.contentDocument.createElement("base");
+      base.target = "_blank";
+      frame.contentDocument.head.prepend(base);
+      frame.contentWindow.scrollTo(0, top);
+    }, { once: true });
+    if (html === null) {
+      frame.removeAttribute("srcdoc");
+      frame.src = pageLink(editor.graph);
+    } else {
+      frame.srcdoc = html;
+    }
+  }
+
   async function renderPreview() {
-    if (!form || !(showRdf.checked || (caseStudy && edited))) {
+    if (!form || !panel || panel.classList.contains("d-none")) {
       return;
     }
-    document.getElementById("rdf-caption").textContent = "Checking…";
+    if (view === "page" && !edited && editor.version) {
+      say("As published");
+      if (caseStudy) {
+        showPublishedCaseStudy();
+      } else if (frame.hasAttribute("srcdoc") || !frame.getAttribute("src")) {
+        showPage(null);
+      }
+      return;
+    }
+    say(view === "page" ? "Making the page…" : "Checking…", true);
     let turtle = "";
     if (edited || !editor.version) {
       turtle = form.serialize("text/turtle");
@@ -241,35 +281,46 @@ import { busy } from "./busy.js";
     }
     const request = new AbortController();
     previewRequest = request;
-    let answer;
+    const page = view === "page" && !caseStudy;
+    let response;
     try {
-      const response = await fetch(graph + "?preview=true", {
+      response = await fetch(graph + "?preview=true" + (page ? "&page=true" : ""), {
         method: "PUT",
         credentials: "same-origin",
         signal: request.signal,
         headers: { "X-Form-Token": editor.token, "Content-Type": "text/turtle" },
         body: turtle,
       });
-      answer = await response.json().catch(function () { return {}; });
-      if (!response.ok) {
-        document.getElementById("rdf-caption").textContent = answer.message || "Linked data not built.";
-        return;
-      }
     } catch (error) {
+      if (previewRequest === request) {
+        say("No answer from the platform.");
+      }
       return;
     }
     if (previewRequest !== request) {
       return;
     }
+    if (page && response.headers.get("Content-Type").startsWith("text/html")) {
+      say(response.ok ? "With unsaved changes" : "Page not found");
+      showPage(await response.text());
+      return;
+    }
+    const answer = await response.json().catch(function () { return {}; });
+    if (!response.ok) {
+      say(answer.message || "Preview not made.");
+      return;
+    }
+    if (view === "page") {
+      say("With unsaved changes");
+      showCaseStudy(answer.document);
+      return;
+    }
     const added = answer.edges.filter(function (edge) { return edge.status === "added"; }).length;
     const removed = answer.edges.filter(function (edge) { return edge.status === "removed"; }).length;
-    document.getElementById("rdf-caption").textContent = added || removed
-      ? "On save: " + added + " added, " + removed + " removed"
-      : "Nothing to save";
+    say(added || removed ? "On save: " + added + " added, " + removed + " removed" : "Nothing to save");
     renderGraph(document.getElementById("rdf-graph"), answer);
     listMessages("rdf-problems", answer.fields);
     listMessages("rdf-warnings", answer.warnings);
-    showCaseStudy(answer.document);
   }
 
   function schedulePreview() {
@@ -277,32 +328,69 @@ import { busy } from "./busy.js";
     previewTimer = window.setTimeout(renderPreview, 500);
   }
 
-  function showPreview() {
-    document.getElementById("rdf-column").classList.toggle("d-none", !showRdf.checked);
-    document.getElementById("layout").classList.toggle("with-preview", showRdf.checked);
+  function remember(name, value) {
     try {
-      window.localStorage.setItem("editor-show-rdf", showRdf.checked ? "yes" : "no");
+      window.localStorage.setItem(name, value);
     } catch (error) {
       // Not remembered where the browser keeps no storage.
     }
+  }
+
+  function recall(name) {
+    try {
+      return window.localStorage.getItem(name);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // The preview is shown on its page or its linked data, or hidden; the choice is remembered.
+  function choose(next, shown) {
+    view = next;
+    panel.classList.toggle("d-none", !shown);
+    document.getElementById("show-preview").classList.toggle("d-none", shown);
+    document.getElementById("layout").classList.toggle("with-preview", shown);
+    for (const button of panel.querySelectorAll("[data-view]")) {
+      button.classList.toggle("active", button.dataset.view === view);
+      button.setAttribute("aria-selected", String(button.dataset.view === view));
+    }
+    pageView.classList.toggle("d-none", view !== "page");
+    document.getElementById("rdf-view").classList.toggle("d-none", view !== "data");
+    remember("editor-preview", shown ? view : "hidden");
     schedulePreview();
   }
 
-  try {
-    showRdf.checked = window.localStorage.getItem("editor-show-rdf") === "yes";
-  } catch (error) {
-    showRdf.checked = false;
+  if (panel) {
+    for (const button of panel.querySelectorAll("[data-view]")) {
+      button.addEventListener("click", function () { choose(button.dataset.view, true); });
+    }
+    document.getElementById("hide-preview").addEventListener("click", function () { choose(view, false); });
+    document.getElementById("show-preview").addEventListener("click", function () { choose(view, true); });
+    const kept = recall("editor-preview");
+    choose(kept === "data" ? "data" : "page", kept !== "hidden");
   }
-  showRdf.addEventListener("change", showPreview);
-  showPreview();
 
-  if (caseStudy && editor.version) {
-    showPublishedCaseStudy();
+  // Records and sections share the side box on narrower screens.
+  const side = document.getElementById("side");
+  for (const tab of side.querySelectorAll(".editor-side-tabs [data-pane]")) {
+    tab.setAttribute("aria-selected", String(tab.dataset.pane === side.dataset.pane));
+    tab.addEventListener("click", function () {
+      side.dataset.pane = tab.dataset.pane;
+      for (const other of side.querySelectorAll(".editor-side-tabs [data-pane]")) {
+        other.setAttribute("aria-selected", String(other === tab));
+      }
+    });
   }
 
   if (form) {
+    outline(form, document.getElementById("record-index"));
+    // A change that leaves the record as loaded, such as an empty field drawn, is no edit.
+    let loaded = null;
+    form.addEventListener("ready", function () {
+      loaded = form.serialize("text/turtle");
+    });
     form.addEventListener("change", function () {
-      edited = true;
+      edited = loaded !== null && form.serialize("text/turtle") !== loaded;
       schedulePreview();
     });
     // Focus within the form reaches its shadow root, not the form.

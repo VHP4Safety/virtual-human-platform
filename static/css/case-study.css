@@ -67,67 +67,6 @@
   }
 }
 
-/* The editor's panel, docked at the bottom of the window over the page, which leaves room for it
-   (--case-study-dock, its height, is set by the page). Its bar folds it; its top edge resizes it. */
-body.editor {
-  padding-bottom: var(--case-study-dock, 0px);
-}
-
-.editor .rdf-preview {
-  max-height: calc(100vh - 2rem - var(--case-study-dock, 0px));
-}
-
-.case-study-dock {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1030;
-  display: flex;
-  flex-direction: column;
-  height: 45vh;
-  background: #fff;
-  border-top: 1px solid var(--bs-border-color);
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.12);
-}
-
-.case-study-dock.folded {
-  height: auto !important;
-}
-
-.case-study-dock.folded .case-study-dock-body,
-.case-study-dock.folded .case-study-dock-handle {
-  display: none;
-}
-
-.case-study-dock-handle {
-  position: absolute;
-  top: -4px;
-  left: 0;
-  right: 0;
-  height: 8px;
-  cursor: ns-resize;
-  touch-action: none;
-}
-
-.case-study-dock-bar {
-  flex: none;
-}
-
-.case-study-dock-toggle {
-  color: #fff;
-  border: 0;
-  background: none;
-  padding: 0.4rem 0;
-  font-weight: 600;
-}
-
-.case-study-dock-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
-
 /* The mark of the field the editor's form is on */
 .case-study-mark {
   outline: 3px solid var(--bs-vhppink);

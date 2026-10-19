@@ -35,6 +35,8 @@ textarea.shown { resize: vertical; }
 .record-link-busy::before { content: ""; display: inline-block; width: 0.8em; height: 0.8em; margin-right: 6px; vertical-align: -0.1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: record-link-turning 0.75s linear infinite; }
 @keyframes record-link-turning { to { transform: rotate(360deg); } }
 .record-link-vocabulary { margin-bottom: 4px; font: inherit; }
+shacl-node, rokit-collapsible { scroll-margin-top: 1rem; }
+.index-shown { outline: 2px solid #c5007f; outline-offset: 3px; border-radius: 4px; transition: outline-color 0.4s; }
 .value-type { align-self: center; margin-left: 4px; padding: 0 4px; border: 1px solid #ced4da; border-radius: 3px; color: #6c757d; font: 0.7em monospace; white-space: nowrap; }
 `;
 

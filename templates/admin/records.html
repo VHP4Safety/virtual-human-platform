@@ -9,21 +9,25 @@
       {% endfor %}
     </ul>
     <span class="flex-grow-1"></span>
-    <div class="form-check form-switch mb-0" title="What saving publishes">
-      <input class="form-check-input" type="checkbox" role="switch" id="show-rdf">
-      <label class="form-check-label small" for="show-rdf">Linked data</label>
-    </div>
+    {% if selected and (not record or not record.removed_at) %}
+    <button type="button" class="btn btn-sm btn-outline-vhppurple d-none" id="show-preview"><i class="bi bi-layout-sidebar-reverse"></i> Preview</button>
+    {% endif %}
   </div>
 
   <div class="editor-layout" id="layout">
-    <aside id="list-column">
-      <div class="card">
-        <div class="card-body p-2">
+    <aside class="editor-side card" id="side" data-pane="{{ 'sections' if selected else 'records' }}">
+      <div class="editor-side-tabs" role="tablist">
+        <button type="button" role="tab" data-pane="records">Records</button>
+        <button type="button" role="tab" data-pane="sections"{% if not selected %} disabled{% endif %}>Sections</button>
+      </div>
+      <div class="editor-side-panes">
+        <section class="editor-side-pane" id="records-pane" aria-label="Records">
+          <h2 class="editor-side-title">Records</h2>
           <form class="input-group input-group-sm mb-2" method="get">
             <input class="form-control" name="new" required placeholder="New record name" aria-label="New record name">
             <button class="btn btn-vhpblue" title="Its address is made from the name"><i class="bi bi-plus-lg"></i> Add</button>
           </form>
-          <div class="list-group list-group-flush record-list small">
+          <div class="list-group list-group-flush small">
             {% for item in records %}
             <a class="list-group-item list-group-item-action d-flex align-items-center gap-2{% if item.record.iri == selected %} active{% endif %}" href="?record={{ item.record.iri|urlencode }}">
               <span class="me-auto">{{ item.record.name or item.record.iri }}{% if item.record.removed_at %} <span class="badge text-bg-secondary">removed</span>{% endif %}</span>
@@ -32,7 +36,13 @@
             </a>
             {% endfor %}
           </div>
-        </div>
+        </section>
+        <section class="editor-side-pane" id="sections-pane" aria-label="Sections">
+          <h2 class="editor-side-title">Sections</h2>
+          <nav class="record-index small" id="record-index">
+            <p class="text-secondary mb-0">{% if selected %}Loading…{% else %}Choose a record.{% endif %}</p>
+          </nav>
+        </section>
       </div>
     </aside>
 
@@ -68,99 +78,40 @@
       {% endif %}
     </div>
 
-    <aside class="d-none" id="rdf-column">
-      <div class="card rdf-preview">
-        <div class="card-header bg-white">
-          <div class="fw-semibold">Linked data</div>
-          <div class="small text-secondary" id="rdf-caption"></div>
+    {% if selected and (not record or not record.removed_at) %}
+    <aside class="editor-preview card d-none" id="preview-column" aria-label="Preview">
+      <div class="card-header bg-white d-flex align-items-center gap-2">
+        <div class="btn-group btn-group-sm" role="tablist">
+          <button type="button" class="btn btn-outline-vhppurple" role="tab" data-view="page"><i class="bi bi-window"></i> Page</button>
+          <button type="button" class="btn btn-outline-vhppurple" role="tab" data-view="data"><i class="bi bi-diagram-3"></i> Linked data</button>
         </div>
-        <div class="card-body">
+        <span class="small text-secondary text-truncate me-auto" id="preview-caption"></span>
+        {% if record %}<a class="link-secondary" href="{{ selected|page_link }}" target="_blank" rel="noopener" title="Published page"><i class="bi bi-box-arrow-up-right"></i></a>{% endif %}
+        <button type="button" class="btn-close" id="hide-preview" aria-label="Hide the preview"></button>
+      </div>
+      <div class="editor-preview-body" id="page-view">
+        {% if kind == "casestudies" %}
+        <div id="case-study" data-component="{{ url_for('static', filename='js/case-study.js') }}">
+          <p class="text-secondary p-3 mb-0">{% if record %}Loading…{% else %}Shown here once the form is filled.{% endif %}</p>
+        </div>
+        {% else %}
+        <iframe class="page-frame" id="page-frame" title="The record's page"></iframe>
+        {% endif %}
+      </div>
+      <div class="editor-preview-body card-body d-none" id="rdf-view">
           <div class="alert alert-danger small py-2 d-none"><div class="fw-semibold mb-1">Not ready to save</div><ul class="mb-0 ps-3" id="rdf-problems"></ul></div>
           <div class="alert alert-warning small py-2 d-none"><div class="fw-semibold mb-1">Check before saving</div><ul class="mb-0 ps-3" id="rdf-warnings"></ul></div>
           <div id="rdf-graph"></div>
           <p class="small text-secondary mb-0 mt-3">Each arrow is a published statement; green ones are added on save, red ones removed.
-            {% if record and not record.removed_at %}<a class="link-secondary" href="{{ url_for('api.read', path=selected.removeprefix(base)) }}" target="_blank" rel="noopener">The published data</a>{% endif %}</p>
-        </div>
+            {% if record %}<a class="link-secondary" href="{{ url_for('api.read', path=selected.removeprefix(base)) }}" target="_blank" rel="noopener">The published data</a>{% endif %}</p>
       </div>
     </aside>
+    {% endif %}
   </div>
 </div>
 {% if kind == "casestudies" and selected and (not record or not record.removed_at) %}
 <link href="{{ url_for('static', filename='css/casestudies.css') }}" rel="stylesheet">
 <link href="{{ url_for('static', filename='css/case-study.css') }}" rel="stylesheet">
-<section class="case-study-dock" id="case-study-dock" aria-label="The case study's page">
-  <div class="case-study-dock-handle" title="Drag to resize"></div>
-  <div class="case-study-dock-bar bg-vhppurple d-flex flex-wrap align-items-center column-gap-3 px-3">
-    <button type="button" class="case-study-dock-toggle d-flex align-items-center gap-2" id="case-study-toggle" aria-expanded="true" aria-controls="case-study">
-      <i class="bi bi-chevron-down"></i> The case study's page
-    </button>
-    <span class="small text-white-50" id="case-study-caption"></span>
-  </div>
-  <div class="case-study-dock-body" id="case-study" data-component="{{ url_for('static', filename='js/case-study.js') }}">
-    <p class="text-secondary p-3 mb-0">{% if record %}Loading…{% else %}Shown here once the form is filled.{% endif %}</p>
-  </div>
-</section>
-<script>
-  // The case study panel is folded by its bar and resized by its top edge; the choice is kept where storage is.
-  (function () {
-    const dock = document.getElementById("case-study-dock");
-    const toggle = document.getElementById("case-study-toggle");
-    const handle = dock.querySelector(".case-study-dock-handle");
-
-    function remember(name, value) {
-      try {
-        window.localStorage.setItem(name, value);
-      } catch (error) {
-        // Not kept where the browser keeps no storage.
-      }
-    }
-
-    function recall(name) {
-      try {
-        return window.localStorage.getItem(name);
-      } catch (error) {
-        return null;
-      }
-    }
-
-    function fit() {
-      document.documentElement.style.setProperty("--case-study-dock", dock.offsetHeight + "px");
-    }
-
-    function fold(folded) {
-      dock.classList.toggle("folded", folded);
-      toggle.setAttribute("aria-expanded", folded ? "false" : "true");
-      toggle.querySelector("i").className = folded ? "bi bi-chevron-up" : "bi bi-chevron-down";
-      remember("editor-case-study-folded", folded ? "yes" : "no");
-      fit();
-    }
-
-    function resize(height) {
-      dock.style.height = Math.max(120, Math.min(window.innerHeight - 80, height)) + "px";
-      fit();
-    }
-
-    toggle.addEventListener("click", function () {
-      fold(!dock.classList.contains("folded"));
-    });
-    handle.addEventListener("pointerdown", function (event) {
-      handle.setPointerCapture(event.pointerId);
-    });
-    handle.addEventListener("pointermove", function (event) {
-      if (handle.hasPointerCapture(event.pointerId)) {
-        resize(window.innerHeight - event.clientY);
-      }
-    });
-    handle.addEventListener("pointerup", function () {
-      remember("editor-case-study-height", dock.offsetHeight);
-    });
-    window.addEventListener("resize", fit);
-    if (parseInt(recall("editor-case-study-height"), 10)) {
-      resize(parseInt(recall("editor-case-study-height"), 10));
-    }
-    fold(recall("editor-case-study-folded") === "yes");
-  })();
-</script>
 {% endif %}
 <script type="application/json" id="editor">{{ {"graph": selected, "base": base, "version": record.updated_at if record else none, "token": form_token, "links": links, "classes": classes}|tojson }}</script>
 <script type="module" src="https://cdn.jsdelivr.net/npm/@ulb-darmstadt/shacl-form@3.7.3/dist/bundle.js"></script>

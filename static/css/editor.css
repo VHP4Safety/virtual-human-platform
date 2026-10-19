@@ -21,59 +21,269 @@ body.editor {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-/* The record editor: list, form and linked data, side by side on wide screens, else stacked. */
+/* The record editor: records and sections, the form, and the preview, side by side on wide screens */
 .editor-layout {
   display: grid;
-  gap: 1.5rem;
+  gap: 1.25rem;
+  align-items: start;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "list" "main" "preview";
+  grid-template-areas: "side" "main" "preview";
 }
 
-#list-column {
-  grid-area: list;
+.editor-side {
+  grid-area: side;
 }
 
 #main-column {
   grid-area: main;
 }
 
-#rdf-column {
+.editor-preview {
   grid-area: preview;
 }
 
 @media (min-width: 992px) {
   .editor-layout {
-    grid-template-columns: 300px minmax(0, 1fr);
-    grid-template-areas: "list main" "list preview";
+    grid-template-columns: 16rem minmax(0, 1fr);
+    grid-template-areas: "side main" "side preview";
+  }
+
+  .editor-side {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
   }
 }
 
 @media (min-width: 1200px) {
   .editor-layout.with-preview {
-    grid-template-columns: 240px minmax(0, 1fr) minmax(340px, 30%);
-    grid-template-areas: "list main preview";
+    grid-template-columns: 16rem minmax(0, 1fr) minmax(0, 0.85fr);
+    grid-template-areas: "side main preview";
+  }
+
+  .editor-preview {
+    position: sticky;
+    top: 1rem;
+    height: calc(100vh - 2rem);
   }
 }
 
-/* The record list scrolls on its own */
-.record-list {
-  max-height: calc(100vh - 330px);
-  min-height: 240px;
-  overflow-y: auto;
+@media (min-width: 1600px) {
+  .editor-layout {
+    grid-template-columns: 30rem minmax(0, 1fr);
+  }
+
+  .editor-layout.with-preview {
+    grid-template-columns: 30rem minmax(0, 1fr) minmax(0, 0.85fr);
+  }
 }
 
-/* The linked data stays in view */
-.rdf-preview {
-  position: sticky;
-  top: 1rem;
-  max-height: calc(100vh - 2rem);
-  overflow-y: auto;
+/* Records and sections: tabs, or two columns on wide screens */
+.editor-side {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* Save stays in view, above the docked case study page */
+.editor-side-tabs {
+  display: flex;
+  flex: none;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.editor-side-tabs button {
+  flex: 1;
+  padding: 0.5rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+}
+
+.editor-side-tabs button:disabled {
+  opacity: 0.5;
+}
+
+.editor-side[data-pane="records"] [data-pane="records"],
+.editor-side[data-pane="sections"] [data-pane="sections"] {
+  color: var(--bs-vhppurple);
+  border-bottom-color: var(--bs-vhppink);
+}
+
+.editor-side-panes {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.editor-side-pane {
+  flex: 1;
+  min-width: 0;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+@media (min-width: 992px) {
+  .editor-side-pane {
+    max-height: none;
+  }
+}
+
+.editor-side[data-pane="records"] #sections-pane,
+.editor-side[data-pane="sections"] #records-pane {
+  display: none;
+}
+
+.editor-side-title {
+  display: none;
+  margin: 0.25rem 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+
+@media (min-width: 1600px) {
+  .editor-side-tabs {
+    display: none;
+  }
+
+  .editor-side[data-pane] #records-pane,
+  .editor-side[data-pane] #sections-pane {
+    display: block;
+  }
+
+  .editor-side-title {
+    display: block;
+  }
+
+  #sections-pane {
+    border-left: 1px solid var(--bs-border-color);
+  }
+}
+
+/* The outline of the record */
+.record-index ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.record-index .record-index-branch {
+  margin-left: 0.55rem;
+  padding-left: 0.35rem;
+  border-left: 1px solid var(--bs-border-color);
+}
+
+.record-index-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.record-index-row:hover {
+  background: var(--bs-tertiary-bg);
+}
+
+.record-index-row.active {
+  background: #e7e5f2;
+}
+
+.record-index-row.active .record-index-link {
+  color: var(--bs-vhppurple);
+  font-weight: 600;
+}
+
+.record-index-toggle {
+  flex: none;
+  width: 1.1rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--bs-secondary-color);
+}
+
+.record-index-toggle::before {
+  content: "\F285";
+  display: inline-block;
+  font-family: "bootstrap-icons";
+  font-size: 0.65rem;
+  transition: transform 0.15s;
+}
+
+.record-index-toggle[aria-expanded="true"]::before {
+  transform: rotate(90deg);
+}
+
+.record-index-toggle:disabled::before {
+  content: "";
+}
+
+.record-index-link {
+  flex: 1;
+  min-width: 0;
+  padding: 0.2rem 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: var(--bs-body-color);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.record-index-count {
+  flex: none;
+  padding: 0 0.4rem;
+  border-radius: 1rem;
+  background: var(--bs-secondary-bg);
+  font-size: 0.7rem;
+  color: var(--bs-secondary-color);
+}
+
+.record-index-problem {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.25rem;
+  border-radius: 50%;
+  background: var(--bs-danger);
+}
+
+/* The preview: the record's page, or its linked data */
+.editor-preview {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-preview-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.page-frame {
+  display: block;
+  width: 100%;
+  height: 80vh;
+  border: 0;
+}
+
+@media (min-width: 1200px) {
+  .page-frame {
+    height: 100%;
+  }
+}
+
+/* Save stays in view */
 .editor-save {
   position: sticky;
-  bottom: calc(var(--case-study-dock, 0px) + 1rem);
+  bottom: 1rem;
   z-index: 2;
 }
 
