@@ -40,7 +40,7 @@ vocabularies:
 kinds:
   tools: https://schema.org/SoftwareApplication
   methods: https://bioschemas.org/draft_terms/LabProtocol
-  casestudies: https://schema.org/ResearchProject
+  casestudies: https://bioschemas.org/draft_terms/Study
   publications: https://schema.org/ScholarlyArticle
   data: https://schema.org/Dataset
   organizations: https://schema.org/Organization

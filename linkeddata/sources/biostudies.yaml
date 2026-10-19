@@ -16,7 +16,7 @@ rules:
     - {predicate: "https://schema.org/isBasedOn", object: page}
     - {predicate: "https://vhp4safety.github.io/glossary#VHP0000152", object: steps}
     - {predicate: "https://vhp4safety.github.io/glossary#VHP0000151", object: questions}
-    - {predicate: "https://schema.org/sourceOrganization", object: cases}
+    - {predicate: "https://schema.org/isPartOf", object: cases}
     - {predicate: "https://schema.org/about", object: topics}
     - {predicate: "https://schema.org/measurementMethod", object: methods}
     - {predicate: "https://schema.org/measurementTechnique", object: assays}

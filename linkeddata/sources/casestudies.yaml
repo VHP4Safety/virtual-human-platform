@@ -11,7 +11,7 @@ files:
 # The rules of each kind of row: the arguments of rdfsolve's Rule.between.
 rules:
   CaseStudy:
-    - {predicate: a, value: "https://schema.org/ResearchProject"}
+    - {predicate: a, value: "https://bioschemas.org/draft_terms/Study"}
     - {predicate: "https://schema.org/name", object: name}
     - {predicate: "https://schema.org/description", object: description}
     - {predicate: "https://schema.org/about", object: about}
@@ -21,7 +21,7 @@ rules:
     - {predicate: "https://schema.org/hasPart", object: sections}
     - {predicate: "https://vhp4safety.github.io/glossary#VHP0000151", object: questions}
   Question:
-    - {predicate: a, value: "https://schema.org/Question"}
+    - {predicate: a, value: "https://schema.org/HowTo"}
     - {predicate: "https://schema.org/name", object: label}
     - {predicate: "https://schema.org/text", object: text}
     - {predicate: "https://schema.org/headline", object: headline}
@@ -32,7 +32,7 @@ rules:
     - {predicate: "https://schema.org/tool", object: tools}
     - {predicate: "https://schema.org/supply", object: supplies}
   Workflow:
-    - {predicate: a, value: "https://schema.org/HowToSection"}
+    - {predicate: a, value: "https://schema.org/HowTo"}
     - {predicate: "https://schema.org/name", object: title}
     - {predicate: "https://schema.org/description", object: summary}
     - {predicate: "https://schema.org/text", object: content}

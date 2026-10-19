@@ -40,7 +40,6 @@ form:documentation a sh:PropertyGroup ; sh:order 3 ; rdfs:label "Documentation a
 form:technical a sh:PropertyGroup ; sh:order 4 ; rdfs:label "Technical details" .
 form:elsewhere a sh:PropertyGroup ; sh:order 5 ; rdfs:label "Elsewhere on the web" .
 form:casestudy a sh:PropertyGroup ; sh:order 1 ; rdfs:label "About the case study" .
-form:question a sh:PropertyGroup ; sh:order 1 ; rdfs:label "Question" .
 form:workflow a sh:PropertyGroup ; sh:order 1 ; rdfs:label "Workflow page" .
 form:parts a sh:PropertyGroup ; sh:order 2 ; rdfs:label "Parts" .
 
@@ -79,7 +78,7 @@ form:SoftwareApplication a sh:NodeShape ;
         sh:description "Process flow steps the tool supports; the catalogue is filtered by them." ] ;
     sh:property [
         sh:path glossary:VHP0000151 ; sh:group form:about ; sh:order 7 ; sh:name "Case-study questions" ;
-        sh:class schema:Question ;
+        sh:class schema:HowTo ;
         sh:description "Case study questions the tool helps answer; the catalogue is filtered by them." ] ;
     sh:property [
         sh:path schema:about ; sh:group form:about ; sh:order 8 ; sh:name "Topics" ;
@@ -185,7 +184,7 @@ form:LabProtocol a sh:NodeShape ;
         sh:description "Process flow steps the method informs." ] ;
     sh:property [
         sh:path glossary:VHP0000151 ; sh:group form:method ; sh:order 4 ; sh:name "Case-study questions" ;
-        sh:class schema:Question ;
+        sh:class schema:HowTo ;
         sh:description "Case study questions the method informs." ] ;
     sh:property [
         sh:path schema:about ; sh:group form:method ; sh:order 5 ; sh:name "Key events, pathways and topics" ;
@@ -228,9 +227,9 @@ form:LabProtocol a sh:NodeShape ;
         sh:hasValue <https://bioschemas.org/profiles/LabProtocol/0.9-DRAFT> ;
         sh:message "LabProtocol 0.9-DRAFT expected." ] .
 
-# A case study, at /casestudies/<case>, with its regulatory questions.
-form:ResearchProject a sh:NodeShape ;
-    sh:targetClass schema:ResearchProject ;
+# A case study, at /casestudies/<case>, with its regulatory questions (Bioschemas Study, a CreativeWork).
+form:Study a sh:NodeShape ;
+    sh:targetClass bioschemas_draft:Study ;
     rdfs:label "Case study" ;
     sh:property [ sh:path schema:name ; sh:group form:casestudy ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
     sh:property [ sh:path schema:description ; sh:group form:casestudy ; sh:order 2 ; sh:name "Aim" ; sh:maxCount 1 ; sh:datatype xsd:string ;
@@ -247,55 +246,20 @@ form:ResearchProject a sh:NodeShape ;
     sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 1 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
         sh:description "Page sections, each with a heading, an HTML text and a position." ] ;
     sh:property [ sh:path glossary:VHP0000151 ; sh:group form:parts ; sh:order 2 ; sh:name "Regulatory questions" ;
-        sh:class schema:Question ; sh:node form:Question ; sh:nodeKind sh:IRI ;
+        sh:class schema:HowTo ; sh:node form:HowTo ; sh:nodeKind sh:IRI ;
         sh:description "Each at /casestudies/<case>/<question>, with its workflow's steps." ] .
 
-# A regulatory question, at /casestudies/<case>/<question>, with its workflow's process flow steps.
-# It is part of its case study's record.
-form:Question a sh:NodeShape ;
-    sh:targetClass schema:Question ;
-    rdfs:label "Regulatory question" ;
-    sh:property [ sh:path schema:name ; sh:group form:question ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One title needed." ] ;
-    sh:property [ sh:path schema:text ; sh:group form:question ; sh:order 2 ; sh:name "The question" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
-    sh:property [ sh:path schema:headline ; sh:group form:question ; sh:order 3 ; sh:name "Heading of its page" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
-    sh:property [ sh:path schema:description ; sh:group form:question ; sh:order 4 ; sh:name "Summary" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
-    sh:property [ sh:path schema:position ; sh:group form:question ; sh:order 5 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
-        sh:description "Button order in the case study; 1 is first." ] ;
-    sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 1 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
-        sh:description "Page sections, each with a heading, an HTML text and a position." ] ;
-    sh:property [ sh:path schema:step ; sh:group form:parts ; sh:order 2 ; sh:name "Process flow steps" ;
-        sh:class schema:HowToSection ; sh:node form:HowToSection ; sh:nodeKind sh:IRI ;
-        sh:description "Workflow steps, each a page at /casestudies/<case>/<question>/<step>." ] ;
-    sh:property [ sh:path schema:tool ; sh:group form:parts ; sh:order 3 ; sh:name "Tools and methods" ; sh:nodeKind sh:IRI ;
-        sh:or ( [ sh:class schema:SoftwareApplication ; rdfs:label "Tool" ] [ sh:class bioschemas_draft:LabProtocol ; rdfs:label "Method" ] ) ;
-        sh:message "Link a tool or method." ;
-        sh:description "Tools and methods the page uses; names and descriptions come from their records." ] ;
-    sh:property [ sh:path schema:supply ; sh:group form:parts ; sh:order 4 ; sh:name "Data" ; sh:nodeKind sh:IRI ; sh:class schema:Dataset ;
-        sh:message "Link a dataset." ;
-        sh:description "Datasets the page uses; names and descriptions come from their records." ] .
-
-# A workflow page: a process flow step or part of one, with its own steps, tools, data and text.
-# It is part of its case study's record, at an address under its parent page.
-form:HowToSection a sh:NodeShape ;
-    sh:targetClass schema:HowToSection ;
+# A page of a case study's workflow: a regulatory question, at /casestudies/<case>/<question>, or a process flow
+# step or part of one, at an address under its parent page; with its steps, tools, data and text. It is part
+# of its case study's record.
+form:HowTo a sh:NodeShape ;
+    sh:targetClass schema:HowTo ;
     rdfs:label "Workflow page" ;
     sh:property [ sh:path schema:name ; sh:group form:workflow ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One title needed." ] ;
-    sh:property [ sh:path schema:description ; sh:group form:workflow ; sh:order 2 ; sh:name "Summary" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
-    sh:property [ sh:path schema:text ; sh:group form:workflow ; sh:order 3 ; sh:name "Text" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ;
-        sh:description "The page's text in HTML, when not in sections." ] ;
-    sh:property [ sh:path schema:step ; sh:group form:parts ; sh:order 1 ; sh:name "Steps" ;
-        sh:class schema:HowToSection ; sh:node form:HowToSection ; sh:nodeKind sh:IRI ;
-        sh:description "Each a page under this page's address." ] ;
-    sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 6 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
-        sh:description "Page sections, each with a heading, an HTML text and a position." ] ;
-    sh:property [ sh:path bioschemas:input ; sh:group form:parts ; sh:order 4 ; sh:name "Input" ; sh:minCount 1 ; sh:severity sh:Warning ;
-        sh:class bioschemas:FormalParameter ; sh:node form:FormalParameter ; sh:nodeKind sh:BlankNode ;
-        sh:message "Add the input." ;
-        sh:description "What the step takes, such as an estimated daily intake." ] ;
-    sh:property [ sh:path bioschemas:output ; sh:group form:parts ; sh:order 5 ; sh:name "Output" ; sh:minCount 1 ; sh:severity sh:Warning ;
-        sh:class bioschemas:FormalParameter ; sh:node form:FormalParameter ; sh:nodeKind sh:BlankNode ;
-        sh:message "Add the output." ;
-        sh:description "What the step gives, such as an exposure calculation." ] ;
+    sh:property [ sh:path schema:text ; sh:group form:workflow ; sh:order 2 ; sh:name "Text" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ;
+        sh:description "A question's wording; on other pages, the page's text in HTML, when not in sections." ] ;
+    sh:property [ sh:path schema:headline ; sh:group form:workflow ; sh:order 3 ; sh:name "Heading of its page" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:description ; sh:group form:workflow ; sh:order 4 ; sh:name "Summary" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:about ; sh:group form:workflow ; sh:order 5 ; sh:name "Glossary term" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
         sh:pattern "^https://vhp4safety\\.github\\.io/glossary#" ;
         sh:message "Choose a glossary term, such as Toxicokinetics (Process Flow Step)." ;
@@ -304,13 +268,33 @@ form:HowToSection a sh:NodeShape ;
         sh:description "\"disabled\": the button is shown but cannot be opened yet." ] ;
     sh:property [ sh:path schema:position ; sh:group form:workflow ; sh:order 7 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
         sh:description "Button order on the parent page; 1 is first." ] ;
-    sh:property [ sh:path schema:tool ; sh:group form:parts ; sh:order 2 ; sh:name "Tools and methods" ; sh:nodeKind sh:IRI ;
+    sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 1 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
+        sh:description "Page sections, each with a heading, an HTML text and a position." ] ;
+    sh:property [ sh:path schema:step ; sh:group form:parts ; sh:order 2 ; sh:name "Steps" ;
+        sh:class schema:HowTo ; sh:node form:HowTo ; sh:nodeKind sh:IRI ;
+        sh:description "Each a page under this page's address; a question's are its process flow steps." ] ;
+    sh:property [ sh:path schema:tool ; sh:group form:parts ; sh:order 3 ; sh:name "Tools and methods" ; sh:nodeKind sh:IRI ;
         sh:or ( [ sh:class schema:SoftwareApplication ; rdfs:label "Tool" ] [ sh:class bioschemas_draft:LabProtocol ; rdfs:label "Method" ] ) ;
+        form:publishedAs schema:HowToTool ;
         sh:message "Link a tool or method." ;
         sh:description "Tools and methods the page uses; names and descriptions come from their records." ] ;
-    sh:property [ sh:path schema:supply ; sh:group form:parts ; sh:order 3 ; sh:name "Data" ; sh:nodeKind sh:IRI ; sh:class schema:Dataset ;
+    sh:property [ sh:path schema:supply ; sh:group form:parts ; sh:order 4 ; sh:name "Data" ; sh:nodeKind sh:IRI ; sh:class schema:Dataset ;
+        form:publishedAs schema:HowToSupply ;
         sh:message "Link a dataset." ;
-        sh:description "Datasets the page uses; names and descriptions come from their records." ] .
+        sh:description "Datasets the page uses; names and descriptions come from their records." ] ;
+    sh:property [ sh:path bioschemas:input ; sh:group form:parts ; sh:order 5 ; sh:name "Input" ;
+        sh:class bioschemas:FormalParameter ; sh:node form:FormalParameter ; sh:nodeKind sh:BlankNode ;
+        sh:description "What a step takes, such as an estimated daily intake." ] ;
+    sh:property [ sh:path bioschemas:output ; sh:group form:parts ; sh:order 6 ; sh:name "Output" ;
+        sh:class bioschemas:FormalParameter ; sh:node form:FormalParameter ; sh:nodeKind sh:BlankNode ;
+        sh:description "What a step gives, such as an exposure calculation." ] .
+
+# A workflow step (the value of a schema:step) is expected to state its input and output.
+form:WorkflowStep a sh:NodeShape ;
+    sh:targetObjectsOf schema:step ;
+    rdfs:label "Workflow step" ;
+    sh:property [ sh:path bioschemas:input ; sh:minCount 1 ; sh:severity sh:Warning ; sh:message "Add the input." ] ;
+    sh:property [ sh:path bioschemas:output ; sh:minCount 1 ; sh:severity sh:Warning ; sh:message "Add the output." ] .
 
 # An input or output of a workflow step, by name. It is part of its step's record.
 form:FormalParameter a sh:NodeShape ;
@@ -380,8 +364,8 @@ form:Dataset a sh:NodeShape ;
     sh:property [ sh:path glossary:VHP0000152 ; sh:order 5 ; sh:name "Assessment steps" ;
         sh:severity sh:Warning ; sh:nodeKind sh:IRI ; sh:in ( glossary:VHP0000153 glossary:VHP0000154 glossary:VHP0000155 glossary:VHP0000156 glossary:VHP0000158 ) ;
         sh:message "Choose from the list; other values are not in the filters." ] ;
-    sh:property [ sh:path glossary:VHP0000151 ; sh:order 6 ; sh:name "Case-study questions" ; sh:class schema:Question ] ;
-    sh:property [ sh:path schema:sourceOrganization ; sh:order 6 ; sh:name "Case studies" ; sh:class schema:ResearchProject ;
+    sh:property [ sh:path glossary:VHP0000151 ; sh:order 6 ; sh:name "Case-study questions" ; sh:class schema:HowTo ] ;
+    sh:property [ sh:path schema:isPartOf ; sh:order 6 ; sh:name "Case studies" ; sh:class bioschemas_draft:Study ;
         sh:description "Case studies the data was made for." ] ;
     sh:property [ sh:path schema:about ; sh:order 7 ; sh:name "Topics" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
         sh:message "Choose a vocabulary term, or register it." ;
