@@ -14,6 +14,8 @@
 # - sh:hasValue: a fixed value. dash:singleLine false: a longer text.
 # - sh:message: shown when a value is missing or does not fit.
 # - form:private true: kept off the pages and their data; editors see it.
+# - form:publishedAs: a class its values also have on the pages and their data, as schema.org expects (a
+#   licence is a CreativeWork); the records keep their own.
 # The required fields of tools are the minimum of the Bioschemas ComputationalTool profile.
 
 @prefix schema: <https://schema.org/> .
@@ -120,7 +122,7 @@ form:SoftwareApplication a sh:NodeShape ;
         sh:description "As its developers number it." ] ;
     sh:property [
         sh:path schema:license ; sh:group form:technical ; sh:order 2 ; sh:name "License" ; sh:maxCount 1 ;
-        sh:severity sh:Warning ; sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ;
+        sh:severity sh:Warning ; sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ; form:publishedAs schema:CreativeWork ;
         sh:message "Choose an SPDX license; other values are kept." ;
         sh:description "The tool's license." ] ;
     sh:property [
@@ -391,7 +393,7 @@ form:Dataset a sh:NodeShape ;
         sh:description "Assays the data was measured with, as terms of BAO or other ontologies." ] ;
     sh:property [ sh:path schema:citation ; sh:order 10 ; sh:name "Publications" ; sh:class schema:ScholarlyArticle ] ;
     sh:property [ sh:path schema:license ; sh:order 11 ; sh:name "License" ; sh:maxCount 1 ; sh:severity sh:Warning ;
-        sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ;
+        sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ; form:publishedAs schema:CreativeWork ;
         sh:message "Choose an SPDX license; other values are kept." ] ;
     sh:property [ sh:path schema:isBasedOn ; sh:order 12 ; sh:name "Source record" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
         sh:description "The BioStudies or Zenodo record this one is made from, every night." ] ;

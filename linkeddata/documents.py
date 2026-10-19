@@ -6,7 +6,7 @@ import json
 from functools import cache
 
 from pyld import jsonld
-from rdflib import Graph, Literal, URIRef
+from rdflib import RDF, Graph, Literal, URIRef
 from rdflib.namespace import SH
 
 import database
@@ -128,11 +128,26 @@ def private() -> set[URIRef]:
     return found
 
 
+@cache
+def published_as() -> dict[URIRef, URIRef]:
+    """The properties of fields whose values the pages give another class too (form:publishedAs), by class."""
+    graph = profile()
+    marked = URIRef(dict(graph.namespaces())["form"] + "publishedAs")
+    found = {}
+    for field, of_class in graph.subject_objects(marked):
+        found[graph.value(field, SH.path)] = of_class
+    return found
+
+
 def public(found: Graph) -> Graph:
     """The statements as pages show them: the values of private fields, such as email addresses, are taken
-    out."""
+    out, and values of fields published as another class have that class too."""
     for predicate in private():
         found.remove((None, predicate, None))
+    for predicate, of_class in published_as().items():
+        for value in list(found.objects(None, predicate)):
+            if isinstance(value, URIRef):
+                found.add((value, RDF.type, of_class))
     return found
 
 
