@@ -299,15 +299,13 @@ form:HowToSection a sh:NodeShape ;
         sh:message "Link a dataset." ;
         sh:description "Datasets the page uses; names and descriptions come from their records." ] .
 
-# A page section: heading, HTML text, position and anchor (#contact-section). It is part of its page's
-# record.
+# A page section: heading, HTML text and position. It is part of its page's record.
 form:WebPageElement a sh:NodeShape ;
     sh:targetClass schema:WebPageElement ;
     rdfs:label "Section" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Heading" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:text ; sh:order 2 ; sh:name "Text" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
-    sh:property [ sh:path schema:position ; sh:order 3 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ] ;
-    sh:property [ sh:path schema:identifier ; sh:order 4 ; sh:name "Anchor" ; sh:maxCount 1 ; sh:datatype xsd:string ] .
+    sh:property [ sh:path schema:position ; sh:order 3 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ] .
 
 # A publication's journal, with its ISSNs; it is part of the publication's record.
 form:Periodical a sh:NodeShape ;

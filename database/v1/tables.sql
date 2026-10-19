@@ -705,8 +705,6 @@ CREATE TABLE IF NOT EXISTS "schema_web_page_element" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
   "type" TEXT,
-  "schema_identifier" TEXT,
-  "schema_identifier__term" TEXT,
   "schema_name" TEXT,
   "schema_name__term" TEXT,
   "schema_position" TEXT,
