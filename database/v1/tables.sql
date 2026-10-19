@@ -409,6 +409,8 @@ CREATE TABLE IF NOT EXISTS "schema_how_to" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
   "type" TEXT,
+  "schema_additional_type" TEXT,
+  "schema_additional_type__term" TEXT,
   "schema_creative_work_status" TEXT,
   "schema_creative_work_status__term" TEXT,
   "schema_description" TEXT,
@@ -442,15 +444,6 @@ CREATE TABLE IF NOT EXISTS "schema_how_to__bioschemas_output" (
   FOREIGN KEY ("iri") REFERENCES "schema_how_to" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_how_to__bioschemas_output__record" ON "schema_how_to__bioschemas_output" ("record");
-CREATE TABLE IF NOT EXISTS "schema_how_to__schema_about" (
-  "record" TEXT NOT NULL,
-  "iri" TEXT NOT NULL,
-  "value" TEXT NOT NULL,
-  "term" TEXT NOT NULL,
-  PRIMARY KEY ("iri", "value", "term"),
-  FOREIGN KEY ("iri") REFERENCES "schema_how_to" ("iri")
-);
-CREATE INDEX IF NOT EXISTS "schema_how_to__schema_about__record" ON "schema_how_to__schema_about" ("record");
 CREATE TABLE IF NOT EXISTS "schema_how_to__schema_has_part" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,

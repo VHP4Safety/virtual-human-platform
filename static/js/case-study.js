@@ -116,6 +116,19 @@ function parts(state, page, name) {
   return found;
 }
 
+// A page's label on its button: the name of the kind of step it is, a vocabulary term, without the term's
+// own kind in brackets ("Exposure" for "Exposure (Process Flow Step)"), else its own name.
+function label(state, node) {
+  for (const value of all(node, "additionalType")) {
+    const term = value && typeof value === "object" ? state.nodes.get(value["@id"]) || value : null;
+    const name = term ? first(term, "name") : "";
+    if (name) {
+      return name.replace(/\s*\([^)]*\)$/, "");
+    }
+  }
+  return first(node, "name");
+}
+
 // The pages one level down: the case study's questions, or a page's steps.
 function children(state, page, level) {
   return parts(state, page, level === 0 ? "regulatoryQuestion" : "step");
@@ -296,7 +309,7 @@ function buttons(container, state, page, level) {
   for (const child of children(state, page, level)) {
     const button = make("button", "btn w-100 text-white " + BUTTONS[Math.min(level, BUTTONS.length - 1)]);
     button.type = "button";
-    button.append(make("b", "", first(child, "name") || child["@id"] || "(no name)"));
+    button.append(make("b", "", label(state, child) || child["@id"] || "(no name)"));
     // A question's button has the question under its title.
     if (level === 0 && first(child, "text")) {
       button.append(make("br"), document.createTextNode(first(child, "text")));

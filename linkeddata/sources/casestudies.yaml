@@ -36,7 +36,7 @@ rules:
     - {predicate: "https://schema.org/name", object: title}
     - {predicate: "https://schema.org/description", object: summary}
     - {predicate: "https://schema.org/text", object: content}
-    - {predicate: "https://schema.org/about", object: about}
+    - {predicate: "https://schema.org/additionalType", object: kind}
     - {predicate: "https://schema.org/creativeWorkStatus", object: status}
     - {predicate: "https://schema.org/position", object: position}
     - {predicate: "https://schema.org/step", object: steps}

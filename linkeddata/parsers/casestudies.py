@@ -77,7 +77,7 @@ def step(levels: list[dict], depth: int, path: list[str], item: dict, address: s
     if present(item.get("state")):
         row["status"] = item["state"]
     if present(item.get("glossaryUrl")):
-        row["about"] = web_link(item["glossaryUrl"])
+        row["kind"] = web_link(item["glossaryUrl"])
     return [row] + fill(row, node, levels, depth, path, made)
 
 
