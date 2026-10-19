@@ -229,7 +229,7 @@ def import_source(spec: dict) -> None:
     # One file is given as is; several are given by name.
     parsed = parser.parse(contents if "files" in spec or "entries" in spec or "terms" in spec else contents[spec["name"]])
     data, queries = convert(spec, parsed, config["base"])
-    found = records_of(data, list(config["kinds"].values()), spec["name"])
+    found = records_of(data, [of_class for kind in config["kinds"].values() for of_class in catalogue.within(kind)], spec["name"])
     checksum = hashlib.sha256()
     for name in sorted(contents):
         checksum.update(contents[name])
