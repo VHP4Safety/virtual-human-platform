@@ -13,9 +13,8 @@ from pathlib import Path
 from sqlalchemy import select
 
 import database
-from database import images
+from database import images, records
 from database.tables import PLATFORM, Record, Revision
-from linkeddata.model import settings
 
 RECORDS_DIR = Path(os.environ.get("PLATFORM_RECORDS", "records"))
 COMMITTER = ["-c", "user.name=VHP4Safety platform", "-c", "user.email=platform@vhp4safety.nl"]
@@ -28,18 +27,16 @@ def git(*args: str) -> str:
 
 def latest_documents() -> dict[str, str]:
     """The latest revision of each platform record not removed, by file path."""
-    base = settings()["base"]
     written = select(Record.iri).where(Record.source == PLATFORM, Record.removed_at.is_(None))
     documents = {}
     with database.session() as db:
         for revision in db.scalars(select(Revision).where(Revision.record_iri.in_(written)).order_by(Revision.id)):
-            documents[revision.record_iri.removeprefix(base) + ".jsonld"] = revision.document
+            documents[records.path(revision.record_iri) + ".jsonld"] = revision.document
     return documents
 
 
 def used_images() -> dict[str, Path]:
     """The uploaded images that platform records use, by file path."""
-    base = settings()["base"]
     used = {}
     for text in latest_documents().values():
         document = json.loads(text)
@@ -47,10 +44,10 @@ def used_images() -> dict[str, Path]:
             image = node.get("image")
             for item in image if isinstance(image, list) else [image]:
                 address = item.get("@id") if isinstance(item, dict) else item
-                if isinstance(address, str) and address.startswith(base + "images/"):
-                    path = images.folder() / address.removeprefix(base + "images/")
+                if isinstance(address, str) and records.path(address).startswith("images/"):
+                    path = images.folder() / records.path(address).removeprefix("images/")
                     if path.exists():
-                        used[address.removeprefix(base)] = path
+                        used[records.path(address)] = path
     return used
 
 

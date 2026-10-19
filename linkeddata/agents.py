@@ -32,7 +32,7 @@ def class_of(kind: str) -> str:
 
 def found_record(address: str):
     """The record at an address, or at a path on the platform (tools/aop-builder)."""
-    record = records.get(address if address.startswith(("http://", "https://")) else records.address(address.strip("/")))
+    record = records.get(records.address(address))
     if record is None or record.removed_at:
         raise ToolError(f"No record at {address}.")
     if record.moved_to:

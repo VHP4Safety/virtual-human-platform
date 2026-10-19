@@ -143,7 +143,7 @@ def done(address: str, revision, status: int, warnings: dict | None = None):
     version = record.updated_at if record is not None else None
     headers = {"ETag": f'"{version}"'} if version else {}
     if status == 201:
-        headers["Location"] = url_for("api.read", path=address.removeprefix(settings()["base"]))
+        headers["Location"] = url_for("api.read", path=records.path(address))
     return {"@id": address, "change": url_for("changes.change", number=revision.id), "version": version, "warnings": warnings or {}}, status, headers
 
 
@@ -176,7 +176,7 @@ def rendered(address: str, found: Graph, kind: str, who) -> Response:
     """The record's page as saving makes it, from a copy of the database with the record saved."""
     with database.copied():
         saved(address, found, kind, who)
-        path = "/" + address.removeprefix(settings()["base"])
+        path = "/" + records.path(address)
         with current_app.app_context(), current_app.test_request_context(path, base_url=request.host_url):
             answer = current_app.full_dispatch_request()
     return Response(answer.get_data(), status=answer.status_code, mimetype="text/html")
@@ -549,7 +549,7 @@ def read(path):
     """A record or part at its page's address, in JSON-LD, Turtle, N-Triples or Markdown, by the Accept header."""
     record = found_record(path)
     if record.moved_to:
-        return redirect(url_for("api.read", path=record.moved_to.removeprefix(settings()["base"])), code=301)
+        return redirect(url_for("api.read", path=records.path(record.moved_to)), code=301)
     if record.removed_at:
         abort(410, message="Removed.")
     media = request.accept_mimetypes.best_match(["application/ld+json", *SERIALIZATIONS, "text/markdown"]) or "application/ld+json"

@@ -33,10 +33,6 @@ blueprint = Blueprint("pages", __name__)
 STARTED = datetime.now(timezone.utc).replace(microsecond=0)
 
 
-def page_path(record: Record) -> str:
-    return "/" + record.iri.removeprefix(settings()["base"])
-
-
 def data(found: Graph, media: str, iri: str | None = None) -> Response:
     """Statements in JSON-LD (the document of the record at *iri*, when it is given, with the names of the records
     it links to), also when plain JSON is asked for, Turtle or N-Triples."""
@@ -135,10 +131,10 @@ def link_data(response):
     if "record" in g:
         links = [f'<{g.record.iri}>; rel="cite-as"', f'<{g.record.type}>; rel="type"']
         for ending, media in FORMATS.items():
-            links.append(f'<{page_path(g.record)}{ending}>; rel="describedby"; type="{media}"')
-        links.append(f'<{page_path(g.record)}/ro-crate-metadata.json>; rel="describedby"; type="application/ld+json"; profile="{crates.PROFILE}"')
+            links.append(f'<{page_link(g.record.iri)}{ending}>; rel="describedby"; type="{media}"')
+        links.append(f'<{page_link(g.record.iri)}/ro-crate-metadata.json>; rel="describedby"; type="application/ld+json"; profile="{crates.PROFILE}"')
         links.append(f'<{url_for("api.model_shapes")}>; rel="http://www.w3.org/ns/ldp#constrainedBy"; type="text/turtle"')
-        links.append(f'<{page_path(g.record)}{MARKDOWN}>; rel="alternate"; type="text/markdown"')
+        links.append(f'<{page_link(g.record.iri)}{MARKDOWN}>; rel="alternate"; type="text/markdown"')
         response.headers["Vary"] = "Accept"
     # The records' licence, on their pages, their data and the API, as the platform's catalogue states it; and
     # the dataset a record is part of (VoID).
@@ -181,7 +177,7 @@ def record_context() -> dict:
         return {}
     formats = {}
     for ending, media in FORMATS.items():
-        formats[media] = page_path(g.record) + ending
+        formats[media] = page_link(g.record.iri) + ending
     try:
         document = documents.document(documents.linked(g.record), g.record.iri)
     except ValueError as problem:
@@ -218,9 +214,8 @@ def issue_tracker(addresses) -> str:
 @blueprint.app_template_filter("page_link")
 def page_link(iri: str) -> str:
     """A platform address as a path on this server, so it works on every copy of the platform."""
-    if iri.startswith(settings()["base"]):
-        return "/" + iri.removeprefix(settings()["base"])
-    return iri
+    path = records.path(iri)
+    return iri if path == iri else "/" + path
 
 
 def record_page(record: Record):

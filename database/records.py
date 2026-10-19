@@ -19,6 +19,11 @@ def address(path: str) -> str:
     return settings()["base"] + path.strip("/")
 
 
+def path(iri: str) -> str:
+    """A record's path under the base address (the inverse of address()); an address elsewhere as it is."""
+    return iri.removeprefix(settings()["base"])
+
+
 def get(iri: str) -> Record | None:
     with database.session() as db:
         return db.get(Record, iri)
