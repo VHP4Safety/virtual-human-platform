@@ -1585,6 +1585,7 @@ def method_page(methodid):
         method=method,
         method_details=method,
         method_json=method,
+        updated=record.updated_at,
         page_title=f"{method_name} — VHP4Safety",
         meta_description=clip(descriptions[0] if descriptions else "")
         or f"{method_name}, a method in the VHP4Safety Virtual Human Platform.",
