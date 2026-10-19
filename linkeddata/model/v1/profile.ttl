@@ -233,7 +233,9 @@ form:ClassPartition a sh:NodeShape ;
     rdfs:label "Kind of records" ;
     sh:property [ sh:path void:class ; sh:order 1 ; sh:name "Class" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:message "One class needed." ] ;
     sh:property [ sh:path schema:name ; sh:order 2 ; sh:name "Name" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
-    sh:property [ sh:path schema:description ; sh:order 3 ; sh:name "Description" ; sh:maxCount 1 ; sh:or ( form:PlainText form:HTMLText ) ] .
+    sh:property [ sh:path schema:description ; sh:order 3 ; sh:name "Description" ; sh:maxCount 1 ; sh:or ( form:PlainText form:HTMLText ) ] ;
+    sh:property [ sh:path schema:position ; sh:order 4 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+        sh:description "Its place among the kinds on the home page; 1 is first." ] .
 
 form:Person a sh:NodeShape ;
     sh:targetClass schema:Person ;
