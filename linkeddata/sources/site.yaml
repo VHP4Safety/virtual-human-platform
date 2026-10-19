@@ -53,6 +53,7 @@ rules:
     - {predicate: "https://schema.org/video", object: videos}
     - {predicate: "https://schema.org/hasPart", object: sections}
     - {predicate: "https://schema.org/about", object: about}
+    - {predicate: "https://platform.vhp4safety.nl/model/v1/form#shows", object: shows}
   Figure:
     - {predicate: a, value: "https://schema.org/ImageObject"}
     - {predicate: "https://schema.org/contentUrl", object: image}

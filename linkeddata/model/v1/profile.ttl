@@ -52,7 +52,8 @@
         [ sh:prefix "bioschemas" ; sh:namespace "https://bioschemas.org/terms/"^^xsd:anyURI ],
         [ sh:prefix "dct" ; sh:namespace "http://purl.org/dc/terms/"^^xsd:anyURI ],
         [ sh:prefix "void" ; sh:namespace "http://rdfs.org/ns/void#"^^xsd:anyURI ],
-        [ sh:prefix "pbpk" ; sh:namespace "https://platform.vhp4safety.nl/model/v1/pbpk#"^^xsd:anyURI ] .
+        [ sh:prefix "pbpk" ; sh:namespace "https://platform.vhp4safety.nl/model/v1/pbpk#"^^xsd:anyURI ],
+        [ sh:prefix "form" ; sh:namespace "https://platform.vhp4safety.nl/model/v1/form#"^^xsd:anyURI ] .
 <https://schema.org/version/30.1/schemaorg-current-https.ttl> form:file "schemaorg-30.1.ttl" ; form:sha256 "7f15ca89398c4f235f478a4b3b8d1f975d63c5a860b77c8a8fce01f791b7ae2f" .
 <https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/e5c27dbd2b1269a79fbe8f26e0173a9dc390aff0/pages/_types/bioschemas_draft_types.jsonld> form:file "bioschemas-draft-types-e5c27db.jsonld" ; form:sha256 "420b235d76aaafa92e72a6ed730457222166b455c7ff0df5f4365dd2dd887de8" .
 <https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/e5c27dbd2b1269a79fbe8f26e0173a9dc390aff0/pages/_types/bioschemas_types.jsonld> form:file "bioschemas-types-e5c27db.jsonld" ; form:sha256 "be2561e882eb0999d4a6b5d9baec4d848c6413c32108aff88b77f2ca39c6f9c4" .
@@ -204,7 +205,8 @@ form:ResearchProject a sh:NodeShape ;
     rdfs:label "Project" ;
     sh:property [ sh:path schema:funding ; sh:order 7 ; sh:name "Grants" ; sh:class schema:MonetaryGrant ;
         sh:description "Publications and data that name one of its grants are its outputs." ] ;
-    sh:property [ sh:path schema:subjectOf ; sh:order 8 ; sh:name "Videos" ; sh:class schema:VideoObject ; sh:node form:VideoObject ; sh:nodeKind sh:BlankNode ] ;
+    sh:property [ sh:path schema:subjectOf ; sh:order 8 ; sh:name "Videos" ; sh:class schema:LearningResource ;
+        sh:description "Videos about the project, as training materials." ] ;
     sh:property [ sh:path schema:image ; sh:order 9 ; sh:name "Figures" ; sh:class schema:ImageObject ; sh:node form:ImageObject ; sh:nodeKind sh:BlankNode ] ;
     sh:property [ sh:path schema:subOrganization ; sh:order 10 ; sh:name "Research lines" ; sh:class schema:ResearchProject ; sh:node form:ResearchProject ; sh:nodeKind sh:BlankNode ;
         sh:description "Each with its name and what it does." ] ;
@@ -453,8 +455,13 @@ form:WebPageElement a sh:NodeShape ;
         sh:description "\"hidden\": kept, but not shown." ] ;
     sh:property [ sh:path schema:hasPart ; sh:order 7 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
         sh:description "Its own sections, shown as its items." ] ;
-    sh:property [ sh:path schema:about ; sh:order 8 ; sh:name "Lists the outputs of" ; sh:maxCount 1 ; sh:class schema:MonetaryGrant ;
-        sh:description "A grant: the section lists the records that name it, such as its publications." ] ;
+    sh:property [ sh:path schema:about ; sh:order 8 ; sh:name "Presents" ; sh:maxCount 1 ;
+        sh:or ( [ sh:class schema:MonetaryGrant ; rdfs:label "Grant" ] [ sh:class schema:Organization ; rdfs:label "Organisation or project" ] [ sh:class schema:LearningResource ; rdfs:label "Training material" ] ) ;
+        sh:description "The record the section presents: the fields of it the section shows; or, for a grant without them, the records that name it, such as its publications." ] ;
+    sh:property [ sh:path form:shows ; sh:order 10 ; sh:name "Shows" ; sh:nodeKind sh:IRI ; sh:severity sh:Warning ;
+        sh:in ( schema:description schema:text schema:image schema:video schema:subjectOf schema:subOrganization schema:member schema:funding schema:funder schema:amount schema:identifier ) ;
+        sh:message "Choose from the list; other values are kept." ;
+        sh:description "The fields of the record it presents that the section shows, such as its description or its research lines." ] ;
     sh:property [ sh:path schema:url ; sh:order 9 ; sh:name "Address" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
         sh:description "Where the section is read, such as a tutorial's section on the documentation site." ] .
 
@@ -664,6 +671,8 @@ pbpk:implementationLocation a rdf:Property ; rdfs:label "Implementation location
     schema:domainIncludes pbpk:Implementation ; schema:rangeIncludes schema:Text .
 pbpk:implementationType a rdf:Property ; rdfs:label "Implementation type" ;
     schema:domainIncludes pbpk:Implementation ; schema:rangeIncludes schema:Text .
+form:shows a rdf:Property ; rdfs:label "Shows" ;
+    schema:domainIncludes schema:WebPageElement ; schema:rangeIncludes rdf:Property .
 pbpk:intendedUse a rdf:Property ; rdfs:label "Intended use" ;
     schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:Text .
 pbpk:interpretation a rdf:Property ; rdfs:label "Metric interpretation" ;

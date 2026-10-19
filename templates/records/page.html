@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {# A page of the platform from its record (routes/record_pages.py: page): its sections as tabs with their items,
-   or as text when it has one section without a heading. An about page shows its subject's description, videos,
-   research lines and grants in its first tab; a section about a grant lists what names it; a page that explains
-   a term lists the term's kinds. #}
+   or as text when it has one section without a heading. A section shows the fields it names of the record it
+   presents, or, presenting a grant without them, lists what names it; a page that explains a term lists the
+   term's kinds. #}
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
@@ -34,33 +34,13 @@
 </div>
 {% endmacro %}
 
-{% macro subject_items(subject) %}
-{% if subject.description %}
-{% call item("subject-description", (subject.alternateName ~ ": " if subject.alternateName else "") ~ "The research project behind the VHP") %}{{ html(subject.description) }}{% endcall %}
-{% endif %}
-{% endmacro %}
-
-{% macro subject_more(subject) %}
-{% if subject.videos %}
-{% call item("subject-videos", "Project video") %}{{ media({"videos": subject.videos}) }}{% endcall %}
-{% endif %}
-{% if subject.lines %}
-{% call item("subject-lines", "Project structure") %}
-<p>The project is organised into {{ subject.lines|length }} research lines:</p>
-<ol>{% for line in subject.lines %}<li>{{ line.name }}{% if line.description %}: {{ line.description }}{% endif %}</li>{% endfor %}</ol>
-{{ media({"figures": subject.figures}) }}
-{% endcall %}
-{% endif %}
-{% if subject.grants %}
-{% call item("subject-grants", "Funding information") %}
-{% for grant in subject.grants %}
-{{ html(grant.description) if grant.description else "" }}
-<p class="small text-secondary mb-0">
-  <a class="link-vhpblue" href="{{ grant.address|page_link }}">{{ grant.name }}</a>{% if grant.identifier %} ({{ grant.identifier }}){% endif %}{% if grant.funder %}, funded by {{ grant.funder }}{% endif %}{% if grant.amount %}: {{ "{:,.0f}".format(grant.amount.value) }} {{ grant.amount.currency }}{% endif %}
-</p>
+{% macro shown(blocks) %}
+{% for block in blocks %}
+{% if block.text %}{{ html(block.text) }}{% endif %}
+{% if block.figures or block.videos %}{{ media(block) }}{% endif %}
+{% if block.entries %}<ol>{% for entry in block.entries %}<li>{{ entry.name }}{% if entry.description %}: {{ entry.description }}{% endif %}</li>{% endfor %}</ol>{% endif %}
+{% if block.links %}<ul class="list-unstyled">{% for found in block.links %}<li><a class="link-vhpblue" href="{{ found.address|page_link }}">{{ found.name }}</a></li>{% endfor %}</ul>{% endif %}
 {% endfor %}
-{% endcall %}
-{% endif %}
 {% endmacro %}
 
 {% macro outputs(listed) %}
@@ -96,12 +76,11 @@
         <div class="tab-pane{% if loop.first %} active{% endif %}" id="tabpanel-{{ tab }}" role="tabpanel" aria-labelledby="tab-{{ tab }}">
           {{ html(section.text) }}
           {{ media(section) }}
+          {{ shown(section.shown) }}
           <div class="accordion accordion-flush" id="accordion-{{ tab }}">
-            {% if loop.first and page.subject %}{{ subject_items(page.subject) }}{% endif %}
             {% for part in section.sections %}
-            {% call item("item-" ~ tab ~ "-" ~ loop.index, part.heading or "") %}{{ html(part.text) }}{{ media(part) }}{% endcall %}
+            {% call item("item-" ~ tab ~ "-" ~ loop.index, part.heading or "") %}{{ html(part.text) }}{{ media(part) }}{{ shown(part.shown) }}{{ outputs(part.outputs) }}{% endcall %}
             {% endfor %}
-            {% if loop.first and page.subject %}{{ subject_more(page.subject) }}{% endif %}
           </div>
           {{ outputs(section.outputs) }}
         </div>
@@ -114,6 +93,7 @@
   {% if section.heading %}<h2 class="h4 mt-4">{{ section.heading }}</h2>{% endif %}
   {{ html(section.text) }}
   {{ media(section) }}
+  {{ shown(section.shown) }}
   {{ outputs(section.outputs) }}
   {% endfor %}
   {% endif %}

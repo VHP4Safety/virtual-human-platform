@@ -1,11 +1,9 @@
 """A page of the platform from its record, for its template (templates/records/page.html): its sections by
-position, hidden ones left out, each with its text, figures, videos and items; the description, videos,
-research lines and grants of an about page's subject; the records that name a section's grant; and the kinds
+position, hidden ones left out, each with its text, figures, videos and items, and the fields it shows of the
+record it presents (form:shows) or, for a grant, the records that name it; and the kinds
 of a term the page explains, named the glossary's way ("Toxicokinetics (Process Flow Step)"). The platform's
 catalogue, for the home page: its kinds of records with their counts, its pages, and its publisher's partners.
 A kind's listing: a page of its records, found by name and filtered by its browsable fields, with counts."""
-
-from operator import itemgetter
 
 from rdflib import RDF, Graph, Literal, URIRef
 from rdflib.namespace import SDO, VOID
@@ -56,6 +54,46 @@ def outputs(grant) -> list[dict]:
     return listed
 
 
+def shown(found: Graph, part) -> list[dict]:
+    """The fields a section shows (form:shows) of the record it presents, in the order of that record's
+    fields: its texts, its figures and players, its named parts as entries, and its links with their names."""
+    presented = found.value(part, SDO.about)
+    properties = list(found.objects(part, URIRef(settings()["prefixes"]["form"] + "shows")))
+    if presented is None or not properties:
+        return []
+    held = documents.public(storage.with_names(storage.graph([str(presented)])))
+    node = URIRef(str(presented))
+    positions = {}
+    for field in fields.of(str(held.value(node, RDF.type) or "")):
+        positions[field["iri"]] = field["position"]
+
+    def place(prop):
+        return positions.get(str(prop), (len(positions), "", 0)), str(prop)
+
+    blocks = []
+    for prop in sorted(properties, key=place):
+        entries = []
+        links = []
+        for value in outline.in_order(held, held.objects(node, prop)):
+            if isinstance(value, Literal):
+                blocks.append({"text": text(value)})
+            elif isinstance(value, URIRef):
+                links.append({"address": str(value), "name": str(held.value(value, SDO.name) or value)})
+            elif held.value(value, SDO.contentUrl) is not None:
+                blocks.append({"figures": figures(held, node, prop)})
+                break
+            elif held.value(value, SDO.embedUrl) is not None:
+                blocks.append({"videos": videos(held, node, prop)})
+                break
+            else:
+                entries.append({"name": str(held.value(value, SDO.name) or ""), "description": str(held.value(value, SDO.description) or "")})
+        if entries:
+            blocks.append({"entries": entries})
+        if links:
+            blocks.append({"links": links})
+    return blocks
+
+
 def sections(found: Graph, node) -> list[dict]:
     """A node's sections by position, hidden ones left out."""
     parts = outline.in_order(found, found.objects(node, SDO.hasPart))
@@ -63,37 +101,12 @@ def sections(found: Graph, node) -> list[dict]:
     for part in parts:
         if str(found.value(part, SDO.creativeWorkStatus) or "") == "hidden":
             continue
+        presented = shown(found, part)
         listed.append({"heading": str(found.value(part, SDO.name) or ""), "text": text(found.value(part, SDO.text)),
                        "figures": figures(found, part, SDO.image), "videos": videos(found, part, SDO.video),
-                       "sections": sections(found, part), "outputs": outputs(found.value(part, SDO.about))})
+                       "sections": sections(found, part), "shown": presented,
+                       "outputs": [] if presented else outputs(found.value(part, SDO.about))})
     return listed
-
-
-def grant(iri: str) -> dict:
-    found = documents.public(storage.graph([iri]))
-    node = URIRef(iri)
-    amount = found.value(node, SDO.amount)
-    funder = found.value(node, SDO.funder)
-    return {"address": iri, "name": str(found.value(node, SDO.name) or iri), "identifier": str(found.value(node, SDO.identifier) or ""),
-            "funder": records.names([str(funder)]).get(str(funder), str(funder)) if funder is not None else "",
-            "amount": {"value": float(found.value(amount, SDO.value)), "currency": str(found.value(amount, SDO.currency) or "")} if amount is not None else None,
-            "description": text(found.value(node, SDO.description))}
-
-
-def subject(iri: str) -> dict:
-    """What an about page shows of its subject: its names, description, videos, research lines and grants."""
-    found = documents.public(storage.graph([iri]))
-    node = URIRef(iri)
-    lines = []
-    for line in found.objects(node, SDO.subOrganization):
-        lines.append({"name": str(found.value(line, SDO.name) or ""), "description": str(found.value(line, SDO.description) or "")})
-    lines.sort(key=itemgetter("name"))
-    grants = []
-    for funding in sorted(found.objects(node, SDO.funding)):
-        grants.append(grant(str(funding)))
-    return {"name": str(found.value(node, SDO.name) or ""), "alternateName": str(found.value(node, SDO.alternateName) or ""),
-            "description": text(found.value(node, SDO.description)), "videos": videos(found, node, SDO.subjectOf),
-            "figures": figures(found, node, SDO.image), "lines": lines, "grants": grants}
 
 
 def kinds(term: str) -> list[dict]:
@@ -113,12 +126,11 @@ def kinds(term: str) -> list[dict]:
 def page(record: Record) -> dict:
     found = documents.public(storage.graph([record.iri]))
     node = URIRef(record.iri)
-    shown = sections(found, node)
-    main = found.value(node, SDO.mainEntity)
+    listed = sections(found, node)
     about = found.value(node, SDO.about)
     return {"name": str(found.value(node, SDO.name) or record.name or ""), "description": str(found.value(node, SDO.description) or ""),
-            "sections": shown, "tabbed": any(section["heading"] for section in shown),
-            "subject": subject(str(main)) if main is not None else None, "kinds": kinds(str(about)) if about is not None else []}
+            "sections": listed, "tabbed": any(section["heading"] for section in listed),
+            "kinds": kinds(str(about)) if about is not None else []}
 
 
 # Records on a page of a kind's listing.

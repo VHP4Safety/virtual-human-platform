@@ -1972,6 +1972,15 @@ CREATE TABLE IF NOT EXISTS "schema_web_page_element" (
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_web_page_element__record" ON "schema_web_page_element" ("record");
+CREATE TABLE IF NOT EXISTS "schema_web_page_element__form_shows" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_web_page_element" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_web_page_element__form_shows__record" ON "schema_web_page_element__form_shows" ("record");
 CREATE TABLE IF NOT EXISTS "schema_web_page_element__schema_has_part" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,

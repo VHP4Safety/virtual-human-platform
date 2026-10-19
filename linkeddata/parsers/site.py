@@ -8,7 +8,9 @@ workaround, see linkeddata/parsers): the main branch's templates at one commit, 
 - Every page's organisation data (base.html's JSON-LD) adds to the project's record its other names, logo,
   one-line description and addresses elsewhere, and the funder's website.
 - The project page's first tab gives the project's record: the first item's text is its description; an
-  item's video is its video, a list with a figure its research lines and figure, and a grant link its grant.
+  item's video is its video (the training video of its title), a list with a figure its research lines and
+  figure, and a grant link its grant. The items stay sections of the page, with their headings and their own
+  text, each presenting the record it shows and naming the fields it shows (form:shows).
 - The partner list gives the project's partners by role, its co-funders, and their websites and logos.
 - The case studies page gives each case study's image.
 - A Publications tab lists the outputs of the project's grant."""
@@ -23,6 +25,7 @@ from linkeddata.model import settings
 from linkeddata.parsers import link, marked, term, slug
 
 PROJECT = "organizations/vhp4safety"
+SCHEMA = "https://schema.org/"
 DECIMAL = "http://www.w3.org/2001/XMLSchema#decimal"
 # The pages, by the templates' route names, and the files read.
 PAGES = {"explore_our_work": "explore_our_work", "impact": "impact",
@@ -167,27 +170,38 @@ def project(about: dict) -> tuple[dict, list[dict]]:
     for position, section in enumerate(about.get("sections", [])):
         found = section.get("text")
         words = BeautifulSoup(found["@value"] if isinstance(found, dict) else str(found or ""), "html.parser")
+        # An item that shows another record's fields keeps its heading and its own text.
+        shown = {"@type": "Section", "heading": section.get("heading"), "position": position + 1}
         if position == 0:
             row["description"] = words.get_text(" ", strip=True)
             # The item's heading gives the project's full name before its colon.
             if ":" in section.get("heading", ""):
                 row["full_name"] = section["heading"].split(":", 1)[0].strip()
+            kept.append({**shown, "about": link(PROJECT), "shows": [link(SCHEMA + "description")]})
         elif section.get("videos"):
-            row["videos"] = section["videos"]
+            row["videos"] = [link("training/" + slug(video["title"])) for video in section["videos"] if video.get("title")]
+            if row["videos"]:
+                shown.update({"about": row["videos"][0], "shows": [link(SCHEMA + "video")]})
+            kept.append(shown)
         elif section.get("figures") and words.find("ol") is not None:
             row["figures"] = section["figures"]
             row["lines"] = []
             for entry in words.find_all("li"):
                 name, _, what = entry.get_text(" ", strip=True).partition(":")
                 row["lines"].append({"@type": "Line", "name": name.strip(), "description": what.strip()})
+            words.find("ol").decompose()
+            if words.get_text(strip=True):
+                shown["text"] = marked(str(words).strip())
+            kept.append({**shown, "about": link(PROJECT), "shows": [link(SCHEMA + "subOrganization"), link(SCHEMA + "image")]})
         elif grant(section) is None:
-            kept.append({**section, "position": len(kept) + 1})
+            kept.append({**section, "position": position + 1})
         else:
             given, funder = grant(section)
             row["grants"] = [link(given["@id"])]
             others.append(given)
             if funder is not None:
                 others.append(funder)
+            kept.append({**shown, "about": link(given["@id"]), "shows": [link(SCHEMA + "description")]})
     about["sections"] = kept
     return row, others
 
