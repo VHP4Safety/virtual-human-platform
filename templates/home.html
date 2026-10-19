@@ -1,9 +1,16 @@
 {% extends "base.html" %}
+{# The home page, from the platform's catalogue record (linkeddata/pages.py: catalogue_of): its heading and
+   sentence, its kinds of records with their counts, its description and pages, the workflow page's summary
+   with the process flow steps, its publisher's partners, and the publisher's addresses to get in touch. #}
 
 {% block head %}
 <!-- Page-specific CSS for home page -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
 {% endblock %}
+
+{% macro html(value) -%}
+  {%- if value is mapping %}{{ value["@value"]|sanitize_html }}{% elif value %}{{ value }}{% endif -%}
+{%- endmacro %}
 
 {% block content %}
 
@@ -19,289 +26,111 @@
         style="max-height:45vh"
       />
     </div>
-
     <div class="col-md-8">
-      <h1 class="display-3 fw-bold text-uppercase text-vhppurple mb-4">
-        The Virtual <br />
-        Human Platform
-      </h1>
-
-      <p class="lead text-secondary" style="letter-spacing: 0.05em;">
-        Safety assessment of chemicals and pharmaceuticals using
-        human data-driven tools and case studies.
-      </p>
+      <h1 class="display-3 fw-bold text-uppercase text-vhppurple mb-4">{{ platform.heading or platform.name }}</h1>
+      {% if platform.abstract %}
+      <p class="lead text-secondary" style="letter-spacing: 0.05em;">{{ platform.abstract }}</p>
+      {% endif %}
     </div>
   </div>
-
 </section>
-<!-- Tab section: navigation to Tools, Case Studies, Data -->
+
+<!-- The kinds of records, each with its count -->
 <section class="bg-vhplight-blue img-fluid py-5">
   <div class="container">
     <div class="py-4">
       <div class="row gy-4">
-
-      
-        <!-- Case Studies card -->
+        {% for kind in platform.kinds %}
+        {% set colour = "vhppink-distinct" if loop.first else "vhpblue" %}
         <div class="col-md-3">
-
-          <div class="card text-center border-2 rounded-2 card-button card-button-vhppink-distinct h-100 shadow-sm" onclick="location.href='/casestudies'">
-            <div class="card-header btn rounded-top-1 bg-vhppink-distinct ">
-              <h5 class="card-title text-white m-0">Case Studies</h5>
+          <div class="card text-center border-2 rounded-2 card-button card-button-{{ colour }} h-100 shadow-sm" onclick="location.href='{{ kind.address }}'">
+            <div class="card-header btn rounded-top-1 bg-{{ colour }}">
+              <h5 class="card-title text-white m-0"><a class="text-white text-decoration-none" href="{{ kind.address }}">{{ kind.name }}</a></h5>
             </div>
-            <div class="card-body btn">
-              See how tools, methods and data combine to answer regulatory questions.
-            </div>
+            <div class="card-body btn">{{ html(kind.description) }}</div>
             <div class="card-footer btn text-body-secondary">
-              <span class="badge rounded-pill bg-vhppink-distinct text-white">{{num_case_studies}}</span> case studies 
+              <span class="badge rounded-pill bg-{{ colour }} text-white">{{ kind.count }}</span>
             </div>
           </div>
         </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
 
-         <!-- Tools card -->
-        <div class="col-md-3">
+<!-- About section: the platform's description, and the pages about it -->
+<section class="container py-5" id="about-section">
+  <h1 id="main-text-section">{{ platform.name }}</h1>
+  <div class="home-description">{{ html(platform.description) }}</div>
+  {% if platform.pages %}
+  <div class="row row-cols-1 row-cols-md-3 g-4 mt-1">
+    {% for page in platform.pages %}
+    <div class="col">
+      <a href="{{ page.address|page_link }}" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2">
+        <i class="bi bi-arrow-right-circle" aria-hidden="true"></i>{{ page.name }}
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
 
-          <div class="card text-center border-2 rounded-2 card-button-vhpblue h-100 shadow-sm" onclick="location.href='/tools'">
-            <div class="card-header btn rounded-top-1 bg-vhpblue ">
-              <h5 class="card-title text-white m-0">Tools</h5>
-            </div>
-            <div class="card-body btn">
-              Select an <i>in silico</i> tool to streamline your safety assessment.
-            </div>
-            <div class="card-footer  text-body-secondary">
-              <span class="badge btn rounded-pill bg-vhpblue text-white">{{num_tools}}</span> tools
-            </div>
-          </div>
+  {% if workflow %}
+  <hr class="my-4">
+  <p class="text-secondary fs-5">{{ workflow.name }}</p>
+  <div id="workflowTeaser">
+    {% if workflow.description %}<p>{{ workflow.description }}</p>{% endif %}
+    <div class="row align-items-stretch g-3">
+      <!-- Regulatory question (input) -->
+      <div class="col-12 col-md-3 d-flex">
+        <div class="bg-vhppink-distinct text-white rounded-pill px-3 py-2 text-center w-100 small fw-semibold align-self-center">
+          Regulatory question
         </div>
-
-        <!-- Methods card -->
-        <div class="col-md-3">
-
-          <div class="card text-center border-2 rounded-2 card-button card-button-vhpblue h-100 shadow-sm" onclick="location.href='/methods'">
-            <div class="card-header btn rounded-top-1 bg-vhpblue ">
-              <h5 class="card-title text-white m-0">Methods</h5>
+      </div>
+      <!-- Arrow connector -->
+      <div class="col-12 col-md-1 d-flex align-items-center justify-content-center text-secondary fs-4 lh-1">
+        <i class="bi bi-caret-right-fill d-none d-md-inline" aria-hidden="true"></i>
+        <i class="bi bi-caret-down-fill d-md-none" aria-hidden="true"></i>
+      </div>
+      <!-- Risk Characterisation frame: the process flow steps -->
+      <div class="col-12 col-md-8 mt-0">
+        <div class="border border-2 border-vhppurple rounded-3 p-3 pt-4 position-relative my-4">
+          <span class="position-absolute top-0 start-50 translate-middle bg-white px-2 text-vhppurple small fw-semibold">Risk Characterisation</span>
+          <div class="row row-cols-1 row-cols-md-2 g-2">
+            {% set is_odd = (process_flow_steps | length) % 2 == 1 %}
+            {% for k, v in process_flow_steps.items() %}
+            <div class="col d-grid{% if loop.first and is_odd %} col-md-12{% endif %}">
+              <a href="/safety_assessment_workflow#definition-{{ v.slug }}" class="text-decoration-none">
+                <div class="bg-vhppurple text-white rounded-pill px-3 py-2 text-center small fw-semibold">{{ v.label }}</div>
+              </a>
             </div>
-            <div class="card-body btn">
-            Select an <i>in vitro</i> method to perform your safety assessment.
-            </div>
-            <div class="card-footer btn text-body-secondary">
-              <span class="badge rounded-pill bg-vhpblue text-white">{{ num_methods }}</span> methods
-            </div>
-          </div>
-        </div>
-
-
-        <!-- Data card -->
-        <div class="col-md-3">
-
-          <div class="card text-center border-2 rounded-2 card-button card-button-vhpblue h-100 shadow-sm" onclick="location.href='/data'">
-            <div class="card-header btn rounded-top-1 bg-vhpblue ">
-              <h5 class="card-title text-white m-0">Data</h5>
-            </div>
-            <div class="card-body btn">
-              Find the (meta)data you need for tools and workflows.
-            </div>
-            <div class="card-footer btn text-body-secondary">
-              <span class="badge rounded-pill bg-vhpblue text-white">{{num_datasets}}</span> datasets
-            </div>
+            {% endfor %}
           </div>
         </div>
       </div>
     </div>
   </div>
-
+  {% endif %}
 </section>
 
-<!-- About section: project description and mission -->
-<section class="container py-5">
-  <h1 id="main-text-section" class="" >Virtual Human Platform</h1>
-  <p class="text-secondary fs-5">A digital infrastructure for animal-free safety assessment.</p>
-	<div>
-	<!---<h4>What is the Virtual Human Platform?</h4>-->
-	<p>The Virtual Human Platform (VHP) is a digital infrastructure that supports human-relevant risk assessment of chemicals and pharmaceuticals. By integrating  human-derived data, advanced in vitro models, and  computational tools, the VHP enables transparent, reproducible and mechanistically informed safety assessment moving beyond traditional animal testing. </p>
-	<p>Through structured, interactive workflows and a user-friendly interface, the platform tackles real-world regulatory questions (<a href="/casestudies">'case studies'</a>) by connecting <a href="/tools">tools</a>, <a href="/methods">methods</a> and <a href="/data">data</a>.</p>
-
-	<hr class="my-3">
-
-	<!-- Workflow teaser: heading is the toggle -->
-	<p class="text-secondary fs-5">
-	    Safety Assessment Workflow
-  </p>
-
-	<div id="workflowTeaser">
-	    <p class="">
-	      The Virtual Human Platform uses a generic safety assessment workflow as a five-step process to collect information critical for risk characterisation.
-	    </p>
-
-	    <div class="row align-items-stretch g-3">
-
-	      <!-- Regulatory question (input) -->
-	      <div class="col-12 col-md-3 d-flex">
-	        <div class="bg-vhppink-distinct text-white rounded-pill px-3 py-2 text-center w-100 small fw-semibold align-self-center">
-	          Regulatory question
-	        </div>
-	      </div>
-
-	      <!-- Arrow connector -->
-	      <div class="col-12 col-md-1 d-flex align-items-center justify-content-center text-secondary fs-4 lh-1">
-	        <i class="bi bi-caret-right-fill d-none d-md-inline" aria-hidden="true"></i>
-	        <i class="bi bi-caret-down-fill d-md-none" aria-hidden="true"></i>
-	      </div>
-
-	      <!-- Risk Characterisation frame: 5 workflow steps -->
-	      <div class="col-12 col-md-8 mt-0 ">
-	            <!-- Risk Characterisation visualization -->
-          <div class="border border-2 border-vhppurple rounded-3 p-3 pt-4 position-relative my-4">
-            <span class="position-absolute top-0 start-50 translate-middle bg-white px-2 text-vhppurple small fw-semibold">Risk Characterisation</span>
-            <div class="row row-cols-1 row-cols-md-2 g-2">
-              {% set is_odd = (process_flow_steps | length) % 2 == 1 %}
-              {% for k, v in process_flow_steps.items() %}
-                <div class="col d-grid{% if loop.first and is_odd %} col-md-12{% endif %}">
-                  <a href="/safety_assessment_workflow#definition-{{ v.slug }}" class="text-decoration-none">
-                    <div class="bg-vhppurple text-white rounded-pill px-3 py-2 text-center small fw-semibold">{{ v.label }}</div>
-                  </a>
-                </div>
-              {% endfor %}
-            </div>
-          </div>
-	      </div>
-
-	    </div>
-
-	  </div>
-	</div>
-
-	<hr class="my-3">
-
-	<p class="fs-5 text-secondary">Case studies</p>
-    On the platform, three human relevant case studies are used as demonstrators:
-	<ul>
-	<li>Medication induced kidney toxicity, addressing disease state.</li>
-	<li>Neurodegeneration following lifelong pesticide exposure, addressing life course exposure.</li>
-	<li>Disruption of thyroid hormone mediated brain development due to chemical exposure, addressing sex and age specific differences.</li>
-	</ul>
-	<p>These case studies show how multiple New Approach Methodologies (NAMs) can be combined to address regulatory challenges and illustrate practices concerning data, model assumptions, and interpretation. </p>
-
-	<hr class="my-3">
-
-	<p class="text-secondary fs-5" id="about-section">Learn more about VHP4Safety, the project behind the VHP</p>
-  <p>Developed in co-creation with academic, industrial, regulatory, and societal partners, the VHP supports the transition to animal-free, human-relevant safety assessment. We invite all stakeholders to explore, contribute, and help shape the future of risk assessment with us.</p>
-
-	<div class="row row-cols-1 row-cols-md-3 g-4">
-	  <div class="col">
-	    <a href="/explore_our_work"
-	       class="btn btn-outline-secondary w-100  d-flex align-items-center justify-content-center gap-2">
-	      <i class="bi bi-diagram-3" aria-hidden="true"></i>Project
-	    </a>
-	  </div>
-	  <div class="col">
-	    <a href="/training"
-	       class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2">
-	      <i class="bi bi-mortarboard" aria-hidden="true"></i>Training
-	    </a>
-	  </div>
-	  <div class="col">
-	    <a href="/impact"
-	       class="btn btn-outline-secondary w-100  d-flex align-items-center justify-content-center gap-2">
-	      <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>Impact
-	    </a>
-	  </div>
-	</div>
-</section>
-<!--<section class="container py-5" id="about-section">
-  <h2 class="mb-4"><strong>About VHP4Safety</strong></h2>
-  <div class="accordion accordion-flush" id="aboutAccordion">
-    <div class="accordion-item">
-      <h2 class="accordion-header" id="about-headingOne">
-        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#about-collapseOne" aria-expanded="true" aria-controls="about-collapseOne">
-          What is the Virtual Human Platform?
-        </button>
-      </h2>
-      <div id="about-collapseOne" class="accordion-collapse collapse show" aria-labelledby="about-headingOne">
-        <div class="accordion-body" style="text-align: justify;">
-          <p>
-            The Virtual Human Platform (VHP) was developed through the VHP4Safety project to support chemical and pharmaceutical safety testing.  VHP aims to facilitate the prediction of harmful effects of chemicals and pharmaceuticals by integrating human physiology, chemical properties, and biological pathway disturbances. VHP provides you with human-relevant tools and models for precision safety evaluation, helping you reduce reliance on laboratory animals. With VHP, you can assess chemicals for human use, including vulnerable populations such as infants, the elderly, and individuals with health conditions.
-          </p>
-          <h5>As a user, the platform offers you</h5>
-          <p>
-            </p>
-          <ul>
-            <li><strong>Documentation:</strong> Access clear, user-friendly guides at VHP4Safety Docs. You can find cloud service descriptions, tutorials and example workflows that help you combine multiple services for more complex analyses.</li>
-            <li><strong>Glossary:</strong> Quickly understand key terms using the VHP4Safety Glossary. It is designed to make collaboration easier and to ensure that your are always on the same page as other users and project members.</li>
-            <li><strong>Cloud services:</strong> Take advantage of the VHP Cloud, which hosts a wide range of services for your case studies. You can explore the catalog, request additional services or contribute to new ones which are tailored to help you achieve your research goals.</li>
-            <li><strong>Sciencrew Network:</strong> Stay informed with updates on project members, key developments, and social insights through our <a href="https://www.sciencrew.com/c/6586?title=VHP4Safety" target="_blank">Sciencrew Webpage</a>. This keeps you connected to the wider VHP4Safety community and its expertise.</li>
-            <li><strong>Case studies:</strong> Use our three case studies as a guideline for how different services, methods and data can be used in a Safety Assessment Workflow to help you find the answer for a regulatory question. The Safety Assessment Workflow consists of different steps which categorizes processes that users can perform on the Virtual Human Platform.</li>
-          </ul>
-  <p>
-    By using these resources, you can perform more accurate, ethical, and user-friendly chemical and pharmaceutical safety assessments, moving beyond traditional animal testing and leveraging human-centered data.
-  </p>
-</div>
-</div>
-</div>
-  
-    <div class="accordion-item">
-      <h2 class="accordion-header" id="about-headingTwo">
-        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#about-collapseTwo" aria-expanded="false" aria-controls="about-collapseTwo">
-          Our mission and vision: Moving beyond animal testing
-        </button>
-      </h2>
-      <div id="about-collapseTwo" class="accordion-collapse collapse" aria-labelledby="about-headingTwo">
-        <div class="accordion-body"  style="text-align: justify;";>
-          <p>
-          Traditional animal studies often fail to predict toxicity in humans. VHP4Safety addresses this challenge by focusing on human-relevant data and providing the tools, services, and workflows needed to translate this data into actionable insights. The platform considers human-relevant scenarios such as age, gender, disease states, and exposure timing, and evaluates chemicals from pharmaceuticals, consumer products, and the chemical industry, all while meeting the needs of regulators and stakeholders. The development of VHP has followed three research lines: building the platform infrastructure and services, generating and integrating high-quality human-relevant data, and ensuring stakeholder acceptance and sustainability. By combining these approaches, VHP accelerates the global shift toward human-centered safety assessment.
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <div class="accordion-item">
-      <h2 class="accordion-header" id="about-headingThree">
-        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#about-collapseThree" aria-expanded="false" aria-controls="about-collapseThree">
-          VHP4Safety: The research project behind VHP
-        </button>
-      </h2>
-      <div id="about-collapseThree" class="accordion-collapse collapse" aria-labelledby="about-headingThree">
-        <div class="accordion-body">
-          <p>
-          The VHP4Safety project is funded by the Netherlands Research Council (NWO) ‘Netherlands Research Agenda: Research on Routes by Consortia’ (NWA-ORC 1292.19.272). 
-           </p>
-        </div>
-      </div>
-    </div>
-
-    <div class="accordion-item">
-      <h2 class="accordion-header" id="about-headingFour">
-        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#about-collapseFour" aria-expanded="false" aria-controls="about-collapseFour">
-          A three minute video
-        </button>
-      </h2>
-      <div id="about-collapseFour" class="accordion-collapse collapse" aria-labelledby="about-headingThree">
-        <div class="accordion-body">
-          <div style="position: relative; padding-top: 56.25%;"><iframe title="VHP4Safety Project Video" width="100%" height="100%" src="https://video.edu.nl/videos/embed/rvUKc7J4E4HEt2TEbJEQt9" allow="fullscreen" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" style="border: 0px; position: absolute; inset: 0px;"></iframe></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>-->
 <section class="bg-vhplight-blue img-fluid" id="partners-section">
   <div class="container py-5">
     <h1 class="">
       Supported by
     </h1>
     <p class="text-secondary fs-5">Collaboration in innovation.</p>
-
-    <!-- Partner logo grid: grayscale, full colour on hover. Order, names and
-         links come from static/images/partners/partners.txt (get_partner_logos). -->
+    <!-- Partner logo grid: grayscale, full colour on hover; the publisher's partners and co-funders. -->
     <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3">
-      {% for logo in partner_logos %}
+      {% for partner in platform.partners if partner.logo %}
         <div class="col">
-          {% if logo.url %}<a href="{{ logo.url }}" target="_blank" rel="noopener" class="d-block" data-bs-toggle="tooltip" data-bs-title="{{ logo.name }}">{% endif %}
-            <div class="ratio ratio-1x1"{% if not logo.url %} data-bs-toggle="tooltip" data-bs-title="{{ logo.name }}" tabindex="0"{% endif %}>
-              <img src="{{ url_for('static', filename='images/partners/' ~ logo.file) }}"
+          {% if partner.url %}<a href="{{ partner.url }}" target="_blank" rel="noopener" class="d-block" data-bs-toggle="tooltip" data-bs-title="{{ partner.name }}">{% endif %}
+            <div class="ratio ratio-1x1"{% if not partner.url %} data-bs-toggle="tooltip" data-bs-title="{{ partner.name }}" tabindex="0"{% endif %}>
+              <img src="{{ partner.logo|page_link }}"
                    class="partner-logo"
-                   alt="{{ logo.name }}"
+                   alt="{{ partner.name }}"
                    loading="lazy">
             </div>
-          {% if logo.url %}</a>{% endif %}
+          {% if partner.url %}</a>{% endif %}
         </div>
       {% endfor %}
     </div>
@@ -313,29 +142,31 @@
 <section class="container py-5" id="contact-section">
   <div>
     <div class="row">
-      
+
       <!-- Left column: text and icons -->
       <div class="col-md-6">
         <div class="content">
           <h1 class="">Connect with us</h1>
           <p class="text-secondary fs-5">
-            Got questions, need support or just want to chat? 
+            Got questions, need support or just want to chat?
           </p>
           <div>
-            Use the form below, or contact us on LinkedIn, GitHub, or via email 
+            Use the form below, or contact us on LinkedIn, GitHub, or via email
             and we’ll get back to you as soon as possible.
             </div>
 
           <div class="d-flex gap-3">
-            <a href="mailto:vhp4safety@uu.nl" class="contact-icon fs-3 link-vhppink">
+            {% if platform.email %}
+            <a href="mailto:{{ platform.email }}" class="contact-icon fs-3 link-vhppink" aria-label="Email">
               <i class="bi bi-envelope-fill"></i>
             </a>
-            <a href="https://www.linkedin.com/company/vhp4safety/posts/?feedView=all" class="contact-icon fs-3 link-vhppink">
-              <i class="bi bi-linkedin"></i>
+            {% endif %}
+            {% for address in platform.elsewhere %}
+            {% set icon = "linkedin" if "linkedin.com" in address else ("github" if "github.com" in address else "link-45deg") %}
+            <a href="{{ address }}" class="contact-icon fs-3 link-vhppink" aria-label="{{ icon }}">
+              <i class="bi bi-{{ icon }}"></i>
             </a>
-            <a href="https://github.com/VHP4Safety" class="contact-icon fs-3 link-vhppink">
-              <i class="bi bi-github"></i>
-            </a>
+            {% endfor %}
           </div>
         </div>
       </div>

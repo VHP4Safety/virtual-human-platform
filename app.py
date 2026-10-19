@@ -414,12 +414,6 @@ def linked_tools(catalogue: dict) -> dict:
     return tools
 
 
-# --- Partner logos ----------------------------------------------------------
-PARTNERS_DIR = os.path.join(app.static_folder, "images", "partners")
-PARTNERS_FILE = os.path.join(PARTNERS_DIR, "partners.txt")
-_PARTNER_IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".svg", ".gif", ".webp")
-
-
 def linked_methods() -> dict:
     """The platform's method records, shaped as the cloud catalogue's methods index for the methods pages."""
     stage_mapping = get_stage_mapping()
@@ -449,54 +443,6 @@ def linked_methods() -> dict:
         method["vhp4safety_workflow_stage_content"] = ", ".join(stages)
         methods[method_id] = method
     return methods
-
-
-def get_partner_logos() -> list:
-    """Return partner logos from static/images/partners/.
-
-    Each item is a dict {"file": ..., "name": ..., "url": ...}. Order, names
-    and links come from partners.txt, whose entries are
-    "filename | Organization name | https://link" (name and link optional);
-    blank lines and '#' comments are ignored. Only files explicitly listed in
-    partners.txt are returned — images present in the directory but not
-    registered (or commented out) are not displayed.
-    """
-    try:
-        images = {
-            f
-            for f in os.listdir(PARTNERS_DIR)
-            if f.lower().endswith(_PARTNER_IMAGE_EXTS)
-        }
-    except OSError:
-        return []
-
-    logos = []
-    used = set()
-    try:
-        with open(PARTNERS_FILE, encoding="utf-8") as fh:
-            for line in fh:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                parts = [p.strip() for p in line.split("|")]
-                fname = parts[0]
-                if fname in images and fname not in used:
-                    used.add(fname)
-                    logos.append(
-                        {
-                            "file": fname,
-                            "name": (
-                                parts[1]
-                                if len(parts) > 1 and parts[1]
-                                else os.path.splitext(fname)[0]
-                            ),
-                            "url": parts[2] if len(parts) > 2 else "",
-                        }
-                    )
-    except OSError:
-        pass
-
-    return logos
 
 
 class _RepositoryFetchAllFailed(Exception):
@@ -762,33 +708,20 @@ def inject_seo_defaults():
 ### The landing page
 @app.route("/")
 def home():
-    try:
-        tools = linked_tools(get_json_dict(
-            SERVICES_URL
-        ))  # Geting the service_list.json in the dictionary format.
-        tools = list(tools.values())  # Converting the dictionary to a list object.
-    except Exception:
-        app.logger.exception("Home page failed")
-        return "Error processing service data", 500
-    num_tools = len(tools)
-    num_case_studies = len(get_casestudies())
-    try:
-        methods = linked_methods()
-        num_methods = len(methods) if isinstance(methods, dict) else 0
-    except Exception:
-        num_methods = 0
-    bs_res, zen_res = get_repository_data(search_query="")
-    num_datasets = bs_res.get("total", 0) + zen_res.get("total", 0)
+    """The platform's catalogue: its record, its kinds of records with their counts, the workflow page's
+    summary with the process flow steps, and its publisher's partners."""
+    record = records.get(settings()["base"])
+    if record is None:
+        abort(404)
+    platform = pages.catalogue_of(record)
+    workflow = records.get(records.address("safety_assessment_workflow"))
     return render_template(
         "home.html",
-        num_tools=num_tools,
-        num_case_studies=num_case_studies,
-        num_methods=num_methods,
-        num_datasets=num_datasets,
+        platform=platform,
+        workflow=pages.page(workflow) if workflow is not None else None,
         process_flow_steps=get_process_flow_steps(),
-        partner_logos=get_partner_logos(),
         page_title=DEFAULT_PAGE_TITLE,
-        meta_description=DEFAULT_META_DESCRIPTION,
+        meta_description=platform["abstract"] or DEFAULT_META_DESCRIPTION,
     )
 
 
@@ -829,8 +762,11 @@ def sitemap():
         and rule.endpoint.split(".")[0] not in EXCLUDED_BLUEPRINTS
         and "GET" in (rule.methods or set())
     )
-    entries = [f"  <url>\n    <loc>{BASE}{p}</loc>\n  </url>" for p in paths]
-    for address, changed in records.with_pages():
+    listed = records.with_pages()
+    with_pages = {address.rstrip("/") for address, _ in listed}
+    # A static page that is also a record's page, such as the home page, is listed once, with its last change.
+    entries = [f"  <url>\n    <loc>{BASE}{p}</loc>\n  </url>" for p in paths if f"{BASE}{p}".rstrip("/") not in with_pages]
+    for address, changed in listed:
         entries.append(f"  <url>\n    <loc>{address}</loc>\n    <lastmod>{changed}</lastmod>\n  </url>")
     sitemapContent = (
         '<?xml version="1.0" encoding="utf-8"?>\n'
@@ -1544,8 +1480,17 @@ def model_page(modelid):
 # General case studies page
 @app.route("/casestudies")
 def workflows():
+    """The case studies, from their records: each one's name, aim and icon."""
+    listed = [record for record in records.of_kind("casestudies") if record.part_of is None]
+    statements = storage.graph([record.iri for record in listed])
+    case_studies = []
+    for record in listed:
+        aims = documents.stored_values(statements, record.iri, "description")
+        icons = documents.stored_values(statements, record.iri, "image")
+        case_studies.append({"address": record.iri, "name": record.name, "aim": aims[0] if aims else "", "icon": icons[0] if icons else ""})
     return render_template(
         "case_studies/casestudies.html",
+        case_studies=case_studies,
         page_title="Case studies — VHP4Safety",
         meta_description=(
             "Explore the VHP4Safety case studies (kidney, Parkinson's disease and "

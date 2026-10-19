@@ -1,14 +1,16 @@
 """A page of the platform from its record, for its template (templates/records/page.html): its sections by
 position, hidden ones left out, each with its text, figures, videos and items; the description, videos,
 research lines and grants of an about page's subject; the records that name a section's grant; and the kinds
-of a term the page explains, named the glossary's way ("Toxicokinetics (Process Flow Step)")."""
+of a term the page explains, named the glossary's way ("Toxicokinetics (Process Flow Step)"). The platform's
+catalogue, for the home page: its kinds of records with their counts, its pages, and its publisher's partners."""
 
 from rdflib import RDF, Graph, Literal, URIRef
-from rdflib.namespace import SDO
+from rdflib.namespace import SDO, VOID
 
 from database import records
 from database.tables import Record
 from linkeddata import catalogue, documents, outline, storage
+from linkeddata.model import settings
 
 
 def text(value):
@@ -115,3 +117,43 @@ def page(record: Record) -> dict:
             "sections": shown, "tabbed": any(section["heading"] for section in shown),
             "subject": subject(str(main)) if main is not None else None, "kinds": kinds(str(about)) if about is not None else []}
 
+
+def partners(found: Graph, node) -> list[dict]:
+    """A project's partners by role and name, then its co-funders by name; each with its name, logo and website."""
+    held = []
+    for role in found.objects(node, SDO.member):
+        held.append((str(found.value(role, SDO.roleName) or ""), str(found.value(role, SDO.member) or "")))
+    funders = sorted(str(funder) for funder in found.objects(node, SDO.funder))
+    organisations = documents.public(storage.graph([iri for _, iri in held] + funders))
+    listed = []
+    for role, iri in held + [("", funder) for funder in funders]:
+        organisation = URIRef(iri)
+        listed.append({"role": role, "name": str(organisations.value(organisation, SDO.name) or iri), "address": iri,
+                       "logo": str(organisations.value(organisation, SDO.logo) or ""), "url": str(organisations.value(organisation, SDO.url) or "")})
+    partnered = sorted([one for one in listed if one["role"]], key=lambda one: (one["role"], one["name"].casefold()))
+    return partnered + sorted([one for one in listed if not one["role"]], key=lambda one: one["name"].casefold())
+
+
+def catalogue_of(record: Record) -> dict:
+    """The platform's catalogue: its names, sentence and description, its kinds of records in order with their
+    counts and addresses, the pages about it, and its publisher's addresses elsewhere and partners."""
+    found = documents.public(storage.graph([record.iri]))
+    node = URIRef(record.iri)
+    paths = {}
+    for name, of_class in settings()["kinds"].items():
+        paths[of_class] = name
+    kinds = []
+    for part in sorted(found.objects(node, VOID.classPartition), key=lambda part: outline.placed(found, part)):
+        of_class = str(found.value(part, VOID["class"]) or "")
+        kinds.append({"name": str(found.value(part, SDO.name) or ""), "description": text(found.value(part, SDO.description)),
+                      "address": "/" + paths.get(of_class, ""), "count": catalogue.page(of_class, {}, "", 0, 1)[0] if of_class in paths else 0})
+    listed = sorted(str(page) for page in found.objects(node, SDO.subjectOf))
+    names = records.names(listed)
+    publisher = found.value(node, SDO.publisher)
+    held = documents.public(storage.graph([str(publisher)])) if publisher is not None else Graph()
+    return {"name": str(found.value(node, SDO.name) or ""), "heading": str(found.value(node, SDO.alternateName) or ""),
+            "abstract": str(found.value(node, SDO.abstract) or ""), "description": text(found.value(node, SDO.description)), "kinds": kinds,
+            "pages": [{"address": page, "name": names.get(page, page)} for page in listed],
+            "elsewhere": sorted(str(address) for address in held.objects(publisher, SDO.sameAs)) if publisher is not None else [],
+            "email": str(held.value(publisher, SDO.email) or "") if publisher is not None else "",
+            "partners": partners(held, publisher) if publisher is not None else []}
