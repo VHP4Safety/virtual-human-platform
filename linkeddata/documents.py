@@ -139,16 +139,21 @@ def published_as() -> dict[URIRef, URIRef]:
     return found
 
 
-def public(found: Graph) -> Graph:
-    """The statements as pages show them: the values of private fields, such as email addresses, are taken
-    out, and values of fields published as another class have that class too."""
-    for predicate in private():
-        found.remove((None, predicate, None))
+def typed(found: Graph) -> Graph:
+    """The statements with the values of fields published as another class having that class too."""
     for predicate, of_class in published_as().items():
         for value in list(found.objects(None, predicate)):
             if isinstance(value, URIRef):
                 found.add((value, RDF.type, of_class))
     return found
+
+
+def public(found: Graph) -> Graph:
+    """The statements as pages show them: the values of private fields, such as email addresses, are taken
+    out, and values of fields published as another class have that class too."""
+    for predicate in private():
+        found.remove((None, predicate, None))
+    return typed(found)
 
 
 def linked(record: Record) -> Graph:

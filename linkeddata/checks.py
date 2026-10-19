@@ -41,8 +41,8 @@ def meaning(component: str | None) -> str:
 
 def validate(found: Graph) -> Graph:
     """The model's check results for some statements, with the class and name of the records they link to,
-    so a link is checked against its record's class."""
-    validated = storage.with_names(found)
+    so a link is checked against its record's class, and the classes their values are published as."""
+    validated = documents.typed(storage.with_names(found))
     _, results, _ = pyshacl.validate(validated, shacl_graph=shapes(), ont_graph=hierarchy())
     return results
 
