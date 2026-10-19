@@ -99,6 +99,22 @@ def form_graph() -> Graph:
     return found
 
 
+def mixed() -> list[str]:
+    """The properties of fields whose sh:or offers a link or another value, such as an address."""
+    graph = profile()
+    found = []
+    for field in graph.objects(None, SH.property):
+        for alternatives in graph.objects(field, SH["or"]):
+            listed = list(graph.items(alternatives))
+            classes = 0
+            for alternative in listed:
+                if graph.value(alternative, SH["class"]) is not None:
+                    classes += 1
+            if 0 < classes < len(listed):
+                found.append(str(graph.value(field, SH.path)))
+    return found
+
+
 def links() -> dict[str, dict[str, str]]:
     """The properties of fields that link to records (sh:class, or sh:or of classes, without parts), each
     with its classes by label: the sh:or choice's, else the class shape's, else the class's own name."""

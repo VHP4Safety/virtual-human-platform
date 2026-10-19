@@ -394,8 +394,9 @@ form:DefinedTerm a sh:NodeShape ;
     sh:property [ sh:path schema:termCode ; sh:order 3 ; sh:name "Code" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:alternateName ; sh:order 5 ; sh:name "Other names" ; sh:datatype xsd:string ;
         sh:description "Such as a short name." ] ;
-    sh:property [ sh:path schema:sameAs ; sh:order 6 ; sh:name "Other addresses" ; sh:nodeKind sh:IRI ;
-        sh:description "Such as those of a license's text." ] ;
+    sh:property [ sh:path schema:sameAs ; sh:order 6 ; sh:name "Other addresses" ;
+        sh:or ( [ sh:class schema:DefinedTerm ; rdfs:label "Term" ] [ sh:nodeKind sh:IRI ; rdfs:label "Address" ] ) ;
+        sh:description "The same term in another vocabulary, or another address, such as a license's text." ] ;
     sh:property [ sh:path schema:description ; sh:order 4 ; sh:name "Definition" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] .
 
 # A vocabulary or ontology, at /vocabularies/<name>; its terms' addresses start with its namespace.

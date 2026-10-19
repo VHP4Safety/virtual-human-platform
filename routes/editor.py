@@ -60,6 +60,7 @@ def edit(kind: str):
         shape=editor.root_shape(kind),
         values=f"<{selected}> a <{settings()['kinds'][kind]}> ; <https://schema.org/name> {json.dumps(name)} ." if name and record is None else "",
         links=editor.links(),
+        mixed=editor.mixed(),
         classes={of_class: name for name, of_class in settings()["kinds"].items()},
         form_token=form_token(),
         page_title=f"{kind.capitalize()} — VHP4Safety editor",

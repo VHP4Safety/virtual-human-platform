@@ -295,7 +295,9 @@ function registerTerm(text, vocabulary, added) {
 class RecordLink extends Plugin {
   createEditor(template, value) {
     // The field's link classes by name, from the profile; text fields, such as tool keywords, have none.
-    const classes = template.class || template.or ? editor.links[template.path] || {} : {};
+    // A field that offers a link or another value shows the other value, such as an address, as text.
+    const linking = template.class || (template.or && !editor.mixed.includes(template.path));
+    const classes = linking ? editor.links[template.path] || {} : {};
     const names = Object.values(classes);
     if (!names.length) {
       return Text.prototype.createEditor.call(this, template, value);
@@ -510,14 +512,15 @@ class RecordLink extends Plugin {
   }
 }
 
-// A link field searches all its classes, so shacl-form's sh:or choice is made at once.
+// A link field searches all its classes, so shacl-form's sh:or choice is made at once, unless it offers
+// another value too, such as an address.
 const watched = new WeakSet();
 
 function pick(within) {
   const found = within.matches && within.matches(".shacl-or-constraint") ? [within] : within.querySelectorAll(".shacl-or-constraint");
   for (const constraint of found) {
     const choice = constraint.querySelector(".editor");
-    if (editor.links[constraint.dataset.path] && choice && choice.onchange) {
+    if (editor.links[constraint.dataset.path] && !editor.mixed.includes(constraint.dataset.path) && choice && choice.onchange) {
       // Made once the form has drawn it.
       window.requestAnimationFrame(function () {
         choice.value = "0";
