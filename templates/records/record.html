@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "records/_outline.html" as outlined %}
 {% block content %}
 <section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
   <div class="pb-2 d-flex flex-wrap gap-4 align-items-start">
@@ -15,50 +16,12 @@
 
   <div class="card">
     <div class="card-body">
-      <table class="table mb-0">
-        <tbody>
-          {% for field in fields if field.name not in ("name", "description") %}
-          <tr>
-            <th scope="row" class="text-nowrap fw-semibold">{{ field.label }}</th>
-            <td>
-              {% for value in field["values"] %}
-                {% if value.startswith("http://") or value.startswith("https://") %}
-                <a class="link-vhpblue text-break" href="{{ value|page_link }}">{{ names.get(value) or value }}</a>
-                {% else %}
-                {{ value }}
-                {% endif %}
-                {% if not loop.last %}<br>{% endif %}
-              {% endfor %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      {{ outlined.fields_table(outline.fields, left_out=("name", "description")) }}
+      {{ outlined.parts(outline.parts, 2) }}
     </div>
   </div>
 
-  {% if named_on %}
-  <div class="card mt-3">
-    <div class="card-body">
-      <h2 class="h5 mb-3">Named on other records</h2>
-      <table class="table mb-0">
-        <tbody>
-          {% for label, holders in named_on.items() %}
-          <tr>
-            <th scope="row" class="text-nowrap fw-semibold">{{ label }}</th>
-            <td>
-              {% for holder in holders[:100] %}
-              {% if holder.kind %}<span class="badge text-bg-light border fw-normal me-1">{{ holder.kind }}</span>{% endif %}<a class="link-vhpblue text-break" href="{{ holder.iri|page_link }}">{{ holder.name }}</a>{% if not loop.last %}<br>{% endif %}
-              {% endfor %}
-              {% if holders|length > 100 %}<br><span class="text-secondary">and {{ holders|length - 100 }} more</span>{% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-  {% endif %}
+  {{ outlined.named_on(outline.named_on) }}
 
   {% include "records/_data_links.html" %}
 </section>

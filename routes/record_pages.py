@@ -10,12 +10,12 @@ forwards (301). A record without a page of its own is shown on a general record 
 import json
 
 from flask import Blueprint, Response, current_app, g, redirect, render_template, request, url_for
-from rdflib import RDFS, Graph
+from rdflib import Graph
 
 from database import records
 from database.tables import Record
-from linkeddata import catalogue, documents, fields, storage
-from linkeddata.model import profile, settings
+from linkeddata import documents, outline, storage
+from linkeddata.model import settings
 
 FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "application/n-triples"}
 SERIALIZATIONS = {"text/turtle": "turtle", "application/n-triples": "nt"}
@@ -123,45 +123,18 @@ def page_link(iri: str) -> str:
     return iri
 
 
-def named_on(record: Record) -> dict[str, list[dict]]:
-    """The records that name this one, by the label of the field that names it on them; each with its
-    name and kind."""
-    fields_of = {}
-    for holder, path in catalogue.naming(record.iri):
-        fields_of.setdefault(holder, []).append(path)
-    found = {}
-    for holder in records.kept(list(fields_of)):
-        if holder.iri == record.iri:
-            continue
-        labels = {}
-        for field in fields.of(holder.type):
-            labels[field["iri"]] = field["label"]
-        kind = profile().value(fields.shape_of(holder.type), RDFS.label)
-        for path in fields_of[holder.iri]:
-            found.setdefault(labels.get(path) or documents.term(path), []).append({"iri": holder.iri, "name": holder.name or holder.iri, "kind": str(kind or "")})
-    for listed in found.values():
-        listed.sort(key=lambda item: item["name"].casefold())
-    return found
-
-
 def record_page(record: Record):
-    statements = documents.public(storage.graph([record.iri]))
-    shown = []
-    links = []
-    for field in fields.of(record.type):
-        found = documents.stored_values(statements, record.iri, field["name"])
-        if found:
-            shown.append({"name": field["name"], "label": field["label"], "values": found})
-            links.extend(found)
-    descriptions = documents.stored_values(statements, record.iri, "description")
-    images = documents.stored_values(statements, record.iri, "image")
+    found = outline.outline(record)
+    first = {}
+    for field in found["fields"]:
+        first[field["name"]] = field["values"][0]
+    description = first.get("description", {}).get("text")
+    image = first.get("image", {}).get("link")
     name = record.name or record.iri
     return render_template(
         "records/record.html",
-        record={"iri": record.iri, "name": record.name, "description": descriptions[0] if descriptions else None, "image": images[0] if images else None},
-        fields=shown,
-        named_on=named_on(record),
-        names=records.names(links),
+        record={"iri": record.iri, "name": record.name, "description": description, "image": image},
+        outline=found,
         page_title=f"{name} — VHP4Safety",
-        meta_description=(descriptions[0] if descriptions else "")[:160] or f"{name}, a record of the VHP4Safety Virtual Human Platform.",
+        meta_description=(description or "")[:160] or f"{name}, a record of the VHP4Safety Virtual Human Platform.",
     )
