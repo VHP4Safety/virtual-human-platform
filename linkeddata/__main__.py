@@ -9,6 +9,7 @@
     python -m linkeddata push                   push the records repository to its remote
     python -m linkeddata backup                 copy the database to PLATFORM_STATE/backups (the latest 14 are kept)
     python -m linkeddata token ORCID NAME KIND  create a write token, such as the first one
+    python -m linkeddata mcp                    serve the records to agents over MCP (linkeddata/agents.py)
 """
 
 import argparse
@@ -24,7 +25,7 @@ from linkeddata.model import RELEASE, download_vocabularies, pinned_problems, sc
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m linkeddata", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=["model", "check", "import", "launch", "export", "push", "backup", "token"])
+    parser.add_argument("command", choices=["model", "check", "import", "launch", "export", "push", "backup", "token", "mcp"])
     parser.add_argument("arguments", nargs="*", help="token: ORCID iD, name and kinds")
     parser.add_argument("--days", type=int, default=tokens.DEFAULT_DAYS, help="days a new token is valid")
     args = parser.parse_args()
@@ -65,6 +66,9 @@ def main() -> None:
         export.push()
     elif args.command == "backup":
         print(f"Wrote {database.backup()}")
+    elif args.command == "mcp":
+        from linkeddata import agents
+        agents.run()
     else:
         if len(args.arguments) < 3:
             parser.error("token needs an ORCID iD, a name and a kind")

@@ -4,9 +4,11 @@
   home page links the catalogue (api-catalog);
 - /.well-known/void: the published data (VoID), with its licence, vocabularies, size and dump (/api/dump);
 - /llms.txt: where language models and agents find the records in Markdown, the API and the data (llmstxt.org).
+The MCP server for agents (linkeddata/agents.py) is listed when PLATFORM_MCP gives its public address.
 """
 
 import json
+import os
 from collections import Counter
 
 from flask import Blueprint, Response, request
@@ -27,11 +29,14 @@ DOCS = "api/docs/"
 
 def services() -> list[dict]:
     """The platform's APIs as linkset entries: each one's address, description and documentation."""
-    return [{
+    found = [{
         "anchor": records.address("api/"),
         "service-desc": [{"href": records.address(OPENAPI), "type": "application/vnd.oai.openapi+json"}],
         "service-doc": [{"href": records.address(DOCS), "type": "text/html"}],
     }]
+    if os.environ.get("PLATFORM_MCP"):
+        found.append({"anchor": os.environ["PLATFORM_MCP"], "service-doc": [{"href": records.address("llms.txt"), "type": "text/markdown"}]})
+    return found
 
 
 @blueprint.get(CATALOG)
@@ -98,6 +103,9 @@ def llms_txt():
         f"- [VoID description]({records.address('.well-known/void')}): what the data holds, by class",
         f"- [Shapes]({records.address('api/shapes.ttl')}): what each field of a record takes (SHACL)",
     ]))
+    if os.environ.get("PLATFORM_MCP"):
+        lines.append("## Agents")
+        lines.append(f"- [MCP server]({os.environ['PLATFORM_MCP']}): tools to search, list and read records (streamable HTTP)")
     return Response("\n\n".join(lines) + "\n", content_type=markdown.MEDIA, headers={"Access-Control-Allow-Origin": "*"})
 
 
