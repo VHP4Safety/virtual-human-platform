@@ -654,6 +654,16 @@ def upload_image():
         abort(422, message=str(problem))
 
 
+@blueprint.get("/dump")
+@blueprint.doc(responses={"200": {"description": "Every published statement, in N-Triples or Turtle, by the Accept header.", "content": {
+    "application/n-triples": {"schema": {"type": "string"}}, "text/turtle": {"schema": {"type": "string"}}}}})
+def dump():
+    """Every record with a page, with its parts and the vocabulary terms they use, as one file; private fields
+    are left out. It is described at /.well-known/void."""
+    media = request.accept_mimetypes.best_match(["application/n-triples", "text/turtle"]) or "application/n-triples"
+    return data(documents.published(), media)
+
+
 @blueprint.get("/shapes.ttl")
 @blueprint.doc(responses={"200": {"description": "The shapes, in Turtle.", "content": {"text/turtle": {"schema": {"type": "string"}}}}})
 def model_shapes():

@@ -10,6 +10,7 @@ from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import SH
 
 import database
+from database import records
 from database.tables import Record
 from linkeddata import patches, storage
 from linkeddata.model import profile, settings
@@ -133,6 +134,28 @@ def public(found: Graph) -> Graph:
     for predicate in private():
         found.remove((None, predicate, None))
     return found
+
+
+# The published statements, made again when a record changes.
+PUBLISHED = {}
+
+
+def published() -> Graph:
+    """Every record with a page, with its parts, and the records elsewhere that they link to, such as
+    vocabulary terms; private fields are taken out."""
+    latest = records.latest_change()
+    if PUBLISHED.get("latest") != latest:
+        own = []
+        for iri, _ in records.with_pages():
+            own.append(iri)
+        found = storage.graph(own)
+        linked = set()
+        for value in found.objects():
+            if isinstance(value, URIRef) and not str(value).startswith(settings()["base"]):
+                linked.add(str(value))
+        found += storage.graph(sorted(linked))
+        PUBLISHED.update(latest=latest, graph=public(found))
+    return PUBLISHED["graph"]
 
 
 def view(record: Record) -> dict:
