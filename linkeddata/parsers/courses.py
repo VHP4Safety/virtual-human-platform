@@ -114,6 +114,9 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
     rows = []
     others = {}
     for name in courses(contents):
+        if name + "#repository" not in contents:
+            print(f"courses: {name} left out, without its repository's answer")
+            continue
         tree = json.loads(contents[name])
         repository = json.loads(contents[name + "#repository"])
         files = "/".join([repository["html_url"], "blob", repository["default_branch"]]) + "/"

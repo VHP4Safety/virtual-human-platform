@@ -168,8 +168,11 @@ def follows(found: list[tuple[int, str]]) -> bool:
 
 def parse(contents: dict[str, bytes]) -> list[dict]:
     tree = json.loads(contents["docs"])
-    repository = json.loads(contents["repository"])
-    files = "/".join([repository["html_url"], "blob", repository["default_branch"]]) + "/"
+    # Without the repository's answer, the tutorials' files are left out: their addresses need its branch.
+    files = None
+    if "repository" in contents:
+        repository = json.loads(contents["repository"])
+        files = "/".join([repository["html_url"], "blob", repository["default_branch"]]) + "/"
     rows = []
     others = {}
     for name, path in tutorials(tree).items():
@@ -195,7 +198,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 parts.append({"@type": "Section", "name": heading, "url": link(page + "#" + anchor(heading)), "position": len(parts) + 1})
         folder = path.rsplit("/", 1)[0] + "/"
         for entry in tree["tree"]:
-            if entry["path"].startswith(folder) and entry["path"].endswith(FILES):
+            if files is not None and entry["path"].startswith(folder) and entry["path"].endswith(FILES):
                 parts.append({"@type": "File", "name": entry["path"].rsplit("/", 1)[1], "url": link(files + entry["path"])})
         row["hasPart"] = parts
         rows.append(row)
