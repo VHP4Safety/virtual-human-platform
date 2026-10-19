@@ -12,13 +12,13 @@ import json
 import re
 from datetime import datetime, timezone
 
-from flask import Blueprint, Response, current_app, g, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, current_app, g, redirect, render_template, request, url_for
 from rdflib import Graph
 from rdflib.namespace import SDO
 
 from database import records
 from database.tables import Record
-from linkeddata import catalogue, documents, markdown, outline, pages, void
+from linkeddata import catalogue, crates, documents, markdown, outline, pages, void
 from linkeddata.model import settings
 
 FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "application/n-triples"}
@@ -112,6 +112,17 @@ def negotiate():
     return None
 
 
+@blueprint.get("/<path:path>/ro-crate-metadata.json")
+def ro_crate(path: str):
+    """A record as a detached RO-Crate (linkeddata/crates.py)."""
+    record = records.get(records.address(path))
+    if record is None or record.removed_at or record.moved_to:
+        abort(404)
+    body = json.dumps(crates.crate(record), indent=2)
+    return Response(body, mimetype="application/ld+json", headers={"Access-Control-Allow-Origin": "*",
+                    "Link": f'<{crates.PROFILE}>; rel="profile", <{record.iri}>; rel="cite-as"'})
+
+
 @blueprint.after_app_request
 def link_data(response):
     links = []
@@ -119,6 +130,7 @@ def link_data(response):
         links = [f'<{g.record.iri}>; rel="cite-as"', f'<{g.record.type}>; rel="type"']
         for ending, media in FORMATS.items():
             links.append(f'<{page_path(g.record)}{ending}>; rel="describedby"; type="{media}"')
+        links.append(f'<{page_path(g.record)}/ro-crate-metadata.json>; rel="describedby"; type="application/ld+json"; profile="{crates.PROFILE}"')
         links.append(f'<{url_for("api.model_shapes")}>; rel="http://www.w3.org/ns/ldp#constrainedBy"; type="text/turtle"')
         links.append(f'<{page_path(g.record)}{MARKDOWN}>; rel="alternate"; type="text/markdown"')
         response.headers["Vary"] = "Accept"
@@ -163,7 +175,8 @@ def record_context() -> dict:
     except ValueError as problem:
         current_app.logger.warning("The record %s does not fit the model: %s", g.record.iri, problem)
         document = None
-    return {"record_document": document, "record_formats": formats, "record_markdown": page_path(g.record) + MARKDOWN}
+    return {"record_document": document, "record_formats": formats, "record_markdown": page_path(g.record) + MARKDOWN,
+            "record_crate": page_path(g.record) + "/ro-crate-metadata.json"}
 
 
 @blueprint.app_template_filter("short_iri")
