@@ -345,12 +345,14 @@ form:WebPage a sh:NodeShape ;
     sh:property [ sh:path schema:hasPart ; sh:order 4 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
         sh:description "Sections of a platform page, each with a heading, an HTML text, a position and an anchor." ] .
 
-# A video, such as a PeerTube one; it is part of its tool's record.
+# A video, such as a PeerTube one, shown in its player; it is part of the record that shows it.
 form:VideoObject a sh:NodeShape ;
     sh:targetClass schema:VideoObject ;
     rdfs:label "Video" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
-    sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Address" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] .
+    sh:property [ sh:path schema:embedUrl ; sh:order 2 ; sh:name "Player" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+        sh:message "The player's address needed." ;
+        sh:description "The address of the video's player, such as https://video.edu.nl/videos/embed/<id>." ] .
 
 # A dataset, at /data/<identifier>, based on a BioStudies study or a Zenodo record (schema:isBasedOn).
 form:Dataset a sh:NodeShape ;

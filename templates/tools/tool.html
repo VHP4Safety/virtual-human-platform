@@ -148,7 +148,7 @@
               <div class="accordion-body">
                 {% for video in tool_details.video %}
                 <h3>{{ video.name }}</h3>
-                <div style="position: relative; padding-top: 56.25%;"><iframe title="{{ video.name }}" width="100%" height="100%" src="{{ video.url }}" allow="fullscreen" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" style="border: 0px; position: absolute; inset: 0px;"></iframe></div>
+                <div style="position: relative; padding-top: 56.25%;"><iframe title="{{ video.name }}" width="100%" height="100%" src="{{ video.embedUrl }}" allow="fullscreen" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" style="border: 0px; position: absolute; inset: 0px;"></iframe></div>
                 {% endfor %}
               </div>
             </div>

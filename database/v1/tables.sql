@@ -661,10 +661,10 @@ CREATE TABLE IF NOT EXISTS "schema_video_object" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
   "type" TEXT,
+  "schema_embed_url" TEXT,
+  "schema_embed_url__term" TEXT,
   "schema_name" TEXT,
   "schema_name__term" TEXT,
-  "schema_url" TEXT,
-  "schema_url__term" TEXT,
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_video_object__record" ON "schema_video_object" ("record");

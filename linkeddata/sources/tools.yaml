@@ -48,7 +48,7 @@ rules:
   Video:
     - {predicate: a, value: "https://schema.org/VideoObject"}
     - {predicate: "https://schema.org/name", object: title}
-    - {predicate: "https://schema.org/url", object: url}
+    - {predicate: "https://schema.org/embedUrl", object: url}
   Publication:
     - {predicate: a, value: "https://schema.org/ScholarlyArticle"}
     - {predicate: "https://schema.org/sameAs", object: doi}
