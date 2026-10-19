@@ -62,6 +62,12 @@ def markdown_of(record: Record) -> Response:
     return Response(body, content_type=markdown.MEDIA, headers={"Vary": "Accept"})
 
 
+def listing_page(kind: str):
+    """A kind's records, found by name and filtered by its browsable fields (templates/records/listing.html)."""
+    found = pages.listing(kind, request.args)
+    return render_template("records/listing.html", listing=found, page_title=f"{found['name'] or kind.capitalize()} — VHP4Safety")
+
+
 @blueprint.before_app_request
 def negotiate():
     """A record's data is sent when asked for; otherwise its page is made as usual."""
@@ -83,10 +89,9 @@ def negotiate():
         g.listing = path
         g.media = media
         return current_app.view_functions[f"api.list_{path}"]()
-    # A kind without a page of its own lists its records (templates/records/listing.html).
+    # A kind without a page of its own lists its records.
     if path in settings()["kinds"] and request.url_rule is None:
-        found = pages.listing(path, request.args)
-        return render_template("records/listing.html", listing=found, page_title=f"{found['name'] or path.capitalize()} — VHP4Safety")
+        return listing_page(path)
     record = records.get(records.address(path))
     if record is None:
         return None
