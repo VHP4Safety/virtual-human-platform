@@ -605,20 +605,26 @@ def catalogue_listing(path: str, arguments) -> dict:
 def dataset(found: Graph, node, known: dict) -> dict:
     """Return a dataset in the form of a BioStudies study or a Zenodo record, as used by the data pages of the cloud
     catalogue. Take the kind from the source record and the names of the process flow steps from *known* (steps()).
-    The RO-Crate is the RO-Crate of the record."""
+    As in the cloud catalogue, the RO-Crate of a study is its crate file in BioStudies, and a Zenodo record has the
+    archive of its files."""
     source = str(found.value(node, SDO.isBasedOn) or "")
     type_of = "study" if "/biostudies/" in source else "dataset"
     doi_url = ([address for address in addresses(found, node, SDO.identifier) + addresses(found, node, SDO.sameAs) if "doi.org/" in address] or [""])[0]
     published = str(found.value(node, SDO.datePublished) or "")
+    crate_files = [file for file in files(found, node) if "rocrate" in file["name"].lower().replace("-", "")]
+    links, parsed = {}, {}
+    if source.startswith("https://zenodo.org/records/"):
+        links["archive"] = "https://zenodo.org/api/records/" + source.rstrip("/").rsplit("/", 1)[-1] + "/files-archive"
+        parsed["is_rocrate"] = any(file["name"].lower() == "ro-crate-metadata.json" for file in crate_files)
     metadata = {"case_study": [case.rsplit("/", 1)[-1] for case in addresses(found, node, SDO.isPartOf)],
                 "regulatory_question": addresses(found, node, URIRef(settings()["terms"]["regulatoryQuestion"])),
                 "flow_step": [known[stage]["label"] if stage in known else stage
                               for stage in addresses(found, node, URIRef(settings()["terms"]["processFlowStep"]))],
-                "rocrate_url": "/" + records.path(str(node)) + "/ro-crate-metadata.json", "raw_data": {}, "resource_type": {"type": type_of},
+                "rocrate_url": crate_files[0]["url"] if crate_files else None, "raw_data": {}, "resource_type": {"type": type_of},
                 "publication_date": published}
     return {"id": str(node).rsplit("/", 1)[-1], "accession": str(node).rsplit("/", 1)[-1], "type": type_of, "title": str(found.value(node, SDO.name) or ""),
-            "release_date": published, "doi": doi_url.partition("doi.org/")[2], "doi_url": doi_url, "url": local(source), "metadata": metadata, "links": {},
-            "parsed_metadata": {}}
+            "release_date": published, "doi": doi_url.partition("doi.org/")[2], "doi_url": doi_url, "url": local(source), "metadata": metadata, "links": links,
+            "parsed_metadata": parsed}
 
 
 def data_listing(arguments) -> dict:
@@ -744,7 +750,7 @@ def model_listing(arguments) -> dict:
         source = str(shown.value(URIRef(item["address"]), SDO.isBasedOn) or "")
         model["metadata"]["resource_type"] = {"type": kind_of(settings()["kinds"]["models"]).lower()}
         model.update(type=kind_of(settings()["kinds"]["models"]).lower(), doi="", doi_url=local(source) if "zenodo.org/" in source else "",
-                     links={"archive": model["metadata"]["rocrate_url"]}, parsed_metadata={"is_rocrate": True})
+                     links={"archive": "/" + records.path(item["address"]) + "/ro-crate-metadata.json"}, parsed_metadata={"is_rocrate": True})
         listed.append(model)
     listed.sort(key=itemgetter("release_date"), reverse=True)
     number = max(arguments.get("page", 1, type=int), 1)

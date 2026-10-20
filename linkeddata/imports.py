@@ -32,7 +32,7 @@ from sqlalchemy import delete, func, insert, select
 import database
 from database import records
 from database.tables import PLATFORM, Note, Record, Revision, Source, now
-from linkeddata import checks, documents
+from linkeddata import checks, crates, documents
 from linkeddata.profile import MODEL_DIR, fields, profile_graph, profile_text, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
@@ -389,7 +389,20 @@ def import_source(spec: dict) -> None:
         sha256=checksum.hexdigest(),
     )
     store(source, found)
+    if "members" in spec:
+        keep(contents)
     print(f"{spec['name']}: {len(found)} records")
+
+
+def keep(contents: dict[str, bytes]) -> None:
+    """Keep a copy of each RO-Crate metadata file read from the zip of an entry, by the key of the entry (the number
+    of a Zenodo record), so that the crate is served unchanged (crates.zenodo)."""
+    folder = crates.kept()
+    folder.mkdir(parents=True, exist_ok=True)
+    for name, content in contents.items():
+        key, _, member = name.partition("/")
+        if member == "ro-crate-metadata.json":
+            (folder / f"{key}.json").write_bytes(content)
 
 
 def enrich(spec: dict) -> None:

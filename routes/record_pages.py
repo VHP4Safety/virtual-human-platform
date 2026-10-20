@@ -159,13 +159,25 @@ def negotiate():
 
 @blueprint.get("/<path:path>/ro-crate-metadata.json")
 def ro_crate(path: str):
-    """Return a record as a detached RO-Crate (linkeddata/crates.py)."""
+    """Return the RO-Crate of a model (linkeddata/crates.py): its crate in Zenodo, unchanged, or a draft made from
+    the record."""
     record = records.get(records.address(path))
-    if record is None or record.removed_at or record.moved_to:
+    if not crates.of_models(record):
         abort(404)
-    body = json.dumps(crates.crate(record), indent=2)
-    return Response(body, mimetype="application/ld+json", headers={"Access-Control-Allow-Origin": "*",
-                    "Link": f'<{crates.PROFILE}>; rel="profile", <{record.iri}>; rel="cite-as"'})
+    headers = {"Access-Control-Allow-Origin": "*", "Content-Disposition": f'inline; filename="{crates.file_name(record)}"'}
+    given = crates.zenodo(record)
+    if given is not None:
+        return Response(given, mimetype="application/ld+json", headers=headers)
+    headers["Link"] = f'<{crates.PROFILE}>; rel="profile", <{record.iri}>; rel="cite-as"'
+    return Response(json.dumps(crates.crate(record), indent=2), mimetype="application/ld+json", headers=headers)
+
+
+# The root of the draft crate of a model is at the model address with /ro-crate/ (linkeddata/crates.py).
+@blueprint.get("/<path:path>/ro-crate/")
+def crate_root(path: str):
+    if not crates.of_models(records.get(records.address(path))):
+        abort(404)
+    return redirect(f"/{path}/ro-crate-metadata.json", code=303)
 
 
 # The models are listed as the data, so the listing has an address of its own for its page links.
@@ -185,12 +197,6 @@ def model_page(name: str):
     return redirect("/models/" + name, code=301)
 
 
-# The next parts of the address of a case study are used for its page (app.py), so the address of its crate is routed here.
-@blueprint.get("/casestudies/<case>/ro-crate-metadata.json")
-def case_study_crate(case: str):
-    return ro_crate("casestudies/" + case)
-
-
 @blueprint.after_app_request
 def link_data(response):
     links = []
@@ -198,7 +204,8 @@ def link_data(response):
         links = [f'<{g.record.iri}>; rel="cite-as"', f'<{g.record.type}>; rel="type"']
         for ending, media in FORMATS.items():
             links.append(f'<{page_link(g.record.iri)}{ending}>; rel="describedby"; type="{media}"')
-        links.append(f'<{page_link(g.record.iri)}/ro-crate-metadata.json>; rel="describedby"; type="application/ld+json"; profile="{crates.PROFILE}"')
+        if crates.of_models(g.record):
+            links.append(f'<{page_link(g.record.iri)}/ro-crate-metadata.json>; rel="describedby"; type="application/ld+json"')
         links.append(f'<{url_for("records.model_shapes")}>; rel="http://www.w3.org/ns/ldp#constrainedBy"; type="text/turtle"')
         links.append(f'<{page_link(g.record.iri)}{MARKDOWN}>; rel="alternate"; type="text/markdown"')
         response.headers["Vary"] = "Accept"
@@ -252,8 +259,11 @@ def record_context() -> dict:
     except ValueError as problem:
         current_app.logger.warning("The record %s does not fit the model: %s", g.record.iri, problem)
         document = None
-    return {"record_document": document, "record_formats": formats, "record_markdown": page_link(g.record.iri) + MARKDOWN,
-            "record_crate": page_link(g.record.iri) + "/ro-crate-metadata.json"}
+    found = {"record_document": document, "record_formats": formats, "record_markdown": page_link(g.record.iri) + MARKDOWN}
+    # Only models have an RO-Crate: the crate in Zenodo, or a draft made from the record.
+    if crates.of_models(g.record):
+        found.update(record_crate=page_link(g.record.iri) + "/ro-crate-metadata.json", record_crate_draft=crates.zenodo(g.record) is None)
+    return found
 
 
 # An address written with the prefixes of the model: name for https://schema.org/name.

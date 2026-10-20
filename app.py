@@ -28,7 +28,7 @@ from routes.discovery import blueprint as discovery_blueprint
 from routes.editor import blueprint as admin_blueprint
 from routes.images import blueprint as images_blueprint
 from routes.record_pages import blueprint as pages_blueprint
-from routes.record_pages import listing_page, page_link, record_page, ro_crate
+from routes.record_pages import listing_page, page_link, record_page
 
 ################################################################################
 
@@ -329,9 +329,6 @@ def casestudy(case: str = "", question: str = "", step: str = "",
     """A case study's page from its record: its content for readers without scripts, then the page drawn by
     static/js/case-study.js at the address asked for. Its question and step addresses are views of the same
     page, so they all have the case study's address as canonical."""
-    # The RO-Crate of a question or a step is at its address followed by /ro-crate-metadata.json, as for every record.
-    if request.path.endswith("/ro-crate-metadata.json"):
-        return ro_crate(request.path.strip("/").removesuffix("/ro-crate-metadata.json"))
     record = records.get(records.address(f"casestudies/{case}"))
     if record is None:
         abort(404)
