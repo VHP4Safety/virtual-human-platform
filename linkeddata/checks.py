@@ -65,9 +65,9 @@ def validate(found: Graph) -> Graph:
 
 def notes(found: Graph) -> list[dict]:
     """The notes of the checks are made for the records in *found*, one note for each record, field and value.
-    Linked records that are given with their class only are not reported. Of the results for the same record, field
-    and value, the most severe result is kept. Next, a result with a message in the profile is kept. Last, the
-    constraint and the reason decide. Thus the same notes are made on each run."""
+    Linked records that are given with their class only are not reported. Of several results for the same record,
+    field and value, the most severe result is kept. Next, a result with a message in the profile is kept. Last, the
+    result is chosen by the constraint and the reason. Thus the same notes are made on each run."""
     described = set()
     for subject, predicate in found.subject_predicates():
         if predicate != RDF.type:
