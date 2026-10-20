@@ -47,6 +47,8 @@ textarea.shown { resize: vertical; }
 .record-link-vocabulary { margin-bottom: 4px; font: inherit; }
 shacl-node, rokit-collapsible { scroll-margin-top: 1rem; }
 .index-shown { outline: 3px solid var(--bs-vhppink, #e6007e); outline-offset: 4px; border-radius: 0.25rem; }
+/* An open group grows with its fields. rokit-collapsible keeps the height of the content at the time of opening as max-height. */
+rokit-collapsible[open]::part(content) { max-height: none !important; }
 .value-type { align-self: center; margin-left: 4px; padding: 0 4px; border: 1px solid #ced4da; border-radius: 3px; color: #6c757d; font: 0.7em monospace; white-space: nowrap; }
 `;
 
