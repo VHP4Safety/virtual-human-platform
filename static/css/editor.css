@@ -430,62 +430,26 @@ body.editor {
 }
 
 /* The index shows one page: the way down to it, the page, the pages below it and its sections of text. */
-.record-index-crumbs {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.15rem 0.3rem;
-  margin-bottom: 0.5rem;
-  font-size: 0.8rem;
-}
-.record-index-crumb {
+.record-index-path {
+  margin: 0 0 0.5rem;
   padding: 0;
-  border: 0;
-  background: none;
-  color: var(--bs-vhpblue);
-  text-align: left;
+  list-style: none;
 }
-.record-index-crumb:hover {
-  text-decoration: underline;
+.record-index-path .record-index-row {
+  padding-top: 0.15rem;
+  padding-bottom: 0.15rem;
 }
-.record-index-crumb-gap {
-  color: var(--bs-secondary-color);
+.record-index-editing {
+  flex: none;
+  padding: 0 0.4rem;
+  border-radius: 1rem;
+  background: var(--bs-vhppurple);
+  color: #fff;
+  font-size: 0.7rem;
 }
-.record-index-page {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  margin-bottom: 0.75rem;
-  padding: 0.6rem 0.7rem;
-  border: 1px solid #d9d4ec;
-  border-radius: 0.5rem;
-  background: #fff;
-  text-align: left;
-}
-.record-index-page.active {
-  border-color: var(--bs-vhppurple);
-  box-shadow: 0 0 0 2px #e7e5f2;
-}
-.record-index-page .record-index-stage {
-  width: 1.8rem;
-  height: 1.8rem;
-  font-size: 0.95rem;
-}
-.record-index-page-words {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
-}
-.record-index-page-name {
-  font-weight: 600;
-  color: var(--bs-vhppurple);
-  line-height: 1.25;
-}
-.record-index-page-stage {
-  font-size: 0.75rem;
-  color: var(--bs-secondary-color);
+.record-index-below {
+  padding-left: 0.6rem;
+  border-left: 2px solid #e7e5f2;
 }
 .record-index-list {
   margin-bottom: 0.75rem;

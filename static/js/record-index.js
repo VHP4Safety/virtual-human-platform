@@ -328,51 +328,46 @@ export function outline(givenForm, nav) {
     caseStudy = Boolean(own(root, QUESTIONS)) || Boolean(addButton(root, QUESTIONS));
     const page = shown || root;
     const view = make("div", "record-index-view");
-    // The way down to the page; a click goes up.
+    // The pages above, from the record down to the page being edited, each one level further in; a click goes
+    // back to that page.
     const trail = way(page);
-    if (trail.length > 1) {
-      const crumbs = make("nav", "record-index-crumbs");
-      trail.slice(0, -1).forEach(function (node) {
-        const up = make("button", "record-index-crumb", (isSection(node) ? "§ " : "") + (valueOf(node, NAME) || "Untitled"));
-        up.type = "button";
-        up.addEventListener("click", function () { select(node); draw(); });
-        crumbs.append(up, make("span", "record-index-crumb-gap", "›"));
-      });
-      view.append(crumbs);
-    }
-    // The page itself; a click shows its own form.
-    const card = make("button", "record-index-page" + (shown === page ? " active" : ""));
-    card.type = "button";
-    card.title = "Edit this page";
+    const path = make("ol", "record-index-path");
     const section = isSection(page);
-    if (section) {
-      card.append(make("span", "record-index-section", "§"));
-    } else if (caseStudy) {
-      card.append(badge(page));
-    }
-    const words = make("span", "record-index-page-words");
-    words.append(make("span", "record-index-page-name", valueOf(page, NAME) || "Untitled"));
-    if (section) {
-      words.append(make("span", "record-index-page-stage", "Section of text"));
-    } else if (caseStudy) {
-      words.append(make("span", "record-index-page-stage", STAGES[stage(page) - 1]));
-    }
-    card.append(words);
-    dot(page, card);
-    card.addEventListener("click", function () { select(page); draw(); });
-    view.append(card);
+    trail.forEach(function (node, depth) {
+      const row = make("li", "record-index-row" + (node === page ? " active" : ""));
+      row.style.paddingLeft = depth * 0.85 + "rem";
+      if (isSection(node)) {
+        row.append(make("span", "record-index-section", "§"));
+      } else if (caseStudy) {
+        row.append(badge(node));
+      }
+      const link = make("button", "record-index-link", valueOf(node, NAME) || "Untitled");
+      link.type = "button";
+      link.title = node === page ? "Edit this page" : "Go back to this page";
+      link.addEventListener("click", function () { select(node); draw(); });
+      row.append(link);
+      dot(node, row);
+      if (node === page) {
+        row.append(make("span", "record-index-editing", "editing"));
+      }
+      path.append(row);
+    });
+    view.append(path);
+    const below = make("div", "record-index-below");
+    below.style.marginLeft = (trail.length - 1) * 0.85 + 1.3 + "rem";
     // Its pages below, then its sections of text, as the website shows them.
     const parts = partsOf(page);
-    for (const path of Object.keys(editor.ordered)) {
-      if (path === HAS_PART || !(parts.has(path) || addButton(page, path))) {
+    for (const field of Object.keys(editor.ordered)) {
+      if (field === HAS_PART || !(parts.has(field) || addButton(page, field))) {
         continue;
       }
-      const question = path === QUESTIONS;
-      view.append(list(question ? "Questions" : "Pages below", page, path, parts.get(path) || [], question ? "Add question" : "Add step"));
+      const question = field === QUESTIONS;
+      below.append(list(question ? "Questions" : "Pages below", page, field, parts.get(field) || [], question ? "Add question" : "Add step"));
     }
     if (parts.has(HAS_PART) || addButton(page, HAS_PART)) {
-      view.append(list(section ? "Subsections" : "Sections of text", page, HAS_PART, parts.get(HAS_PART) || [], section ? "Add subsection" : "Add section"));
+      below.append(list(section ? "Subsections" : "Sections of text", page, HAS_PART, parts.get(HAS_PART) || [], section ? "Add subsection" : "Add section"));
     }
+    view.append(below);
     nav.replaceChildren(view);
   }
 
