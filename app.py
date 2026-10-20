@@ -2,6 +2,7 @@
 ### Loading the required modules
 import json
 import os
+from functools import lru_cache
 import re
 import secrets
 from datetime import timedelta
@@ -304,6 +305,12 @@ def workflows():
     )
 
 
+@lru_cache(maxsize=16)
+def case_outline(iri: str, latest: str) -> dict:
+    """The outline of a case study for readers without scripts, kept until a record changes."""
+    return pages.outline(records.get(iri))
+
+
 # Individual case study page, dynamically filled based on URL
 @app.route("/casestudies/<case>")
 @app.route("/casestudies/<case>/<question>")
@@ -322,13 +329,16 @@ def casestudy(case: str = "", question: str = "", step: str = "",
     record = records.get(records.address(f"casestudies/{case}"))
     if record is None:
         abort(404)
-    found = pages.outline(record)
+    found = case_outline(record.iri, records.latest_change())
     descriptions = [field["values"][0] for field in found["fields"] if field["name"] == "description"]
+    address = records.address(request.path.strip("/"))
     return render_template(
         "case_studies/casestudy.html",
         case_outline=found,
         case_document=url_for("api.read", path=f"casestudies/{case}"),
-        page_address=records.address(request.path.strip("/")),
+        # At the address of a question or a step, the page record is that part; the case study is given too.
+        case_json=None if address == record.iri else documents.page_document(record.iri, records.latest_change()),
+        page_address=address,
         config_base=records.address(""),
         page_title=f"{record.name or case} — VHP4Safety",
         meta_description=clip(descriptions[0]["text"] if descriptions else "")

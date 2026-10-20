@@ -37,34 +37,19 @@
   cursor: default;
 }
 
-/* A page slides in from the side it comes from */
-.case-study {
-  overflow-x: hidden;
+/* The case study for readers without scripts is shown only to them (templates/case_studies/casestudy.html). */
+.case-study-fallback {
+  display: none;
 }
 
-.case-study-deeper {
-  animation: case-study-from-right 0.4s ease-out;
+/* The pages are panels side by side, each as wide as the case study; they are scrolled sideways by script. */
+.case-study-strip {
+  align-items: flex-start;
 }
 
-.case-study-back {
-  animation: case-study-from-left 0.4s ease-out;
-}
-
-@keyframes case-study-from-right {
-  from { transform: translateX(30%); opacity: 0; }
-  to { transform: none; opacity: 1; }
-}
-
-@keyframes case-study-from-left {
-  from { transform: translateX(-30%); opacity: 0; }
-  to { transform: none; opacity: 1; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .case-study-deeper,
-  .case-study-back {
-    animation: none;
-  }
+.case-study-panel {
+  flex: 0 0 100%;
+  min-width: 100%;
 }
 
 /* The icon beside a tool button in the editor preview, which opens the tool in a new tab */

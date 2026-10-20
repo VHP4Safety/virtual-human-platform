@@ -3,7 +3,7 @@ and http://purl.org/dc/terms/conformsTo is "dct:conformsTo". Pages use the same 
 profile takes several values."""
 
 import json
-from functools import cache
+from functools import cache, lru_cache
 
 from pyld import jsonld
 from rdflib import RDF, Graph, Literal, URIRef
@@ -146,6 +146,13 @@ def public(found: Graph) -> Graph:
     for predicate in private():
         found.remove((None, predicate, None))
     return typed(found)
+
+
+@lru_cache(maxsize=256)
+def page_document(iri: str, latest: str) -> dict:
+    """The JSON-LD of a record for its page, with the names of the records it links to. It is kept until a
+    record changes (*latest*, records.latest_change())."""
+    return document(linked(records.get(iri)), iri, named=True)
 
 
 def linked(record: Record) -> Graph:

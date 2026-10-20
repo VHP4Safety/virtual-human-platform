@@ -39,7 +39,7 @@
 
     {% if record_document %}
     <!-- The page's record, as the platform publishes it -->
-    <script type="application/ld+json">{{ record_document|tojson }}</script>
+    <script type="application/ld+json" id="record-document">{{ record_document|tojson }}</script>
     {% endif %}
 
     {% if config.DEBUG %}

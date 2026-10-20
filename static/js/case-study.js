@@ -17,6 +17,7 @@
 //   openDisabled true opens the pages that are greyed out on the website, and shows empty steps greyed, so
 //                that they can be previewed
 //   onNavigate   called with the address of the page in view, after a click opens another
+//   arrive       true draws the case study page first, then slides to the page at *at*, as on page load
 //   onPick       called with the page in view, the field, the section ({position, name}) and the value of
 //                what is clicked, such as the text of a section. Links are then not opened by a click. A
 //                button to a page opens that page, and onPick is called for the opened page. An icon beside
@@ -481,8 +482,8 @@ function parameters(state, page) {
 
 // A page: heading, summary, buttons, text, inputs and outputs, and sections. It slides in from its side, as
 // on the website.
-function view(container, state, page, level, direction) {
-  const shown = make("div", "case-study-page py-md-5 py-3" + (direction ? " case-study-" + direction : ""));
+function view(container, state, page, level) {
+  const shown = make("div", "case-study-page");
   const top = make("div", "container");
   // A question's page has a heading of its own; the case study's summary is its introduction.
   let heading = first(page, "name");
@@ -551,9 +552,11 @@ function mark(container, state) {
   if (!state.mark || state.mark.address !== here) {
     return;
   }
+  // The page in view is the panel of its address.
+  const panel = container.querySelector('.case-study-panel[data-address="' + CSS.escape(here || "") + '"]') || container;
   let section = null;
   if (state.mark.section) {
-    section = sectionOf(container, state.mark.section);
+    section = sectionOf(panel, state.mark.section);
     if (!section) {
       return;
     }
@@ -564,7 +567,7 @@ function mark(container, state) {
     toggle.setAttribute("aria-expanded", "true");
   }
   let marked = 0;
-  for (const element of container.querySelectorAll("[data-field]")) {
+  for (const element of panel.querySelectorAll("[data-field]")) {
     if (element.dataset.field.split(" ").includes(state.mark.field) && element.closest(".accordion-item") === section) {
       element.classList.add("case-study-mark");
       marked += 1;
@@ -588,27 +591,85 @@ function reveal(container) {
   }
 }
 
-function draw(container, direction) {
+// The panels are scrolled sideways to *target* in one second, as on the case study pages of the platform; *done* is
+// called at the end. Without motion (prefers-reduced-motion), they are placed at once.
+function slide(strip, target, done) {
+  if (strip.sliding) {
+    window.cancelAnimationFrame(strip.sliding);
+  }
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    done();
+    return;
+  }
+  const start = strip.scrollLeft;
+  const began = window.performance.now();
+  function step(now) {
+    const progress = Math.min((now - began) / 1000, 1);
+    const eased = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+    strip.scrollLeft = start + (target - start) * eased;
+    if (progress < 1) {
+      strip.sliding = window.requestAnimationFrame(step);
+    } else {
+      strip.sliding = null;
+      done();
+    }
+  }
+  strip.sliding = window.requestAnimationFrame(step);
+}
+
+// The breadcrumbs and the process flow are drawn above the pages. The pages from the case study down to the one in
+// view are panels side by side; the panel in view is reached by scrolling them sideways. Panels below the page in
+// view are taken away once it is reached.
+function draw(container, sliding) {
   const state = states.get(container);
   rememberOpen(container, state);
   const found = pages(state);
   const level = found.length - 1;
-  const shown = make("div", "case-study");
-  shown.append(breadcrumbs(container, state, found), processFlow(container, state, found), view(container, state, found[level], level, direction));
-  container.replaceChildren(shown);
+  let shown = container.querySelector(":scope > .case-study");
+  if (!shown) {
+    shown = make("div", "case-study");
+    shown.append(make("nav"), make("div"), make("div", "case-study-strip overflow-x-hidden d-flex flex-row py-md-5 py-3"));
+    container.replaceChildren(shown);
+    // The panel in view stays in view when the width changes.
+    new ResizeObserver(function () {
+      const strip = shown.lastElementChild;
+      if (!strip.sliding) {
+        strip.scrollLeft = (strip.children.length - 1) * strip.clientWidth;
+      }
+    }).observe(shown.lastElementChild);
+  }
+  shown.children[0].replaceWith(breadcrumbs(container, state, found));
+  shown.children[1].replaceWith(processFlow(container, state, found));
+  const strip = shown.lastElementChild;
+  const panels = Array.from(strip.children);
+  for (let at = 0; at <= level; at += 1) {
+    const panel = make("div", "case-study-panel");
+    panel.dataset.address = found[at]["@id"] || "";
+    panel.append(view(container, state, found[at], at));
+    if (panels[at]) {
+      panels[at].replaceWith(panel);
+    } else {
+      strip.append(panel);
+    }
+  }
+  const settle = function () {
+    while (strip.children.length > level + 1) {
+      strip.lastElementChild.remove();
+    }
+    strip.scrollLeft = level * strip.clientWidth;
+  };
+  if (sliding && Math.abs(strip.scrollLeft - level * strip.clientWidth) > 1) {
+    slide(strip, level * strip.clientWidth, settle);
+  } else {
+    settle();
+  }
   mark(container, state);
 }
 
 function navigate(container, path) {
   const state = states.get(container);
-  let direction = "";
-  if (path.length > state.path.length) {
-    direction = "deeper";
-  } else if (path.length < state.path.length) {
-    direction = "back";
-  }
   state.path = path;
-  draw(container, direction);
+  draw(container, true);
   if (state.options.onNavigate) {
     state.options.onNavigate(state.path.length ? state.path[state.path.length - 1] : state.document["@id"]);
   }
@@ -645,7 +706,18 @@ export function renderCaseStudy(container, caseStudy, options) {
   if (state.options.at) {
     state.path = pathTo(state, state.document, 0, state.options.at) || [];
   }
-  draw(container, "");
+  // With arrive, the case study page is drawn first, and the page asked for slides into place.
+  if (state.options.arrive && state.path.length) {
+    const path = state.path;
+    state.path = [];
+    draw(container, false);
+    window.requestAnimationFrame(function () {
+      state.path = path;
+      draw(container, true);
+    });
+    return;
+  }
+  draw(container, false);
 }
 
 // Marks what shows a field of the page at an address, or of its section ({position, name}), and opens that

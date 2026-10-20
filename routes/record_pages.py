@@ -181,14 +181,15 @@ def publisher_context() -> dict:
 
 @blueprint.app_context_processor
 def record_context() -> dict:
-    """The page record's JSON-LD and data addresses, for the page head."""
+    """The JSON-LD of the record of the page, with the names of the records it links to, and its data addresses, for
+    the page head."""
     if "record" not in g:
         return {}
     formats = {}
     for ending, media in FORMATS.items():
         formats[media] = page_link(g.record.iri) + ending
     try:
-        document = documents.document(documents.linked(g.record), g.record.iri)
+        document = documents.page_document(g.record.iri, records.latest_change())
     except ValueError as problem:
         current_app.logger.warning("The record %s does not fit the model: %s", g.record.iri, problem)
         document = None
