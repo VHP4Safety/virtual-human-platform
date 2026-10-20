@@ -66,8 +66,8 @@ def validate(found: Graph) -> Graph:
 def notes(found: Graph) -> list[dict]:
     """The notes of the checks are made for the records in *found*, one note for each record, field and value.
     Linked records that are given with their class only are not reported. Of several results for the same record,
-    field and value, the most severe result is kept. Next, a result with a message in the profile is kept. Last, the
-    result is chosen by the constraint and the reason. Thus the same notes are made on each run."""
+    field and value, the most severe result is kept. Next, a result with a message in the profile is kept, then a
+    result of a shape of the class of the record. Last, the result is chosen by the constraint and the reason. Thus the same notes are made on each run."""
     described = set()
     for subject, predicate in found.subject_predicates():
         if predicate != RDF.type:
@@ -92,7 +92,10 @@ def notes(found: Graph) -> list[dict]:
         }
         key = (note["iri"], note["field"], note["value"])
         severity = [SH.Violation, SH.Warning, SH.Info].index(results.value(result, SH.resultSeverity))
-        rank = (severity, every.value(results.value(result, SH.sourceShape), SH.message) is None, note["component"], reason)
+        source = results.value(result, SH.sourceShape)
+        # A shape of the class of the record comes before a shape of a class above it, such as CreativeWork.
+        targets = set(every.objects(every.value(None, SH.property, source), SH.targetClass))
+        rank = (severity, every.value(source, SH.message) is None, not targets & set(found.objects(focus, RDF.type)), note["component"], reason)
         if key not in noted or rank < noted[key][0]:
             noted[key] = (rank, note)
     kept = []
