@@ -11,7 +11,10 @@ const POSITION = "https://schema.org/position";
 const HAS_PART = "https://schema.org/hasPart";
 const TOOL = "https://schema.org/tool";
 const SUPPLY = "https://schema.org/supply";
+const STEP = "https://schema.org/step";
 const QUESTIONS = "https://vhp4safety.github.io/glossary#VHP0000151";
+// The fields with pages of the process flow. Tools and data are items of a page, not pages.
+const PAGES = [QUESTIONS, STEP];
 // The fields of a case study page that are used at one level only, by that level: the heading of a question page,
 // and the process flow step of a step of a question. At other levels they are left out of the form.
 const ONE_LEVEL = { "https://schema.org/headline": 1, "https://schema.org/additionalType": 2 };
@@ -172,7 +175,8 @@ function way(page) {
 // level, or 5 if it has tools or data and no pages below it.
 function stage(node) {
   const level = way(node).length - 1;
-  const steps = pagesBelow(node).some(function (step) { return !empty(step); });
+  const parts = partsOf(node);
+  const steps = PAGES.some(function (path) { return (parts.get(path) || []).some(function (step) { return !empty(step); }); });
   if (!steps && (filled(node, TOOL) || filled(node, SUPPLY) || node.dataset.intended === "5")) {
     return 5;
   }
@@ -337,30 +341,31 @@ export function outline(givenForm, nav) {
     box.append(make("div", "record-index-list-head", title));
     const items = make("ol", "record-index-items");
     const section = path === HAS_PART;
+    const pageList = caseStudy && PAGES.includes(path);
     parts.forEach(function (part, at) {
       const row = make("li", "record-index-row" + (part === shown ? " active" : ""));
       row.append(make("span", "record-index-handle bi bi-grip-vertical", ""));
-      row.append(section ? make("span", "record-index-section", "§" + (at + 1)) : caseStudy ? badge(part) : make("span", "record-index-section", String(at + 1)));
+      row.append(section ? make("span", "record-index-section", "§" + (at + 1)) : pageList ? badge(part) : make("span", "record-index-section", String(at + 1)));
       const name = valueOf(part, NAME) || "Untitled";
       const link = make("button", "record-index-link", name);
       link.type = "button";
       link.title = section ? "Edit this section" : "Open this page";
       link.addEventListener("click", function () { select(part); draw(); });
       row.append(link);
-      if (!section && caseStudy && empty(part) && part.dataset.intended !== "5") {
+      if (pageList && empty(part) && part.dataset.intended !== "5") {
         row.classList.add("record-index-empty");
         link.title = name + " (empty: hidden on the website)";
       }
       dot(part, row);
       const inside = (partsOf(part).get(HAS_PART) || []).length + pagesBelow(part).length;
       const into = make("span", "record-index-into", inside ? inside + " ›" : "›");
-      into.title = inside ? inside + " pages and sections inside" : "Nothing inside yet";
+      into.title = inside ? inside + " parts inside" : "Nothing inside yet";
       row.append(into);
       const remove = make("button", "record-index-remove bi bi-trash", "");
       remove.type = "button";
       remove.title = "Remove";
       remove.addEventListener("click", function () {
-        const more = inside ? " The " + inside + " pages and sections inside it are removed too." : "";
+        const more = inside ? " The " + inside + " parts inside it are removed too." : "";
         if (!window.confirm("Remove “" + name + "”?" + more + " Nothing is removed from the platform until Save.")) {
           return;
         }
@@ -421,12 +426,12 @@ export function outline(givenForm, nav) {
     if (caseStudy && field === QUESTIONS) {
       return [{ stage: 2, text: "Regulatory question" }];
     }
-    if (caseStudy) {
+    if (caseStudy && PAGES.includes(field)) {
       // A page below is a page of steps (the next stage, at most 4), or a page of tools, models and data (5).
       const next = Math.min(way(page).length + 1, 4);
       return [{ stage: next, text: STAGES[next - 1] + " page" }, { stage: 5, text: STAGES[4] + " page" }];
     }
-    return [{ text: "Add " + ((editor.ordered[field] || [])[0] || "part").toLowerCase() }];
+    return [{ text: (editor.ordered[field] || [])[0] || "Part" }];
   }
 
   partsList = function (page, field) {
@@ -469,11 +474,17 @@ export function outline(givenForm, nav) {
     below.style.marginLeft = (trail.length - 1) * 0.85 + 1.3 + "rem";
     // The pages below, then the sections of text, as on the website.
     const parts = partsOf(page);
-    for (const field of Object.keys(editor.ordered)) {
+    // The lists are in the order of the fields in the form.
+    const order = Array.from(page.querySelectorAll("shacl-property")).filter(function (found) {
+      return found.closest("shacl-node") === page;
+    }).map(function (found) { return found.template ? found.template.path : ""; });
+    const fields = Object.keys(editor.ordered).sort(function (one, other) { return order.indexOf(one) - order.indexOf(other); });
+    for (const field of fields) {
       if (field === HAS_PART || !(parts.has(field) || addButton(page, field))) {
         continue;
       }
-      below.append(list(field === QUESTIONS ? "Questions" : "Pages below", page, field, parts.get(field) || [], addsFor(page, field)));
+      const title = field === QUESTIONS ? "Questions" : field === STEP ? "Pages below" : (editor.ordered[field] || [])[0] || "";
+      below.append(list(title, page, field, parts.get(field) || [], addsFor(page, field)));
     }
     if (parts.has(HAS_PART) || addButton(page, HAS_PART)) {
       below.append(list(section ? "Subsections" : "Sections of text", page, HAS_PART, parts.get(HAS_PART) || [], addsFor(page, HAS_PART)));
