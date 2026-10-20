@@ -1,7 +1,11 @@
-"""Imports of the sources. Each source is fetched, read by its parser as rows in the terms of the model, and
-stored in place of its earlier records; records written on the platform are kept. Sources of terms run next, for
-the terms that the records are about, and sources that enrich records run last. Then the records of each source
-are checked against the model. `python -m linkeddata import` runs the weekly imports, and `launch` runs every import."""
+"""Imports of the sources.
+
+- Fetch each source, and read it with its parser as rows in the terms of the model.
+- Replace the earlier records of the source with the rows. Keep the records written on the platform.
+- Import the sources of records first, then the sources of terms, then the sources that enrich records.
+- Last, check the records of each source against the model.
+
+Run the weekly imports with `python -m linkeddata import`, and all imports with `python -m linkeddata launch`."""
 
 import hashlib
 import importlib
@@ -44,8 +48,8 @@ def fetch(url: str, accept: str | None = None) -> bytes:
 
 
 class Remote(io.RawIOBase):
-    """A file on the web read in parts (HTTP Range), so that a few files of a large zip are read without
-    downloading it."""
+    """A file on the web, read in parts (HTTP Range), so that a few files of a large zip are read without a download
+    of the zip."""
 
     def __init__(self, url: str):
         self.url = url
@@ -82,7 +86,7 @@ class Remote(io.RawIOBase):
 
 
 def members(url: str, endings: list[str]) -> dict[str, bytes]:
-    """The files of a zip on the web whose names end as given, by their ending."""
+    """Return the files of a zip on the web whose names end as given, by their ending."""
     found = {}
     with zipfile.ZipFile(io.BufferedReader(Remote(url), buffer_size=1 << 16)) as packed:
         for name in packed.namelist():
@@ -93,8 +97,8 @@ def members(url: str, endings: list[str]) -> dict[str, bytes]:
 
 
 def convert(rows: list[dict], base: str) -> ox.Dataset:
-    """Parsed rows as statements of the model. The rows are read with the platform's JSON-LD context, and only
-    the types and the properties of the profile's fields are kept."""
+    """Convert parsed rows to statements of the model. Read the rows with the JSON-LD context of the platform, and
+    keep only the types and the properties of the fields of the profile."""
     document = {"@context": {**documents.context(settings()), "@base": base}, "@graph": rows}
     kept = {str(path) for path in profile_graph().objects(None, SH.path)} | {str(RDF.type)}
     found = ox.Dataset()
@@ -105,8 +109,8 @@ def convert(rows: list[dict], base: str) -> ox.Dataset:
 
 
 def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[tuple[list[dict], Graph]]:
-    """The records of each class in converted data: their rows and their parts' for the records table, and
-    their statements. Values are kept as given; misfits are noted by the checks."""
+    """Return the records of each class in converted data, with the rows of the records and their parts for the
+    records table, and their statements. Keep values as given, and leave misfits to the checks."""
     graph = Graph().parse(data=ox.serialize(data, format=ox.RdfFormat.N_QUADS), format="nt")
     found = []
     for kind in classes:
@@ -119,13 +123,14 @@ def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[tuple[
 
 
 class Refused(Exception):
-    """An import that is refused, such as one that would remove most of the records of a source, or a second launch."""
+    """An import that is refused, such as an import that would remove most of the records of a source, or a second
+    launch."""
 
 
 def store(source: Source, found: list[tuple[list[dict], Graph]]) -> None:
-    """A source's records replace its earlier ones; records written on the platform are kept, and records
-    given by another source keep their values and take the new ones the profile allows (as an enrichment
-    does). An import of no records, or of less than half the earlier ones, is refused."""
+    """Store the records of a source in place of its earlier records. Keep the records written on the platform. For
+    records of another source, keep their values and add the new values that the profile allows, as in an
+    enrichment. Refuse an import of no records, or of less than half of the earlier records."""
     with database.session() as db, db.begin():
         before = db.scalar(select(func.count()).select_from(Record).where(Record.source == source.name, Record.part_of.is_(None)))
         if not found or (before >= 10 and len(found) < before / 2):
@@ -152,7 +157,7 @@ def store(source: Source, found: list[tuple[list[dict], Graph]]) -> None:
 
 
 def files_of(spec: dict) -> dict[str, str]:
-    """A source's files by name: its url, its files, or else the pinned vocabulary it names."""
+    """Return the files of a source by name: its url, its files, or else the pinned vocabulary in its definition."""
     if "files" in spec:
         return dict(spec["files"])
     if "enriches" in spec:
@@ -166,8 +171,10 @@ ENTRY = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
 def linked_terms() -> list[str]:
-    """The addresses in the term fields (sh:class schema:DefinedTerm, alone or in sh:or) of each record and
-    part, by its own class's shape, except the records and terms of the model's vocabularies."""
+    """Return the linked terms of the records and parts.
+
+    The terms are the addresses in the term fields (sh:class schema:DefinedTerm, alone or in sh:or), by the shape of
+    the class of each node. Leave out the records and terms of the vocabularies of the model."""
     vocabularies = []
     for spec in specs():
         if "vocabulary" in spec:
@@ -188,9 +195,11 @@ def linked_terms() -> list[str]:
 
 
 def identified(spec: dict) -> list[tuple[str, str]]:
-    """The records of the kind a source enriches, except those written on the platform, each with its key:
-    the end of its sameAs address after the source's identifier, when it matches the source's keys; or, for a
-    source that finds records by name (by: name), the name of each record without such an address."""
+    """Return the records to enrich from a source, each with its key.
+
+    Leave out records written on the platform. The key is the end of the sameAs address after the identifier of the
+    source, if it matches the keys of the source. For a source matched by name (by: name), the key is the name of
+    each record without such an address."""
     with database.session() as db:
         iris = list(db.scalars(select(Record.iri).where(
             Record.type.in_(records.within(settings()["kinds"][spec["enriches"]])), Record.part_of.is_(None), Record.removed_at.is_(None), Record.source != PLATFORM)))
@@ -214,9 +223,10 @@ def identified(spec: dict) -> list[tuple[str, str]]:
 
 
 def wikibase_items(wikibase: dict, items: list[str]) -> bytes:
-    """The given items of a Wikibase and the members of its class, read by rdfsolve, as JSON rows of their fields
-    (named by rdfsolve after the properties' labels): an item's address, texts without their language, other
-    values with their datatype."""
+    """Return the given items of a Wikibase and the members of its class, read with rdfsolve.
+
+    Each item is a JSON row of its fields, named by rdfsolve after the labels of the properties. The row has the
+    address of the item, texts without their language, and other values with their datatype."""
     strategy = WikibaseScopeStrategy(items, classes=[wikibase["members"]], membership=wikibase["membership"],
                                      prefix_classes={wikibase["entity"] + "Q": ITEM})
     with SchemaMiner(wikibase["endpoint"], strategy=strategy, counts=False) as miner:
@@ -244,11 +254,13 @@ def wikibase_items(wikibase: dict, items: list[str]) -> bytes:
 
 
 def download(spec: dict, parser) -> dict[str, bytes]:
-    """A source's files by name; with entries, also each entry's file by its key in the index (the JSON
-    object's keys, or those its parser reads)."""
+    """Return the files of a source by name.
+
+    For a source with entries, also return the file of each entry, by its key in the index. The keys are the keys of
+    the JSON object, or the keys read by the parser."""
     contents = {}
     for name, url in files_of(spec).items():
-        # A pinned vocabulary is read from the model folder, unless the source follows it upstream (url).
+        # A pinned vocabulary is read from the model folder, unless an upstream address (url) is given for it.
         if "vocabulary" in spec and "url" not in spec:
             contents[name] = (MODEL_DIR / "vocabularies" / spec["vocabulary"]).read_bytes()
         else:
@@ -256,15 +268,15 @@ def download(spec: dict, parser) -> dict[str, bytes]:
     if "entries" in spec:
         index = contents[spec["name"]]
         for key in parser.keys(index) if hasattr(parser, "keys") else json.loads(index):
-            # Upstream keys go into addresses, so only plain names are taken.
+            # Upstream keys are used in addresses, so only plain names are accepted.
             if not ENTRY.fullmatch(key) or key == spec["name"]:
                 continue
             try:
                 contents[key] = fetch(spec["entries"].format(key=key))
             except requests.RequestException as problem:
                 print(f"{spec['name']}: {key} not fetched ({problem})")
-    # A source of packages reads some files of each entry's zip (members), by "<key>/<file>"; the parser gives
-    # the zips, which must be on the source's own site.
+    # For a source of packages, some files of the zip of each entry are read (members), by "<key>/<file>". The zips
+    # are listed by the parser and must be on the site of the source.
     if "members" in spec:
         site = "https://" + urlsplit(spec["url"]).netloc + "/"
         for key, url in parser.packages(contents[spec["name"]]).items():
@@ -275,8 +287,8 @@ def download(spec: dict, parser) -> dict[str, bytes]:
                     contents[f"{key}/{ending}"] = content
             except (requests.RequestException, zipfile.BadZipFile) as problem:
                 print(f"{spec['name']}: {key} not read ({problem})")
-    # A source of documents reads the files its parser names (documents: name → address), each under one of the
-    # addresses the source gives (its documents, by name), such as a repository's files at a pinned commit.
+    # For a source of documents, the files named by the parser are read (documents: name → address), each under one
+    # of the addresses of the source (its documents, by name), such as the files of a repository at a pinned commit.
     if "documents" in spec:
         for name, url in parser.documents(contents, spec["documents"]).items():
             if not url.startswith(tuple(spec["documents"].values())):
@@ -285,17 +297,17 @@ def download(spec: dict, parser) -> dict[str, bytes]:
                 contents[name] = fetch(url)
             except requests.RequestException as problem:
                 print(f"{spec['name']}: {name} not fetched ({problem})")
-    # An enriching source has one answer per identified record, by the record's address.
+    # For an enriching source, one response is read for each identified record, by the address of the record.
     if "enriches" in spec:
         for iri, key in identified(spec):
             try:
                 contents[iri] = fetch(spec["answer"].format(key=quote(key, safe="/")), spec.get("accept"))
             except requests.RequestException as problem:
                 print(f"{spec['name']}: {iri} not fetched ({problem})")
-    # A source in a Wikibase gives the items its parser names (items) and the members of a class, read by rdfsolve.
+    # For a source in a Wikibase, the items named by the parser (items) and the members of a class are read with rdfsolve.
     if "wikibase" in spec:
         contents["items"] = wikibase_items(spec["wikibase"], parser.items(contents))
-    # A source of terms has one answer per linked term, by its address.
+    # For a source of terms, one response is read for each linked term, by its address.
     if "terms" in spec:
         for iri in linked_terms():
             try:
@@ -309,7 +321,7 @@ def import_source(spec: dict) -> None:
     config = settings()
     parser = importlib.import_module(spec["module"])
     contents = download(spec, parser)
-    # One file is given as is; several are given by name.
+    # One file is passed as is; several files are passed by name.
     parsed = parser.parse(contents if "files" in spec or "entries" in spec or "terms" in spec or "members" in spec or "documents" in spec else contents[spec["name"]])
     data = convert(parsed, config["base"])
     found = records_of(data, [of_class for kind in config["kinds"].values() for of_class in records.within(kind)], spec["name"])
@@ -327,9 +339,9 @@ def import_source(spec: dict) -> None:
 
 
 def enrich(spec: dict) -> None:
-    """A source's values are merged into other sources' records as the profile allows: a single-valued
-    field keeps its value, and a different one is noted. A record's first enrichment is its first revision,
-    which shows where its values came from."""
+    """Merge the values of a source into the records of other sources, as the profile allows. Keep the value of a
+    single-valued field, and note a different value. Store the first enrichment of a record as its first revision,
+    so that the origin of its values is shown."""
     parser = importlib.import_module(spec["module"])
     contents = download(spec, parser)
     data = convert(parser.parse(contents), settings()["base"])
@@ -363,8 +375,9 @@ def enrich(spec: dict) -> None:
 
 
 def specs() -> list[dict]:
-    """The sources that are fetched (url, files), read (a model vocabulary) or enrich records (enriches), by name.
-    A source in sources/ is read weekly. A source in launch/ and a pinned vocabulary (no url) are read once, at launch."""
+    """Return the sources by name: fetched (url, files), read from a model vocabulary, or enriching records
+    (enriches). Read a source in sources/ each week. Read a source in launch/, or a pinned vocabulary without url,
+    once, at launch."""
     found = []
     for path in sorted([*SOURCES_DIR.glob("*.yaml"), *LAUNCH_DIR.glob("*.yaml")], key=lambda path: path.name):
         spec = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -376,8 +389,10 @@ def specs() -> list[dict]:
 
 
 def drifted(spec: dict) -> list[dict]:
-    """For a source that follows a pinned vocabulary upstream: the profile's terms that it no longer gives,
-    or gives under another label."""
+    """Return the terms of the profile that changed upstream.
+
+    This applies to a source of a pinned vocabulary with an upstream address. A term changed if it is no longer in the
+    upstream file, or if it has another label there."""
     parser = importlib.import_module(spec["module"])
     pinned = {}
     for row in parser.parse((MODEL_DIR / "vocabularies" / spec["vocabulary"]).read_bytes()):
@@ -402,9 +417,9 @@ def drifted(spec: dict) -> list[dict]:
 
 
 def check(source: str, spec: dict | None = None) -> None:
-    """A source's records, or the platform's, are checked against the model as stored, with their linked
-    records; misfits are kept and noted for the data quality page. A source that follows a pinned vocabulary
-    upstream also notes the profile's terms it dropped or renamed."""
+    """Check the records of a source, or of the platform, against the model as stored, with their linked records.
+    Keep the misfits and note them for the data quality page. For a source of a pinned vocabulary with an upstream
+    address, also note the terms of the profile that were dropped or renamed."""
     with database.session() as db:
         iris = list(db.scalars(select(Record.iri).where(Record.source == source, Record.removed_at.is_(None), Record.part_of.is_(None))))
     notes = checks.notes(records.graph(iris))
@@ -418,7 +433,7 @@ def check(source: str, spec: dict | None = None) -> None:
 
 
 def note_problem(spec: dict, problem: Exception) -> None:
-    """A failed import is noted on the sources page; the source's records are kept."""
+    """Store the problem of a failed import with its source, and keep the records of the source."""
     with database.session() as db, db.begin():
         source = db.get(Source, spec["name"])
         if source is None:
@@ -428,16 +443,16 @@ def note_problem(spec: dict, problem: Exception) -> None:
 
 
 def import_all(once: bool = False) -> list[str]:
-    """The weekly sources are imported. At launch (once), the sources that are read once are imported first, and a
-    database that holds imported records is refused. Then every source is checked. The problems of failed sources
-    are given back; their records are kept."""
+    """Import the weekly sources. At launch (once), import the sources that are read once first, and refuse a
+    database with imported records. Then check each source. Return the problems of failed sources, and keep their
+    records."""
     problems = []
     every = []
     if once:
         with database.session() as db:
             if db.scalar(select(Record.iri).where(Record.source != PLATFORM).limit(1)):
                 raise Refused("The database holds imported records. Launch is run once, on a database without them.")
-        # The sources read once own the records that they share with weekly sources, so weekly imports keep them.
+        # Records of both a launch source and a weekly source belong to the launch source, so they are kept by weekly imports.
         for spec in specs():
             if not spec["weekly"]:
                 every.append(spec)
@@ -451,11 +466,11 @@ def import_all(once: bool = False) -> list[str]:
                 enrich(spec)
             else:
                 import_source(spec)
-        # A parser's KeyError or TypeError is an upstream file that changed its shape.
+        # A KeyError or TypeError of a parser means a changed format of an upstream file.
         except (Refused, requests.RequestException, OSError, ValueError, KeyError, TypeError) as problem:
             note_problem(spec, problem)
             problems.append(f"{spec['name']}: {problem}")
-    # Records are checked after the enrichments; an enriching source has no records, and its notes are the
+    # Records are checked after the enrichments. An enriching source has no records, and its notes are the
     # conflicting values.
     for spec in specs():
         if "enriches" not in spec:

@@ -1,8 +1,12 @@
-"""Parser of the BioStudies collection VHP4Safety (a workaround, see linkeddata/parsers). The search lists
-the studies; each study's file (api/v1/studies/<accession>) has sections of attributes, whose qualifiers
-(valqual) give a value's address or ontology term. Term identifiers (NCBITaxon_9606) are linked at their
-address, with labels from the Ontology Lookup Service (sources/ols.yaml). Authors and organisations are
-rows of their own."""
+"""Parser of the BioStudies collection VHP4Safety, a workaround (see linkeddata/parsers).
+
+Source: the search results, and the file of each study (api/v1/studies/<accession>).
+
+- Values: the attributes of the sections of a study. Read the address or the ontology term of a value from the
+  qualifiers of its attribute (valqual).
+- Terms: link identifiers such as NCBITaxon_9606 at their address, with labels from the Ontology Lookup Service
+  (sources/ols.yaml).
+- Authors and organisations: separate rows."""
 
 import json
 import re
@@ -16,7 +20,7 @@ ONTOLOGIES = {"BAO": "http://www.bioassayontology.org/bao#"}
 
 
 def keys(index: bytes) -> list[str]:
-    """The accessions of the studies on the search's one page."""
+    """Return the accessions of the studies on the one page of search results."""
     found = json.loads(index)
     if found.get("totalHits", 0) > len(found.get("hits", [])):
         raise ValueError("more studies than one search page")
@@ -24,7 +28,7 @@ def keys(index: bytes) -> list[str]:
 
 
 def value_of(attribute: dict):
-    """An attribute's value: the address from its qualifiers (URL or ontology term), or its text."""
+    """Return the value of an attribute: the address from its qualifiers (URL or ontology term), or its text."""
     qualifiers = {}
     for qualifier in attribute.get("valqual") or []:
         if present(qualifier.get("value")):
@@ -40,7 +44,7 @@ def value_of(attribute: dict):
 
 
 def sections(section: dict) -> list[dict]:
-    """The sections below a section, at any depth; a table of sections is a list of them."""
+    """Return the sections below a section, at any depth. Read a table of sections as a list of sections."""
     found = []
     for part in section.get("subsections") or []:
         for each in part if isinstance(part, list) else [part]:
@@ -50,7 +54,7 @@ def sections(section: dict) -> list[dict]:
 
 
 def given(section: dict) -> dict:
-    """The attributes of a section that have a value, by name."""
+    """Return the attributes of a section that have a value, by name."""
     found = {}
     for attribute in section.get("attributes") or []:
         if present(attribute.get("value")):
@@ -81,7 +85,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 row["sameAs"] = link("https://doi.org/" + attribute["value"])
                 row["identifier"] = link("https://doi.org/" + attribute["value"])
             elif name == "Regulatory Question":
-                # The code names the question; the address next to it is sometimes the case study's.
+                # The question is identified by the code; the address next to the code is sometimes that of the case study.
                 code = attribute["value"]
                 row.setdefault("regulatoryQuestion", []).append(link(QUESTIONS[code]) if code in QUESTIONS else value_of(attribute))
             elif name == "Case study":
@@ -95,7 +99,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 row["license"] = licence(stated["@id"] if isinstance(stated, dict) else stated)
             elif name == "Bioassay":
                 found = value_of(attribute)
-                # An assay that links to a method's page is that method.
+                # An assay with a link to the page of a method is read as that method.
                 if isinstance(found, dict) and found["@id"].startswith("methods/"):
                     row.setdefault("measurementMethod", []).append(found)
                 else:

@@ -1,5 +1,5 @@
-"""What the record editor shows: counts and completeness per kind, the records of a kind, and the graph
-shacl-form builds forms from (the profile, the vocabularies' class hierarchy, and named records and terms)."""
+"""Data of the record editor: the counts per kind, the records of a kind, and the graph for the forms of
+shacl-form."""
 
 from rdflib import RDF, RDFS, XSD, BNode, Graph, Literal, URIRef
 from rdflib.collection import Collection
@@ -13,8 +13,8 @@ from linkeddata.profile import fields, hierarchy, jsonld_name, profile_graph, se
 
 
 def counts() -> list[dict]:
-    """Per kind: its records, those written on the platform, those removed, their notes, and the average
-    share of fields filled."""
+    """Count the records, the platform records, the removed records and the notes of each kind, with the average
+    share of filled fields."""
     found = []
     with database.session() as db:
         for name, kind in settings()["kinds"].items():
@@ -36,8 +36,8 @@ def counts() -> list[dict]:
 
 
 def listing(kind: str) -> list[dict]:
-    """A kind's records, removed ones too, by name, each with its filled fields and its notes (parts
-    included)."""
+    """List the records of a kind by name, removed records included, with the numbers of filled fields and notes of
+    each record and its parts."""
     of_kind = fields(settings()["kinds"][kind])
     with database.session() as db:
         statement = select(Record).where(Record.type.in_(records.within(settings()["kinds"][kind])), Record.moved_to.is_(None))
@@ -59,15 +59,15 @@ def listing(kind: str) -> list[dict]:
 
 
 def root_shape(kind: str) -> str:
-    """The node shape of a kind's class in the profile, from which the form is built."""
+    """Return the node shape of the class of a kind, for its form."""
     return str(shape_of(settings()["kinds"][kind]))
 
 
 def form_graph() -> Graph:
-    """The profile, the class hierarchy, every record and listed term (sh:in) with its name, and each term's
-    vocabulary. An sh:or of
-    classes gets two more choices, a text and an address, so the form shows a bare name or an address that is
-    no record; neither takes a value (an empty sh:in), so the form flags it with the field's message."""
+    """Return the graph for shacl-form: the profile, the class hierarchy, and the names of the records, the list
+    terms (sh:in) and their vocabularies. Add two choices, a text and an address, to each sh:or of classes, so that a
+    name or an address that is not a record is shown. Give both choices an empty sh:in, so that such a value is
+    marked with the message of the field."""
     found = Graph() + profile_graph() + hierarchy()
     for alternatives in list(found.objects(None, SH["or"])):
         listed = Collection(found, alternatives)
@@ -90,7 +90,7 @@ def form_graph() -> Graph:
         for iri, kind, name in db.execute(select(Record.iri, Record.type, Record.name).where(Record.removed_at.is_(None), Record.moved_to.is_(None))):
             found.add((URIRef(iri), RDF.type, URIRef(kind)))
             found.add((URIRef(iri), RDFS.label, Literal(name or iri)))
-    # Each term's vocabulary, so a term is shown in its own.
+    # The vocabulary of each term is added, so that each term is listed under its vocabulary.
     for iri, vocabulary in records.values(str(SDO.DefinedTerm), str(SDO.inDefinedTermSet)):
         found.add((URIRef(iri), SDO.inDefinedTermSet, URIRef(vocabulary)))
     listed = []
@@ -104,8 +104,8 @@ def form_graph() -> Graph:
 
 
 def ordered() -> dict[str, list[str]]:
-    """The properties of the fields whose parts have a position, such as steps and sections, with the labels of
-    those fields. These parts are shown in the index of the editor, and their order is set by dragging them."""
+    """Return the properties of the fields whose parts have a position, such as steps and sections, with the labels
+    of those fields, for the index of the case-study editor."""
     graph = profile_graph()
     found = {}
     for field in graph.objects(None, SH.property):
@@ -116,7 +116,7 @@ def ordered() -> dict[str, list[str]]:
 
 
 def mixed() -> list[str]:
-    """The properties of fields whose sh:or offers a link or another value, such as an address."""
+    """Return the properties of the fields with an sh:or of a link and another value, such as an address."""
     graph = profile_graph()
     found = []
     for field in graph.objects(None, SH.property):
@@ -132,8 +132,9 @@ def mixed() -> list[str]:
 
 
 def links() -> dict[str, dict[str, str]]:
-    """The properties of fields that link to records (sh:class, or sh:or of classes, without parts), each
-    with its classes by label: the sh:or choice's, else the class shape's, else the class's own name."""
+    """Return the properties of the fields with links to records (sh:class, or sh:or of classes, without parts),
+    with the label of each class. Take the label from the sh:or choice, else from the class shape, else from the
+    class."""
     graph = profile_graph()
     found = {}
     for field in graph.objects(None, SH.property):

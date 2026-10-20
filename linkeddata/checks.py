@@ -1,5 +1,4 @@
-"""Records are checked against the model here with pyshacl. The data quality page is also made here from the notes
-of the checks."""
+"""Checks of the records against the model, with pyshacl, and the content of the data quality page."""
 
 import pyshacl
 from rdflib import RDF, Graph, URIRef
@@ -26,15 +25,15 @@ CONSTRAINTS = {
 
 
 def meaning(component: str | None) -> str:
-    """The message for a SHACL constraint component is given here."""
+    """Return the message for a SHACL constraint component."""
     name = (component or "").replace("#", ":").rsplit(":", 1)[-1]
     return CONSTRAINTS.get(name, "Does not fit the model.")
 
 
 def official(result, results: Graph) -> tuple | None:
-    """The property and the reason of a result of an official shape are given here, such as "Required by Bioschemas
-    Person 0.3-DRAFT.". Such a result is a note or a recommendation, never a refusal. None is given for a result of
-    the shapes of the model."""
+    """Return the property and the reason of a result of an official shape, such as "Required by Bioschemas Person
+    0.3-DRAFT.". Report such a result as a note or a recommendation, and do not refuse a write for it. Return None
+    for a result of the shapes of the model."""
     if results.value(result, SH.sourceShape) not in official_fields():
         return None
     shape, path, needs = official_fields()[results.value(result, SH.sourceShape)]
@@ -45,18 +44,20 @@ def official(result, results: Graph) -> tuple | None:
 
 
 def validate(found: Graph) -> Graph:
-    """Statements are checked with the shapes of the model. The class and the name of each linked record are added
-    first, so that a link is checked against the class of that record."""
+    """Check statements with the shapes of the model. Add the class and the name of each linked record first, so
+    that a link is checked against the class of that record."""
     validated = documents.typed(records.with_names(found))
     _, results, _ = pyshacl.validate(validated, shacl_graph=shapes(), ont_graph=hierarchy())
     return results
 
 
 def notes(found: Graph) -> list[dict]:
-    """The notes of the checks are made for the records in *found*, one note for each record, field and value.
-    Linked records that are given with their class only are not reported. Of several results for the same record,
-    field and value, the most severe result is kept. Next, a result with a message in the profile is kept, then a
-    result of a shape of the class of the record. Last, the result is chosen by the constraint and the reason. Thus the same notes are made on each run."""
+    """Make the notes of the checks for the records in *found*.
+
+    Make one note for each record, field and value. Do not report linked records with their class only. Of several
+    results for the same record, field and value, choose in this order: the most severe result, a result with a
+    message in the profile, a result of a shape of the class of the record, then by constraint and reason. So the
+    notes are the same on each run."""
     described = set()
     for subject, predicate in found.subject_predicates():
         if predicate != RDF.type:
@@ -82,7 +83,7 @@ def notes(found: Graph) -> list[dict]:
         key = (note["iri"], note["field"], note["value"])
         severity = [SH.Violation, SH.Warning, SH.Info].index(results.value(result, SH.resultSeverity))
         source = results.value(result, SH.sourceShape)
-        # A shape of the class of the record comes before a shape of a class above it, such as CreativeWork.
+        # A shape of the class of the record is preferred to a shape of a superclass, such as CreativeWork.
         targets = set(every.objects(every.value(None, SH.property, source), SH.targetClass))
         rank = (severity, every.value(source, SH.message) is None, not targets & set(found.objects(focus, RDF.type)), note["component"], reason)
         if key not in noted or rank < noted[key][0]:
@@ -94,9 +95,9 @@ def notes(found: Graph) -> list[dict]:
 
 
 def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]]]:
-    """A record document is converted to statements and checked. The problems and the recommendations are given by
+    """Convert a record document to statements and check them. Return the problems and the recommendations by
     field. A value that does not fit a field of sh:Warning severity is a recommendation, with the message of the
-    profile. A field of a part is named by the fields that lead to it (regulatoryQuestion > step > name)."""
+    profile. Name a field of a part by the path of fields to it (regulatoryQuestion > step > name)."""
     found = documents.statements(new)
     record = URIRef(new["@id"])
     results = validate(found)
@@ -133,7 +134,7 @@ def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]
 
 
 def named(of_class: str, path: str) -> str:
-    """The labels of a field path are given here, such as "Regulatory questions › Process flow steps › Title" for
+    """Return the labels of a field path, such as "Regulatory questions › Process flow steps › Title" for
     "regulatoryQuestion > step > name"."""
     names = []
     for term in path.split(" > "):
@@ -151,8 +152,8 @@ def named(of_class: str, path: str) -> str:
 
 
 def report() -> dict:
-    """The data quality page is made here. The filled fields of each kind of records are counted, and the notes of
-    the checks are grouped by field and constraint."""
+    """Return the content of the data quality page. Count the filled fields of each kind of records, and group the
+    notes of the checks by field and constraint."""
     with database.session() as db:
         kept = list(db.scalars(select(Record).where(Record.removed_at.is_(None))))
         notes = list(db.scalars(select(Note).order_by(Note.field, Note.reason, Note.iri)))

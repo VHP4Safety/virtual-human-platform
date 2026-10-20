@@ -1,21 +1,24 @@
-"""Parser of the models of the Zenodo community vhp4safety (a workaround, see linkeddata/parsers): the record
-search gives each model's record, and its RO-Crate (the zip whose name says "ro-crate") gives the model's
-metadata (ro-crate-metadata.json) and, where its makers wrote one, a PBPK description (pbpk-model-metadata.json).
-- The crate is read as linked data: expanded with RO-Crate's context (ro-crate-py's copy), its fields by name
-  and web addresses written as text taken as links. A model is each main entity of
-  the crate, at models/<crate's name> ("oppbkmodelr" for oppbkmodelr-ro-crate-v1.0.1.zip), or at models/<its
-  name> when the crate has several; its fields are the entity's, as the crate states them, then the crate's
-  for those it lacks. The entities only the crate holds, such as a language, are the model's parts; people,
-  organisations, grants (by their number) and publications (by their DOI) are records of their own; other
-  entities, such as a taxon, are linked. Requirements are texts ("RStudio 1.4.1717"), as schema.org has them;
-  identifiers such as "CAS:15663-27-1" are identifier and value. The crate's chemicals and taxa are the model's.
-- From the Zenodo record: its DOI, date and page; its keywords, license and creators where the crate has none.
-- The PBPK description gives ROBOT's fields the crate does not have, in either of its two layouts: the PBPK
-  Model Reporting Template of Tan et al. (2020, https://doi.org/10.1016/j.yrtph.2020.104673), with a part per
-  model, or a curated layout of one model. Its lists become parts where ROBOT has them (compartments,
-  connections, parameters, chemicals' roles); inputs and outputs are formal parameters, as RO-Crate gives
-  them; routes and scenarios tell the domain of applicability, and processes the structure, as the template's
-  narrative fields do."""
+"""Parser of the models of the Zenodo community vhp4safety, a workaround (see linkeddata/parsers).
+
+Source: the Zenodo record search. Each record has an RO-Crate zip ("ro-crate" in the name) with
+ro-crate-metadata.json, and sometimes a PBPK description (pbpk-model-metadata.json).
+
+- Crate: read it as linked data, with the RO-Crate context of ro-crate-py. Read web addresses in text as links.
+- Models: the main entities of the crate. Address: models/<crate name> ("oppbkmodelr" for
+  oppbkmodelr-ro-crate-v1.0.1.zip), or models/<entity name> if the crate has several main entities.
+- Fields: from the entity, then from the root of the crate for missing fields.
+- Parts: the entities that are only in the crate, such as a language.
+- Separate records: people, organisations, grants (by number) and publications (by DOI). Link other entities, such
+  as a taxon.
+- Requirements: texts such as "RStudio 1.4.1717", as in schema.org.
+- Identifiers: store "CAS:15663-27-1" as identifier and value.
+- Chemicals and taxa: add the chemicals and taxa of the crate to each model.
+- Zenodo record: the DOI, date, page and files, and the keywords, licence and creators if the crate has none.
+- PBPK description: the ROBOT fields that are not in the crate. Read two layouts: the PBPK Model Reporting Template
+  of Tan et al. (2020, https://doi.org/10.1016/j.yrtph.2020.104673), with a part per model, and a curated layout of
+  one model. Store lists as parts where ROBOT has parts (compartments, connections, parameters, roles of chemicals).
+  Store inputs and outputs as formal parameters, as in RO-Crate. Store routes and scenarios in the domain of
+  applicability, and processes in the structure."""
 
 import copy
 import json
@@ -31,14 +34,14 @@ from linkeddata.parsers.zenodo import download
 DATE = "http://www.w3.org/2001/XMLSchema#date"
 DECIMAL = "http://www.w3.org/2001/XMLSchema#decimal"
 CRATE = re.compile(r"(.+?)-ro-crate", re.IGNORECASE)
-# The crate's own addresses (#r-4.1.0, models/x.mmd) are read under this one.
+# The local addresses of the crate (#r-4.1.0, models/x.mmd) are read under this base.
 LOCAL = "crate:/"
 RO_CRATE = json.loads((files("rocrate") / "data" / "ro-crate.jsonld").read_text())["@context"]
 # A "a -> b (how)" or "a <-> b (how)" connection of a structure.
 CONNECTION = re.compile(r"(.+?)\s*(<->|->)\s*(.+?)(?:\s*\((.+)\))?$")
-# The fields that link to records or terms; entities only the crate holds stay in it.
+# The fields with links to records or terms. Entities that are only in the crate are kept as parts.
 LINKS = ("about", "citation", "funding", "creator", "author", "contributor", "license", "keywords", "codeRepository")
-# The fields of the crate's root that a model takes when its own entity lacks them.
+# The fields of the root of the crate that are used for a model if they are missing in its entity.
 SHARED = ("license", "citation", "funding", "about", "creator", "author", "keywords")
 
 
@@ -50,7 +53,7 @@ def crate_of(hit: dict) -> dict | None:
 
 
 def packages(index: bytes) -> dict[str, str]:
-    """Each model record's crate zip, by the record's identifier."""
+    """Return the crate zip of each model record, by the identifier of the record."""
     found = {}
     for hit in json.loads(index)["hits"]["hits"]:
         crate = crate_of(hit)
@@ -60,7 +63,7 @@ def packages(index: bytes) -> dict[str, str]:
 
 
 def listed(value) -> list:
-    """A value as a list: a list as it is, one value in a list, nothing as an empty list."""
+    """Return a value as a list: a list as it is, one value in a list, and nothing as an empty list."""
     if isinstance(value, list):
         return value
     if present(value):
@@ -69,12 +72,12 @@ def listed(value) -> list:
 
 
 def joined(*parts) -> str:
-    """The parts that are given, as one text."""
+    """Return the given parts as one text."""
     return " ".join(str(part) for part in parts if present(part))
 
 
 def sentence(heading: str, items) -> str:
-    """A heading and its items as a sentence ("Processes: a; b."), or nothing without items."""
+    """Return a heading and its items as a sentence ("Processes: a; b."), or nothing without items."""
     given = [str(item) for item in listed(items) if present(item)]
     if not given:
         return ""
@@ -82,13 +85,13 @@ def sentence(heading: str, items) -> str:
 
 
 def fill(row: dict, field: str, value) -> None:
-    """A field the crate does not give, from the PBPK description."""
+    """Set a field that is not in the crate, from the PBPK description."""
     if field not in row and present(value) and value != []:
         row[field] = value
 
 
 def entities(crate: dict) -> dict[str, dict]:
-    """The crate's entities by address, as linked data."""
+    """Return the entities of the crate by address, as linked data."""
     contexts = []
     for context in listed(crate.get("@context")):
         if isinstance(context, str) and context.startswith("https://w3id.org/ro/crate/"):
@@ -105,7 +108,7 @@ def kinds(node: dict) -> list[str]:
 
 
 def values(node: dict, field: str) -> list:
-    """A field's values, by its name in schema.org or another vocabulary."""
+    """Return the values of a field, by its name in schema.org or another vocabulary."""
     for iri, given in node.items():
         if iri not in ("@id", "@type") and local_name(iri) == field:
             return given
@@ -120,7 +123,7 @@ def text(node: dict, field: str) -> str:
 
 
 def record(nodes: dict, node: dict, others: dict) -> dict | None:
-    """The link to the record an entity is, adding its row: a person, organisation, grant or publication."""
+    """Return the link to the record of an entity, and add its row: a person, organisation, grant or publication."""
     iri = node["@id"]
     found = kinds(node)
     name = text(node, "name")
@@ -161,8 +164,10 @@ def record(nodes: dict, node: dict, others: dict) -> dict | None:
 
 
 def fields(nodes: dict, node: dict, others: dict, seen: frozenset = frozenset()) -> dict:
-    """An entity's fields by name, as the crate states them: entities only the crate holds as parts, records
-    as links to them, other entities as links."""
+    """Return the fields of an entity by name, as stated in the crate.
+
+    Entities that are only in the crate are parts. Records are links to their records, and other entities are
+    links."""
     row = {}
     for iri, given in node.items():
         if iri in ("@id", "@type"):
@@ -191,7 +196,7 @@ def converted(nodes: dict, value: dict, others: dict, seen: frozenset):
 
 
 def version_of(part) -> str:
-    """A requirement as a text: its name and version ("RStudio 1.4.1717"), or its address."""
+    """Return a requirement as a text: its name and version ("RStudio 1.4.1717"), or its address."""
     if not isinstance(part, dict):
         return str(part)
     if "@id" in part:
@@ -200,7 +205,7 @@ def version_of(part) -> str:
 
 
 def identifiers(row: dict) -> None:
-    """Identifiers such as "CAS:15663-27-1" or "PubChem CID 2730" as identifier and value."""
+    """Store identifiers such as "CAS:15663-27-1" or "PubChem CID 2730" as identifier and value."""
     found = []
     for value in row.pop("identifier", []):
         if isinstance(value, str):
@@ -213,7 +218,7 @@ def identifiers(row: dict) -> None:
 
 
 def weight(row: dict) -> None:
-    """A molecular weight in g/mol, as its number."""
+    """Store a molecular weight in g/mol as its number."""
     for value in row.get("molecularWeight", []):
         given = re.fullmatch(r"([0-9.]+)\s*(g/mol)?", str(value).strip())
         if given:
@@ -221,19 +226,19 @@ def weight(row: dict) -> None:
 
 
 def number(value):
-    """A number as a decimal; other values as they are."""
+    """Return a number as a decimal, and other values as they are."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return value
     return {"@value": str(value), "@type": DECIMAL}
 
 
 def named_parts(kind: str, names) -> list[dict]:
-    """A part of a kind for each name, such as a compartment or an input."""
+    """Return a part of a kind for each name, such as a compartment or an input."""
     return [{"@type": kind, "name": str(name)} for name in listed(names)]
 
 
 def connections(given) -> list[dict]:
-    """Connections ("blood <-> fat (perfusion-limited distribution)"), both ways for <->."""
+    """Return connections ("blood <-> fat (perfusion-limited distribution)"), in both directions for <->."""
     found = []
     for value in listed(given):
         written = CONNECTION.fullmatch(str(value).strip())
@@ -265,7 +270,7 @@ def implementations(paths) -> list[dict]:
 
 
 def roles(row: dict, named_roles: dict[str, list]) -> None:
-    """The roles in the model of the chemicals the PBPK description names."""
+    """Add the roles in the model of the chemicals named in the PBPK description."""
     for chemical in row.get("pbpk:hasChemical", []):
         for name in chemical.get("name", []):
             if str(name).casefold() in named_roles and "pbpk:chemicalRole" not in chemical:
@@ -273,7 +278,7 @@ def roles(row: dict, named_roles: dict[str, list]) -> None:
 
 
 def system(described: dict, model: dict) -> list[dict]:
-    """The template's biological system, with the model's default subject in its population."""
+    """Return the biological system of the template, with the default subject of the model in its population."""
     given = described.get("biological_system_description") or {}
     if not given:
         return []
@@ -287,7 +292,7 @@ def system(described: dict, model: dict) -> list[dict]:
 
 
 def chemical_notes(row: dict, described: dict) -> None:
-    """The roles and physicochemical notes the template gives its chemical."""
+    """Add the roles and the physicochemical notes of the chemical of the template."""
     chemical = described.get("chemical_description") or {}
     if not present(chemical.get("name")):
         return
@@ -332,7 +337,7 @@ def calibration(model: dict) -> list[dict]:
 
 
 def evaluations(described: dict, model: dict) -> list[dict]:
-    """The model's pharmacokinetic evaluation against the template's studies, and its QIVIVE."""
+    """Return the pharmacokinetic evaluation of the model against the studies of the template, and its QIVIVE."""
     evaluated = described.get("model_evaluation_and_validation") or {}
     found = []
     studies = listed(evaluated.get("pharmacokinetic_evaluation_data"))
@@ -366,7 +371,7 @@ def sensitivity(described: dict) -> list[dict]:
 
 
 def scenarios(row: dict, described: dict) -> str:
-    """The template's simulation scenarios as sentences; their outputs are the model's outputs."""
+    """Return the simulation scenarios of the template as sentences. Their outputs are the outputs of the model."""
     sentences = []
     for scenario in listed(described.get("simulation_scenarios")):
         details = []
@@ -387,7 +392,7 @@ def scenarios(row: dict, described: dict) -> str:
 
 
 def template(row: dict, described: dict, model: dict) -> None:
-    """ROBOT's fields from the PBPK Model Reporting Template (Tan et al. 2020), for one of its models."""
+    """Set the fields of ROBOT from the PBPK Model Reporting Template (Tan et al. 2020), for one of its models."""
     general = described.get("general_model_information") or {}
     structure = model.get("structure") or {}
     kind = f"{structure['type']}." if present(structure.get("type")) else ""
@@ -410,7 +415,7 @@ def template(row: dict, described: dict, model: dict) -> None:
 
 
 def curated(row: dict, described: dict) -> None:
-    """ROBOT's fields from the curated layout of one model."""
+    """Set the fields of ROBOT from the curated layout of one model."""
     model = described.get("model") or {}
     evaluation = described.get("evaluation") or {}
     types = []
@@ -437,7 +442,8 @@ def curated(row: dict, described: dict) -> None:
 
 
 def chemicals(nodes: dict, others: dict) -> list[dict]:
-    """The crate's chemicals, with their identifiers as identifier and value and their weight as a number."""
+    """Return the chemicals of the crate, with their identifiers as identifier and value, and their weight as a
+    number."""
     found = []
     for node in nodes.values():
         if "MolecularEntity" in kinds(node) or "ChemicalSubstance" in kinds(node):
@@ -450,8 +456,10 @@ def chemicals(nodes: dict, others: dict) -> list[dict]:
 
 
 def model_row(nodes: dict, root: dict, main: dict, address: str, others: dict) -> dict:
-    """A model's row: its entity's fields, then the crate's it lacks; its links to records and terms, its
-    citations as publications and its requirements as texts."""
+    """Return the row of a model.
+
+    Take the fields from its entity, and missing fields from the crate. Add links to records and terms, citations as
+    publications, and requirements as texts."""
     row = {"@id": address, "@type": "SoftwareSourceCode", **fields(nodes, main, others)}
     for field in SHARED:
         fill(row, field, [converted(nodes, value, others, frozenset({LOCAL})) for value in values(root, field)])
@@ -465,14 +473,16 @@ def model_row(nodes: dict, root: dict, main: dict, address: str, others: dict) -
                 others.setdefault(article["@id"], article)
                 cited["@id"] = article["@id"]
     row["softwareRequirements"] = [version_of(part) for part in row.get("softwareRequirements", [])]
-    # The crate's authors are the model's creators in the profile.
+    # The authors of the crate are stored as the creators of the model, as in the profile.
     row.setdefault("creator", []).extend(row.pop("author", []))
     return row
 
 
 def zenodo(row: dict, hit: dict, nodes: dict, others: dict) -> None:
-    """The fields of the model's Zenodo record: its page, DOI, date and files (its digital artifacts, at their
-    download addresses); its name, license, keywords and creators where the crate has none."""
+    """Add the fields of the Zenodo record of the model.
+
+    Always add the page, DOI, date and files. The files are the digital artifacts, at their download addresses. Add
+    the name, licence, keywords and creators if they are not in the crate."""
     metadata = hit["metadata"]
     fill(row, "name", [metadata["title"]])
     licences = [licence(value["@id"]) for value in row.get("license", []) if isinstance(value, dict) and "@id" in value]
@@ -506,7 +516,7 @@ def zenodo(row: dict, hit: dict, nodes: dict, others: dict) -> None:
 
 
 def reported(described: dict, main: dict) -> dict | None:
-    """The template's model whose files include the crate's main entity."""
+    """Return the model of the template whose files include the main entity of the crate."""
     for model in listed(described.get("models")):
         if main["@id"].removeprefix(LOCAL) in listed(model.get("implementation_files")):
             return model

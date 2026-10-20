@@ -1,14 +1,14 @@
-"""The linked data of the platform.
+"""The commands of the linked data of the platform.
 
-    python -m linkeddata model                  write the model's schema and tables
-    python -m linkeddata check                  check the generated files, vocabularies and database against
-                                                the model's release
+    python -m linkeddata model                  write the tables of the model
+    python -m linkeddata check                  check the generated files, the vocabularies and the database
+                                                against the release of the model
     python -m linkeddata import                 import the weekly sources into the database
-    python -m linkeddata launch                 import every source and make the corrections, once, at launch
-    python -m linkeddata export                 write the platform's records to the records repository
+    python -m linkeddata launch                 import all sources and make the corrections, once, at launch
+    python -m linkeddata export                 write the platform records to the records repository
     python -m linkeddata push                   push the records repository to its remote
     python -m linkeddata backup                 copy the database to PLATFORM_STATE/backups (the latest 14 are kept)
-    python -m linkeddata token ORCID NAME KIND  create a write token, such as the first one
+    python -m linkeddata token ORCID NAME KIND  create a write token, such as the first token
 """
 
 import argparse

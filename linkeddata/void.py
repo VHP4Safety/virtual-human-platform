@@ -1,15 +1,13 @@
-"""The platform's data as one dataset, described with VoID (https://www.w3.org/TR/void/) at the platform's address,
-for /.well-known/void and the platform's address in Turtle, JSON-LD or N-Triples:
-- what it is: the platform's catalogue record, with its name, description, publisher, licence, subjects and pages
-  in the Dublin Core and FOAF terms VoID asks for, and the publisher's partners as its contributors;
-- how it is reached: its address space, its dump, the formats each record's address answers in;
-- what it holds: its vocabularies, triples and entities (records and parts at its addresses), and a partition
-  per class with its properties, the classes their values are and the datatypes of their texts (rdfsolve's VoID
-  models, counted from the tables), with the catalogue's name and description of each kind of records;
-- its links to other datasets: a linkset per registry that its records' sameAs addresses are at;
-- the vocabulary terms its records link to: a dataset of its own with its dump, a part per vocabulary with
-  the vocabulary's record as its source and its licence.
-The document that says so is a void:DatasetDescription."""
+"""VoID description (https://www.w3.org/TR/void/) of the data of the platform, as one dataset.
+
+The description is returned at /.well-known/void and at the address of the platform in Turtle, JSON-LD or N-Triples.
+It is a void:DatasetDescription with these parts:
+
+- The catalogue record, in the Dublin Core and FOAF terms of VoID.
+- The access points: the address space, the dump and the formats.
+- A partition for each class, with the VoID models of rdfsolve, counted from the tables.
+- A linkset for each registry of the sameAs addresses.
+- The linked vocabulary terms, as a separate dataset."""
 
 import re
 from collections import Counter
@@ -29,19 +27,20 @@ from linkeddata import documents
 from linkeddata.profile import jsonld_name, profile_text, settings
 
 DESCRIPTION = ".well-known/void"
-# The catalogue's fields, as VoID's general metadata names them.
+# The fields of the catalogue record, with their terms in the general metadata of VoID.
 GENERAL = {SDO.name: DCTERMS.title, SDO.alternateName: DCTERMS.alternative, SDO.abstract: DCTERMS.abstract,
            SDO.description: DCTERMS.description, SDO.publisher: DCTERMS.publisher, SDO.license: DCTERMS.license,
            SDO.about: DCTERMS.subject, SDO.subjectOf: FOAF.page}
-# The formats a record's address answers in (https://www.w3.org/ns/formats/).
+# The formats that are returned at the address of a record (https://www.w3.org/ns/formats/).
 FORMATS = ["http://www.w3.org/ns/formats/Turtle", "http://www.w3.org/ns/formats/N-Triples", "http://www.w3.org/ns/formats/JSON-LD"]
 
 PLATFORM = {}
 
 
 def platform() -> dict:
-    """The platform's name, sentence and licence, from its catalogue record, and its publisher's JSON-LD document;
-    empty until it has one."""
+    """Return the name, abstract and licence of the platform, and the JSON-LD document of its publisher.
+
+    Read the values from the catalogue record. Return empty values if there is no catalogue record."""
     latest = records.latest_change()
     if PLATFORM.get("latest") != latest:
         found = records.graph([settings()["base"]])
@@ -54,8 +53,8 @@ def platform() -> dict:
 
 
 def general(void: Graph, dataset: URIRef) -> None:
-    """The catalogue record, as its page's data gives it, with its fields in VoID's terms too, and the
-    publisher's partners as contributors."""
+    """Add the catalogue record as published on its page, with its fields also in the terms of VoID, and with the
+    partners of the publisher as contributors."""
     record = records.get(str(dataset))
     if record is None:
         return
@@ -72,7 +71,8 @@ def general(void: Graph, dataset: URIRef) -> None:
 
 
 def name(*iris: str) -> URIRef:
-    """A partition's address in the description, from the IRIs it partitions by (class, property, datatype)."""
+    """Return the address of a partition in the description, made from the IRIs of the partition (class, property,
+    datatype)."""
     parts = []
     for iri in iris:
         parts.append(re.sub(r"[^A-Za-z0-9]+", "-", jsonld_name(iri)).strip("-"))
@@ -80,9 +80,11 @@ def name(*iris: str) -> URIRef:
 
 
 def partitions(void: Graph, dataset: URIRef, base: str) -> None:
-    """A partition per class of the records and parts at the platform's addresses, with its entities and its
-    properties (rdfsolve's VoID models, counted from the tables), and the name, description and position given in
-    the catalogue for each kind of records; a kind without records is kept as the catalogue gives it."""
+    """Add a partition for each class of the records and parts of the platform.
+
+    Each partition has its entities and properties, from the VoID models of rdfsolve, counted from the tables. It
+    also has the name, description and position of the kind in the catalogue. Keep a kind without records as
+    described in the catalogue."""
     named = {}
     for part in void.objects(dataset, VOID.classPartition):
         named[void.value(part, VOID["class"])] = part
@@ -102,8 +104,9 @@ def partitions(void: Graph, dataset: URIRef, base: str) -> None:
 
 
 def linksets(void: Graph, dataset: URIRef, found: Graph, base: str) -> None:
-    """A linkset per registry that the records' sameAs addresses are at, such as ORCID; the registry is a
-    dataset of the description, with its site as its home page."""
+    """Add a linkset for each registry of the sameAs addresses of the records, such as ORCID.
+
+    Add each registry as a dataset, with its site as its home page."""
     counted = Counter()
     for subject, value in found.subject_objects(SDO.sameAs):
         if isinstance(subject, URIRef) and str(subject).startswith(base) and isinstance(value, URIRef) and not str(value).startswith(base):
@@ -122,7 +125,8 @@ def linksets(void: Graph, dataset: URIRef, found: Graph, base: str) -> None:
 
 
 def terms(void: Graph, dataset: URIRef) -> None:
-    """The vocabulary terms that records link to, as a dataset with its dump and a part per vocabulary."""
+    """Add the vocabulary terms that are linked from the records as a dataset, with its dump and a part per
+    vocabulary."""
     found = documents.published_terms()
     subset = URIRef(records.address(DESCRIPTION) + "#terms")
     void.add((dataset, VOID.subset, subset))
@@ -148,7 +152,7 @@ DESCRIBED = {}
 
 
 def described() -> Graph:
-    """The VoID description, made again when a record changes."""
+    """Return the VoID description, made again when a record is changed."""
     latest = records.latest_change()
     if DESCRIBED.get("latest") != latest:
         DESCRIBED.update(latest=latest, graph=description())

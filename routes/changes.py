@@ -1,4 +1,4 @@
-"""The pages of the changes made on the platform are served here, for editors.
+"""Pages of the changes made on the platform, for editors.
 
     /changes                      the latest changes, or those of one record (?record=<address>)
     /changes/<number>             one change

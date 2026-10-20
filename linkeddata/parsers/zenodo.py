@@ -1,7 +1,10 @@
-"""Parser of the Zenodo community vhp4safety (a workaround, see linkeddata/parsers): the dataset search
-gives each record's metadata. "Last, First" creators are written "First Last", as in other sources; DOIs,
-ORCID iDs, licenses and affiliations (as organisations) are linked at their addresses. A record's files are its
-downloads, as Zenodo's JSON-LD export gives them, with their names and sizes."""
+"""Parser of the Zenodo community vhp4safety, a workaround (see linkeddata/parsers).
+
+Source: the dataset search, with the metadata of each record.
+
+- Creators: write "Last, First" as "First Last", as in other sources.
+- Links: DOIs, ORCID iDs, licences, and affiliations as organisations.
+- Files: the downloads of the record, with names and sizes, in the form of the Zenodo JSON-LD export."""
 
 import json
 import mimetypes
@@ -13,7 +16,7 @@ LICENSES = "https://zenodo.org/api/vocabularies/licenses/"
 
 
 def size(given: int) -> str:
-    """A file's size as Zenodo shows it, such as 3.1 MB."""
+    """Return the size of a file as shown by Zenodo, such as 3.1 MB."""
     for unit, scale in (("GB", 1e9), ("MB", 1e6), ("kB", 1e3)):
         if given >= scale:
             return f"{given / scale:.1f} {unit}"
@@ -21,8 +24,8 @@ def size(given: int) -> str:
 
 
 def download(given: dict) -> dict:
-    """A file of a Zenodo record at its download address. Its format is found from its name, as Zenodo's JSON-LD
-    export gives it."""
+    """Return a file of a Zenodo record at its download address, with its format from its name, as in the JSON-LD
+    export of Zenodo."""
     found = {"@type": "DataDownload", "name": given["key"], "contentUrl": link(given["links"]["self"]), "contentSize": size(given["size"])}
     media, _ = mimetypes.guess_type(given["key"])
     if media:

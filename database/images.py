@@ -1,9 +1,9 @@
-"""Images uploaded to the platform, such as tool logos.
+"""Storage of the images uploaded to the platform, such as tool logos.
 
-An upload is read in full by Pillow, so a file that only claims to be an image is refused; a very large
-picture is refused before it is read. Large pictures are scaled down. Each is saved as WebP, which drops
-the rest of the file (metadata, anything hidden). The file is named after the SHA-256 of what was saved,
-so it never changes.
+- Read each upload in full with Pillow, so that a file that is not an image is refused.
+- Refuse very large images before they are read, and scale down large images.
+- Store each image as WebP, without the metadata and the other content of the file.
+- Name the file after the SHA-256 of the stored image, so that the content of a file does not change.
 """
 
 import hashlib
@@ -31,7 +31,8 @@ def folder():
 
 
 def picture_of(stream) -> Picture.Image:
-    """An uploaded file's picture, read in full; ValueError when it is not an image of a taken format."""
+    """Read the image of an uploaded file in full. Raise ValueError if the file is not an image of an accepted
+    format."""
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Picture.DecompressionBombWarning)
@@ -49,7 +50,7 @@ def picture_of(stream) -> Picture.Image:
 
 
 def store(stream, name: str, orcid: str) -> str:
-    """The address of the uploaded image, saved as WebP with its uploader."""
+    """Store the uploaded image as WebP, with its uploader, and return its address."""
     picture = picture_of(stream)
     output = io.BytesIO()
     picture.save(output, format="WEBP", quality=88)

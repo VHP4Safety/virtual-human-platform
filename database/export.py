@@ -1,7 +1,9 @@
-"""The platform's records, exported to a git repository (PLATFORM_RECORDS) so they outlive the server:
-one JSON-LD file per record at its page's path (tools/aop-builder.jsonld), from its latest revision, and
-the images they use (images/<sha256>.webp). They are committed by `python -m linkeddata export` and
-pushed by `python -m linkeddata push`, both weekly.
+"""Export of the records written on the platform to a git repository (PLATFORM_RECORDS), so that they are kept apart
+from the server.
+
+- Write each record as one JSON-LD file at its page path (tools/aop-builder.jsonld), from its latest revision.
+- Write the images in use to images/<sha256>.webp.
+- Commit the files with `python -m linkeddata export`, and push them with `python -m linkeddata push`, each week.
 """
 
 import json
@@ -26,7 +28,7 @@ def git(*args: str) -> str:
 
 
 def latest_documents() -> dict[str, str]:
-    """The latest revision of each platform record not removed, by file path."""
+    """Return the latest revision of each platform record that is not removed, by file path."""
     written = select(Record.iri).where(Record.source == PLATFORM, Record.removed_at.is_(None))
     documents = {}
     with database.session() as db:
@@ -36,7 +38,7 @@ def latest_documents() -> dict[str, str]:
 
 
 def used_images() -> dict[str, Path]:
-    """The uploaded images that platform records use, by file path."""
+    """Return the uploaded images that are used in platform records, by file path."""
     used = {}
     for text in latest_documents().values():
         document = json.loads(text)
@@ -52,7 +54,7 @@ def used_images() -> dict[str, Path]:
 
 
 def export() -> bool:
-    """The files are made to match the records and the change is committed; False when nothing changed."""
+    """Update the files from the records and commit the change. Return False if nothing changed."""
     if not (RECORDS_DIR / ".git").exists():
         RECORDS_DIR.mkdir(parents=True, exist_ok=True)
         git("init", "-q", "-b", "main")

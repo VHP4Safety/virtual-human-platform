@@ -1,9 +1,12 @@
-"""Parser of the VHP4Safety videos on video.edu.nl, a PeerTube site (a workaround, see linkeddata/parsers): the
-account's list gives its videos, and each video's own answer its whole description.
-- A video is a training material at training/<its name>, with its player as its video (its address, thumbnail
-  and duration), its language, its licence (by name; "Unknown" is left out), its dates, its tags as keywords
-  and the account's owner as its author, at organizations/<the owner's name>.
-- Descriptions are Markdown, kept as text; durations are ISO 8601 (PT5M38S)."""
+"""Parser of the VHP4Safety videos on video.edu.nl, a PeerTube site, a workaround (see linkeddata/parsers).
+
+Source: the video list of the account, and the response for each video, with the full description.
+
+- Address: training/<name>. Each video is a training material.
+- Video: the player, with its address, thumbnail and duration (ISO 8601, such as PT5M38S).
+- Other fields: the language, the licence by name ("Unknown" is left out), the dates, and the tags as keywords.
+- Author: the owner of the account, at organizations/<owner name>.
+- Description: Markdown, kept as text."""
 
 import json
 
@@ -18,7 +21,7 @@ def keys(index: bytes) -> list[str]:
 
 
 def duration(seconds) -> str:
-    """Seconds as an ISO 8601 duration: 338 is PT5M38S."""
+    """Return seconds as an ISO 8601 duration: PT5M38S for 338."""
     hours, rest = divmod(int(seconds), 3600)
     minutes, seconds = divmod(rest, 60)
     written = "PT"

@@ -1,5 +1,5 @@
-"""The platform's database: one SQLite file in PLATFORM_STATE, used through SQLAlchemy. The file and its
-tables (tables.py) are made on first use.
+"""Database of the platform: one SQLite file in PLATFORM_STATE, used through SQLAlchemy. Make the file and its
+tables (tables.py) on first use.
 """
 
 import os
@@ -19,11 +19,11 @@ STATE_DIR = Path(os.environ.get("PLATFORM_STATE", "instance"))
 _engines = {}
 # The engine is made once, by the first request of any thread.
 _making = threading.Lock()
-# An in-memory copy used instead of the database, such as for a page preview.
+# An in-memory copy that is used in place of the database, such as for a page preview.
 
 
 def columns(connection: sqlite3.Connection) -> dict[str, list[str]]:
-    """The columns of each table of a database, by table name."""
+    """Return the columns of each table of a database, by table name."""
     found = {}
     for (name,) in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"):
         found[name] = [row[1] for row in connection.execute(f'PRAGMA table_info("{name}")')]
@@ -31,8 +31,8 @@ def columns(connection: sqlite3.Connection) -> dict[str, list[str]]:
 
 
 def differences(path: Path) -> list[str]:
-    """How the tables of the database at *path* differ from the release's, apart from those of tables.py; a
-    database of another release is migrated before use."""
+    """Return the differences between the tables of the database at *path* and the release tables, apart from the
+    tables of tables.py. A database of another release must be migrated before use."""
     with closing(sqlite3.connect(":memory:")) as release:
         release.executescript(TABLES.read_text(encoding="utf-8"))
         expected = columns(release)
@@ -41,7 +41,7 @@ def differences(path: Path) -> list[str]:
     for name in Base.metadata.tables:
         found.pop(name, None)
     problems = []
-    # Columns are read by name, so their order in a table does not count, as after columns are added to it.
+    # Columns are compared by name, so that their order does not matter, such as after columns are added.
     for name in sorted(set(expected) | set(found)):
         if sorted(expected.get(name) or []) != sorted(found.get(name) or []) or (name in expected) != (name in found):
             problems.append(f"{path}, table {name}: columns {found.get(name)}, release {RELEASE} has {expected.get(name)}.")
@@ -49,8 +49,8 @@ def differences(path: Path) -> list[str]:
 
 
 def engine() -> Engine:
-    """The database engine; the file and tables are made on first use. A database whose tables differ from
-    the release's is refused."""
+    """Return the database engine, made on first use with the file and the tables. Refuse a database with tables
+    that differ from the release tables."""
     path = STATE_DIR / "platform.sqlite"
     with _making:
         if path not in _engines:
@@ -71,14 +71,14 @@ def engine() -> Engine:
 
 
 def write_ahead_log(connection, _record) -> None:
-    """SQLite's write-ahead log, so pages are read while a record is written."""
+    """Use the write-ahead log of SQLite, so that pages are read while a record is written."""
     cursor = connection.cursor()
     cursor.execute("PRAGMA journal_mode=WAL")
     cursor.close()
 
 
 def backup(keep: int = 14) -> Path:
-    """A copy of the database in use, by SQLite's online backup; the latest *keep* copies are kept in
+    """Copy the database with the online backup of SQLite, and keep the latest *keep* copies in
     PLATFORM_STATE/backups."""
     engine()
     folder = STATE_DIR / "backups"

@@ -1,12 +1,12 @@
-"""Editor login with ORCID, as in ToxTempAssistant, and write tokens.
+"""Editor sign-in with ORCID, as in ToxTempAssistant, and write tokens.
 
-- The login uses ORCID's OAuth with the /authenticate scope (the sandbox when FLASK_DEBUG=1); only the
-  ORCID iD and name are kept.
-- Editors are the ORCID iDs in PLATFORM_EDITORS. The credentials are ORCID_CLIENT_ID and
-  ORCID_CLIENT_SECRET; the redirect URI is <platform>/orcid/callback/.
-- A login with a write token ends when the token is revoked or expires, and writes only its kinds.
-- The editor page writes through the write API; its requests carry the session's form token in the
-  X-Form-Token header, which other sites cannot send.
+- Sign in with the OAuth of ORCID and the /authenticate scope (the sandbox if FLASK_DEBUG=1). Store only the ORCID
+  iD and the name.
+- The editors are the ORCID iDs in PLATFORM_EDITORS. The credentials are ORCID_CLIENT_ID and ORCID_CLIENT_SECRET,
+  and the redirect URI is <platform>/orcid/callback/.
+- End a sign-in with a write token if the token is revoked or expires. Allow writes only for the kinds of the token.
+- Write the records of the editor page through the write API, with the form token of the session in the
+  X-Form-Token header, which cannot be sent by other sites.
 """
 
 import hmac
@@ -26,7 +26,7 @@ blueprint = Blueprint("account", __name__)
 
 @blueprint.context_processor
 def named_kinds() -> dict:
-    """The names of the kinds of records are given to the pages of the editor, such as "Case Studies"."""
+    """Give the names of the kinds of records to the pages of the editor, such as "Case Studies"."""
     return {"kind_names": pages.kind_names}
 
 
@@ -35,7 +35,7 @@ def callback_address() -> str:
 
 
 def form_token() -> str:
-    """The token sent back by the account forms, so other sites cannot send them."""
+    """Return the token that is sent back by the account forms, so that the forms cannot be sent by other sites."""
     if "form_token" not in session:
         session["form_token"] = secrets.token_urlsafe(32)
     return session["form_token"]
@@ -47,19 +47,19 @@ def check_form() -> None:
 
 
 def local_path(address: str | None) -> str | None:
-    """The address when it is a path on this site, so a login never leads elsewhere."""
+    """Return the address if it is a path on this site, so that a sign-in does not redirect elsewhere."""
     if address and address.startswith("/") and not address.startswith("//") and "\\" not in address:
         return address
     return None
 
 
 def current_editor() -> tokens.Editor | None:
-    """The session's editor, logged in with ORCID or a valid write token."""
+    """Return the editor of the session, signed in with ORCID or a valid write token."""
     return tokens.editor(session.get("orcid"), session.get("name"), session.get("token_id"))
 
 
 def editor_of_request(kind: str) -> tokens.Editor | None:
-    """The editor of an editor page request, when allowed to write *kind*."""
+    """Return the editor of a request of an editor page, if *kind* may be written."""
     editor = current_editor()
     if editor is None or kind not in editor.kinds or "form_token" not in session:
         return None
@@ -103,7 +103,7 @@ def token_login():
 
 @blueprint.get("/login/orcid/")
 def orcid_login():
-    # The state is checked on return, so another site cannot start a login.
+    # The state is checked on return, so that a sign-in cannot be started by another site.
     session["orcid_state"] = secrets.token_urlsafe(32)
     session["after_login"] = local_path(request.args.get("next"))
     query = urlencode({
@@ -158,7 +158,7 @@ def account_tokens():
     page = {"form_token": form_token(), "editor": current_editor(), "page_title": "Write tokens — VHP4Safety"}
     if page["editor"] is None:
         return render_template("account/tokens.html", tokens=[], kinds=[], **page)
-    # Only ORCID logins make tokens, so a token never makes another.
+    # Tokens are made only after a sign-in with ORCID, so that no token is made with a token.
     if "token_id" in session:
         return render_template("account/tokens.html", tokens=[], kinds=[], with_token=True, **page)
     kinds = list(settings()["kinds"])

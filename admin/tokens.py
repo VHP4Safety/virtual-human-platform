@@ -1,5 +1,8 @@
-"""Write tokens and editor logins are checked here. The secret of a token is shown once, and only its hash is
-kept. A token expires (after 90 days by default), can be revoked, and gives the kinds that it can write."""
+"""Write tokens and editor sign-ins.
+
+- Show the secret of a token once, and store only its hash.
+- Expire a token after 90 days by default, and allow its revocation.
+- Allow writes with a token only for the kinds chosen for it."""
 
 import hashlib
 import os
@@ -22,7 +25,7 @@ def hash_token(secret: str) -> str:
 
 
 def create(orcid: str, name: str, kinds: list[str], days: int = DEFAULT_DAYS) -> str:
-    """A new token is made. The secret is given back and is not kept."""
+    """Make a new token and return its secret. Do not store the secret."""
     secret = PREFIX + secrets.token_urlsafe(32)
     expires = datetime.now(timezone.utc) + timedelta(days=days)
     with database.session() as db, db.begin():
@@ -44,12 +47,12 @@ def usable(token: Token | None) -> Token | None:
 
 
 def bearer(header: str) -> str | None:
-    """The secret is read from an Authorization header ("Bearer <secret>"). None is given for another header."""
+    """Read the secret from an Authorization header ("Bearer <secret>"). Return None for another header."""
     return header.removeprefix("Bearer ").strip() if header.startswith("Bearer ") else None
 
 
 def find(secret: str | None) -> Token | None:
-    """The token of a secret is given when it is neither revoked nor expired."""
+    """Return the token of a secret, if it is not revoked or expired."""
     if not secret:
         return None
     with database.session() as db:
@@ -57,7 +60,7 @@ def find(secret: str | None) -> Token | None:
 
 
 def check(secret: str, kind: str) -> Token | None:
-    """The token of a secret is given when it is valid and may write records of *kind*. The time of use is kept."""
+    """Return the token of a secret, if it is valid for records of *kind*, and store the time of use."""
     token = find(secret)
     if token is None or kind not in token.kinds.split(","):
         return None
@@ -96,7 +99,7 @@ def editors() -> set[str]:
 
 
 def editor(orcid: str | None, name: str | None, token_id: int | None) -> Editor | None:
-    """The editor logged in with an ORCID iD is given here, when logged in through ORCID or with a valid write token."""
+    """Return the signed-in editor, if signed in through ORCID or with a valid write token."""
     if not orcid or orcid not in editors():
         return None
     kinds = list(settings()["kinds"])

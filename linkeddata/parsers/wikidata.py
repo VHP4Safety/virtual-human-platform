@@ -1,8 +1,9 @@
-"""Parser of a Wikidata API answer (wbgetentities, with English labels, descriptions and aliases), such as
-the technology readiness levels (a workaround, see linkeddata/parsers). The first item is the vocabulary,
-and the others are its terms; as any Wikidata item has their namespace, the vocabulary has none. A term's
-first alias is its code; the others are other names. Labels are lower case on Wikidata, so the
-vocabulary's name starts with a capital."""
+"""Parser of a Wikidata API response (wbgetentities, with English labels, descriptions and aliases), such as the
+technology readiness levels, a workaround (see linkeddata/parsers).
+
+- Vocabulary: the first item. It has no namespace, as all Wikidata items have the same namespace. Its name starts
+  with a capital letter, as labels are in lower case on Wikidata.
+- Terms: the other items. The first alias is the code, and the other aliases are other names."""
 
 import json
 
@@ -12,7 +13,7 @@ ENTITY = "http://www.wikidata.org/entity/"
 
 
 def english(item: dict, field: str) -> list[str]:
-    """The English texts of an item's field: labels, descriptions or aliases."""
+    """Return the English texts of a field of an item: labels, descriptions or aliases."""
     given = item.get(field, {}).get("en", [])
     found = []
     for text in given if isinstance(given, list) else [given]:

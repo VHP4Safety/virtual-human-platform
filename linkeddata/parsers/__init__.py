@@ -1,9 +1,12 @@
-"""Helpers of the parsers. A parser is a temporary workaround for an upstream file that is not clean linked data.
-It reads the file and gives rows in the terms of the model, which are read with the JSON-LD context of the platform.
-An address is written as {"@id": ...}, under the base of the platform when it has no scheme. An address of the
-platform in an upstream file (UPSTREAM) is also read under the base, in links and in HTML texts. A text that is a
-label or code of a term of a model vocabulary is written as the address of the term (term). Placeholders are left
-out, and unreadable values are given as text, for the checks to report."""
+"""Helpers of the parsers.
+
+A parser is a temporary workaround for an upstream file that is not clean linked data. It returns rows in the terms
+of the model, for the JSON-LD context of the platform.
+
+- Addresses: write them as {"@id": ...}, under the base of the platform if there is no scheme. Also read the
+  addresses of the platform in upstream files (UPSTREAM) under the base, in links and in HTML texts.
+- Terms: write a label or a code of a term of a model vocabulary as the address of the term (term()).
+- Leave out placeholders. Keep unreadable values as text, for the checks to report."""
 
 import importlib
 import re
@@ -19,11 +22,11 @@ SOURCES = Path(__file__).parent.parent / "sources"
 # The address of the platform in upstream files. Its addresses are read under the base, so that the records of a
 # test site are linked on that site.
 UPSTREAM = "https://platform.vhp4safety.nl/"
-# The glossary's site gives its terms at other addresses than its file.
+# The terms of the glossary are shown on its site at other addresses than in its file.
 GLOSSARY_SITE = "https://glossary.vhp4safety.nl/#"
 GLOSSARY = "https://vhp4safety.github.io/glossary#"
 
-# The upstream codes of the regulatory questions, and the questions' addresses.
+# The upstream codes of the regulatory questions, with the addresses of the questions.
 QUESTIONS = {
     "reg_q_1a": "casestudies/kidney/Q1",
     "reg_q_1b": "casestudies/kidney/Q2",
@@ -41,13 +44,13 @@ MARKUP = re.compile(r"<\s*/?[a-zA-Z][^>]*>")
 
 
 def marked(value):
-    """A text, typed as HTML (rdf:HTML) when it has markup such as <p> or <b>. In HTML, the links to the platform
-    are written under the base."""
+    """Return a text, typed as HTML (rdf:HTML) if it has markup such as <p> or <b>. In HTML, write the links to the
+    platform under the base."""
     return {"@value": str(value).replace(UPSTREAM, settings()["base"]), "@type": HTML} if MARKUP.search(str(value)) else str(value)
 
 
 def present(value) -> bool:
-    """False for empty values and upstream placeholders."""
+    """Return False for empty values and upstream placeholders."""
     return value is not None and str(value).strip() not in MISSING and not str(value).strip().startswith("[DRAFT]")
 
 
@@ -56,8 +59,8 @@ def link(address: str) -> dict:
 
 
 def web_link(value: str):
-    """A link for a web address or a Markdown link ([text](address)), with glossary site addresses at the
-    glossary's own; other texts as they are."""
+    """Return a link for a web address or a Markdown link ([text](address)), with the addresses of the glossary
+    site replaced by the addresses of the glossary. Return other texts as they are."""
     text = str(value).strip()
     written = re.fullmatch(r"\[[^\]]*\]\((https?://[^)\s]+)\)", text)
     if written:
@@ -70,15 +73,16 @@ def web_link(value: str):
 
 
 def spelled(text: str) -> str:
-    """A text as names are compared: lower case, hyphens, underscores and spaces as one space, no trailing
-    slash."""
+    """Return a text in the form used to compare names: lower case, with hyphens, underscores and spaces as one
+    space, and without a trailing slash."""
     return " ".join(str(text).casefold().replace("-", " ").replace("_", " ").split()).rstrip("/")
 
 
 @cache
 def terms(source: str) -> dict[str, set[str]]:
-    """The terms of a model vocabulary (a source of a pinned file, such as the glossary), by label, code,
-    other names and other addresses, as spelled() compares them."""
+    """Return the terms of a model vocabulary, such as the glossary.
+
+    Find the terms by label, code, other names and other addresses, in the form of spelled()."""
     spec = yaml.safe_load((SOURCES / f"{source}.yaml").read_text(encoding="utf-8"))
     parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
     found = {}
@@ -94,8 +98,10 @@ def terms(source: str) -> dict[str, set[str]]:
 
 
 def term(text, source: str, qualifier: str = ""):
-    """A link to the one term whose label (with a qualifier in brackets, when given), code, other name or
-    other address is the text; else web_link() of the text."""
+    """Return a link to the term with the text as its label, code, other name or other address.
+
+    A label can have a qualifier in brackets. If there is not exactly one such term, return web_link() of the
+    text."""
     label = f"{str(text).strip()} ({qualifier})" if qualifier else str(text).strip()
     matched = terms(source).get(spelled(label), set())
     if len(matched) == 1:
@@ -104,14 +110,14 @@ def term(text, source: str, qualifier: str = ""):
 
 
 def licence(text):
-    """A link to the SPDX licence a text names by identifier, name or address, also with "license" at its
-    end; else web_link() of the text."""
+    """Return a link to the SPDX licence named in a text by identifier, name or address, also with "license" at its
+    end; else return web_link() of the text."""
     return term(re.sub(r"\s+licen[cs]e$", "", str(text).strip(), flags=re.IGNORECASE), "spdx")
 
 
 def publication(value) -> dict | None:
-    """The row of the publication a DOI names (10.1234/x or https://doi.org/10.1234/x), at
-    publications/<DOI>; None for other texts."""
+    """Return the row of the publication of a DOI (10.1234/x or https://doi.org/10.1234/x), at publications/<DOI>, or
+    None for other texts."""
     doi = str(value).strip().removeprefix("https://doi.org/")
     if not doi.startswith("10."):
         return None
@@ -120,6 +126,6 @@ def publication(value) -> dict | None:
 
 
 def slug(text: str) -> str:
-    """An identifier made from a name, without accents: "Café" is "cafe"."""
+    """Return an identifier made from a name, without accents: "cafe" for "Café"."""
     plain = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
     return re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-")

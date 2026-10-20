@@ -1,13 +1,18 @@
-"""Parser of the VHP4Safety courses on GitHub (a workaround, see linkeddata/parsers): each course's repository tree
-at a pinned commit, the repository itself (its description, topics, licence and default branch), its README and
-its agenda (agenda/*.md).
-- A course is a training material at training/<repository>, a Bioschemas Course: its name is its agenda's first
-  heading, else its repository's name; its description is the repository's, else its README's introduction; its
-  topics are keywords, and a DOI in its README is its DOI.
-- From its agenda: its authors (the line of names under the title, without titles such as PhD), its dates ("21 &
-  22 May, 2025") as a time it was given, and its learning aims as what it teaches.
-- Its materials are its files: slides, notebooks, data and chapters (R Markdown), at their addresses on GitHub;
-  literature, archived and temporary files are left out."""
+"""Parser of the VHP4Safety courses on GitHub, a workaround (see linkeddata/parsers).
+
+Source: the tree of each course repository at a pinned commit, the repository (description, topics, licence and
+default branch), the README and the agenda (agenda/*.md).
+
+- Address: training/<repository>. Each course is a Bioschemas Course.
+- Name: the first heading of the agenda, else the repository name.
+- Description: the repository description, else the introduction of the README.
+- Keywords: the topics of the repository.
+- DOI: a DOI in the README.
+- Authors: the line of names under the title of the agenda, without titles such as PhD.
+- Course instance: the dates in the agenda ("21 & 22 May, 2025").
+- Learning outcomes: the learning aims in the agenda.
+- Files: slides, notebooks, data and chapters (R Markdown), at their GitHub addresses. Leave out literature,
+  archived and temporary files."""
 
 import json
 import re
@@ -25,7 +30,7 @@ TITLES = re.compile(r",?\s*\b(PhD|MSc|MD|Prof\.?|Dr\.?)$")
 
 
 def courses(contents: dict) -> list[str]:
-    """The repositories whose trees are given, by name."""
+    """Return the names of the repositories with a given tree."""
     return [name for name, content in contents.items() if "/" not in name and "#" not in name and b'"tree"' in content]
 
 
@@ -37,7 +42,8 @@ def agenda_of(tree: dict) -> str | None:
 
 
 def documents(contents: dict, addresses: dict) -> dict[str, str]:
-    """Each course's repository by its name and "#repository", its README and its agenda by its name and path."""
+    """Return the repository of each course by its name and "#repository", and its README and agenda by its name
+    and path."""
     found = {}
     for name in courses(contents):
         found[name + "#repository"] = addresses["repositories"] + name
@@ -49,13 +55,13 @@ def documents(contents: dict, addresses: dict) -> dict[str, str]:
 
 
 def plain(text: str) -> str:
-    """A Markdown text without its links' addresses and its emphasis."""
+    """Return a Markdown text without the addresses of its links and its emphasis."""
     text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text)
     return " ".join(re.sub(r"[*_`]+", "", text).split())
 
 
 def introduction(readme: str) -> str:
-    """The README's first paragraph under an "Introduction" heading."""
+    """Return the first paragraph of the README under an "Introduction" heading."""
     given = []
     reading = False
     for line in readme.splitlines():
@@ -72,7 +78,7 @@ def introduction(readme: str) -> str:
 
 
 def given_dates(line: str) -> dict | None:
-    """The time a course was given, from a line such as "21 & 22 May, 2025"."""
+    """Return the time when a course was given, from a line such as "21 & 22 May, 2025"."""
     written = DATES.search(line)
     if written is None:
         return None
@@ -86,7 +92,7 @@ def given_dates(line: str) -> dict | None:
 
 
 def agenda(row: dict, text: str, others: dict) -> None:
-    """The name, authors, dates and learning aims of a course's agenda."""
+    """Set the name, authors, dates and learning aims of a course from its agenda."""
     aims = False
     for line in text.splitlines():
         written = re.match(r"(#+)\s+(.+)", line)

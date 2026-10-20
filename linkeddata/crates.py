@@ -1,12 +1,14 @@
-"""A record as a detached RO-Crate 1.2 (https://w3id.org/ro/crate/1.2), at <record's address>/ro-crate-metadata.json,
-made with ro-crate-py: the crate's root is the record's address followed by /ro-crate/, its main entity the record (a
-file on the web, at its address), with its parts; the people, organisations, publications, grants and terms it
-links to are entities of the crate, as their public data gives them; datasets are parts of the root, and a tool
-without a known version is linked by address only, as a version is required by RO-Crate for every
-SoftwareApplication. The root takes the record's name, description, license (else the licence of the records of the
-platform) and date of publication (else its last change), and is published by the platform's publisher. Files are
-linked where they are (such as Zenodo or GitHub), not copied. Names are the platform's JSON-LD names (schema.org's
-unprefixed; pbpk: for the PBPK terms of ROBOT's form), under RO-Crate's context and the platform's prefixes."""
+"""Detached RO-Crate 1.2 (https://w3id.org/ro/crate/1.2) of each record, at <record address>/ro-crate-metadata.json,
+made with ro-crate-py.
+
+- Root: at the record address with /ro-crate/. Take the name, description, licence and publication date from the
+  record. If they are missing, use the licence of the platform records and the date of the last change. Use the
+  publisher of the platform as the publisher.
+- Main entity: the record, with its parts.
+- Other entities: the linked people, organisations, publications, grants and terms, with their public data.
+- Datasets: add them also to the parts of the root.
+- Files: link them at their location, such as Zenodo or GitHub. Do not copy them.
+- Names: use the JSON-LD names of the platform, with the RO-Crate context and the prefixes of the platform."""
 
 from pyld import jsonld
 from rdflib import RDF, Literal, URIRef
@@ -31,7 +33,7 @@ def crate(record: Record) -> dict:
     found += documents.public(records.with_names(records.graph(sorted(linked))))
     publisher = records.get(void.platform()["publisher"]["@id"]) if void.platform()["publisher"] else None
     if publisher is not None:
-        # A project is an organisation; RO-Crate asks for the publisher's type to say so.
+        # A project is an organisation, and the Organization type of the publisher is required by RO-Crate.
         for kind in (publisher.type, str(SDO.Organization)):
             found.add((URIRef(publisher.iri), RDF.type, URIRef(kind)))
         found.add((URIRef(publisher.iri), SDO.name, Literal(publisher.name or publisher.iri)))
@@ -45,8 +47,8 @@ def crate(record: Record) -> dict:
         types = types if isinstance(types, list) else [types]
         if entity["@id"] == record.iri:
             made.add_file(record.iri, properties={**entity, "@type": ["File", *types]})
-        # A version is required by RO-Crate for every SoftwareApplication: a tool without a known version is linked
-        # by address only.
+        # A tool without a known version is linked by address only, as a version is required by RO-Crate for each
+        # SoftwareApplication.
         elif "SoftwareApplication" in types and "softwareVersion" not in entity and entity["@id"].startswith("http"):
             continue
         else:

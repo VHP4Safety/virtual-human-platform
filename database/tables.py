@@ -1,7 +1,7 @@
-"""The database tables.
+"""Database tables.
 
-The records table has one row per record: its address, class, source, dates, and name for lists and links.
-What a record says is kept in the release's tables (v1/tables.sql), one per profile class, written by
+The records table has one row per record, with its address, class, source, dates and name. The statements of the
+records are in the release tables (v1/tables.sql), one table per class of the profile, written with
 `python -m linkeddata model`.
 """
 
@@ -21,9 +21,8 @@ class Base(DeclarativeBase):
 
 
 class Record(Base):
-    """A thing known by its address, such as a tool, a method, or a linked organisation or person, with its
-    class and name. Parts with addresses of their own, such as case study questions, are listed too, with
-    their record; they are written with it."""
+    """A record, such as a tool, a method, an organisation or a person, with its address, class and name. Parts
+    with an address, such as case-study questions, also have a row, with their record."""
 
     __tablename__ = "records"
     iri: Mapped[str] = mapped_column(primary_key=True, doc="The record's address.")
@@ -37,8 +36,8 @@ class Record(Base):
 
 
 class Revision(Base):
-    """A change made on the platform, as in ToxTempAssistant: the record in JSON-LD before and after, by
-    whom, and when."""
+    """A change made on the platform, as in ToxTempAssistant, with the record in JSON-LD before and after the
+    change, the editor and the time."""
 
     __tablename__ = "revisions"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -52,7 +51,7 @@ class Revision(Base):
 
 
 class Token(Base):
-    """A write token. Only the hash of its secret is kept."""
+    """A write token, with the hash of its secret only."""
 
     __tablename__ = "tokens"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -68,7 +67,7 @@ class Token(Base):
 
 
 class Image(Base):
-    """An uploaded image, kept as a file named after the SHA-256 of its content."""
+    """An uploaded image, stored as a file named after the SHA-256 of its content."""
 
     __tablename__ = "images"
     sha256: Mapped[str] = mapped_column(primary_key=True)
@@ -81,7 +80,7 @@ class Image(Base):
 
 
 class Source(Base):
-    """A source as its last import fetched it."""
+    """A source, as fetched at its last import."""
 
     __tablename__ = "sources"
     name: Mapped[str] = mapped_column(primary_key=True, doc="The source's name.")
@@ -92,7 +91,7 @@ class Source(Base):
 
 
 class Note(Base):
-    """A source value that does not fit the model, found by the checks of its last import."""
+    """A value of a source that does not fit the model, as found by the checks at the last import."""
 
     __tablename__ = "notes"
     id: Mapped[int] = mapped_column(primary_key=True, doc="The note's number.")

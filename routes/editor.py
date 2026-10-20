@@ -1,5 +1,5 @@
-"""The pages of the record editor are served here. The forms are made by shacl-form from the shapes of the model,
-and the records are written through the records API. The data quality page is served here too."""
+"""Pages of the record editor, and the data quality page. Make the forms with shacl-form from the shapes of the
+model, and write the records through the records API."""
 
 import json
 
@@ -17,12 +17,12 @@ blueprint = Blueprint("admin", __name__)
 
 @blueprint.context_processor
 def named_kinds() -> dict:
-    """The names of the kinds of records are given to the pages of the editor, such as "Case Studies"."""
+    """Give the names of the kinds of records to the pages of the editor, such as "Case Studies"."""
     return {"kind_names": pages.kind_names}
 
 
 def logged_in(kind: str | None = None):
-    """The editor of the request is given here. A 404 error is given when the editor may not write records of *kind*."""
+    """Return the editor of the request. Return a 404 error if records of *kind* may not be written by the editor."""
     found = current_editor()
     if found is not None and kind is not None and (kind not in settings()["kinds"] or kind not in found.kinds):
         abort(404)
@@ -38,7 +38,7 @@ def admin():
 
 @blueprint.get("/admin/quality")
 def data_quality():
-    """The data quality page is served here to editors."""
+    """Show the data quality page to editors."""
     if logged_in() is None:
         return redirect(url_for("account.login", next=request.path))
     return render_template("records/quality.html", **checks.report(), written=PLATFORM, page_title="Data quality — VHP4Safety editor")
@@ -50,7 +50,7 @@ def edit(kind: str):
         return redirect(url_for("account.login", next=request.path))
     listed = editor.listing(kind)
     selected = request.args.get("record") or ""
-    # A new record's address is made from its name, as in the API.
+    # The address of a new record is made from its name, as in the API.
     name = request.args.get("new", "").strip()
     if name:
         selected = writes.free(records.address(f"{kind}/{writes.slug(name)}"), set())
@@ -78,7 +78,7 @@ def edit(kind: str):
 
 @blueprint.get("/admin/form.ttl")
 def form():
-    """The graph for the forms is served here. The profile is given with the names of the records and the listed terms."""
+    """Return the graph for the forms: the profile with the names of the records and the listed terms."""
     if logged_in() is None:
         abort(401)
     return Response(editor.form_graph().serialize(format="turtle"), mimetype="text/turtle")

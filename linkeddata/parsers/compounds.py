@@ -1,7 +1,10 @@
-"""Parser of the VHP4Safety compounds: the glossary's table of chemicals, whose identifiers are Compound Wiki's
-items, and the fields of those items and of the items that are part of VHP4Safety, as rdfsolve reads them from
-Compound Wiki (items). Rows are the compounds, at compound/<item>, with their identifiers and their addresses
-in Compound Wiki, Wikidata and the glossary."""
+"""Parser of the VHP4Safety compounds, a workaround (see linkeddata/parsers).
+
+Source: the table of chemicals in the glossary, with Compound Wiki items as identifiers, and the fields of these
+items and of the VHP4Safety items in Compound Wiki, read with rdfsolve (items).
+
+The rows are the compounds, at compound/<item>, with their identifiers and their addresses in Compound Wiki,
+Wikidata and the glossary."""
 
 import csv
 import io
@@ -11,11 +14,11 @@ from linkeddata.parsers import GLOSSARY, link
 
 ITEMS = "https://compoundcloud.wikibase.cloud/entity/"
 WIKIDATA = "http://www.wikidata.org/entity/"
-# The fields of an item that the model takes, by the name rdfsolve gives each after Compound Wiki's property.
+# The fields of an item that are used in the model, by the names given by rdfsolve after the properties of Compound Wiki.
 FIELDS = {"label": "name", "alt_label": "alternateName", "short_name": "alternateName", "description": "description", "inchi": "inChI",
           "inchikey": "inChIKey", "smiles": "smiles", "smiles_without_stereochemistry": "smiles", "chemical_formula": "molecularFormula",
           "mass": "molecularWeight"}
-# The fields of an item that are identifiers, with the names ROBOT gives their kinds, or else Compound Wiki's.
+# The fields of an item that are identifiers, with the names of their kinds in ROBOT, or else in Compound Wiki.
 IDENTIFIERS = {
     "cas_registry_number": "CAS RN",
     "pubchem_cid": "PubChem CID",
@@ -32,7 +35,7 @@ IDENTIFIERS = {
 
 
 def chemicals(contents: dict[str, bytes]) -> dict[str, dict]:
-    """The glossary's chemicals that are Compound Wiki items, by item."""
+    """Return the chemicals of the glossary that are Compound Wiki items, by item."""
     found = {}
     for row in csv.DictReader(io.StringIO(contents["chemicals"].decode("utf-8")), delimiter="\t"):
         if row["ID"].startswith("Q"):

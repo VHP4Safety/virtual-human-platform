@@ -1,5 +1,4 @@
-"""A record before and after a change is compared here. The result is shown on the change pages and in the editor
-preview."""
+"""Comparison of a record before and after a change, for the change pages and the editor preview."""
 
 from rdflib import RDF, BNode, Graph, URIRef
 from rdflib.namespace import SDO
@@ -16,8 +15,8 @@ def statements(document: str | None) -> Graph:
 
 
 def key(graph: Graph, value) -> str:
-    """The key of a value in the comparison is given. "X" and "X"^^xsd:string have the same key. A part (a node
-    without an address) is keyed by the values in it."""
+    """Return the comparison key of a value. "X" and "X"^^xsd:string have the same key. Compare a part (a node
+    without an address) by its values."""
     if not isinstance(value, BNode):
         return ("link " if isinstance(value, URIRef) else "text ") + str(value)
     held = []
@@ -27,8 +26,10 @@ def key(graph: Graph, value) -> str:
 
 
 def compared(before: Graph, after: Graph, old, new, kind: str | None, names: dict[str, str]) -> list[dict]:
-    """The edges from a node to its values are given. *old* is the node in *before*, and *new* is the node in
-    *after*. Each edge is added, removed or kept. A part has its own edges, which are compared in the same way."""
+    """Return the edges from a node to its values.
+
+    Mark each edge as added, removed or kept. *old* is the node in *before*, and *new* is the node in *after*. Compare
+    the edges of parts in the same way."""
     form = fields(kind) if kind is not None else []
     labels = {}
     order = {}
@@ -70,7 +71,7 @@ def compared(before: Graph, after: Graph, old, new, kind: str | None, names: dic
 
 
 def edges(before: Graph, after: Graph, record: URIRef) -> dict:
-    """The statements about a record before and after a change are given as edges from the record to each value."""
+    """Return the statements of a record before and after a change, as edges from the record to each value."""
     kind = after.value(record, RDF.type) or before.value(record, RDF.type)
     linked = [str(record)]
     for value in set(before.objects()) | set(after.objects()):

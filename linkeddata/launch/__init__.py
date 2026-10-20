@@ -1,6 +1,8 @@
-"""The launch of the platform. Every source is imported once, those of this folder too, and then the corrections of
-launch.yaml are made. A correction moves or replaces values of a field. It is saved as a revision named with its
-reason. The record then belongs to the platform and is not changed by imports."""
+"""Launch of the platform.
+
+Import all sources once, including the sources of this folder. Then make the corrections of launch.yaml. Each
+correction moves or replaces values of a field. Store it as a revision with its reason. After a correction, the
+record belongs to the platform, and later imports keep it unchanged."""
 
 from pathlib import Path
 
@@ -17,13 +19,13 @@ NAME = "VHP4Safety launch"
 
 
 def corrected(found: Graph, correction: dict) -> int:
-    """The count of values a correction changes in a record's statements, which are changed in place."""
+    """Apply a correction to the statements of a record, in place, and return the number of changed values."""
     changed = 0
     for move in correction.get("move") or []:
         field = URIRef(documents.expand(move["field"]))
         to = URIRef(documents.expand(move["to"]))
         for subject, value in list(found.subject_objects(field)):
-            # A value, or a part that holds it, such as a tool's use whose item is that text.
+            # A value, or the part with the value, such as a use of a tool with that text as its item.
             held = [str(given) for predicate, given in found.predicate_objects(value) if predicate != RDF.type] if isinstance(value, BNode) else [str(value)]
             if set(held) & set(move["values"]):
                 found.remove((subject, field, value))
@@ -42,8 +44,8 @@ def corrected(found: Graph, correction: dict) -> int:
 
 
 def launch() -> list[str]:
-    """Every source is imported, then every correction of launch.yaml is made and saved; what could not be
-    imported or made is given back. A database that holds imported records is refused."""
+    """Import all sources, then make and store all corrections of launch.yaml. Return what could not be imported or
+    made. Refuse a database with imported records."""
     problems = import_all(once=True)
     for correction in yaml.safe_load(CORRECTIONS.read_text(encoding="utf-8"))["corrections"]:
         iri = records.address(correction["record"])

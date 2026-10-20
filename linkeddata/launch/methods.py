@@ -1,5 +1,7 @@
-"""Parser of the cloud catalogue's methods (a workaround, see linkeddata/parsers): methods_index.json lists
-them, and docs/methods/<id>.json describes each. Values are passed on as written; misfits are noted by the checks."""
+"""Parser of the methods of the cloud catalogue, a workaround (see linkeddata/parsers).
+
+Read the methods from methods_index.json, and each method from docs/methods/<id>.json. Pass on values as written,
+and leave misfits to the checks."""
 
 import json
 import re
@@ -14,7 +16,7 @@ AOP_WIKI = {"KE": "https://identifiers.org/aop.events/", "AOP": "https://identif
 
 
 def parts(value) -> list[str]:
-    """The comma-separated values of a text."""
+    """Return the comma-separated values of a text."""
     if not present(value):
         return []
     found = []

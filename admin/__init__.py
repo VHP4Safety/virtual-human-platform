@@ -1,1 +1,1 @@
-"""The editor pages, the write tokens, the saves with revisions and the change history are made here."""
+"""Editor, write tokens, writes with revisions, and change history."""

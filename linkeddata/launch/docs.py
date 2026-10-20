@@ -1,15 +1,18 @@
-"""Parser of the tutorials of the VHP4Safety documentation (https://docs.vhp4safety.nl; a workaround, see
-linkeddata/parsers): the repository's tree at a pinned commit gives the tutorials, tutorials/<name>/<file>.md (or
-.rst), and the files beside them; each tutorial's source and latest change, and the repository, are read.
-- A tutorial is a training material at training/<name>, its folder's name, which is the service identifier of
-  the tool it teaches (tools/<name>), as the documentation names its folders.
-- Its title is its first heading; its authors the bold line under it ("**Author:** A, B"; a team is an
-  organisation); its description its first paragraph, before its first section other than its introduction,
-  without HTML blocks such as a notebook's badge. Its web page on the documentation site is the page whose main
-  entity it is; the headings below the title, outside code, are the sections of that page, each at its address
-  with the anchor Sphinx gives it (docutils' identifiers: "3.1 Free-Text Search" is #free-text-search).
-- It follows the documentation's format (tutorials/documentation_format.md) when its sections are the format's.
-- Its notebooks and scripts are its files, at their addresses on GitHub; its date is its latest change's."""
+"""Parser of the tutorials of the VHP4Safety documentation (https://docs.vhp4safety.nl), a workaround (see
+linkeddata/parsers).
+
+Source: the repository tree at a pinned commit, with the tutorials (tutorials/<name>/<file>.md or .rst), the files
+next to them, the latest change of each tutorial, and the repository.
+
+- Address: training/<name>. The folder name is also the identifier of the tool, at tools/<name>.
+- Title: the first heading.
+- Authors: the bold line under the title ("**Author:** A, B"). A team is an organisation.
+- Description: the first paragraph before the first section after the introduction, without HTML blocks.
+- Web page: the tutorial page on the documentation site. Its sections are the headings below the title, outside
+  code. Each section has the address of its Sphinx anchor ("#free-text-search" for "3.1 Free-Text Search").
+- Format: the documentation format (tutorials/documentation_format.md), if the sections match it.
+- Files: the notebooks and scripts next to the tutorial, at their GitHub addresses.
+- Date: the date of the latest change."""
 
 import json
 import re
@@ -19,20 +22,21 @@ from linkeddata.parsers import link, present, slug
 
 SITE = "https://docs.vhp4safety.nl/en/latest/"
 TUTORIAL = re.compile(r"tutorials/([^/]+)/([^/]+)\.(md|rst)")
-# Folders of the tutorials that hold none: the videos' page, which the videos' own source gives.
+# Folders without tutorials: the page of the videos, which is read from the source of the videos.
 LEFT_OUT = {"peertube"}
-# The sections of the documentation's format (tutorials/documentation_format.md), in order.
+# The sections of the documentation format (tutorials/documentation_format.md), in order.
 FORMAT = ["Introduction", "Accessing the Tool", "Tool Functionalities", "Interpreting the Output", "Summary"]
 FORMAT_PAGE = SITE + "tutorials/documentation_format.html"
 DATE = "http://www.w3.org/2001/XMLSchema#date"
-# The files beside a tutorial that are its parts.
+# The files next to a tutorial that are stored as its parts.
 FILES = (".ipynb", ".r", ".R", ".py", ".Rmd")
 # An underline of a reStructuredText heading.
 UNDERLINE = re.compile(r"([=\-~^\"'`#*+])\1{2,}\s*")
 
 
 def tutorials(tree: dict) -> dict[str, str]:
-    """Each tutorial's source by its folder's name: its Markdown file, else its reStructuredText one."""
+    """Return the source of each tutorial by the name of its folder: its Markdown file, else its reStructuredText
+    file."""
     found = {}
     for entry in tree["tree"]:
         written = TUTORIAL.fullmatch(entry["path"])
@@ -45,7 +49,8 @@ def tutorials(tree: dict) -> dict[str, str]:
 
 
 def documents(contents: dict, addresses: dict) -> dict[str, str]:
-    """Each tutorial's source by its path, its latest change by its path and "#changes", and the repository."""
+    """Return the source of each tutorial by its path, its latest change by its path and "#changes", and the
+    repository."""
     found = {"repository": addresses["repository"]}
     for path in tutorials(json.loads(contents["docs"])).values():
         found[path] = addresses["source"] + path
@@ -54,14 +59,14 @@ def documents(contents: dict, addresses: dict) -> dict[str, str]:
 
 
 def anchor(heading: str) -> str:
-    """A heading's identifier as docutils makes it: lower case, other characters as -, no leading digits."""
+    """Return the identifier of a heading as made by docutils: lower case, other characters as -, no leading digits."""
     plain = unicodedata.normalize("NFKD", heading).encode("ascii", "ignore").decode().lower()
     plain = re.sub(r"[^a-z0-9]+", "-", plain)
     return re.sub(r"^[-0-9]+|-+$", "", plain)
 
 
 def plain(text: str) -> str:
-    """A Markdown text without its links' addresses, its emphasis, its footnote marks and other HTML."""
+    """Return a Markdown text without the addresses of its links, its emphasis, its footnote marks and other HTML."""
     text = re.sub(r"<sup>.*?</sup>", "", text)
     text = re.sub(r"<[^>]+>", "", text)
     text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text)
@@ -70,7 +75,7 @@ def plain(text: str) -> str:
 
 
 def headings(text: str, rst: bool) -> list[tuple[int, str]]:
-    """The headings of a source, by level (1 is the title), outside code blocks."""
+    """Return the headings of a source by level (1 is the title), outside code blocks."""
     found = []
     fenced = False
     lines = text.splitlines()
@@ -96,7 +101,7 @@ def headings(text: str, rst: bool) -> list[tuple[int, str]]:
 
 
 def heading_at(lines: list[str], number: int, rst: bool) -> bool:
-    """Whether a line of a source is a heading, a heading's underline or a rule."""
+    """Return True if a line of a source is a heading, the underline of a heading, or a rule."""
     line = lines[number]
     if UNDERLINE.fullmatch(line):
         return True
@@ -107,14 +112,14 @@ def heading_at(lines: list[str], number: int, rst: bool) -> bool:
 
 
 def names(line: str) -> list[str]:
-    """The names of an authors' line ("**Author:** A, B and C")."""
+    """Return the names in an authors line ("**Author:** A, B and C")."""
     text = re.sub(r"^Authors?:\s*", "", plain(line), flags=re.IGNORECASE)
     return [name.strip() for name in re.split(r",|;|\band\b", text) if name.strip()]
 
 
 def opening(text: str, rst: bool) -> tuple[list[str], str]:
-    """The authors and the first paragraph a tutorial opens with, before its first section other than its
-    introduction."""
+    """Return the authors and the first paragraph at the start of a tutorial, before its first section other than
+    its introduction."""
     lines = text.splitlines()
     authors = []
     paragraph = []
@@ -145,7 +150,7 @@ def opening(text: str, rst: bool) -> tuple[list[str], str]:
 
 
 def author(name: str, others: dict) -> dict:
-    """The link to an author's record, adding its row: a team is an organisation, anyone else a person."""
+    """Return the link to the record of an author, and add its row: a team is an organisation, anyone else a person."""
     if "team" in name.lower():
         address = "organizations/" + slug(name)
         others.setdefault(address, {"@id": address, "@type": "Organization", "name": name})
@@ -156,7 +161,7 @@ def author(name: str, others: dict) -> dict:
 
 
 def follows(found: list[tuple[int, str]]) -> bool:
-    """Whether the sections below the title are the documentation format's, in order."""
+    """Return True if the sections below the title are the sections of the documentation format, in order."""
     named = [re.sub(r"^[0-9.]+\s*", "", heading) for level, heading in found if level == 2]
     position = 0
     for heading in named:
@@ -167,7 +172,7 @@ def follows(found: list[tuple[int, str]]) -> bool:
 
 def parse(contents: dict[str, bytes]) -> list[dict]:
     tree = json.loads(contents["docs"])
-    # Without the repository's answer, the tutorials' files are left out: their addresses need its branch.
+    # Without the response for the repository, the files of the tutorials are left out, as their addresses require its branch.
     files = None
     if "repository" in contents:
         repository = json.loads(contents["repository"])

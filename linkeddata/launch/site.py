@@ -1,19 +1,21 @@
-"""Parser of the platform's own pages as the website's templates had them before they were records (a
-workaround, see linkeddata/parsers): the main branch's templates at one commit, and its partner list.
-- A page's heading is its name, and the line under it its description. Each tab is a section, with the
-  paragraph before its items as its text; each item is a section of its own. A tab whose link is commented
-  out is kept as a hidden section. Images and videos in a text are figures and videos of their section.
-- The home page gives the platform's catalogue: its name, heading, sentence and description, the cards of its
-  kinds of records, the pages it links to, and its publisher's contact links.
-- Every page's organisation data (base.html's JSON-LD) adds to the project's record its other names, logo,
-  one-line description and addresses elsewhere, and the funder's website.
-- The project page's first tab gives the project's record: the first item's text is its description; an
-  item's video is its video (the training video of its title), a list with a figure its research lines and
-  figure, and a grant link its grant. The items stay sections of the page, with their headings and their own
-  text, each presenting the record it shows and naming the fields it shows (form:shows).
-- The partner list gives the project's partners by role, its co-funders, and their websites and logos.
-- The case studies page gives each case study's image.
-- A Publications tab lists the outputs of the project's grant."""
+"""Parser of the platform pages in the website templates, from before the pages were records, a workaround (see
+linkeddata/parsers).
+
+Source: the templates of the main branch at one commit, and the partner list.
+
+- Page: the heading is the name, and the line under it is the description. Each tab is a section, with its first
+  paragraph as text and each item as a separate section. A tab with a commented-out link is a hidden section.
+  Images and videos in a text are the figures and videos of the section.
+- Home page: the catalogue of the platform, with its name, heading, sentence and description, the cards of the
+  kinds of records, the linked pages, and the contact links of the publisher.
+- JSON-LD of each page (base.html): the other names, logo, short description and other addresses of the project,
+  and the website of the funder.
+- First tab of the project page: the record of the project. The first item is its description. The video of an
+  item is its video, a list with a figure is its research lines, and a grant link is its grant. The items stay
+  sections of the page, with the fields of the project record in form:shows.
+- Partner list: the partners of the project by role, the co-funders, and their websites and logos.
+- Case studies page: the image of each case study.
+- Publications tab: linked to the grant of the project, so that the outputs of the grant are shown."""
 
 import json
 import re
@@ -29,22 +31,22 @@ PROJECT = "organizations/vhp4safety"
 LICENSE = "https://spdx.org/licenses/CC0-1.0"
 SCHEMA = "https://schema.org/"
 DECIMAL = "http://www.w3.org/2001/XMLSchema#decimal"
-# The pages, by the templates' route names, and the files read.
+# The pages, by the route names of the templates, with the files that are read.
 PAGES = {"explore_our_work": "explore_our_work", "impact": "impact", "training": "training",
          "SafetyAssessmentWorkflow": "safety_assessment_workflow", "terms_of_service": "legal/terms_of_service",
          "privacypolicy": "legal/privacypolicy"}
-# Partner list headings that name co-funders, not partners.
+# The headings of the partner list for co-funders, not partners.
 FUNDERS = {"Co-funders", "Funder"}
 
 
 def static(path: str) -> dict:
-    """A file of the website's static folder, at its address on the platform."""
+    """Return a file of the static folder of the website, at its address on the platform."""
     return link(settings()["base"] + quote(path.strip("/")))
 
 
 def text(node) -> str:
-    """A node's inner HTML without layout: blocks and spans that only lay out are taken away with their
-    attributes (links keep their addresses), and spaces are written once."""
+    """Return the inner HTML of a node without layout. Remove the blocks and spans that only set the layout, with
+    their attributes, but keep the addresses of links. Write spaces once."""
     for element in node.find_all(["div", "span"]):
         element.unwrap()
     for element in node.find_all(True):
@@ -55,7 +57,7 @@ def text(node) -> str:
 
 
 def media(node) -> tuple[list, list]:
-    """The figures and videos of a text, taken out of it with their frames."""
+    """Return the figures and videos of a text, removed from the text with their frames."""
     figures = []
     for image in node.find_all("img"):
         figures.append({"@type": "ImageObject", "contentUrl": static(image["src"]), "caption": image.get("alt", "")})
@@ -69,7 +71,7 @@ def media(node) -> tuple[list, list]:
 
 
 def item(entry, position: int) -> dict:
-    """An accordion item as a section: its button's text, and its body's text, figures and videos."""
+    """Return an accordion item as a section: the text of its button, and the text, figures and videos of its body."""
     body = entry.select_one(".accordion-body")
     figures, videos = media(body)
     section = {"@type": "WebPageElement", "name": entry.select_one(".accordion-button").get_text(" ", strip=True), "position": position}
@@ -84,8 +86,10 @@ def item(entry, position: int) -> dict:
 
 
 def tabs(soup) -> list[dict]:
-    """A page's tabs as sections, in their order: named by their links, hidden when a link is commented out;
-    each with its first paragraph as its text, and its items as its sections."""
+    """Return the tabs of a page as sections, in their order.
+
+    Name each section by the link of its tab, and hide it if the link is commented out. Use the first paragraph as
+    the text of the section, and the items as its sections."""
     labels = {}
     for anchor in soup.select("a.nav-link"):
         labels[anchor["href"].lstrip("#")] = (anchor.get_text(" ", strip=True), True)
@@ -111,14 +115,14 @@ def tabs(soup) -> list[dict]:
 
 
 def heading(soup) -> tuple[str, str]:
-    """A page's name and the line under it."""
+    """Return the name of a page and the line under it."""
     title = soup.find("h1")
     lead = soup.select_one("p.fs-5")
     return " ".join(title.get_text(" ").split()), " ".join(lead.get_text(" ").split()) if lead is not None else ""
 
 
 def page(key: str, content: bytes) -> dict:
-    """A page and its sections; a page without tabs has one section, of its text after the heading."""
+    """Return a page and its sections. A page without tabs has one section, with its text after the heading."""
     soup = BeautifulSoup(content, "html.parser")
     name, description = heading(soup)
     row = {"@id": PAGES[key], "@type": "WebPage", "name": name}
@@ -141,8 +145,8 @@ def page(key: str, content: bytes) -> dict:
 
 
 def grant(section: dict) -> tuple[dict, dict] | None:
-    """The grant and its funder that a funding text names: its number is the text of its link, and its funder
-    and amount are as the text words them; the text is the grant's description."""
+    """Return the grant and the funder named in a funding text. The number is the text of the link. Read the
+    funder and the amount from the words of the text. The text is the description of the grant."""
     soup = BeautifulSoup(section.get("text", {}).get("@value", "") if isinstance(section.get("text"), dict) else "", "html.parser")
     anchor = soup.find("a")
     if anchor is None:
@@ -165,18 +169,18 @@ def grant(section: dict) -> tuple[dict, dict] | None:
 
 
 def project(about: dict) -> tuple[dict, list[dict]]:
-    """The project's record from the project page's first tab, whose items it takes, and the grant rows."""
+    """Return the record of the project from the first tab of the project page, with its items, and the grant rows."""
     row = {"@id": PROJECT, "@type": "ResearchProject", "name": "VHP4Safety"}
     kept = []
     others = []
     for position, section in enumerate(about.get("hasPart", [])):
         found = section.get("text")
         words = BeautifulSoup(found["@value"] if isinstance(found, dict) else str(found or ""), "html.parser")
-        # An item that shows another record's fields keeps its heading and its own text.
+        # An item that shows fields of another record keeps its heading and its text.
         shown = {"@type": "WebPageElement", "name": section.get("name"), "position": position + 1}
         if position == 0:
             row["description"] = words.get_text(" ", strip=True)
-            # The item's heading gives the project's full name before its colon.
+            # The full name of the project is the heading of the item, before the colon.
             if ":" in section.get("name", ""):
                 row["alternateName"] = section["name"].split(":", 1)[0].strip()
             kept.append({**shown, "about": link(PROJECT), "form:shows": [link(SCHEMA + "description")]})
@@ -209,8 +213,8 @@ def project(about: dict) -> tuple[dict, list[dict]]:
 
 
 def partners(content: bytes) -> tuple[list[dict], list[dict], list[dict]]:
-    """The partner list's organisations, the project's partners by the heading over them, and its co-funders;
-    commented-out entries are left out."""
+    """Return the organisations of the partner list, the partners of the project by the heading above them, and its
+    co-funders, without commented-out entries."""
     organisations = []
     roles = []
     funders = []
@@ -236,7 +240,7 @@ def partners(content: bytes) -> tuple[list[dict], list[dict], list[dict]]:
 
 
 def home(content: bytes, kinds: dict) -> tuple[dict, dict]:
-    """The platform's catalogue from the home page, and its publisher's email and other addresses."""
+    """Return the catalogue of the platform from the home page, and the email and other addresses of its publisher."""
     soup = BeautifulSoup(content, "html.parser")
     hero = soup.find("h1")
     row = {"@id": "", "@type": "DataCatalog", "alternateName": " ".join(hero.get_text(" ").split()),
@@ -255,7 +259,7 @@ def home(content: bytes, kinds: dict) -> tuple[dict, dict]:
             row["subjectOf"].append(link(PAGES[named.group(1)]))
     for found in [about.find("h1"), about.find(id="workflowTeaser"), about.select_one("a.btn").find_parent("div", class_="row")] + about.find_all("hr"):
         found.decompose()
-    # The line under the heading is the description's first paragraph; the other large lines head its parts.
+    # The line under the heading is the first paragraph of the description; the other large lines are headings of its parts.
     for number, found in enumerate(about.select("p.fs-5")):
         if "Safety Assessment Workflow" in found.get_text():
             found.decompose()
@@ -272,7 +276,8 @@ def home(content: bytes, kinds: dict) -> tuple[dict, dict]:
 
 
 def organisation(content: bytes) -> dict:
-    """The organisation that every page described in its JSON-LD, with the platform's address for the page's."""
+    """Return the organisation in the JSON-LD of each page, with the address of the platform in place of the address
+    of the page."""
     soup = BeautifulSoup(content, "html.parser")
     for script in soup.find_all("script", type="application/ld+json"):
         written = script.string or ""
@@ -282,7 +287,7 @@ def organisation(content: bytes) -> dict:
 
 
 def case_studies(content: bytes) -> list[dict]:
-    """Each case study's image, from its card."""
+    """Return the image of each case study, from its card."""
     soup = BeautifulSoup(content, "html.parser")
     found = []
     for card in soup.select("a[href^='/casestudies/']"):
@@ -299,7 +304,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
     about["@type"] = "AboutPage"
     about["mainEntity"] = link(PROJECT)
     found, others = project(about["hasPart"][0])
-    # A Publications tab of a page lists the outputs of the project's grant.
+    # A Publications tab of a page is linked to the grant of the project, so that the outputs of the grant are shown.
     for row in rows:
         for section in row.get("hasPart", []):
             if section.get("name") == "Publications" and found.get("funding") and section.get("creativeWorkStatus") != "hidden":

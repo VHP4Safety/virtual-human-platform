@@ -1,6 +1,7 @@
-"""Parser of doi.org's answers for the records' DOIs (a workaround, see linkeddata/parsers): each is a
-citation in CSL JSON, as Crossref or DataCite registered it. Rows have the title, the publication date (as
-precise as given: a date, a month or a year) and the journal, as a part."""
+"""Parser of the doi.org responses for the DOIs of the records, a workaround (see linkeddata/parsers).
+
+Each response is a citation in CSL JSON, as registered at Crossref or DataCite. The rows have the title, the
+publication date (a date, a month or a year) and the journal, as a part."""
 
 import json
 
@@ -10,7 +11,7 @@ XSD = "http://www.w3.org/2001/XMLSchema#"
 
 
 def published(issued) -> dict | None:
-    """A citation's issue date, as precise as its date parts."""
+    """Return the issue date of a citation, as precise as its date parts."""
     parts = []
     for part in ((issued or {}).get("date-parts") or [[]])[0]:
         if not isinstance(part, int):

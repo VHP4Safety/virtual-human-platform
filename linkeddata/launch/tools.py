@@ -1,6 +1,8 @@
-"""Parser of the cloud catalogue (a workaround, see linkeddata/parsers). service_index.json lists the
-tools, and cloud.vhp4safety.nl/service/<id>.json describes each. Rows are the tools and the organisations,
-people and publications they link to; a tool's help pages and videos are parts of its row.
+"""Parser of the cloud catalogue, a workaround (see linkeddata/parsers).
+
+Read the tools from service_index.json, and each tool from cloud.vhp4safety.nl/service/<id>.json. The rows are the
+tools and the linked organisations, people and publications. The help pages and videos of a tool are parts of its
+row.
 """
 
 import json
@@ -8,14 +10,14 @@ import re
 
 from linkeddata.parsers import QUESTIONS, licence, link, present, publication, slug, term, web_link
 
-# The catalogue gives this logo to tools that have none.
+# This logo is used in the catalogue for tools without a logo.
 PLACEHOLDER_LOGO = "https://github.com/VHP4Safety/ui-design/blob/main/static/images/logo.png"
 LOGOS = "https://raw.githubusercontent.com/VHP4Safety/cloud/main/docs/service/"
 VHP4SAFETY = "organizations/vhp4safety"
 
 
 def pairs(entry) -> list[tuple[str, str]]:
-    """The titles and addresses of an entry such as {"title": "A;B", "url": "https://a;https://b"}."""
+    """Return the titles and addresses of an entry such as {"title": "A;B", "url": "https://a;https://b"}."""
     if not isinstance(entry, dict) or not present(entry.get("url")):
         return []
     addresses = str(entry["url"]).split(";")

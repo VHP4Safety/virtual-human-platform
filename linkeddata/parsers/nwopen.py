@@ -1,7 +1,9 @@
-"""Parser of NWO's open project data (NWOpen API, CC0; a workaround, see linkeddata/parsers): each followed project,
-by the platform's address of its grant. The grant takes the project's title, identifier and award (in euros), and
-NWO as its funder, with NWO's ROR and funder DOI as the API states them; each output with a DOI is a publication
-funded by the grant."""
+"""Parser of the open project data of NWO (NWOpen API, CC0), a workaround (see linkeddata/parsers).
+
+- Grant: one for each followed project, at the platform address of the grant, with the title, identifier and award
+  (in euros) of the project.
+- Funder: NWO, with its ROR and funder DOI from the API.
+- Publications: each output with a DOI, funded by the grant."""
 
 import json
 
