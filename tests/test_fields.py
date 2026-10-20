@@ -42,7 +42,7 @@ def listed(given) -> list:
 
 
 def fitting(field: dict, holder: str, taken: list):
-    """A fitting value that the field does not have yet; None when none is known."""
+    """Return a fitting value that the field does not have yet, or None."""
     if field["values"]:
         for value in field["values"]:
             if value not in taken:
@@ -94,7 +94,7 @@ def misfits(field: dict) -> dict:
 
 
 def operated(operation: str, field: dict, current: list, holder: str):
-    """A field's values after an operation; None when the field is left as it is."""
+    """Return the values of a field after an operation, or None if it is unchanged."""
     taken = documents.values({"field": current}, "field")
     if field["part"] and current and operation in ("set", "empty"):
         return None

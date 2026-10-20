@@ -32,7 +32,7 @@ form:Study a sh:NodeShape ;
         sh:message "Choose a SNOMED CT or MONDO term, or register it." ;
         sh:description "The medical condition, as a SNOMED or MONDO term." ] ;
     sh:property [ sh:path schema:keywords ; sh:group form:casestudy ; sh:order 4 ; sh:name "Keywords" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
-        sh:message "Choose a vocabulary term, or register it; text is kept until then." ;
+        sh:message "Choose a vocabulary term, or register it. Text is kept until then." ;
         sh:description "The topics of the case study." ] ;
     sh:property [ sh:path schema:image ; sh:group form:casestudy ; sh:order 7 ; sh:name "Icon" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
         sh:description "Shown on the case studies page." ] ;
@@ -64,7 +64,7 @@ form:HowTo a sh:NodeShape ;
         sh:in ( "disabled" ) ;
         sh:description "Empty: the page is shown, and opened with its button. disabled: the button is greyed out, and the page cannot be opened yet." ] ;
     sh:property [ sh:path schema:position ; sh:group form:workflow ; sh:order 7 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
-        sh:description "Button order on the parent page; 1 is first." ] ;
+        sh:description "Button order on the parent page. 1 is first." ] ;
     sh:property [ sh:path schema:disambiguatingDescription ; sh:group form:workflow ; sh:order 8 ; sh:name "Description under its button" ; sh:maxCount 1 ; sh:datatype xsd:string ;
         sh:description "Only for a step: shown under the title on its button." ] ;
     sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 1 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNodeOrIRI ;
@@ -94,7 +94,7 @@ form:HowToTool a sh:NodeShape ;
     sh:property [ sh:path schema:name ; sh:order 2 ; sh:name "Label on its button" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:description ; sh:order 3 ; sh:name "Description under the label" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:position ; sh:order 4 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
-        sh:description "Button order among the tools and data of the page; 1 is first." ] .
+        sh:description "Button order among the tools and data of the page. 1 is first." ] .
 
 form:HowToSupply a sh:NodeShape ;
     sh:targetClass schema:HowToSupply ;
@@ -104,7 +104,7 @@ form:HowToSupply a sh:NodeShape ;
     sh:property [ sh:path schema:name ; sh:order 2 ; sh:name "Label on its button" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:description ; sh:order 3 ; sh:name "Description under the label" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:position ; sh:order 4 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
-        sh:description "Button order among the tools and data of the page; 1 is first." ] .
+        sh:description "Button order among the tools and data of the page. 1 is first." ] .
 
 form:WorkflowStep a sh:NodeShape ;
     sh:targetObjectsOf schema:step ;

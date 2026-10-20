@@ -17,7 +17,7 @@ blueprint = Blueprint("account", __name__)
 
 @blueprint.context_processor
 def named_kinds() -> dict:
-    """Give the names of the kinds of records to the pages of the editor, such as "Case Studies"."""
+    """Return the names of the kinds of records for the editor pages."""
     return {"kind_names": pages.kind_names}
 
 

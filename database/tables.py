@@ -84,7 +84,7 @@ class Source(Base):
 
 
 class Note(Base):
-    """A value of a source that does not fit the model, as found by the checks at the last import."""
+    """Value of a source that does not fit the model, from the checks of the last import."""
 
     __tablename__ = "notes"
     id: Mapped[int] = mapped_column(primary_key=True, doc="The note's number.")

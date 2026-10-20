@@ -22,10 +22,10 @@ form:WebPageElement a sh:NodeShape ;
         sh:description "Its own sections, shown as its items." ] ;
     sh:property [ sh:path schema:about ; sh:order 8 ; sh:name "Presents" ; sh:maxCount 1 ;
         sh:or ( [ sh:class schema:MonetaryGrant ; rdfs:label "Grant" ] [ sh:class schema:Organization ; rdfs:label "Organisation or project" ] [ sh:class schema:LearningResource ; rdfs:label "Training material" ] ) ;
-        sh:description "The record that is presented in the section, with the shown fields; or, for a grant without shown fields, the records that name the grant, such as its publications." ] ;
+        sh:description "The record that is presented in the section, with the shown fields. Or, for a grant without shown fields, the records that name the grant, such as its publications." ] ;
     sh:property [ sh:path form:shows ; sh:order 10 ; sh:name "Shows" ; sh:nodeKind sh:IRI ; sh:severity sh:Warning ;
         sh:in ( schema:description schema:text schema:image schema:video schema:subjectOf schema:subOrganization schema:member schema:funding schema:funder schema:amount schema:identifier ) ;
-        sh:message "Choose from the list; other values are kept." ;
+        sh:message "Choose from the list. Other values are kept." ;
         sh:description "The fields of the presented record that are shown in the section, such as its description or its research lines." ] ;
     sh:property [ sh:path schema:url ; sh:order 9 ; sh:name "Address" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
         sh:description "Where the section is read, such as a section of a tutorial on the documentation site." ] .
@@ -47,7 +47,7 @@ form:WebPage a sh:NodeShape ;
     sh:property [ sh:path schema:about ; sh:order 4 ; sh:name "Terms explained" ; sh:class schema:DefinedTerm ;
         sh:description "A term with kinds that are explained on the page, such as Process Flow Step." ] ;
     sh:property [ sh:path schema:hasPart ; sh:order 5 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNodeOrIRI ;
-        sh:description "Sections of a platform page, each with a heading, a text and a position; the sections of a section are its items." ] .
+        sh:description "Sections of a platform page, each with a heading, a text and a position. The sections of a section are its items." ] .
 
 form:AboutPage a sh:NodeShape ;
     sh:targetClass schema:AboutPage ;

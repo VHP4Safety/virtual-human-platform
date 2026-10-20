@@ -238,7 +238,7 @@ def home(content: bytes, kinds: dict) -> tuple[dict, dict]:
             row["subjectOf"].append(link(PAGES[named.group(1)]))
     for found in [about.find("h1"), about.find(id="workflowTeaser"), about.select_one("a.btn").find_parent("div", class_="row")] + about.find_all("hr"):
         found.decompose()
-    # The line under the heading is the first paragraph of the description; the other large lines are headings of its parts.
+    # The line under the heading is the first paragraph of the description. The other large lines are headings of parts.
     for number, found in enumerate(about.select("p.fs-5")):
         if "Safety Assessment Workflow" in found.get_text():
             found.decompose()

@@ -46,7 +46,7 @@ textarea.shown { resize: vertical; }
 .record-link-vocabulary { margin-bottom: 4px; font: inherit; }
 shacl-node, rokit-collapsible { scroll-margin-top: 1rem; }
 .index-shown { outline: 3px solid var(--bs-vhppink, #e6007e); outline-offset: 4px; border-radius: 0.25rem; }
-/* An open group grows with its fields. rokit-collapsible keeps the height of the content at the time of opening as max-height. */
+/* An open group grows with its fields. The max-height set by rokit-collapsible at the time of opening is removed. */
 rokit-collapsible[open]::part(content) { max-height: none !important; }
 .value-type { align-self: center; margin-left: 4px; padding: 0 4px; border: 1px solid #ced4da; border-radius: 3px; color: #6c757d; font: 0.7em monospace; white-space: nowrap; }
 `;
@@ -79,7 +79,7 @@ function local(iri) {
   return iri.startsWith(editor.base) ? "/" + iri.slice(editor.base.length) : iri;
 }
 
-// Return a text as a literal for shacl-form: quoted, with its datatype unless it is plain (such as rdf:HTML).
+// Return a text as a quoted literal for shacl-form, with its datatype unless it is plain (such as rdf:HTML).
 function literal(text, datatype) {
   return '"' + text + '"' + (datatype && datatype !== STRING ? "^^" + datatype : "");
 }
@@ -107,7 +107,7 @@ function loadTinymce() {
 
 // Edit an HTML text in a dialog, and call done with the new HTML.
 async function editText(label, html, done) {
-  // A box over the page, not a modal <dialog>: the dialogs of TinyMCE, such as for an image, are drawn above it.
+  // A box over the page, not a modal <dialog>, so that the dialogs of TinyMCE are drawn above it.
   const overlay = document.createElement("div");
   overlay.className = "text-overlay";
   const dialog = document.createElement("div");
@@ -259,7 +259,7 @@ function labelled(text, input) {
   return label;
 }
 
-// Add a new record in a dialog form made from the shape of its class, and pass it to *added*.
+// Add a new record in a dialog form made from the shape of its class, and pass it to added.
 function addRecord(of_class, label, name, store, added) {
   const shape = store.getSubjects(TARGET, of_class, null)[0];
   const subject = "urn:uuid:" + crypto.randomUUID();
@@ -491,7 +491,7 @@ function proposeTerm(text, vocabulary, added) {
 }
 
 // The earlier values of each link field while the form is open, by node and property, so that a removed value is put
-// back as it was: a text as a text, a link with its name.
+// back as it was, a text as a text and a link with its name.
 const held = new Map();
 
 function hold(field, path, entry) {

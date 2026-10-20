@@ -140,7 +140,7 @@ def read(records: list[str]) -> Graph:
     return sql_tables.from_tables(found, profile_text())
 
 
-# The address of a part under its record, as rdfsolve gives it (sql_tables.tables with skolem): <record>#<field>-<n>.
+# The address of a part under its record, <record>#<field>-<n>, as made by rdfsolve (sql_tables.tables with skolem).
 PART = re.compile(r"^(?P<record>[^#]+)#[A-Za-z_][A-Za-z0-9_]*-[0-9]+$")
 
 
@@ -185,8 +185,8 @@ def described(found: Graph, iri: str | BNode) -> Graph:
     """Return the statements of the node at iri and of its parts."""
     own = Graph()
     nodes = [iri if isinstance(iri, BNode) else URIRef(iri)]
-    # Part addresses are under the record or under a part with an address, also for parts of parts:
-    # casestudies/kidney#hasPart-1, casestudies/kidney/Q1#hasPart-2.
+    # Part addresses are under the record or under a part with an address, such as casestudies/kidney#hasPart-1 and
+    # casestudies/kidney/Q1#hasPart-2.
     record = str(iri).split("#")[0] if PART.match(str(iri)) else str(iri)
 
     def owned(value) -> bool:

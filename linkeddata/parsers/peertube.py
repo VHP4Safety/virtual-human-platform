@@ -13,7 +13,7 @@ def keys(index: bytes) -> list[str]:
 
 
 def duration(seconds) -> str:
-    """Return seconds as an ISO 8601 duration: PT5M38S for 338."""
+    """Return a number of seconds as an ISO 8601 duration."""
     hours, rest = divmod(int(seconds), 3600)
     minutes, seconds = divmod(rest, 60)
     written = "PT"

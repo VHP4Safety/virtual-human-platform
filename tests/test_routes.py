@@ -1,4 +1,4 @@
-"""The platform's pages and API, served without network calls."""
+"""Tests of the pages and the API."""
 
 import io
 import json

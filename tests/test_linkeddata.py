@@ -1,4 +1,4 @@
-"""Records as linked data: documents, checks, fields from the model, and an import."""
+"""Tests of the linked data of the records."""
 
 import json
 

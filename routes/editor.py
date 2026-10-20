@@ -16,7 +16,7 @@ blueprint = Blueprint("admin", __name__)
 
 @blueprint.context_processor
 def named_kinds() -> dict:
-    """Give the names of the kinds of records to the pages of the editor, such as "Case Studies"."""
+    """Return the names of the kinds of records for the editor pages."""
     return {"kind_names": pages.kind_names}
 
 
@@ -37,7 +37,7 @@ def admin():
 
 @blueprint.get("/admin/quality")
 def data_quality():
-    """Show the data quality page to editors."""
+    """Return the data quality page for editors."""
     if logged_in() is None:
         return redirect(url_for("account.login", next=request.path))
     return render_template("records/quality.html", **checks.report(), written=PLATFORM, page_title="Data quality — VHP4Safety editor")
@@ -80,7 +80,7 @@ def edit(kind: str):
 
 @blueprint.get("/admin/form.ttl")
 def form():
-    """Return the graph for the forms: the profile with the names of the records and the listed terms."""
+    """Return the graph of the shapes, records and terms for the forms."""
     if logged_in() is None:
         abort(401)
     return Response(editor.form_graph().serialize(format="turtle"), mimetype="text/turtle")

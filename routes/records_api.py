@@ -403,7 +403,7 @@ LISTED = "One page of records, in the format requested in the Accept header."
 def listed(given, kind, pagination_parameters):
     """List the records of a kind."""
     of_class = settings()["kinds"][kind]
-    # At the address of a kind (/tools.ttl), all records of the kind are returned, as one file. The API returns pages.
+    # At the address of a kind (/tools.ttl), all records of the kind are returned as one file, not as pages.
     whole = "listing" in g
     first, size = (0, None) if whole else (pagination_parameters.first_item, pagination_parameters.page_size)
     total, iris = records.page(of_class, records.filters(of_class, given), given["search"], first, size)
@@ -460,7 +460,7 @@ def added(body, kind):
         given = Graph().parse(data=request.get_data(as_text=True), format="turtle")
         node = given.value(None, RDF.type, URIRef(settings()["kinds"][kind]))
         body = {"name": str(given.value(node, SDO.name) or "")}
-    # A vocabulary term is stored at its own address; other records at an address made from the name.
+    # A vocabulary term is stored at the address in @id. Other records are stored at an address made from the name.
     address = body.get("@id") or writes.free(records.address(f"{kind}/{writes.slug(str(body.get('name') or kind))}"), set())
     if records.get(address) is not None:
         abort(409, message="Address taken.")
@@ -654,8 +654,7 @@ def register(app) -> None:
         OPENAPI_JSON_PATH="openapi.json",
         OPENAPI_SWAGGER_UI_PATH="/",
         OPENAPI_SWAGGER_UI_URL="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.20.1/",
-        # The server is this copy of the platform. (Swagger UI 5.17 showed the default server in each operation of an
-        # OpenAPI 3.1 document.)
+        # The server is this copy of the platform.
         API_SPEC_OPTIONS={"info": {"description": DESCRIPTION}, "servers": [{"url": "/", "description": "This platform"}]},
         # GET operations are run at once, an operation has its own link, and the token is kept after a reload.
         OPENAPI_SWAGGER_UI_CONFIG={"tryItOutEnabled": True, "deepLinking": True, "persistAuthorization": True, "displayRequestDuration": True},

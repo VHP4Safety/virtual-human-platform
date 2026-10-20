@@ -34,7 +34,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     message.textContent = text;
   }
 
-  // Send a request to the API. Show a refusal with *refuse*, else above the form.
+  // Send a request to the API. Show a refusal with refuse, else above the form.
   async function send(method, address, body, type, refuse) {
     const headers = { "X-Form-Token": editor.token };
     if (editor.version) {
@@ -64,7 +64,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     window.location.search = "?record=" + encodeURIComponent(address);
   }
 
-  // Return the values that a save removes, by label path, from the preview.
+  // Return the values removed by a save, by label path, from the preview.
   function removals(edges, trail, found) {
     for (const edge of edges) {
       if (edge.status === "removed") {

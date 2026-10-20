@@ -359,7 +359,7 @@ def partners(found: Graph, node) -> list[dict]:
     return partnered + sorted([one for one in listed if not one["role"]], key=by_name)
 
 
-# The partners on the home page and their order: the logo files listed in this file.
+# The partner logo files of the home page, in their order.
 PARTNERS = Path(__file__).parent.parent / "static" / "images" / "partners" / "partners.txt"
 
 
@@ -422,8 +422,7 @@ def catalogue_of(record: Record) -> dict:
             "partners": [placed[place] for place in sorted(placed)]}
 
 
-# For the pages and listings of the tools, methods, data and models (templates/tools, templates/methods,
-# templates/data), the records are converted to the form of the cloud catalogue that was read before.
+# The pages and listings of the tools, methods, data and models use the form of the cloud catalogue.
 SPDX = "https://spdx.org/licenses/"
 RSD = "https://research-software-directory.org/software/"
 
@@ -695,7 +694,7 @@ def catalogue_details(record: Record) -> dict:
     grants = documents.public(records.with_names(records.graph(addresses(found, node, SDO.funding))))
     funding = []
     for grant in in_order(grants, found.objects(node, SDO.funding)):
-        # The page of the project of a grant, if it has one; the page of the grant record itself is not linked.
+        # The project page of a grant is linked, but not the page of the grant record.
         url = str(grants.value(grant, SDO.url) or "")
         funding.append({"funder": ", ".join(named(grants, grant, SDO.funder)) or str(grants.value(grant, SDO.name) or ""),
                         "acronym": str(grants.value(grant, SDO.alternateName) or ""),
@@ -711,7 +710,7 @@ def catalogue_details(record: Record) -> dict:
     return shown
 
 
-# The terms of the Bioschemas drafts: the experimental design of a study is a LabProtocol part of the dataset.
+# Bioschemas draft terms. The experimental design of a study is a LabProtocol part of the dataset.
 DRAFT = "https://bioschemas.org/draft_terms/"
 SAMPLE_VALUES = URIRef("https://bioschemas.org/terms/additionalProperty")
 

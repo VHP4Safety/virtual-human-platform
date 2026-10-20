@@ -133,7 +133,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 others.setdefault(identifier, organization)
             named[slug(provider["name"])] = identifier
             providers.append(link(identifier))
-        # "development" means hosted by VHP4Safety; "External" and "independent" mean hosted elsewhere.
+        # "development" means hosted by VHP4Safety. "External" and "independent" mean hosted elsewhere.
         if str(instance.get("vhp-platform") or "").strip().lower() == "development":
             providers.append(link(VHP4SAFETY))
         if providers:

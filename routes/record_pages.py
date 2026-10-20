@@ -23,7 +23,7 @@ OFFERED = ["text/html", *FORMATS.values(), "application/json", "text/markdown"]
 SERIALIZATIONS = {"text/turtle": "turtle", "application/n-triples": "nt"}
 
 blueprint = Blueprint("pages", __name__)
-# The platform pages with their earlier templates; their texts are read from the records.
+# The platform pages that are drawn with a template of their own. Their texts are read from the records.
 PAGE_TEMPLATES = {"safety_assessment_workflow": "safety_assessment_workflow.html", "legal/privacypolicy": "legal/privacypolicy.html",
                   "legal/terms_of_service": "legal/terms_of_service.html"}
 # A page is also changed by a change of the code, such as a new release.
@@ -35,8 +35,7 @@ def data(found: Graph, media: str, iri: str | None = None) -> Response:
     if media in ("application/ld+json", "application/json"):
         body = json.dumps(documents.document(found, iri, named=True), indent=2)
     else:
-        # The namespaces of the properties and the classes are named: by the prefixes of the profile, and the others
-        # by rdfsolve (glossary for https://vhp4safety.github.io/glossary#), so that none is written as ns1.
+        # The prefixes of the profile and of rdfsolve are bound, so that no namespace is written as ns1.
         terms = {str(term) for term in found.predicates()} | {str(term) for term in found.objects(None, RDF.type)}
         for prefix, namespace in prefix_map(terms, settings()["prefixes"]).items():
             found.bind(prefix, namespace, override=True, replace=True)
@@ -101,7 +100,7 @@ def negotiate():
         if path.endswith(ending):
             path = path.removesuffix(ending)
             media = ending_media
-    # The page is returned for a request without Accept; for a request of other formats only, the formats are listed.
+    # The page is returned for a request without Accept. For a request of other formats only, the formats are listed.
     if media is None:
         media = request.accept_mimetypes.best_match(OFFERED) if request.accept_mimetypes else "text/html"
     # At the page of a kind (/tools), all records of the kind are given in the formats of the API, without pages.
@@ -132,7 +131,7 @@ def negotiate():
         return markdown_of(record)
     # The address of the platform is the address of its dataset, so its data is the VoID description.
     if media != "text/html":
-        # The data of the platform record is the VoID description of its dataset; another record is one document with its parts.
+        # The data of another record is one document with its parts.
         if record.iri == settings()["base"]:
             return data(void.described(), media)
         return data(documents.linked(record), media, record.iri)
@@ -193,8 +192,7 @@ def link_data(response):
         links.append(f'<{url_for("records.model_shapes")}>; rel="http://www.w3.org/ns/ldp#constrainedBy"; type="text/turtle"')
         links.append(f'<{page_link(g.record.iri)}{MARKDOWN}>; rel="alternate"; type="text/markdown"')
         response.headers["Vary"] = "Accept"
-    # The licence of the records, from the catalogue of the platform, on their pages, their data and the API, and the
-    # dataset of a record (VoID).
+    # The licence of the records is linked from their pages, their data and the API.
     if ("record" in g or "listing" in g or request.path.startswith("/api/")) and void.platform()["license"]:
         links.append(f'<{void.platform()["license"]}>; rel="license"')
     if "record" in g and g.record.iri != settings()["base"]:
@@ -240,13 +238,13 @@ def record_context() -> dict:
         current_app.logger.warning("The record %s does not fit the model: %s", g.record.iri, problem)
         document = None
     found = {"record_document": document, "record_formats": formats, "record_markdown": page_link(g.record.iri) + MARKDOWN}
-    # Only models have an RO-Crate: the crate in Zenodo, or a draft made from the record.
+    # Only models have an RO-Crate. It is the crate in Zenodo, or a draft made from the record.
     if crates.of_models(g.record):
         found.update(record_crate=page_link(g.record.iri) + "/ro-crate-metadata.json", record_crate_draft=crates.zenodo(g.record) is None)
     return found
 
 
-# An address written with the prefixes of the model: name for https://schema.org/name.
+# An address written with a prefix of the model, such as name for https://schema.org/name.
 blueprint.add_app_template_filter(jsonld_name, "short_iri")
 
 

@@ -21,7 +21,7 @@ def hash_token(secret: str) -> str:
 
 
 def create(orcid: str, name: str, kinds: list[str], days: int = DEFAULT_DAYS) -> str:
-    """Make a new token and return its secret. Do not store the secret."""
+    """Create a token and return its secret."""
     secret = PREFIX + secrets.token_urlsafe(32)
     expires = datetime.now(timezone.utc) + timedelta(days=days)
     with database.session() as db, db.begin():
@@ -43,7 +43,7 @@ def usable(token: Token | None) -> Token | None:
 
 
 def bearer(header: str) -> str | None:
-    """Read the secret from an Authorization header ("Bearer <secret>"). Return None for another header."""
+    """Return the secret of a Bearer Authorization header, or None."""
     return header.removeprefix("Bearer ").strip() if header.startswith("Bearer ") else None
 
 

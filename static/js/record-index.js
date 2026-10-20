@@ -10,23 +10,19 @@ const STEP = "https://schema.org/step";
 const QUESTIONS = "https://vhp4safety.github.io/glossary#VHP0000151";
 // The fields with pages of the process flow. Tools and data are items of a page, not pages.
 const PAGES = [QUESTIONS, STEP];
-// The fields of a case study page that are used at one level only, by that level: the heading of a question page,
-// and the process flow step of a step of a question. At other levels they are left out of the form.
+// Fields of a case study page that are used at one level only. At other levels they are left out of the form.
 const ONE_LEVEL = { "https://schema.org/headline": 1, "https://schema.org/additionalType": 2 };
-// The fields of a section that are used on the pages of the site only: its figures after the text (images go in the
-// text of a case study), the presented record, the shown fields of that record, and its address elsewhere.
+// Fields of a section that are used on the site pages only. They are left out of the case study form.
 const SITE_ONLY = ["https://schema.org/image", "https://schema.org/about", "https://platform.vhp4safety.nl/model/v1/form#shows", "https://schema.org/url"];
-// The colours of the stages, as on the case study pages.
+// The colours of the stages.
 const COLOURS = ["--bs-vhppink-distinct", "--bs-vhpdarkpurple", "--bs-vhpdarkteal", "--bs-vhplightteal", "--bs-vhpblue"];
-// The names of the stages of the process flow, as on the case study pages.
+// The names of the stages of the process flow.
 const STAGES = ["Regulatory Question", "Safety Assessment Workflow Step", "Case Study Step", "Case Study Substep", "Tools, Models and Data"];
 // The fields with content for a step. A step without these fields, and without steps with them, is empty.
 const CONTENT = [TOOL, SUPPLY, "https://bioschemas.org/terms/input", "https://bioschemas.org/terms/output", HAS_PART, "https://schema.org/text", "https://schema.org/description"];
 const editor = JSON.parse(document.getElementById("editor").textContent);
 
-// The style of the form. The form is drawn in a shadow root, so the page styles are not applied to it. The groups of
-// a form are cards. While a part is shown, the other parts and fields are hidden, and the headers of the groups around
-// it are removed.
+// The style of the form. The form is drawn in a shadow root, so the page styles are not applied to it.
 const STYLE = `
 .focus-hidden { display: none !important; }
 .focus-chrome { padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; }
@@ -90,13 +86,13 @@ function parentNode(node) {
   return node.parentElement ? node.parentElement.closest("shacl-node") : null;
 }
 
-// Return true for a node of the index: the record, or a part with a position.
+// Return true for the record or a part with a position.
 function indexed(node) {
   const field = node.parentElement ? node.parentElement.closest(".property-instance") : null;
   return !field || field.dataset.path in editor.ordered;
 }
 
-// A part of a record: a node without an address, or a part address under its record (<record>#<field>-<n>).
+// Return true for a part of a record, which has no page of its own.
 const PART = /#[A-Za-z_][A-Za-z0-9_]*-[0-9]+$/;
 
 export function isPart(id) {
@@ -149,7 +145,7 @@ function filled(node, path) {
   return false;
 }
 
-// Return the pages below a node: its questions or steps, not its sections of text.
+// Return the questions or steps below a node, without its sections of text.
 function pagesBelow(node) {
   const found = [];
   for (const [path, list] of partsOf(node)) {
@@ -164,7 +160,7 @@ function empty(node) {
   return !CONTENT.some(function (path) { return filled(node, path); }) && pagesBelow(node).every(empty);
 }
 
-// Return the way from the record down to a page: the record, then each page in between.
+// Return the nodes from the record down to a page.
 function way(page) {
   const found = [];
   for (let node = page; node; node = above(node)) {
@@ -186,10 +182,9 @@ function stage(node) {
 
 let form = null;
 let shown = null;
-// The function that draws the list of the parts of a field, as in the index; set by outline().
+// The function that draws the list of the parts of a field. It is set by outline().
 let partsList = null;
-// Only a case study is edited a page at a time, with the index and the colours of its stages; other records are
-// edited in one form.
+// Only a case study is edited a page at a time, with the index. Other records are edited in one form.
 const caseStudy = editor.caseStudy;
 const listeners = [];
 
@@ -238,8 +233,7 @@ export function select(target) {
       }
     }
   }
-  // List the parts with a position in the card of their field, such as the questions of a case study, as in the
-  // index: a click opens a part, parts are dragged to change their order, and new parts are added at the end.
+  // List the parts with a position in the card of their field, such as the questions of a case study.
   for (const path of Object.keys(editor.ordered)) {
     const field = property(target, path);
     const card = field ? field.querySelector("rokit-collapsible") : null;

@@ -8,7 +8,7 @@ ENTITY = "http://www.wikidata.org/entity/"
 
 
 def english(item: dict, field: str) -> list[str]:
-    """Return the English texts of a field of an item: labels, descriptions or aliases."""
+    """Return the English texts of a field of an item."""
     given = item.get(field, {}).get("en", [])
     found = []
     for text in given if isinstance(given, list) else [given]:

@@ -1,8 +1,8 @@
 // Drawing of a case study from its JSON-LD document, as on the website.
 
-// Heading colours by level: case study, question, process flow step, its steps, and deeper steps.
+// Heading colours by level, from the case study down to the deeper steps.
 const HEADINGS = ["text-vhppink-distinct", "text-vhpdarkpurple", "text-vhpdarkteal", "text-vhplightteal", "text-vhpblue", "text-vhplightteal"];
-// Colours of the buttons to the pages one level down: questions, process flow steps, steps, sub-steps.
+// Colours of the buttons to the pages one level down, by level.
 // Tools, methods and data are blue.
 const BUTTONS = ["btn-vhppink-distinct", "btn-vhpdarkpurple", "btn-vhpdarkteal", "btn-vhplightteal"];
 const ITEMS = "btn-vhpblue";
@@ -14,7 +14,7 @@ const UNSAFE = "script, style, iframe, frame, frameset, object, embed, link, met
 // The deepest level that is searched. Only steps with their own page are searched deeper.
 const DEEPEST = 20;
 
-// The state of each container: the document, the path to the page in view, the open sections and the marked field.
+// The state of each container, with the document, the path to the page in view, the open sections and the mark.
 const states = new WeakMap();
 let containers = 0;
 
@@ -111,12 +111,12 @@ function label(state, node) {
   return first(node, "name");
 }
 
-// Return the pages one level down: the questions of the case study, or the steps of a page.
+// Return the pages one level down, which are questions or steps.
 function children(state, page, level) {
   return parts(state, page, level === 0 ? "regulatoryQuestion" : "step");
 }
 
-// Return true if a step is empty: without content and without steps with content.
+// Return true if a step has no content and no steps with content.
 function empty(step) {
   for (const name of CONTENT) {
     if (all(step, name).length) {
@@ -229,7 +229,7 @@ function safeHtml(text, options) {
   return fragment;
 }
 
-// Draw the breadcrumbs: the case studies, the case study, and the pages down to the page in view.
+// Draw the breadcrumbs down to the page in view.
 function breadcrumbs(container, state, found) {
   const nav = make("nav", "navbar navbar-expand-lg bg-body-tertiary");
   nav.setAttribute("aria-label", "breadcrumb");
@@ -268,13 +268,12 @@ function breadcrumbs(container, state, found) {
 function processFlow(container, state, found, header) {
   const level = found.length - 1;
   const active = stageOf(found[level], level);
-  // The level of the page above at each stage; the lowest page is kept.
+  // The level of the lowest page above the page in view at each stage.
   const above = [];
   for (let at = 0; at < level; at += 1) {
     above[stageOf(found[at], at)] = at;
   }
-  // The header is drawn once and then only marked, as on the platform, so that marks in it, such as the glossary
-  // marks, are kept.
+  // The header is drawn once and then only marked, so that marks in it, such as the glossary marks, are kept.
   if (!header) {
     header = make("div", "workflow-header");
     header.append(make("h5", "", "Process Flow"));
@@ -309,7 +308,7 @@ function items(state, page) {
       // A use given by address only, as in flat JSON-LD, is found by its address.
       const part = given && typeof given === "object" && given.item === undefined && given["@id"] ? state.nodes.get(given["@id"]) || given : given;
       const value = part && typeof part === "object" && part.item !== undefined ? all(part, "item")[0] : part;
-      // A use has its own label and description in the case study; else the name of the record is used.
+      // The label and description of a use are used, else the name of the record.
       const use = part && typeof part === "object" && part.item !== undefined ? part : {};
       const item = { name: first(use, "name"), description: first(use, "description"), position: number(use), address: "", field: name };
       if (value && typeof value === "object" && value["@id"]) {
@@ -352,7 +351,7 @@ function buttons(container, state, page, level) {
     const button = make("button", "btn w-100 text-white " + BUTTONS[Math.min(level, BUTTONS.length - 1)]);
     button.type = "button";
     button.append(make("b", "", label(state, child) || child["@id"] || "(no name)"));
-    // The button of a question has the question under its title; other buttons have their description.
+    // The button of a question has the question under its title. Other buttons have their description.
     if (level === 0 && first(child, "text")) {
       button.append(make("br"), document.createTextNode(first(child, "text")));
     } else if (first(child, "disambiguatingDescription")) {
@@ -512,7 +511,7 @@ function view(container, state, page, level) {
   const title = make("h1", HEADINGS[Math.min(level, HEADINGS.length - 1)], heading || "(no name)");
   title.dataset.field = "headline name";
   top.append(title);
-  // The summary line is written also when it is empty, as on the platform's case study pages.
+  // The summary line is written also when it is empty.
   const introduction = make("p", "text-secondary fs-5", summary);
   introduction.dataset.field = level === 0 ? "abstract description" : "description";
   top.append(introduction);
@@ -540,7 +539,7 @@ function rememberOpen(container, state) {
   }
 }
 
-// Return the section of the form on the page in view: by position and name, else by position, else by name.
+// Return the section of the form on the page in view, found by position and name.
 function sectionOf(container, section) {
   let found = null;
   let fit = 0;

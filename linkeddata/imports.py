@@ -95,7 +95,7 @@ def members(url: str, endings: list[str]) -> dict[str, bytes]:
 def convert(rows: list[dict], base: str) -> ox.Dataset:
     """Return the statements of the parsed rows in the terms of the profile."""
     document = {"@context": {**documents.context(settings()), "@base": base}, "@graph": rows}
-    # The cells of an RDF list (rdf:first, rdf:rest) are kept too, as a list field takes a list.
+    # The cells of an RDF list (rdf:first, rdf:rest) are kept for the list fields.
     kept = {str(path) for path in profile_graph().objects(None, SH.path)} | {str(RDF.type), str(RDF.first), str(RDF.rest)}
     found = ox.Dataset()
     for quad in ox.parse(json.dumps(document).encode(), format=ox.RdfFormat.JSON_LD):
@@ -277,7 +277,7 @@ def store(source: Source, found: list[tuple[list[dict], Graph]]) -> None:
         written = set(db.scalars(select(Record.iri).where(Record.source != source.name)))
         given = set(db.scalars(select(Record.iri).where(Record.source.not_in([source.name, PLATFORM]), Record.part_of.is_(None))))
         earlier = list(db.scalars(select(Record.iri).where(Record.source == source.name, Record.part_of.is_(None))))
-        # The parts stored before keep their addresses if they come again with the same values.
+        # A stored part that is imported again with the same values is given the same address.
         before = records.read(earlier)
         for iri in earlier:
             records.delete(db, iri)
@@ -409,8 +409,8 @@ def download(spec: dict, parser) -> dict[str, bytes]:
                 contents[key] = fetch(spec["entries"].format(key=key))
             except requests.RequestException as problem:
                 print(f"{spec['name']}: {key} not fetched ({problem})")
-    # For a source of packages, some files of the zip of each entry are read (members), by "<key>/<file>". The zips
-    # are listed by the parser and must be on the site of the source.
+    # For a source of packages, the members of the zip of each entry are read, by "<key>/<file>". The zips are
+    # listed by the parser and must be on the site of the source.
     if "members" in spec:
         site = "https://" + urlsplit(spec["url"]).netloc + "/"
         for key, url in parser.packages(contents[spec["name"]]).items():
@@ -421,8 +421,8 @@ def download(spec: dict, parser) -> dict[str, bytes]:
                     contents[f"{key}/{ending}"] = content
             except (requests.RequestException, zipfile.BadZipFile) as problem:
                 print(f"{spec['name']}: {key} not read ({problem})")
-    # For a source of documents, the files named by the parser are read (documents: name → address), each under one
-    # of the addresses of the source (its documents, by name), such as the files of a repository at a pinned commit.
+    # For a source of documents, the files named by the parser are read. Each file must be under one of the
+    # addresses of the documents of the source.
     if "documents" in spec:
         for name, url in parser.documents(contents, spec["documents"]).items():
             if not url.startswith(tuple(spec["documents"].values())):
@@ -455,7 +455,7 @@ def import_source(spec: dict) -> None:
     config = settings()
     parser = importlib.import_module(spec["module"])
     contents = download(spec, parser)
-    # One file is passed as is; several files are passed by name.
+    # One file is passed as it is. Several files are passed by name.
     parsed = parser.parse(contents if "files" in spec or "entries" in spec or "terms" in spec or "members" in spec or "documents" in spec or len(contents) > 1 else contents[spec["name"]])
     data = convert(parsed, config["base"])
     found = one_per_identifier(records_of(data, [of_class for kind in config["kinds"].values() for of_class in records.within(kind)], spec["name"]))

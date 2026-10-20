@@ -29,7 +29,7 @@ form:LabProtocol a sh:NodeShape ;
     sh:property [
         sh:path glossary:VHP0000152 ; sh:group form:method ; sh:order 3 ; sh:name "Assessment steps" ;
         sh:severity sh:Warning ; sh:nodeKind sh:IRI ; sh:in ( glossary:VHP0000153 glossary:VHP0000154 glossary:VHP0000155 glossary:VHP0000156 glossary:VHP0000158 ) ;
-        sh:message "Choose from the list; other values are not in the filters." ;
+        sh:message "Choose from the list. Other values are not in the filters." ;
         sh:description "The process flow steps for which the method is used." ] ;
     sh:property [
         sh:path glossary:VHP0000151 ; sh:group form:method ; sh:order 4 ; sh:name "Case-study questions" ;

@@ -1,4 +1,4 @@
-"""The database: records, uploaded images, backups and the export of platform records."""
+"""Tests of the database."""
 
 import io
 

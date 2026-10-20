@@ -83,7 +83,7 @@ app.register_blueprint(discovery_blueprint)
 # Google Search Console verification token (rendered as a <meta> tag in
 # base.html when set). Kept out of the repo -- set it in the service env.
 app.config["GOOGLE_SITE_VERIFICATION"] = os.environ.get("GOOGLE_SITE_VERIFICATION", "")
-# The vocabularies' class hierarchy is read once, as the app starts, not by its first request.
+# The class hierarchy of the vocabularies is read once, at start, not at the first request.
 hierarchy()
 
 
@@ -96,13 +96,13 @@ def add_security_headers(response):
 
 
 def local_link(tag: str, attribute: str, value: str) -> str:
-    """A link or an image of a text on the platform is given as a path on this server."""
+    """Return the address of a link or an image in a text as a path on this server."""
     return page_link(value) if attribute in ("href", "src") else value
 
 
 @app.template_filter("sanitize_html")
 def sanitize_html(value) -> Markup:
-    """Keep the formatting tags of upstream HTML; scripts and event handlers are removed."""
+    """Return upstream HTML with its formatting tags, without scripts and event handlers."""
     return Markup(nh3.clean(str(value or ""), attribute_filter=local_link))
 
 
@@ -131,7 +131,7 @@ def menu(kind: str) -> list[dict]:
 
 @app.context_processor
 def inject_menus():
-    """The tools, methods and data of the navigation menus and the search bar, from their records."""
+    """Return the tools, methods and data for the menus and the search bar."""
     return {"tools_menu": menu("tools"), "methods_menu": menu("methods"), "data_menu": menu("data")}
 
 
@@ -174,7 +174,6 @@ def home():
 ### The sitemap.xml for search engines
 @app.route("/sitemap.xml")
 def sitemap():
-    """The static pages, and each record's page with its last change."""
 
     # Static, parameter-less GET pages, derived from the URL map so new pages
     # are picked up automatically. Machine endpoints are excluded. Routes with
@@ -192,7 +191,7 @@ def sitemap():
     )
     listed = records.with_pages()
     with_pages = {address.rstrip("/") for address, _ in listed}
-    # A static page that is also a record's page, such as the home page, is listed once, with its last change.
+    # A static page that is also the page of a record, such as the home page, is listed once.
     entries = [f"  <url>\n    <loc>{records.address(p)}</loc>\n  </url>" for p in paths if records.address(p).rstrip("/") not in with_pages]
     for address, changed in listed:
         entries.append(f"  <url>\n    <loc>{address}</loc>\n    <lastmod>{changed}</lastmod>\n  </url>")
@@ -223,7 +222,6 @@ def robots():
 ### Pages under 'Data'
 @app.route("/data")
 def data():
-    """The datasets, from their records (templates/records/listing.html)."""
     return listing_page("data")
 
 
@@ -233,7 +231,6 @@ def data():
 
 @app.route("/data/<dataid>")
 def data_detail(dataid):
-    """A dataset's page, from its record."""
     record = records.get(records.address(f"data/{dataid}"))
     if record is None:
         abort(404)
@@ -247,7 +244,6 @@ def data_detail(dataid):
 ### Here begins the updated version for creating the tool list page.
 @app.route("/tools")
 def tools():
-    """The tools, from their records (templates/records/listing.html)."""
     return listing_page("tools")
 
 
@@ -255,13 +251,13 @@ def tools():
 @app.route("/methods")
 @app.route("/methods/")
 def methods():
-    """The methods, from their records (templates/records/listing.html)."""
+    """Render the methods listing from the records."""
     return listing_page("methods")
 
 
 @app.route("/methods/<methodid>")
 def method_page(methodid):
-    """A method's page, from its record."""
+    """Render the page of a method from its record."""
     record = records.get(records.address(f"methods/{methodid}"))
     if record is None:
             abort(404)
@@ -270,7 +266,6 @@ def method_page(methodid):
 
 @app.route("/tools/<toolname>")
 def tool_page(toolname):
-    """A tool's page, from its record."""
     record = records.get(records.address(f"tools/{toolname}"))
     if record is None:
         abort(404)
@@ -284,7 +279,6 @@ def tool_page(toolname):
 # General case studies page
 @app.route("/casestudies")
 def workflows():
-    """The case studies, from their records: each one's name, aim and icon."""
     listed = [record for record in records.of_kind("casestudies") if record.part_of is None]
     statements = records.graph([record.iri for record in listed])
     case_studies = []
@@ -305,7 +299,7 @@ def workflows():
 
 @lru_cache(maxsize=16)
 def case_outline(iri: str, latest: str) -> dict:
-    """The outline of a case study for readers without scripts, kept until a record changes."""
+    """Return the outline of a case study for readers without scripts."""
     return pages.outline(records.get(iri))
 
 
@@ -325,8 +319,7 @@ def casestudy(case: str = "", question: str = "", step: str = "",
     if record is None:
         abort(404)
     address = records.address(request.path.strip("/"))
-    # An address as the case study pages of the platform wrote it (/casestudies/kidney/Q1/Exposure/Current_Dose_levels)
-    # is the address of the same page here, compared part by part as written in addresses.
+    # An address such as /casestudies/kidney/Q1/Exposure/Current_Dose_levels is matched to a page part by part.
     if address != record.iri and records.get(address) is None:
         wanted = [slug(part) for part in address.removeprefix(record.iri + "/").split("/")]
         for part in records.parts_of(record.iri):
@@ -338,7 +331,7 @@ def casestudy(case: str = "", question: str = "", step: str = "",
         "case_studies/casestudy.html",
         case_outline=found,
         case_document=url_for("records.read", path=f"casestudies/{case}"),
-        # At the address of a question or a step, the page record is that part; the case study is given too.
+        # At the address of a question or a step, the page record is that part. The case study is given too.
         case_json=None if address == record.iri else documents.page_document(record.iri, records.latest_change()),
         page_address=address,
         config_base=records.address(""),
