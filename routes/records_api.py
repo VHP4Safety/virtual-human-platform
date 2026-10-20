@@ -72,8 +72,7 @@ class Done(Schema.from_dict({"@id": fields.String(metadata={"description": "The 
 
     change = fields.String()
     version = fields.String(allow_none=True)
-    warnings = fields.Dict(keys=fields.String(), values=fields.List(fields.String()),
-                           metadata={"description": "The problems of each field. The record is saved with them."})
+    warnings = fields.Dict(keys=fields.String(), values=fields.List(fields.String()), metadata={"description": "The problems of each field. The record is saved with them."})
 
 
 class Image(Schema.from_dict({"@id": fields.String(metadata={"description": "The address (IRI) of the image, for the image field of a record.", "format": "iri"})})):
@@ -160,17 +159,6 @@ def whole(record) -> None:
         abort(409, message=f"Part of {record.part_of}; written with it.")
 
 
-def saved(address: str, found: Graph, kind: str, who):
-    """The record is saved, and the new records in it are saved apart."""
-    created = writes.separate(found)
-    # A new record in the form of another record, such as a person, needs write access to the kind of the new record.
-    for _, of_kind, _ in created:
-        writer(kind_of(None, {"@type": of_kind}))
-    for iri, of_kind, own in created:
-        writes.save(documents.document(own, iri), of_kind, who.name, who.orcid)
-    return writes.save(documents.document(found, address), kind, who.name, who.orcid)
-
-
 def rendered(address: str, found: Graph, kind: str) -> Response:
     """The page of the record is drawn from the posted statements, with the same template as its page. The names of
     the linked records and the records that link to it are read from the stored records. Nothing is saved."""
@@ -178,28 +166,25 @@ def rendered(address: str, found: Graph, kind: str) -> Response:
         found += own
     shown = documents.public(records.with_names(found))
     node = URIRef(address)
+    description = str(shown.value(node, SDO.description) or "")
     if kind in records.within(str(SDO.WebPage)):
         listed = pages.sections(shown, node)
         about = shown.value(node, SDO.about)
-        page = {"name": str(shown.value(node, SDO.name) or ""), "description": str(shown.value(node, SDO.description) or ""), "sections": listed,
+        page = {"name": str(shown.value(node, SDO.name) or ""), "description": description, "sections": listed,
                 "tabbed": any(section["heading"] for section in listed), "kinds": pages.kinds(str(about)) if about is not None else []}
         return Response(render_template("records/page.html", page=page), mimetype="text/html")
     names = {}
-    for value in shown.objects():
-        if isinstance(value, URIRef) and shown.value(value, SDO.name) is not None:
-            names[str(value)] = str(shown.value(value, SDO.name))
+    for iri, name in shown.subject_objects(SDO.name):
+        names[str(iri)] = str(name)
     outline = pages.node_outline(shown, node, names)
     outline["named_on"] = pages.named_on(tables.Record(iri=address))
-    first = {}
-    for field in outline["fields"]:
-        first[field["name"]] = field["values"][0]
-    record = {"iri": address, "name": outline["name"], "description": first.get("description", {}).get("text"), "image": first.get("image", {}).get("link")}
+    record = {"iri": address, "name": outline["name"], "description": description, "image": str(shown.value(node, SDO.image) or "")}
     return Response(render_template("records/record.html", record=record, outline=outline), mimetype="text/html")
 
 
 def store(address: str, body: dict, preview: bool = False, page: bool = False):
-    """The record in the request body is checked and saved at *address*. The problems that are found do not stop
-    the save. They are given as warnings."""
+    """The record in the request body is checked and saved at *address*, with the new records in it. The problems
+    that are found do not stop the save. They are given as warnings."""
     kind = kind_of(address, body)
     if kind is None:
         abort(400, message="Unknown @type.")
@@ -229,7 +214,13 @@ def store(address: str, body: dict, preview: bool = False, page: bool = False):
         return jsonify({**changes.edges(before, found, URIRef(address)), "warnings": warnings, "labels": labels,
                         "document": documents.document(records.with_names(found), address)})
     unchanged(address)
-    revision = saved(address, found, kind, who)
+    created = writes.separate(found)
+    # A new record in the form of another record, such as a person, needs write access to the kind of the new record.
+    for _, of_kind, _ in created:
+        writer(kind_of(None, {"@type": of_kind}))
+    for iri, of_kind, own in created:
+        writes.save(documents.document(own, iri), of_kind, who.name, who.orcid)
+    revision = writes.save(documents.document(found, address), kind, who.name, who.orcid)
     return done(address, revision, 201 if revision.action == "Added" else 200, warnings)
 
 
