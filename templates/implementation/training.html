@@ -1,0 +1,92 @@
+{% extends "base.html" %} {% block content %}
+
+<!-- Page-specific CSS for home page -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/home.css') }}"
+/>
+
+<!-- Here starts the section B with the main heading of the page and the introductory sentence -->
+<section class="container  py-md-5 py-3"> <!-- Section B start-->
+  	<div class="row align-items-center">
+    	<div class="col-md-12">
+			<h1><span>Training</span></h1>
+			<p class="text-secondary fs-5">Training and education to master the Virtual Human Platform and the principles of NAMs in human-based safety assessment</p>
+    	</div>
+  	</div>
+
+	<div class="card"> <!--Start of divisions for tabs-->
+  		<div class="card-header"> <!-- Start of headers of tabs, listed from 0 to n -->
+    		<ul class="nav nav-tabs card-header-tabs" role="tablist">
+      			<!--li class="nav-item" role="presentation">
+        			<a class="nav-link text-start active" id="simple-tab-0" data-bs-toggle="tab" href="#simple-tabpanel-0" role="tab" aria-controls="simple-tabpanel-0" aria-selected="true">How to use the platform</a>
+      			</li -->
+      			<li class="nav-item" role="presentation">
+        			<a class="nav-link text-start" id="simple-tab-1" data-bs-toggle="tab" href="#simple-tabpanel-1" role="tab" aria-controls="simple-tabpanel-1" aria-selected="false">Educational resources</a>
+      			</li>
+	 			<!-- li class="nav-item" role="presentation">
+    	    		<a class="nav-link text-start" id="simple-tab-2" data-bs-toggle="tab" href="#simple-tabpanel-2" role="tab" aria-controls="simple-tabpanel-2" aria-selected="false">Publications</a>
+      			</li -->
+    		</ul>
+ 		</div> <!-- Finish of headers of tabs, listed from 0 to n -->
+<!--###################################################################################################-->
+<!--How to use the platform--->				
+<!--###################################################################################################-->
+				<!-- For the accordion items in the following tab change the simple-tab number and change contents1 to th following (e.g., 2)-->
+		<div class="card-body"> <!-- Start of divisions for tab content-->
+    		<div class="tab-content" id="tab-content"> <!-- Start of main division of the tabs (vertical division)-->
+      			<div class="tab-pane active" id="simple-tabpanel-0" role="tabpanel" aria-labelledby="simple-tab-0"> <!-- Start of container for tab 0 (first one) -->
+					<p>Here you will find educational resources about made under the scope of the VHP4Safety project.</p> <!--Teaser text of tab before cards-->
+					<div class="accordion accordion-flush" id="aboutAccordion"><!-- Start of cards accordion (horizontal information)-->
+
+					</div><!-- End of cards accordion (horizontal information)-->
+				</div>  <!-- End for container for tab 0 (first one)-->
+			</div> <!-- End of main division for the tabs (vertical dividison)-->
+<!--###################################################################################################-->
+<!--Educational resources--->	
+<!--###################################################################################################-->
+				<!-- For the accordion items in the following tab change the simple-tab number and change contents1 to th following (e.g., 2)-->
+    		<div class="tab-content" id="tab-content"> <!-- Start of main division of the tabs (vertical division)-->
+      			<div class="tab-pane" id="simple-tabpanel-1" role="tabpanel" aria-labelledby="simple-tab-1"> <!-- Start of container for tab 0 (first one) -->
+					<p>Here you will find educational resources about made under the scope of the VHP4Safety project</p> <!--Teaser text of tab before cards-->
+					<div class="accordion accordion-flush" id="aboutAccordion"><!-- Start of cards accordion (horizontal information)-->
+
+						
+					</div><!-- End of cards accordion (horizontal information)-->
+				</div>  <!-- End for container for tab 0 (first one)-->
+			</div> <!-- End of main division for the tabs (vertical dividison)-->
+<!--###################################################################################################-->
+<!--Publications--->
+<!--###################################################################################################-->
+				<!-- For the accordion items in the following tab change the simple-tab number and if desired change contents1 to the following (e.g., 2)-->
+    		<div class="tab-content" id="tab-content"> <!-- Start of main division of the tabs (vertical division)-->
+      			<div class="tab-pane" id="simple-tabpanel-2" role="tabpanel" aria-labelledby="simple-tab-2"> <!-- Start of container for tab 0 (first one) -->
+					<p>Academic publications on trainings and educational resources will be listed here</p> <!--Teaser text of tab before cards-->
+					<div class="accordion accordion-flush" id="aboutAccordion"><!-- Start of cards accordion (horizontal information)-->
+
+						<!--################################-->
+						<!-- in a new accordion item chage: headingOne, collpaseOne to the following one, e.g., headingTwo and collpaseTwo-->
+						<div class="accordion-item"> <!--Start of card item (accordion item)-->
+		     				<h2 class="accordion-header" id="contents3-headingOne">
+        					<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#contents3-collapseOne" aria-expanded="false" aria-controls="contents3-collapseOne">*</button>
+      						</h2>
+      						<div id="contents3-collapseOne" class="accordion-collapse collapse collapse" aria-labelledby="contents3-headingOne"><!--Start for card collapsible information-->
+        					<div class="accordion-body" style="text-align: justify;"> <!--Start for content container-->
+			 					<p>--</p>     
+							</div> <!--Finish for content container-->
+							</div><!--Finish for card collapsible information-->
+						</div><!--Finish of car item (accordion item)-->
+						<!--################################-->
+										
+					</div><!-- End of cards accordion (horizontal information)-->
+				</div>  <!-- End for container for tab 0 (first one)-->
+			</div> <!-- End of main division for the tabs (vertical dividison)-->
+<!--###################################################################################################-->
+		</div> <!--End of dividisions for tab content -->
+
+	</div> <!--Finish of divisions for tabs-->
+</section> <!--Section C finish -->
+
+<!-- Scroll down arrow for navigation -->
+<div class="scroll-down-arrow" style="border-top: 20px solid var(--bs-vhppink);" onclick="scrollToNextSection()"></div>
+{% endblock %}
