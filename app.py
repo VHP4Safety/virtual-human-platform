@@ -111,11 +111,6 @@ def get_process_flow_steps() -> dict:
     return steps
 
 
-class _RepositoryFetchAllFailed(Exception):
-    """Both extractors returned error-shaped dicts. Carries the original
-    tuple so the public wrapper can return it without re-fetching."""
-
-
 def menu(kind: str) -> list[dict]:
     """A kind's records for the navigation menus and the search bar: each one's identifier, name and page, by
     name."""

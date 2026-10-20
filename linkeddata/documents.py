@@ -76,18 +76,6 @@ def values(document: dict, name: str) -> list:
     return found
 
 
-def links(document: dict) -> list[str]:
-    """The addresses that a document links to."""
-    found = []
-    for name, given in document.items():
-        if name.startswith("@"):
-            continue
-        for item in given if isinstance(given, list) else [given]:
-            if isinstance(item, dict) and "@id" in item:
-                found.append(item["@id"])
-    return found
-
-
 def statements(document: dict) -> Graph:
     return Graph().parse(data=json.dumps(document), format="json-ld")
 
@@ -120,14 +108,6 @@ def document_of(iri: str) -> str | None:
     if record is None or record.removed_at:
         return None
     return json.dumps(document(storage.read([iri])), indent=2)
-
-
-@cache
-@cache
-def page_context(of_class: str) -> dict:
-    """The context of a record's page: the platform's names, and a list for each field that takes several
-    values."""
-    return {**context(settings()), **patches.context(profile(), of_class, term)}
 
 
 @cache
@@ -220,24 +200,3 @@ def published() -> Graph:
 def published_terms() -> Graph:
     """The records elsewhere that the records with a page link to, such as vocabulary terms."""
     return published_all()["terms"]
-
-
-def view(record: Record) -> dict:
-    """The record with the profile's field names, with its linked records embedded so their names can be shown."""
-    statements = public(storage.linked_graph(record)).serialize(format="nt")
-    expanded = jsonld.from_rdf(statements, {"format": "application/n-quads"})
-    framed = jsonld.frame(expanded, {"@context": page_context(record.type), "@id": record.iri, "@embed": "@always"})
-    found = framed["@graph"][0] if "@graph" in framed else framed
-    found.pop("@context", None)
-    return addresses(found)
-
-
-def addresses(found):
-    """A framed document whose links to nodes without statements, such as web pages, are addresses."""
-    if isinstance(found, list):
-        return [addresses(value) for value in found]
-    if isinstance(found, dict):
-        if list(found) == ["id"]:
-            return found["id"]
-        return {key: addresses(value) for key, value in found.items()}
-    return found

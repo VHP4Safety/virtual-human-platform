@@ -132,13 +132,3 @@ def with_names(found: Graph) -> Graph:
     for prefix, namespace in settings()["prefixes"].items():
         named.bind(prefix, namespace)
     return named
-
-
-def linked_graph(record: Record) -> Graph:
-    """The record and the records it links to, as linked data."""
-    found = graph([record.iri])
-    linked = []
-    for value in found.objects(URIRef(record.iri), None):
-        if isinstance(value, URIRef):
-            linked.append(str(value))
-    return found + graph(linked)

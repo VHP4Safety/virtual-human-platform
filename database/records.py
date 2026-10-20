@@ -36,22 +36,6 @@ def of_kind(kind: str) -> list[Record]:
         return list(db.scalars(statement.order_by(Record.iri)))
 
 
-def removed(kind: str) -> set[str]:
-    """The identifiers of a kind's removed records, without the earlier addresses of moved records."""
-    prefix = address(kind) + "/"
-    statement = select(Record.iri).where(Record.iri.startswith(prefix), Record.removed_at.is_not(None), Record.moved_to.is_(None))
-    with database.session() as db:
-        return {iri.removeprefix(prefix) for iri in db.scalars(statement)}
-
-
-def moved(kind: str) -> set[str]:
-    """The identifiers of the earlier addresses of a kind's moved records."""
-    prefix = address(kind) + "/"
-    statement = select(Record.iri).where(Record.iri.startswith(prefix), Record.moved_to.is_not(None))
-    with database.session() as db:
-        return {iri.removeprefix(prefix) for iri in db.scalars(statement)}
-
-
 def search(text: str, classes: list[str], within: str = "", parts: bool = True, limit: int | None = 20, among=None) -> list[Record]:
     """The records of these classes or their subclasses (parts too, unless *parts* is false) whose name or
     address has *text*, whose address starts with *within*, such as a vocabulary namespace, and that are
