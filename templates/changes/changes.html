@@ -5,23 +5,22 @@
   {% if record %}
   <p class="text-secondary">Changes to <a class="link-vhpblue" href="{{ record|page_link }}">{{ names.get(record) or record|page_link }}</a>. <a class="link-vhpblue" href="{{ url_for('changes.changes') }}">All changes</a></p>
   {% else %}
-  <p class="text-secondary">Editors' changes to records, newest first. Imported records are listed on the <a class="link-vhpblue" href="{{ url_for('sources.sources') }}">sources page</a>.</p>
+  <p class="text-secondary">The changes that editors made to records are listed here, the newest first. Imported records are listed on the <a class="link-vhpblue" href="{{ url_for('sources.sources') }}">sources page</a>.</p>
   {% endif %}
 
   <div class="card">
     {% if changes %}
     <div class="table-responsive">
       <table class="table mb-0 align-middle">
-        <thead><tr><th>Date (UTC)</th><th>Record</th><th>Change</th><th>Fields</th><th>Editor</th><th></th></tr></thead>
+        <thead><tr><th>Date (UTC)</th><th>Record</th><th>Change</th><th>Editor</th><th></th></tr></thead>
         <tbody>
           {% for change in changes %}
           <tr>
-            <td class="text-nowrap small">{{ change.date[:16]|replace("T", " ") }}</td>
-            <td><a class="link-vhpblue" href="{{ change.record|page_link }}">{{ change.record_name }}</a></td>
+            <td class="text-nowrap small">{{ change.created_at[:16]|replace("T", " ") }}</td>
+            <td><a class="link-vhpblue" href="{{ change.record_iri|page_link }}">{{ names.get(change.record_iri) or change.record_iri }}</a></td>
             <td>{% with action=change.action %}{% include "changes/_action.html" %}{% endwith %}</td>
-            <td class="small">{% for field in change.fields %}{{ field.field }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
             <td class="small">{{ change.name }}{% if change.orcid %}<br><a class="link-secondary" href="https://orcid.org/{{ change.orcid }}">{{ change.orcid }}</a>{% endif %}</td>
-            <td class="text-end"><a class="btn btn-sm btn-outline-vhpblue" href="{{ url_for('changes.change', number=change.number) }}">Details</a></td>
+            <td class="text-end"><a class="btn btn-sm btn-outline-vhpblue" href="{{ url_for('changes.change', number=change.id) }}">Details</a></td>
           </tr>
           {% endfor %}
         </tbody>

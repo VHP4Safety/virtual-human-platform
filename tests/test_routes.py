@@ -51,8 +51,8 @@ def test_editor_and_changes(site):
         form_token = session["form_token"]
     turtle = f'<{BASE}tools/t> a <{TOOL}> ; <https://schema.org/name> "T" ; <https://schema.org/description> "Does T." .'
     answer = site.put("/api/tools/t", data=turtle, content_type="text/turtle", headers={"X-Form-Token": form_token}).json
-    change = site.get(answer["change"] + ".json").json
-    assert ("removed", "Toxicodynamics (Process Flow Step)") in [(edge["status"], edge["name"]) for edge in change["edges"]]
+    change = site.get(answer["change"]).data.decode()
+    assert "graph-removed" in change and "Toxicodynamics (Process Flow Step)" in change
 
 
 def test_api(site):
