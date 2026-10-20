@@ -516,3 +516,36 @@ body.editor {
   font-size: 0.75rem;
   color: var(--bs-secondary-color);
 }
+
+/* The text editor is a box over the page. */
+.text-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30, 27, 60, 0.45);
+}
+.text-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(1100px, 95vw);
+  max-height: 96vh;
+  border-radius: 0.5rem;
+  background: #fff;
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.3);
+}
+.text-dialog-head {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--bs-border-color);
+  font-weight: 600;
+  color: var(--bs-vhppurple);
+}
+.text-dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--bs-border-color);
+}

@@ -243,6 +243,10 @@ function safeHtml(text, options) {
     if (element.tagName === "A") {
       opens(element, options);
     }
+    // An image on the platform is loaded from this server, as links are.
+    if (element.tagName === "IMG" && element.getAttribute("src")) {
+      element.setAttribute("src", local(element.getAttribute("src"), options));
+    }
   }
   const fragment = document.createDocumentFragment();
   while (parsed.body.firstChild) {

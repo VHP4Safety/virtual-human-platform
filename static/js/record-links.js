@@ -25,6 +25,7 @@ let vocabularyList = null;
 const STYLE = `
 .shown:not([type='checkbox']) { flex-grow: 1; }
 textarea.shown { resize: vertical; }
+.text-edit { align-self: flex-start; margin-left: 6px; padding: 3px 12px; border: 0; border-radius: 4px; background: #29235c; color: #fff; font-size: 0.85em; cursor: pointer; white-space: nowrap; }
 .record-link-box { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .record-link-row { display: flex; align-items: center; gap: 6px; }
 .record-link-row > .shown { flex: 1; min-width: 0; }
@@ -86,6 +87,93 @@ function query(fields) {
 
 // A text field of the theme, given to shacl-form as a literal of the field's datatype. An address where a
 // text belongs is kept until the text is edited.
+// TinyMCE, loaded the first time a text is edited.
+const TINYMCE = "https://cdn.jsdelivr.net/npm/tinymce@6.8.5";
+let tinymceLoaded = null;
+
+function loadTinymce() {
+  tinymceLoaded = tinymceLoaded || new Promise(function (resolve, reject) {
+    const script = document.createElement("script");
+    script.src = TINYMCE + "/tinymce.min.js";
+    script.onload = function () { resolve(window.tinymce); };
+    script.onerror = function () { reject(new Error("The text editor could not be loaded.")); };
+    document.head.append(script);
+  });
+  return tinymceLoaded;
+}
+
+// A text in HTML is edited in a dialog over the page, with headings, lists, links, tables and images. An image is
+// uploaded to the platform and placed where the cursor is, with a caption. *done* is called with the new HTML.
+async function editText(label, html, done) {
+  // A box over the page, not a modal <dialog>: the dialogs of TinyMCE, such as for an image, are drawn above it.
+  const overlay = document.createElement("div");
+  overlay.className = "text-overlay";
+  const dialog = document.createElement("div");
+  dialog.className = "text-dialog";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-label", "Edit text: " + label);
+  overlay.append(dialog);
+  const head = document.createElement("div");
+  head.className = "text-dialog-head";
+  head.textContent = "Edit text: " + label;
+  // Platform addresses, such as of uploaded images, are opened on this server while the text is edited, so they
+  // work on every copy of the platform; they are kept as platform addresses in the text.
+  const here = window.location.origin + "/";
+  const area = document.createElement("textarea");
+  area.value = (html || "").split(editor.base).join(here);
+  const foot = document.createElement("div");
+  foot.className = "text-dialog-foot";
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "btn btn-light border";
+  cancel.textContent = "Cancel";
+  const ready = document.createElement("button");
+  ready.type = "button";
+  ready.className = "btn btn-vhppurple";
+  ready.textContent = "Done";
+  foot.append(cancel, ready);
+  dialog.append(head, area, foot);
+  document.body.append(overlay);
+  const tinymce = await loadTinymce();
+  const [text] = await tinymce.init({
+    target: area,
+    base_url: TINYMCE,
+    suffix: ".min",
+    height: "calc(100vh - 12rem)",
+    menubar: false,
+    branding: false,
+    promotion: false,
+    plugins: "image link lists table code",
+    toolbar: "undo redo | blocks | bold italic | bullist numlist | link image table | code",
+    block_formats: "Paragraph=p; Heading=h3; Smaller heading=h4",
+    image_caption: true,
+    image_title: true,
+    automatic_uploads: true,
+    images_file_types: "png,jpg,jpeg,webp,gif",
+    convert_urls: false,
+    images_upload_handler: async function (blob) {
+      const body = new FormData();
+      body.append("image", blob.blob(), blob.filename());
+      const answer = await fetch("/api/images", { method: "POST", credentials: "same-origin", headers: { "X-Form-Token": editor.token }, body: body });
+      const given = await answer.json().catch(function () { return {}; });
+      if (!answer.ok) {
+        throw new Error(given.message || "The image was not uploaded.");
+      }
+      return given["@id"].split(editor.base).join(here);
+    },
+  });
+  function close() {
+    text.remove();
+    overlay.remove();
+  }
+  cancel.addEventListener("click", close);
+  ready.addEventListener("click", function () {
+    const html = text.getContent().split(here).join(editor.base);
+    close();
+    done(html);
+  });
+}
+
 class Text extends Plugin {
   createEditor(template, value) {
     if (template.in) {
@@ -109,6 +197,31 @@ class Text extends Plugin {
       delete text.dataset.nodeKind;
       text.value = shown.value ? literal(shown.value, datatype) : "";
     });
+    // A text in HTML is edited in the text editor; the box below shows its HTML.
+    if (datatype === HTML) {
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "text-edit";
+      edit.textContent = "Edit text";
+      edit.addEventListener("click", function () {
+        // The dialog is named by the part the text belongs to, such as the heading of a section.
+        const node = field.closest("shacl-node");
+        let named = "";
+        for (const found of node ? node.querySelectorAll('.property-instance[data-path="' + NAME + '"]') : []) {
+          if (found.closest("shacl-node") === node) {
+            const input = found.querySelector(".shown") || found.querySelector(".editor");
+            named = input ? String(input.value || "").trim() : "";
+            break;
+          }
+        }
+        editText(named || template.label, shown.value, function (html) {
+          shown.value = html;
+          shown.dispatchEvent(new Event("input"));
+          shown.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+        });
+      });
+      field.append(edit);
+    }
     return field;
   }
 }
