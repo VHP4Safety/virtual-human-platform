@@ -4,6 +4,9 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix dash: <http://datashapes.org/dash#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix bioschemas: <https://bioschemas.org/terms/> .
+@prefix spdx: <http://spdx.org/rdf/terms#> .
 @prefix dct: <http://purl.org/dc/terms/> .
 @prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
 @prefix glossary: <https://vhp4safety.github.io/glossary#> .
@@ -15,8 +18,10 @@ form:Dataset a sh:NodeShape ;
     rdfs:label "Dataset" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One title needed." ] ;
     sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
-    sh:property [ sh:path schema:creator ; sh:order 3 ; sh:name "Authors" ;
-        sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ] ;
+    sh:property [ sh:path schema:creator ; sh:order 3 ; sh:name "Authors" ; sh:maxCount 1 ; sh:node dash:ListShape ;
+        sh:property [ sh:path ( [ sh:zeroOrMorePath rdf:rest ] rdf:first ) ;
+            sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ] ;
+        sh:description "The authors, in the order of the source." ] ;
     sh:property [ sh:path schema:datePublished ; sh:order 4 ; sh:name "Published" ; sh:maxCount 1 ; sh:datatype xsd:date ] ;
     sh:property [ sh:path glossary:VHP0000152 ; sh:order 5 ; sh:name "Assessment steps" ;
         sh:severity sh:Warning ; sh:nodeKind sh:IRI ; sh:in ( glossary:VHP0000153 glossary:VHP0000154 glossary:VHP0000155 glossary:VHP0000156 glossary:VHP0000158 ) ;
@@ -44,7 +49,56 @@ form:Dataset a sh:NodeShape ;
     sh:property [ sh:path schema:identifier ; sh:order 15 ; sh:name "DOI" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
         sh:description "The DOI, as a web address." ] ;
     sh:property [ sh:path schema:distribution ; sh:order 16 ; sh:name "Files" ; sh:class schema:DataDownload ; sh:node form:DataDownload ; sh:nodeKind sh:BlankNodeOrIRI ;
-        sh:description "Its files, each at its download address, as in the source record." ] .
+        sh:description "Its files, each at its download address, as in the source record." ] ;
+    sh:property [ sh:path schema:version ; sh:order 19 ; sh:name "Version" ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:description "As given by the source." ] ;
+    sh:property [ sh:path schema:funding ; sh:order 17 ; sh:name "Funding" ; sh:class schema:MonetaryGrant ;
+        sh:description "The grants that funded the data." ] ;
+    sh:property [ sh:path schema:hasPart ; sh:order 18 ; sh:name "Experimental design" ; sh:class bioschemas_draft:LabProtocol ;
+        sh:node form:StudyProtocol ; sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:description "The design of the study, as in its BioStudies record: the biological models, the chemicals, and the other sections, such as exposures and endpoint readouts." ] .
+
+form:StudyProtocol a sh:NodeShape ;
+    rdfs:label "Study protocol" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:additionalType ; sh:order 2 ; sh:name "Section" ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:description "The kind of section in BioStudies, such as Exposure information." ] ;
+    sh:property [ sh:path bioschemas_draft:bioSample ; sh:order 3 ; sh:name "Biological models" ; sh:class bioschemas:BioSample ;
+        sh:node form:BioSample ; sh:nodeKind sh:BlankNodeOrIRI ] ;
+    sh:property [ sh:path bioschemas_draft:reagent ; sh:order 4 ; sh:name "Chemicals" ; sh:maxCount 1 ; sh:node dash:ListShape ;
+        sh:property [ sh:path ( [ sh:zeroOrMorePath rdf:rest ] rdf:first ) ; sh:class schema:ChemicalSubstance ; sh:node form:ChemicalSubstance ;
+            sh:nodeKind sh:BlankNodeOrIRI ] ;
+        sh:description "The chemicals, in the order of the source." ] ;
+    sh:property [ sh:path bioschemas_draft:additionalProperty ; sh:order 5 ; sh:name "Values" ; sh:class schema:PropertyValue ;
+        sh:node form:Identifier ; sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:description "The attributes of the section, each with its name in BioStudies as identifier type." ] ;
+    sh:property [ sh:path schema:hasPart ; sh:order 6 ; sh:name "Sections" ; sh:maxCount 1 ; sh:node dash:ListShape ;
+        sh:property [ sh:path ( [ sh:zeroOrMorePath rdf:rest ] rdf:first ) ; sh:class bioschemas_draft:LabProtocol ; sh:node form:StudyProtocol ;
+            sh:nodeKind sh:BlankNodeOrIRI ] ;
+        sh:description "The sections below this one, such as exposure regimens, in the order of the source." ] .
+
+form:BioSample a sh:NodeShape ;
+    sh:targetClass bioschemas:BioSample ;
+    rdfs:label "Biological model" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:message "One name needed, such as the cell line." ] ;
+    sh:property [ sh:path schema:identifier ; sh:order 2 ; sh:name "Identifiers" ; sh:class schema:PropertyValue ;
+        sh:node form:Identifier ; sh:nodeKind sh:BlankNodeOrIRI ; sh:description "Such as the RRID of the cell line." ] ;
+    sh:property [ sh:path schema:description ; sh:order 3 ; sh:name "Description" ; sh:maxCount 1 ; dash:singleLine false ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path bioschemas:additionalProperty ; sh:order 4 ; sh:name "Values" ; sh:class schema:PropertyValue ;
+        sh:node form:Identifier ; sh:nodeKind sh:BlankNodeOrIRI ; sh:description "Such as the cell type, the organ and the supplier." ] ;
+    sh:property [ sh:path schema:subjectOf ; sh:order 5 ; sh:name "Preparation" ; sh:class bioschemas_draft:LabProtocol ;
+        sh:node form:StudyProtocol ; sh:nodeKind sh:BlankNodeOrIRI ; sh:description "Such as the cell line preparation." ] ;
+    sh:property [ sh:path schema:position ; sh:order 6 ; sh:name "Place" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+        sh:description "The place of the biological model among those of the study, as in the source." ] .
+
+form:Checksum a sh:NodeShape ;
+    sh:targetClass spdx:Checksum ;
+    rdfs:label "Checksum" ;
+    sh:property [ sh:path spdx:algorithm ; sh:order 1 ; sh:name "Algorithm" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+        sh:message "One algorithm needed, such as spdx:checksumAlgorithm_md5." ] ;
+    sh:property [ sh:path spdx:checksumValue ; sh:order 2 ; sh:name "Value" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:message "One value needed." ] .
 
 form:DataDownload a sh:NodeShape ;
     sh:targetClass schema:DataDownload ;
@@ -54,4 +108,8 @@ form:DataDownload a sh:NodeShape ;
     sh:property [ sh:path schema:encodingFormat ; sh:order 3 ; sh:name "Format" ; sh:maxCount 1 ; sh:datatype xsd:string ;
         sh:description "A media type, such as text/csv." ] ;
     sh:property [ sh:path schema:contentSize ; sh:order 4 ; sh:name "Size" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "Such as 3.1 MB." ] .
+        sh:description "Such as 3.1 MB." ] ;
+    sh:property [ sh:path spdx:checksum ; sh:order 5 ; sh:name "Checksums" ; sh:class spdx:Checksum ; sh:node form:Checksum ; sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:description "As given by the source, such as an MD5 sum." ] ;
+    sh:property [ sh:path schema:position ; sh:order 6 ; sh:name "Place" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+        sh:description "The place of the file among the files of the dataset, as in the source." ] .

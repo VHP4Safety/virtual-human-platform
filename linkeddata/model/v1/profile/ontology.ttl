@@ -14,13 +14,15 @@
         <https://raw.githubusercontent.com/VHP4Safety/glossary/34f9389a7f1f0073b67161e1ca6e6a6cf95c7371/glossary.owl>,
         <https://raw.githubusercontent.com/cygri/void/5b2ca68b7897c2613d4269fd725f1812dce21267/rdfs/void.ttl>,
         <https://www.w3.org/2000/01/rdf-schema.ttl>,
-        <https://www.dublincore.org/specifications/dublin-core/dcmi-terms/dublin_core_terms.ttl> ;
+        <https://www.dublincore.org/specifications/dublin-core/dcmi-terms/dublin_core_terms.ttl>,
+        <https://raw.githubusercontent.com/spdx/spdx-spec/v2.3/ontology/spdx-ontology.owl.ttl> ;
     sh:shapesGraph <https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/99beab94c4da4de3ea092b799356a8d05a74a926/pages/_profiles/bioschemas_profiles_shacl.ttl> ;
     sh:declare [ sh:prefix "schema" ; sh:namespace "https://schema.org/"^^xsd:anyURI ],
         [ sh:prefix "bioschemas_draft" ; sh:namespace "https://bioschemas.org/draft_terms/"^^xsd:anyURI ],
         [ sh:prefix "bioschemas" ; sh:namespace "https://bioschemas.org/terms/"^^xsd:anyURI ],
         [ sh:prefix "dct" ; sh:namespace "http://purl.org/dc/terms/"^^xsd:anyURI ],
         [ sh:prefix "void" ; sh:namespace "http://rdfs.org/ns/void#"^^xsd:anyURI ],
+        [ sh:prefix "spdx" ; sh:namespace "http://spdx.org/rdf/terms#"^^xsd:anyURI ],
         [ sh:prefix "pbpk" ; sh:namespace "https://platform.vhp4safety.nl/model/v1/pbpk#"^^xsd:anyURI ],
         [ sh:prefix "form" ; sh:namespace "https://platform.vhp4safety.nl/model/v1/form#"^^xsd:anyURI ] .
 
@@ -43,3 +45,5 @@
 <https://www.w3.org/2000/01/rdf-schema.ttl> form:file "rdfs.ttl" ; form:sha256 "ecee3a011b7c13ea2a7e40b0a208bfe6be53d69fdd53ee035e09e9f9e5108ad6" .
 
 <https://www.dublincore.org/specifications/dublin-core/dcmi-terms/dublin_core_terms.ttl> form:file "dcmi-terms-2012-06-14.ttl" ; form:sha256 "13df401072dd7015bf9d75162f3e41c8138075304b7b9cc1aa1e9c16db976797" .
+
+<https://raw.githubusercontent.com/spdx/spdx-spec/v2.3/ontology/spdx-ontology.owl.ttl> form:file "spdx-ontology-2.3.ttl" ; form:sha256 "45b9236b8b2025755241846ecb127638fd07f3335e08a0e8114bd955b4b1b62f" .

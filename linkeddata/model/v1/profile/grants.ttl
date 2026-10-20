@@ -11,6 +11,7 @@ form:MonetaryGrant a sh:NodeShape ;
     rdfs:label "Grant" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
     sh:property [ sh:path schema:identifier ; sh:order 2 ; sh:name "Grant number" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:alternateName ; sh:order 2 ; sh:name "Acronym" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:funder ; sh:order 3 ; sh:name "Funder" ; sh:minCount 1 ; sh:severity sh:Warning ; sh:class schema:Organization ;
         sh:message "Add the funder." ] ;
     sh:property [ sh:path schema:amount ; sh:order 4 ; sh:name "Amount" ; sh:maxCount 1 ; sh:class schema:MonetaryAmount ; sh:node form:MonetaryAmount ; sh:nodeKind sh:BlankNodeOrIRI ] ;

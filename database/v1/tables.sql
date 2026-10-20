@@ -1,3 +1,43 @@
+CREATE TABLE IF NOT EXISTS "bioschemas_bio_sample" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_description" TEXT,
+  "schema_description__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  "schema_position" TEXT,
+  "schema_position__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "bioschemas_bio_sample__record" ON "bioschemas_bio_sample" ("record");
+CREATE TABLE IF NOT EXISTS "bioschemas_bio_sample__bioschemas_additional_property" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "bioschemas_bio_sample" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "bioschemas_bio_sample__bioschemas_additional_property__record" ON "bioschemas_bio_sample__bioschemas_additional_property" ("record");
+CREATE TABLE IF NOT EXISTS "bioschemas_bio_sample__schema_identifier" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "bioschemas_bio_sample" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "bioschemas_bio_sample__schema_identifier__record" ON "bioschemas_bio_sample__schema_identifier" ("record");
+CREATE TABLE IF NOT EXISTS "bioschemas_bio_sample__schema_subject_of" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "bioschemas_bio_sample" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "bioschemas_bio_sample__schema_subject_of__record" ON "bioschemas_bio_sample__schema_subject_of" ("record");
 CREATE TABLE IF NOT EXISTS "bioschemas_draft_lab_protocol" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -740,9 +780,20 @@ CREATE TABLE IF NOT EXISTS "schema_data_download" (
   "schema_encoding_format__term" TEXT,
   "schema_name" TEXT,
   "schema_name__term" TEXT,
+  "schema_position" TEXT,
+  "schema_position__term" TEXT,
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_data_download__record" ON "schema_data_download" ("record");
+CREATE TABLE IF NOT EXISTS "schema_data_download__spdx_checksum" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_data_download" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_data_download__spdx_checksum__record" ON "schema_data_download__spdx_checksum" ("record");
 CREATE TABLE IF NOT EXISTS "schema_dataset" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -759,6 +810,8 @@ CREATE TABLE IF NOT EXISTS "schema_dataset" (
   "schema_license__term" TEXT,
   "schema_name" TEXT,
   "schema_name__term" TEXT,
+  "schema_version" TEXT,
+  "schema_version__term" TEXT,
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_dataset__record" ON "schema_dataset" ("record");
@@ -801,9 +854,10 @@ CREATE INDEX IF NOT EXISTS "schema_dataset__schema_citation__record" ON "schema_
 CREATE TABLE IF NOT EXISTS "schema_dataset__schema_creator" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
-  "value" TEXT NOT NULL,
-  "term" TEXT NOT NULL,
-  PRIMARY KEY ("iri", "value", "term"),
+  "value" TEXT,
+  "term" TEXT,
+  "position" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "position"),
   FOREIGN KEY ("iri") REFERENCES "schema_dataset" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_dataset__schema_creator__record" ON "schema_dataset__schema_creator" ("record");
@@ -816,6 +870,24 @@ CREATE TABLE IF NOT EXISTS "schema_dataset__schema_distribution" (
   FOREIGN KEY ("iri") REFERENCES "schema_dataset" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_dataset__schema_distribution__record" ON "schema_dataset__schema_distribution" ("record");
+CREATE TABLE IF NOT EXISTS "schema_dataset__schema_funding" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_dataset" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_dataset__schema_funding__record" ON "schema_dataset__schema_funding" ("record");
+CREATE TABLE IF NOT EXISTS "schema_dataset__schema_has_part" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_dataset" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_dataset__schema_has_part__record" ON "schema_dataset__schema_has_part" ("record");
 CREATE TABLE IF NOT EXISTS "schema_dataset__schema_is_part_of" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -1290,6 +1362,8 @@ CREATE TABLE IF NOT EXISTS "schema_monetary_grant" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
   "type" TEXT,
+  "schema_alternate_name" TEXT,
+  "schema_alternate_name__term" TEXT,
   "schema_amount" TEXT,
   "schema_amount__term" TEXT,
   "schema_description" TEXT,
@@ -1411,13 +1485,28 @@ CREATE TABLE IF NOT EXISTS "schema_property_value" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
   "type" TEXT,
+  "schema_position" TEXT,
+  "schema_position__term" TEXT,
   "schema_property_id" TEXT,
   "schema_property_id__term" TEXT,
+  "schema_unit_text" TEXT,
+  "schema_unit_text__term" TEXT,
+  "schema_url" TEXT,
+  "schema_url__term" TEXT,
   "schema_value" TEXT,
   "schema_value__term" TEXT,
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_property_value__record" ON "schema_property_value" ("record");
+CREATE TABLE IF NOT EXISTS "schema_property_value__schema_value_reference" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_property_value" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_property_value__schema_value_reference__record" ON "schema_property_value__schema_value_reference" ("record");
 CREATE TABLE IF NOT EXISTS "schema_research_project" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -2058,6 +2147,17 @@ CREATE TABLE IF NOT EXISTS "schema_web_page_element__schema_video" (
   FOREIGN KEY ("iri") REFERENCES "schema_web_page_element" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_web_page_element__schema_video__record" ON "schema_web_page_element__schema_video" ("record");
+CREATE TABLE IF NOT EXISTS "spdx_checksum" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "spdx_algorithm" TEXT,
+  "spdx_algorithm__term" TEXT,
+  "spdx_checksum_value" TEXT,
+  "spdx_checksum_value__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "spdx_checksum__record" ON "spdx_checksum" ("record");
 CREATE TABLE IF NOT EXISTS "statements" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,

@@ -27,4 +27,12 @@ form:Identifier a sh:NodeShape ;
     sh:targetClass schema:PropertyValue ;
     rdfs:label "Identifier or value" ;
     sh:property [ sh:path schema:propertyID ; sh:order 1 ; sh:name "Identifier type" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
-    sh:property [ sh:path schema:value ; sh:order 2 ; sh:name "Identifier value" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] .
+    sh:property [ sh:path schema:value ; sh:order 2 ; sh:name "Identifier value" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:unitText ; sh:order 3 ; sh:name "Unit" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:valueReference ; sh:order 4 ; sh:name "Term and qualifiers" ;
+        sh:or ( [ sh:class schema:DefinedTerm ; rdfs:label "Term" ] [ sh:class schema:PropertyValue ; rdfs:label "Qualifier" ] ) ;
+        sh:description "The ontology term of the value, such as an UBERON term for an organ, and qualifiers of the value, such as the concentration of a positive control." ] ;
+    sh:property [ sh:path schema:position ; sh:order 6 ; sh:name "Place" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+        sh:description "The place of the value among the values of its holder, as in the source." ] ;
+    sh:property [ sh:path schema:url ; sh:order 5 ; sh:name "Page" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+        sh:description "The page of the value, such as its Cellosaurus entry." ] .
