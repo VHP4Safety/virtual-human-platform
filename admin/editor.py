@@ -3,13 +3,15 @@ shacl-form."""
 
 from rdflib import RDF, RDFS, XSD, BNode, Graph, Literal, URIRef
 from rdflib.collection import Collection
-from rdflib.namespace import SDO, SH, VOID
+from rdflib.namespace import SDO, SH, VOID, Namespace
 from sqlalchemy import func, select
 
 import database
 from database import records
 from database.tables import PLATFORM, Note, Record
-from linkeddata.profile import PARTS, fields, hierarchy, jsonld_name, profile_graph, settings, shape_of, terms
+from linkeddata.profile import FORM, PARTS, fields, hierarchy, jsonld_name, profile_graph, settings, shape_of, terms
+
+DASH = Namespace("http://datashapes.org/dash#")
 
 
 def counts() -> list[dict]:
@@ -67,8 +69,9 @@ def form_graph() -> Graph:
     """Return the graph for shacl-form: the profile, the class hierarchy, and the names of the records, the list
     terms (sh:in) and their vocabularies. Add two choices, a text and an address, to each sh:or of classes, so that a
     name or an address that is not a record is shown. Give both choices an empty sh:in, so that such a value is
-    marked with the message of the field."""
+    marked with the message of the field. Write each list field in the form of a list that shacl-form edits."""
     found = Graph() + profile_graph() + hierarchy()
+    lists(found)
     for alternatives in list(found.objects(None, SH["or"])):
         listed = Collection(found, alternatives)
         classes = 0
@@ -101,6 +104,52 @@ def form_graph() -> Graph:
     for iri, term in terms(listed).items():
         found.add((URIRef(iri), RDFS.label, Literal(term["name"])))
     return found
+
+
+def lists(found: Graph) -> None:
+    """Write each list field (sh:node dash:ListShape, with the shape of its members at
+    ( [ sh:zeroOrMorePath rdf:rest ] rdf:first )) as a node shape of a list cell: one rdf:first, the member, and one
+    rdf:rest, the next cell or rdf:nil.
+
+    shacl-form edits a list with one class of members. A choice of classes (sh:or) is made one class, of which the
+    classes are subclasses, such as "Person or organisation" (form:Dataset-creator-member)."""
+    for field in list(found.subjects(SH.node, DASH.ListShape)):
+        # The cell shape has an address, such as form:Dataset-creator, as it refers to itself.
+        holder = jsonld_name(str(found.value(None, SH.property, field))).split(":")[-1]
+        name = f"{holder}-{jsonld_name(str(found.value(field, SH.path))).split(':')[-1]}"
+        cell = FORM[name]
+        first = BNode()
+        for member in list(found.objects(field, SH.property)):
+            path = found.value(member, SH.path)
+            if isinstance(path, BNode) and list(found.items(path))[-1:] == [RDF.first]:
+                for predicate, value in list(found.predicate_objects(member)):
+                    found.remove((member, predicate, value))
+                    if predicate == SH["or"] and all(found.value(choice, SH["class"]) is not None for choice in found.items(value)):
+                        union = FORM[f"{name}-member"]
+                        names = []
+                        for choice in found.items(value):
+                            found.add((found.value(choice, SH["class"]), RDFS.subClassOf, union))
+                            names.append(str(found.value(choice, RDFS.label) or jsonld_name(str(found.value(choice, SH["class"])))))
+                        found.add((union, RDFS.label, Literal(" or ".join(names[:1] + [other.lower() for other in names[1:]]))))
+                        found.add((first, SH["class"], union))
+                    elif predicate != SH.path:
+                        found.add((first, predicate, value))
+                found.remove((field, SH.property, member))
+        found.remove((field, SH.node, DASH.ListShape))
+        found.add((field, SH.node, cell))
+        found.add((first, SH.path, RDF.first))
+        found.add((first, SH.minCount, Literal(1)))
+        found.add((first, SH.maxCount, Literal(1)))
+        rest, end, more = BNode(), BNode(), BNode()
+        found.add((end, SH.hasValue, RDF.nil))
+        found.add((more, SH.node, cell))
+        found.add((rest, SH.path, RDF.rest))
+        found.add((rest, SH.minCount, Literal(1)))
+        found.add((rest, SH.maxCount, Literal(1)))
+        found.add((rest, SH["or"], Collection(found, BNode(), [end, more]).uri))
+        found.add((cell, RDF.type, SH.NodeShape))
+        found.add((cell, SH.property, first))
+        found.add((cell, SH.property, rest))
 
 
 def draft_vocabulary(record: Record | None) -> str | None:
