@@ -348,7 +348,7 @@ def casestudy(case: str = "", question: str = "", step: str = "",
     return render_template(
         "case_studies/casestudy.html",
         case_outline=found,
-        case_document=url_for("api.read", path=f"casestudies/{case}"),
+        case_document=url_for("records.read", path=f"casestudies/{case}"),
         # At the address of a question or a step, the page record is that part; the case study is given too.
         case_json=None if address == record.iri else documents.page_document(record.iri, records.latest_change()),
         page_address=address,

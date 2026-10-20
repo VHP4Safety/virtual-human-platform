@@ -18,64 +18,105 @@ from linkeddata.profile import RELEASE, jsonld_name, settings, shapes
 from routes import account, limiter
 from routes.record_pages import SERIALIZATIONS, data, markdown_of
 
-DESCRIPTION = """Records are read in JSON-LD, Turtle, N-Triples or Markdown, and written in JSON-LD or Turtle. The JSON-LD
-context of the platform gives the names of the fields. The SHACL shapes at /api/shapes.ttl tell what each field takes. A record that does not fit
-the shapes is saved, and the problems of each field are given as warnings. Only https:// and http:// addresses are taken as links.
+DESCRIPTION = """The records of the VHP4Safety platform as linked data: tools, methods, case studies, data, models,
+training materials, publications, people, organisations and vocabulary terms.
 
-Writes need a write token or the login of an editor. The ETag of a record is its version. A write that sends this
-version in If-Match is refused when the record was changed after it. With preview=true, nothing is saved and the
-changes are shown."""
+- **Read** a record at the address of its page, such as `/api/tools/aopwiki`, in JSON-LD, Turtle, N-Triples or
+  Markdown. Every page of the website gives the same data with an ending: `/tools/aopwiki.ttl`.
+- **List and filter** the records of a kind, and count them by the values of their fields.
+- **Download** all records, or the vocabulary terms they use, as one file.
+- **Edit** records with a write token: add, replace, move, remove and restore them.
 
-blueprint = Blueprint("api", __name__, url_prefix="/api", description="Records of each kind, at the addresses of their pages.")
+The records follow schema.org and Bioschemas. The JSON-LD context names the fields, and the SHACL shapes at
+`/api/shapes.ttl` describe the fields of each kind."""
+
+# The name of the blueprint is the group of its operations in the documentation; the other groups follow.
+blueprint = Blueprint("records", __name__, url_prefix="/api", description="Read, list, filter and search the records.")
+TAGS = [
+    {"name": "downloads", "description": "All records, the vocabulary terms they use and the shapes of the model, each as one file."},
+    {"name": "editing", "description": "Add, change, move, remove and restore records. A write token for the kind is needed."},
+    {"name": "vocabularies", "description": "Search vocabulary registries for terms. For editors only."},
+]
 limiter.limit("300 per minute")(blueprint)
 TOKEN = [{"token": []}]
 WRITE = {"security": TOKEN, "requestBody": {"content": {"text/turtle": {"schema": {"type": "string"}}}}}
-# Records of a few kinds, as examples of a write.
-EXAMPLES = {
-    "tool": {"summary": "A tool, added with POST /api/tools", "value": {
-        "@type": "SoftwareApplication", "name": "AOP-Builder", "description": "Builds AOPs from the literature.",
-        "url": {"@id": "https://github.com/VHP4Safety/aop-builder"},
-        "processFlowStep": [{"@id": "https://vhp4safety.github.io/glossary#VHP0000156"}]}},
-    "casestudy": {"summary": "A case study with a question, written with PUT /api/casestudies/kidney", "value": {
-        "@type": "bioschemas_draft:Study", "name": "Kidney case study", "description": "To study kidney disease.",
-        "regulatoryQuestion": [{"@type": "HowTo", "name": "Question 1: Cisplatin dose", "position": 1}]}},
-}
+BASE = settings()["base"]
+GLOSSARY = "https://vhp4safety.github.io/glossary#"
+# Examples of the records that are written.
+NEW_TOOL = {"tool": {"summary": "A new tool", "value": {
+    "@type": "SoftwareApplication", "name": "AOP-Builder", "description": "Builds AOPs from the literature.",
+    "url": {"@id": "https://github.com/VHP4Safety/aop-builder"},
+    "processFlowStep": [{"@id": GLOSSARY + "VHP0000156"}]}}}
+CASE_STUDY = {"casestudy": {"summary": "A case study with one question, at /api/casestudies/kidney", "value": {
+    "@type": "bioschemas_draft:Study", "name": "Kidney case study", "description": "To study kidney disease.",
+    "regulatoryQuestion": [{"@type": "HowTo", "name": "Question 1: Cisplatin dose", "position": 1}]}}}
+# Examples of the records that are read.
+TOOL = {"@id": BASE + "tools/aopwikiapi", "@type": "SoftwareApplication", "name": "AOP-Wiki API",
+        "description": "A REST API for the AOP-Wiki RDF data that returns AOPs, Key Events and stressors as JSON or CSV.",
+        "about": {"@id": GLOSSARY + "VHP0000023"}, "license": {"@id": "https://spdx.org/licenses/MIT"},
+        "dct:conformsTo": {"@id": "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"}}
+TOOL_TURTLE = f"""@prefix dct: <http://purl.org/dc/terms/> .
+@prefix glossary: <{GLOSSARY}> .
+@prefix schema: <https://schema.org/> .
+
+<{BASE}tools/aopwikiapi> a schema:SoftwareApplication ;
+    dct:conformsTo <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE> ;
+    schema:about glossary:VHP0000023 ;
+    schema:description "A REST API for the AOP-Wiki RDF data that returns AOPs, Key Events and stressors as JSON or CSV." ;
+    schema:license <https://spdx.org/licenses/MIT> ;
+    schema:name "AOP-Wiki API" .
+"""
+TOOL_MARKDOWN = f"""# AOP-Wiki API
+
+<{BASE}tools/aopwikiapi>
+
+**Description**
+
+A REST API for the AOP-Wiki RDF data that returns AOPs, Key Events and stressors as JSON or CSV.
+
+- **Topics:** [Adverse Outcome Pathway]({GLOSSARY}VHP0000023)
+- **License:** [MIT License](https://spdx.org/licenses/MIT)
+
+---
+
+Data: [JSON-LD]({BASE}tools/aopwikiapi.jsonld) · [Turtle]({BASE}tools/aopwikiapi.ttl) · [N-Triples]({BASE}tools/aopwikiapi.nt)
+"""
 
 
-class Record(Schema.from_dict({"@type": fields.Raw(metadata={"description": "The class of the record. It is needed for a new record."})})):
-    """A record in JSON-LD. The fields are set by the SHACL shapes at /api/shapes.ttl."""
+class Record(Schema.from_dict({"@type": fields.Raw(metadata={"description": "The class of the record, such as SoftwareApplication. Required for a new record."})})):
+    """A record in JSON-LD. The JSON-LD context (x-jsonld-context) names its fields, and the SHACL shapes at
+    /api/shapes.ttl describe them."""
 
     class Meta:
         unknown = INCLUDE
 
 
 class Writing(Schema):
-    preview = fields.Boolean(load_default=False, metadata={"description": "Nothing is saved, and the changes are shown."})
-    page = fields.Boolean(load_default=False, metadata={"description": "With preview, the page is shown in HTML as it will be saved."})
+    preview = fields.Boolean(load_default=False, metadata={"description": "Check the record without saving it. The changes and the warnings are returned."})
+    page = fields.Boolean(load_default=False, metadata={"description": "With preview, return the page of the record in HTML, as it will look when saved."})
 
 
 class Removal(Schema):
-    permanent = fields.Boolean(load_default=False, metadata={"description": "The address is removed too, so that it can be used again."})
+    permanent = fields.Boolean(load_default=False, metadata={"description": "Also free the address, so that a new record can use it."})
 
 
 class Restore(Schema):
-    record = fields.String(required=True, metadata={"description": "The page address of the record, such as tools/aopsuite."})
+    record = fields.String(required=True, metadata={"description": "The address of the page of the record, such as tools/aopsuite."})
 
 
 class Move(Restore):
-    to = fields.String(required=True, metadata={"description": "The new address of the record, such as tools/aop-suite."})
+    to = fields.String(required=True, metadata={"description": "The new address, such as tools/aop-suite."})
 
 
 class Done(Schema.from_dict({"@id": fields.String(metadata={"description": "The address (IRI) of the record.", "format": "iri"})})):
-    """The address and the version of the record, the page of the change and the problems of each field are
-    given for a saved change."""
+    """The result of a saved change."""
 
-    change = fields.String()
-    version = fields.String(allow_none=True)
-    warnings = fields.Dict(keys=fields.String(), values=fields.List(fields.String()), metadata={"description": "The problems of each field. The record is saved with them."})
+    change = fields.String(metadata={"description": "The page of the change in the list of changes."})
+    version = fields.String(allow_none=True, metadata={"description": "The new version of the record, as in the ETag header."})
+    warnings = fields.Dict(keys=fields.String(), values=fields.List(fields.String()), metadata={"description": "The problems found in each field. The record is saved with them."})
 
 
-class Image(Schema.from_dict({"@id": fields.String(metadata={"description": "The address (IRI) of the image, for the image field of a record.", "format": "iri"})})):
+class Image(Schema.from_dict({"@id": fields.String(metadata={"description": "The address of the uploaded image, for the image field of a record.", "format": "iri"})})):
     pass
 
 
@@ -141,7 +182,7 @@ def done(address: str, revision, status: int, warnings: dict | None = None):
     version = record.updated_at if record is not None else None
     headers = {"ETag": f'"{version}"'} if version else {}
     if status == 201:
-        headers["Location"] = url_for("api.read", path=records.path(address))
+        headers["Location"] = url_for("records.read", path=records.path(address))
     return {"@id": address, "change": url_for("changes.change", number=revision.id), "version": version, "warnings": warnings or {}}, status, headers
 
 
@@ -224,11 +265,11 @@ def store(address: str, body: dict, preview: bool = False, page: bool = False):
     return done(address, revision, 201 if revision.action == "Added" else 200, warnings)
 
 
-def formats(description: str, *media: str) -> dict:
-    """The answer is documented in each of the formats."""
+def formats(description: str, examples: dict) -> dict:
+    """The answer is documented in each of its formats, with an example of each."""
     content = {}
-    for name in media:
-        content[name] = {"schema": {"$ref": "#/components/schemas/Record"} if name == "application/ld+json" else {"type": "string"}}
+    for name, example in examples.items():
+        content[name] = {"schema": {"$ref": "#/components/schemas/Record"} if name == "application/ld+json" else {"type": "string"}, "example": example}
     return {"200": {"description": description, "content": content}}
 
 
@@ -241,16 +282,16 @@ def found_record(path: str):
 
 
 class Search(Schema):
-    text = fields.String(load_default="", metadata={"description": "Text in the name or address."})
-    of_class = fields.List(fields.Url(metadata={"format": "iri"}), data_key="class", load_default=list, metadata={"description": "Class IRIs of the records or terms. Subclasses are included."})
-    within = fields.String(load_default="", metadata={"description": "The start of the address, such as a vocabulary namespace."})
-    vocabulary = fields.Url(load_default="", metadata={"format": "iri", "description": "The terms of this vocabulary are searched."})
-    limit = fields.Integer(load_default=20, validate=lambda number: 1 <= number <= 200)
+    text = fields.String(load_default="", metadata={"description": "Text to find in the name or the address.", "example": "aop-wiki"})
+    of_class = fields.List(fields.Url(metadata={"format": "iri"}), data_key="class", load_default=list, metadata={"description": "Only records or terms of these classes (IRIs), with their subclasses.", "example": ["https://schema.org/SoftwareApplication"]})
+    within = fields.String(load_default="", metadata={"description": "Only addresses that start with this text, such as a vocabulary namespace."})
+    vocabulary = fields.Url(load_default="", metadata={"format": "iri", "description": "Only the terms of this vocabulary (its IRI)."})
+    limit = fields.Integer(load_default=20, validate=lambda number: 1 <= number <= 200, metadata={"description": "The largest number of results, from 1 to 200."})
 
 
 class Registry(Schema):
-    text = fields.String(load_default="", metadata={"description": "Text in the name of a vocabulary or a term."})
-    namespace = fields.String(load_default="", metadata={"description": "The namespace of the vocabulary searched."})
+    text = fields.String(load_default="", metadata={"description": "Text to find in the name of a vocabulary or a term.", "example": "liver"})
+    namespace = fields.String(load_default="", metadata={"description": "The namespace of the vocabulary to search in.", "example": "http://purl.obolibrary.org/obo/UBERON_"})
 
 
 def registered() -> None:
@@ -260,18 +301,25 @@ def registered() -> None:
         abort(401, message="Login or write token needed.")
 
 
-@blueprint.get("/registries")
+@blueprint.get("/registries", tags=["vocabularies"])
+@blueprint.response(200, {"type": "object"}, example=PROVIDERS)
 def registries():
-    """The vocabulary registries searched by the editor are listed."""
+    """List the vocabulary registries.
+
+    Returns the registries that the editor searches for vocabulary terms, by their names."""
     registered()
     return jsonify(PROVIDERS)
 
 
-@blueprint.get("/registries/<registry>/vocabularies")
+@blueprint.get("/registries/<registry>/vocabularies", tags=["vocabularies"])
 @blueprint.arguments(Registry, location="query")
+@blueprint.response(200, {"type": "array"}, example=[{"id": "uberon", "title": "Uber-anatomy ontology", "namespace": "http://purl.obolibrary.org/obo/UBERON_",
+                                                     "description": "An integrated cross-species anatomy ontology.", "prefix": "UBERON"}])
 def registry_vocabularies(given, registry):
-    """The vocabularies of a registry with the text in their identifier or title are listed. The title, namespace
-    and description of each are given."""
+    """Search the vocabularies of a registry.
+
+    Returns up to 50 vocabularies whose identifier or title contains the text, with the title, namespace and
+    description of each."""
     registered()
     if registry not in PROVIDERS:
         abort(404, message="No such registry.")
@@ -279,11 +327,15 @@ def registry_vocabularies(given, registry):
         return jsonify(provider.vocabularies(given["text"])[:50])
 
 
-@blueprint.get("/registries/terms")
+@blueprint.get("/registries/terms", tags=["vocabularies"])
 @blueprint.arguments(Registry, location="query")
+@blueprint.response(200, {"type": "object"}, example={"registry": "ols", "title": PROVIDERS["ols"], "terms": [
+    {"@id": "http://purl.obolibrary.org/obo/UBERON_0002107", "name": "liver", "description": "An exocrine gland which secretes bile.", "code": "UBERON:0002107"}]})
 def registry_terms(given):
-    """The terms in a namespace with the text in their names are listed, from the registry of the namespace. The
-    address, label, definition and code of each term are given."""
+    """Search the terms of a vocabulary.
+
+    Returns the terms of the namespace whose name contains the text, with the address, label, definition and code
+    of each. The terms come from the registry that serves the namespace."""
     registered()
     if not given["text"].strip() or not given["namespace"]:
         return jsonify({"registry": None, "terms": []})
@@ -299,9 +351,14 @@ def registry_terms(given):
 
 @blueprint.get("/search")
 @blueprint.arguments(Search, location="query")
+@blueprint.response(200, {"type": "object"}, content_type="application/ld+json", example={"@graph": [
+    {"@id": BASE + "tools/aopwikiapi", "@type": "SoftwareApplication", "name": "AOP-Wiki API"},
+    {"@id": GLOSSARY + "VHP0000318", "@type": "DefinedTerm", "name": "AOP-Wiki API"}]})
 def search(given):
-    """Records, parts and vocabulary terms are found by name or address. The address, class and name of each
-    are given in JSON-LD."""
+    """Search records and vocabulary terms.
+
+    Returns the records, parts and terms whose name or address contains the text, with the address, class and
+    name of each, in JSON-LD."""
     found = []
     among = records.nodes_with(str(SDO.DefinedTerm), str(SDO.inDefinedTermSet), [given["vocabulary"]]) if given["vocabulary"] else None
     for record in records.search(given["text"], given["of_class"] or list(settings()["kinds"].values()), given["within"], limit=given["limit"], among=among):
@@ -310,14 +367,14 @@ def search(given):
 
 
 class FacetValue(Schema):
-    value = fields.String(metadata={"description": "The value as in records and queries: an IRI, or a text of a list."})
+    value = fields.String(metadata={"description": "The value, as it is given in a filter: an IRI, or a text from a list."})
     name = fields.String(metadata={"description": "The name of the record or the label of the term."})
-    count = fields.Integer(metadata={"description": "The count of found records with the value."})
-    fits = fields.Boolean(metadata={"description": "False for a text where an IRI is needed, or for a value that is not in the list."})
+    count = fields.Integer(metadata={"description": "The number of records with the value."})
+    fits = fields.Boolean(metadata={"description": "False when the value does not fit the field: a text where a link is needed, or a value that is not in the list."})
 
 
 class Query(Schema):
-    search = fields.String(load_default="", metadata={"description": "Text in the name or address of the record, in any case."})
+    search = fields.String(load_default="", metadata={"description": "Text to find in the name or the address of the record, in upper or lower case.", "example": "aop"})
 
     class Meta:
         unknown = INCLUDE
@@ -332,22 +389,27 @@ class Query(Schema):
 
 
 KIND = "/<any({}):kind>".format(", ".join(settings()["kinds"]))
-LISTED = "The records in JSON-LD (the default), Turtle, N-Triples or Markdown, by the Accept header."
+OF_KIND = [{"in": "path", "name": "kind", "description": "The kind of records.", "example": "tools"}]
+AT_PATH = [{"in": "path", "name": "path", "description": "The address of the page of the record, without the base address.", "example": "tools/aopwikiapi"}]
+LISTED = "One page of records, in the format of the Accept header."
 
 
-@blueprint.route(KIND, methods=["GET"])
-@blueprint.response(200, {"type": "object"}, content_type="application/ld+json", description=LISTED)
-@blueprint.alt_response(200, schema={"type": "string"}, content_type="text/turtle", success=True, description=LISTED)
-@blueprint.alt_response(200, schema={"type": "string"}, content_type="application/n-triples", success=True, description=LISTED)
-@blueprint.alt_response(200, schema={"type": "string"}, content_type="text/markdown", success=True, description=LISTED)
+@blueprint.route(KIND, methods=["GET"], parameters=OF_KIND)
+@blueprint.response(200, {"type": "object"}, content_type="application/ld+json", description=LISTED, example={"@graph": [TOOL]})
+@blueprint.alt_response(200, schema={"type": "string"}, content_type="text/turtle", success=True, description=LISTED, example=TOOL_TURTLE)
+@blueprint.alt_response(200, schema={"type": "string"}, content_type="application/n-triples", success=True, description=LISTED,
+                        example=f'<{BASE}tools/aopwikiapi> <https://schema.org/name> "AOP-Wiki API" .\n')
+@blueprint.alt_response(200, schema={"type": "string"}, content_type="text/markdown", success=True, description=LISTED, example=TOOL_MARKDOWN)
 @blueprint.arguments(Query, location="query", unknown=INCLUDE)
 @blueprint.paginate(page_size=20, max_page_size=200)
 def listed(given, kind, pagination_parameters):
-    """The records of a kind are listed a page at a time, found by name and by field values.
+    """List the records of a kind.
 
-    A field value is given by the name of the field in /api/shapes.ttl, such as
-    /api/tools?processFlowStep=https://vhp4safety.github.io/glossary%23VHP0000156. Several values of one field
-    match any. Several fields match all."""
+    Returns one page of records, sorted by name, in JSON-LD (the default), Turtle, N-Triples or Markdown, as the
+    Accept header asks. `search` finds records by name or address. A field filters by its values, with the name
+    of the field in `/api/shapes.ttl`, such as
+    `/api/tools?processFlowStep=https://vhp4safety.github.io/glossary%23VHP0000156`. Several values of one field
+    find the records with any of them; several fields find the records that match all of them."""
     of_class = settings()["kinds"][kind]
     total, iris = records.page(of_class, records.filters(of_class, given), given["search"], pagination_parameters.first_item, pagination_parameters.page_size)
     pagination_parameters.item_count = total
@@ -369,23 +431,31 @@ def listed(given, kind, pagination_parameters):
     return Response(json.dumps({"@context": documents.context(settings()), "@graph": documented}, indent=1), mimetype="application/ld+json", headers={"Vary": "Accept"})
 
 
-@blueprint.get(KIND + "/facets")
+@blueprint.get(KIND + "/facets", parameters=OF_KIND)
 @blueprint.arguments(Query, location="query", unknown=INCLUDE)
 @blueprint.response(200, {"type": "object", "additionalProperties": {"type": "array", "items": {"$ref": "#/components/schemas/FacetValue"}}},
-                    description="The values of each field, by the name of the field.")
+                    description="The values of each field, by the name of the field.",
+                    example={"about": [{"value": GLOSSARY + "VHP0000023", "name": "Adverse Outcome Pathway", "count": 9, "fits": True},
+                                       {"value": GLOSSARY + "VHP0000148", "name": "Chemical Information Tool", "count": 5, "fits": True}]})
 def counted(given, kind):
-    """The found records are counted per value of each field that can be browsed, with the query of the list.
+    """Count the records of a kind by field value.
 
-    The filter of a field is not used for the counts of that field, so each count is what that value finds."""
+    Returns the values of each field that can be filtered, with the number of records that have each value, for
+    the same query as the list. The filter of a field is not applied to the counts of that field, so each count
+    is the number of records that the value finds."""
     return jsonify(records.counted(settings()["kinds"][kind], given))
 
 
-@blueprint.post(KIND)
-@blueprint.arguments(Record, content_type="application/ld+json", examples=EXAMPLES)
-@blueprint.response(201, Done)
+@blueprint.post(KIND, tags=["editing"], parameters=OF_KIND)
+@blueprint.arguments(Record, content_type="application/ld+json", examples=NEW_TOOL)
+@blueprint.response(201, Done, description="Added.")
 @blueprint.doc(**WRITE)
 def added(body, kind):
-    """A record is added in JSON-LD or Turtle, at an address made from its name."""
+    """Add a record.
+
+    Saves a new record of the kind, sent in JSON-LD or Turtle, at an address made from its name, such as
+    `/tools/aop-builder`. A vocabulary term keeps the address given in `@id`. A record that does not fit the
+    shapes is saved too, and the problems are returned as warnings."""
     # A record in Turtle is the node of the class of the kind.
     given = None
     if request.mimetype == "text/turtle":
@@ -403,14 +473,19 @@ def added(body, kind):
     return store(address, body)
 
 
-@blueprint.get("/<path:path>")
-@blueprint.doc(responses=formats("The record, in the format of the Accept header.", "application/ld+json", *SERIALIZATIONS, "text/markdown"))
+@blueprint.get("/<path:path>", parameters=AT_PATH)
+@blueprint.doc(responses=formats("The record, in the format of the Accept header.", {
+    "application/ld+json": TOOL, "text/turtle": TOOL_TURTLE,
+    "application/n-triples": f'<{BASE}tools/aopwikiapi> <https://schema.org/name> "AOP-Wiki API" .\n', "text/markdown": TOOL_MARKDOWN}))
 def read(path):
-    """A record or a part is read at the address of its page, in JSON-LD, Turtle, N-Triples or Markdown, by the
-    Accept header."""
+    """Get a record.
+
+    Returns the record or part at the address of its page, such as `tools/aopwikiapi`, in JSON-LD (the default),
+    Turtle, N-Triples or Markdown, as the Accept header asks. The ETag header gives its version, to send in
+    If-Match when it is changed. A moved record redirects to its new address; a removed record gives 410 Gone."""
     record = found_record(path)
     if record.moved_to:
-        return redirect(url_for("api.read", path=records.path(record.moved_to)), code=301)
+        return redirect(url_for("records.read", path=records.path(record.moved_to)), code=301)
     if record.removed_at:
         abort(410, message="Removed.")
     media = request.accept_mimetypes.best_match(["application/ld+json", *SERIALIZATIONS, "text/markdown"]) or "application/ld+json"
@@ -423,14 +498,18 @@ def read(path):
     return answer
 
 
-@blueprint.put("/<path:path>")
+@blueprint.put("/<path:path>", tags=["editing"], parameters=AT_PATH)
 @blueprint.arguments(Writing, location="query")
-@blueprint.arguments(Record, content_type="application/ld+json", examples=EXAMPLES)
-@blueprint.response(200, Done, description="Replaced. With preview=true, the changes are shown and nothing is saved.")
+@blueprint.arguments(Record, content_type="application/ld+json", examples=CASE_STUDY)
+@blueprint.response(200, Done, description="Replaced. With preview=true, the changes and the warnings, and nothing is saved.")
 @blueprint.alt_response(201, schema=Done, description="Added.")
 @blueprint.doc(**WRITE)
 def replace(given, body, path):
-    """A record is added or replaced at the address of its page, in JSON-LD or Turtle."""
+    """Add or replace a record at an address.
+
+    Saves the record, sent in JSON-LD or Turtle, at the address of its page. With the version from the ETag of a
+    read in If-Match, the write is refused (412) when the record was changed after that read. With
+    `preview=true`, nothing is saved, and the changes and warnings are returned."""
     address = records.address(path)
     record = records.get(address)
     whole(record)
@@ -441,15 +520,15 @@ def replace(given, body, path):
     return store(address, body, given["preview"], given["page"])
 
 
-@blueprint.delete("/<path:path>")
+@blueprint.delete("/<path:path>", tags=["editing"], parameters=AT_PATH)
 @blueprint.arguments(Removal, location="query")
 @blueprint.response(200, Done, description="Removed.")
 @blueprint.doc(security=TOKEN)
 def remove(given, path):
-    """A record is removed, with its parts.
+    """Remove a record.
 
-    Then 410 Gone is given at its address, and the address is not used again, unless the removal is permanent.
-    The record can be put back with restore."""
+    Removes the record with its parts. Its address then gives 410 Gone and is not used again, unless
+    `permanent=true`. A removed record is put back with `POST /api/restore`."""
     record = found_record(path)
     if record.removed_at and not given["permanent"]:
         abort(404, message="No record at this address.")
@@ -461,12 +540,14 @@ def remove(given, path):
     return done(record.iri, writes.retire(record.iri, who.name, who.orcid), 200)
 
 
-@blueprint.post("/move")
+@blueprint.post("/move", tags=["editing"])
 @blueprint.arguments(Move)
-@blueprint.response(200, Done, description="Moved. The old address forwards to the new one.")
+@blueprint.response(200, Done, description="Moved.")
 @blueprint.doc(security=TOKEN)
 def move(body):
-    """A record is moved, with its parts, to a new address. The old address forwards to the new one."""
+    """Move a record to a new address.
+
+    Moves the record with its parts. The old address redirects to the new one."""
     record = found_record(body["record"])
     if record.removed_at:
         abort(404, message="No record at this address.")
@@ -479,12 +560,14 @@ def move(body):
     return done(records.address(body["to"]), writes.move(record.iri, records.address(body["to"]), who.name, who.orcid), 200)
 
 
-@blueprint.post("/restore")
+@blueprint.post("/restore", tags=["editing"])
 @blueprint.arguments(Restore)
 @blueprint.response(200, Done, description="Restored.")
 @blueprint.doc(security=TOKEN)
 def restore(body):
-    """A removed record is put back, with its parts."""
+    """Restore a removed record.
+
+    Puts the record back at its address, with its parts."""
     record = found_record(body["record"])
     if not record.removed_at:
         abort(404, message="No removed record at this address.")
@@ -492,13 +575,14 @@ def restore(body):
     return done(record.iri, writes.restore(record.iri, who.name, who.orcid), 200)
 
 
-@blueprint.post("/images")
-@blueprint.response(201, Image)
+@blueprint.post("/images", tags=["editing"])
+@blueprint.response(201, Image, description="Uploaded.")
 @blueprint.doc(security=TOKEN)
 def upload_image():
-    """An image, such as the logo of a tool, is uploaded in the form field "image".
+    """Upload an image.
 
-    The image is checked and saved as WebP. Its address is given in the image field of a record."""
+    Saves an image, such as the logo of a tool, sent in the form field `image`, and returns its address for the
+    image field of a record. The image is saved as WebP; an image over 5 MB is refused."""
     who = None
     for kind in settings()["kinds"]:
         who = who or identity(kind)
@@ -517,28 +601,45 @@ def upload_image():
         abort(422, message=str(problem))
 
 
-@blueprint.get("/dump")
-@blueprint.doc(responses=formats("Every published statement, in Turtle or N-Triples, by the Accept header.", *SERIALIZATIONS))
+@blueprint.get("/dump", tags=["downloads"])
+@blueprint.doc(responses=formats("All records, in the format of the Accept header.", {
+    "application/n-triples": f'<{BASE}tools/aopwikiapi> <https://schema.org/name> "AOP-Wiki API" .\n', "text/turtle": TOOL_TURTLE}))
 def dump():
-    """Every record with a page is given with its parts, as one file. Private fields are left out. The file is
-    described at /.well-known/void."""
+    """Download all records.
+
+    Returns every record that has a page, with its parts, as one file in N-Triples (the default) or Turtle.
+    Private fields, such as email addresses, are left out. The dataset is described at `/.well-known/void`."""
     media = request.accept_mimetypes.best_match(["application/n-triples", "text/turtle"]) or "application/n-triples"
     return data(documents.published(), media)
 
 
-@blueprint.get("/dump/terms")
-@blueprint.doc(responses=formats("The vocabulary terms that the records link to, in Turtle or N-Triples, by the Accept header.", *SERIALIZATIONS))
+@blueprint.get("/dump/terms", tags=["downloads"])
+@blueprint.doc(responses=formats("The vocabulary terms, in the format of the Accept header.", {
+    "application/n-triples": f'<{GLOSSARY}VHP0000023> <https://schema.org/name> "Adverse Outcome Pathway" .\n',
+    "text/turtle": f'<{GLOSSARY}VHP0000023> a <https://schema.org/DefinedTerm> ;\n    <https://schema.org/name> "Adverse Outcome Pathway" .\n'}))
 def dump_terms():
-    """The vocabulary terms that the records link to are given as one file, apart from the records. The source and
-    licence of the terms are given by each vocabulary (/.well-known/void)."""
+    """Download the vocabulary terms that the records use.
+
+    Returns the vocabulary terms that the records link to, as one file in N-Triples (the default) or Turtle. The
+    source and the licence of each vocabulary are given at `/.well-known/void`."""
     media = request.accept_mimetypes.best_match(["application/n-triples", "text/turtle"]) or "application/n-triples"
     return data(documents.published_terms(), media)
 
 
-@blueprint.get("/shapes.ttl")
-@blueprint.doc(responses=formats("The shapes, in Turtle.", "text/turtle"))
+@blueprint.get("/shapes.ttl", tags=["downloads"])
+@blueprint.doc(responses=formats("The shapes, in Turtle.", {"text/turtle": """@prefix schema: <https://schema.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+[] a sh:NodeShape ;
+    sh:targetClass schema:SoftwareApplication ;
+    sh:property [ sh:path schema:name ; sh:name "Name" ; sh:datatype xsd:string ; sh:maxCount 1 ] .
+"""}))
 def model_shapes():
-    """The SHACL shapes of the model tell what each field takes."""
+    """Get the SHACL shapes of the model.
+
+    Returns the shapes in Turtle. They give the fields of each kind of record, their names in JSON-LD and the
+    values that each field takes."""
     return Response(shapes().serialize(format="turtle"), mimetype="text/turtle")
 
 
@@ -564,7 +665,9 @@ def register(app) -> None:
             return api.handle_http_exception(problem)
         return render_template("error.html", error=problem, page_title=f"{problem.code} {problem.name} — VHP4Safety",
                                meta_description=problem.description or problem.name), problem.code
-    api.spec.components.security_scheme("token", {"type": "http", "scheme": "bearer", "description": "A write token, sent as Authorization: Bearer <token>. A token is made at /account/tokens/ and gives the kinds that it can write. It expires after 90 days by default."})
+    api.spec.components.security_scheme("token", {"type": "http", "scheme": "bearer", "description": "A write token, sent as `Authorization: Bearer <token>`. Editors make tokens at `/account/tokens/`. A token writes the kinds chosen for it and expires after 90 days by default."})
     api.spec.components.schema("Record", component={"x-jsonld-context": documents.context(settings())}, schema=Record)
     api.spec.components.schema("FacetValue", schema=FacetValue)
     api.register_blueprint(blueprint)
+    for tag in TAGS:
+        api.spec.tag(tag)

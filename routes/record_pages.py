@@ -122,7 +122,7 @@ def negotiate():
     if path in settings()["kinds"] and media != "text/html":
         g.listing = path
         g.media = media
-        return current_app.view_functions["api.listed"](kind=path)
+        return current_app.view_functions["records.listed"](kind=path)
     # A kind without a page of its own lists its records.
     if path in settings()["kinds"] and request.url_rule is None:
         return listing_page(path)
@@ -196,7 +196,7 @@ def link_data(response):
         for ending, media in FORMATS.items():
             links.append(f'<{page_link(g.record.iri)}{ending}>; rel="describedby"; type="{media}"')
         links.append(f'<{page_link(g.record.iri)}/ro-crate-metadata.json>; rel="describedby"; type="application/ld+json"; profile="{crates.PROFILE}"')
-        links.append(f'<{url_for("api.model_shapes")}>; rel="http://www.w3.org/ns/ldp#constrainedBy"; type="text/turtle"')
+        links.append(f'<{url_for("records.model_shapes")}>; rel="http://www.w3.org/ns/ldp#constrainedBy"; type="text/turtle"')
         links.append(f'<{page_link(g.record.iri)}{MARKDOWN}>; rel="alternate"; type="text/markdown"')
         response.headers["Vary"] = "Accept"
     # The records' licence, on their pages, their data and the API, as the platform's catalogue states it; and
