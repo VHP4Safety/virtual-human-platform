@@ -185,8 +185,11 @@
     </div>
 
 
-    <!-- Data Button -->
-    <button class="btn btn-vhpblue text-nowrap" style="width: 150px;" onclick="location.href='/data'" type="button">Data</button>
+    <!-- Data and Models Button Group -->
+    <div class="btn-group" role="group" style="width: 150px;">
+      <button class="btn btn-vhpblue text-nowrap px-2" onclick="location.href='/data'" type="button">Data</button>
+      <button class="btn btn-vhpblue text-nowrap px-2" style="border-left: 1px solid rgba(255,255,255,.6);" onclick="location.href='/models'" type="button">Models</button>
+    </div>
 
   </div>
 </nav>
@@ -283,6 +286,9 @@
 
       <!-- Data button -->
       <button class="btn btn-vhpblue" onclick="location.href='/data'" data-bs-dismiss="offcanvas">Data</button>
+
+      <!-- Models button -->
+      <button class="btn btn-vhpblue" onclick="location.href='/models'" data-bs-dismiss="offcanvas">Models</button>
 
       <!-- Glossary Toggle Switch (mobile) -->
       <div class="form-check form-switch mt-2" data-vhp-glossary-skip>
