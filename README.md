@@ -132,8 +132,8 @@ python app.py
 ```
 
 The application will be available at [http://localhost:5050/](http://localhost:5050/).
-`FLASK_DEBUG=1` turns on the Flask debugger and reloader for development; it is never set in production.
-On a deployment at another address, such as a test site, `PLATFORM_BASE` is set to that address before the launch
+With `FLASK_DEBUG=1`, the Flask debugger and reloader are on, for development. Do not set it in production.
+For a deployment at another address, such as a test site, set `PLATFORM_BASE` to that address before the launch
 (see the settings in [linkeddata/README.md](linkeddata/README.md)).
 
 ### Deployment with Docker
