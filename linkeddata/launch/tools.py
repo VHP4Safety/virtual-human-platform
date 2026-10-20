@@ -120,13 +120,23 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             if found:
                 row[field] = [{"@type": kind, "name": title, address_field: link(address)} for title, address in found]
         provider = detail.get("provider") if isinstance(detail.get("provider"), dict) else {}
+        contact = provider.get("contact") if isinstance(provider.get("contact"), dict) else {}
+        # A contact with one of these names is linked to the record of that name, not added as a person.
+        named = {}
         providers = []
         if present(provider.get("name")):
-            identifier = "organizations/" + slug(provider["name"])
-            organization = {"@id": identifier, "@type": "Organization", "name": provider["name"]}
-            if present(provider.get("url")):
-                organization["url"] = web_link(provider["url"])
-            others.setdefault(identifier, organization)
+            # In the catalogue template, the contact is described as a person, and the provider URL as the address of
+            # an organisation. A provider with the name of its contact is one record: a person when no URL is given.
+            if slug(provider["name"]) == slug(str(contact.get("name") or "")) and not present(provider.get("url")):
+                identifier = "people/" + slug(provider["name"])
+                others.setdefault(identifier, {"@id": identifier, "@type": "Person", "name": provider["name"].strip()})
+            else:
+                identifier = "organizations/" + slug(provider["name"])
+                organization = {"@id": identifier, "@type": "Organization", "name": provider["name"]}
+                if present(provider.get("url")):
+                    organization["url"] = web_link(provider["url"])
+                others.setdefault(identifier, organization)
+            named[slug(provider["name"])] = identifier
             providers.append(link(identifier))
         # "development" means hosted by VHP4Safety; "External" and "independent" mean hosted elsewhere.
         if str(instance.get("vhp-platform") or "").strip().lower() == "development":
@@ -150,12 +160,17 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             for position, name in enumerate(names):
                 if not present(name):
                     continue
-                identifier = "people/" + slug(name)
-                row_of_person = {"@id": identifier, "@type": "Person", "name": name.strip()}
                 email = emails[position] if position < len(emails) else ""
-                if present(email):
-                    row_of_person["email"] = email.strip()
-                others.setdefault(identifier, row_of_person)
+                if slug(name) in named:
+                    identifier = named[slug(name)]
+                    if present(email):
+                        others[identifier].setdefault("email", email.strip())
+                else:
+                    identifier = "people/" + slug(name)
+                    row_of_person = {"@id": identifier, "@type": "Person", "name": name.strip()}
+                    if present(email):
+                        row_of_person["email"] = email.strip()
+                    others.setdefault(identifier, row_of_person)
                 maintainers.append(link(identifier))
         if maintainers:
             row["maintainer"] = maintainers

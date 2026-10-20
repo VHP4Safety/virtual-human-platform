@@ -44,7 +44,7 @@ def test_imports(monkeypatch, tmp_path):
     files = {
         "https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/service_index.json": tools,
         "https://cloud.vhp4safety.nl/service/aop-builder.json": {"provider": {"name": "Example Institute", "contact": {"name": "Test Author"}}},
-        "https://cloud.vhp4safety.nl/service/x.json": {},
+        "https://cloud.vhp4safety.nl/service/x.json": {"provider": {"name": "Test Lab", "url": "https://lab.example/", "contact": {"name": "Test Lab"}}},
     }
     monkeypatch.setattr(imports, "fetch", lambda url: json.dumps(files[url]).encode())
     assert imports.import_all(once=True) == []
@@ -52,6 +52,7 @@ def test_imports(monkeypatch, tmp_path):
     found = records.graph([BASE + "tools/aop-builder", BASE + "tools/x"])
     assert (tool.name, documents.stored_values(found, tool.iri, "processFlowStep")) == ("AOP-Builder", [STEP])
     assert records.get(BASE + "people/test-author").name == "Test Author"
+    assert (records.get(BASE + "people/test-lab"), records.get(BASE + "organizations/test-lab").type) == (None, "https://schema.org/Organization")
     with database.session() as db:
         assert db.get(Source, "tools").fetched_at
         assert (BASE + "tools/x", "Other") in [(note.iri, note.value) for note in db.scalars(select(Note))]
