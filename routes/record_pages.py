@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, Response, abort, current_app, g, redirect, render_template, request, url_for
 from markupsafe import Markup
-from rdfsolve._uri import prefix_map
+from rdfsolve.iris import prefix_map
 from rdflib import RDF, Graph
 from rdflib.namespace import SDO
 
@@ -49,7 +49,6 @@ def data(found: Graph, media: str, iri: str | None = None) -> Response:
     else:
         # The namespaces of the properties and the classes are named: by the prefixes of the profile, and the others
         # by rdfsolve (glossary for https://vhp4safety.github.io/glossary#), so that none is written as ns1.
-        # rdfsolve gap: prefix_map is imported from rdfsolve.iris once the rdfsolve pin includes its export (9770523).
         terms = {str(term) for term in found.predicates()} | {str(term) for term in found.objects(None, RDF.type)}
         for prefix, namespace in prefix_map(terms, settings()["prefixes"]).items():
             found.bind(prefix, namespace, override=True, replace=True)
