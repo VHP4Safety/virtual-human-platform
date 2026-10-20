@@ -14,15 +14,16 @@ def statements(document: str | None) -> Graph:
     return graph
 
 
-def key(graph: Graph, value) -> str:
+def key(graph: Graph, value, within: frozenset = frozenset()) -> str:
     """Return the comparison key of a value. "X" and "X"^^xsd:string have the same key. Compare a part (a node
-    without an address) by its values."""
-    if not isinstance(value, BNode):
+    without an address) by its values. Compare a part with an address within it, such as a member of a list, by its
+    address and its values too, so that a change of the member is a change of the part."""
+    if not isinstance(value, BNode) and not (within and value not in within and records.is_part(graph, value)):
         return ("link " if isinstance(value, URIRef) else "text ") + str(value)
     held = []
     for predicate, given in graph.predicate_objects(value):
-        held.append(f"{predicate} {key(graph, given)}")
-    return "part " + " ".join(sorted(held))
+        held.append(f"{predicate} {key(graph, given, within | {value})}")
+    return "part " + ("" if isinstance(value, BNode) else str(value) + " ") + " ".join(sorted(held))
 
 
 def compared(before: Graph, after: Graph, old, new, kind: str | None, names: dict[str, str]) -> list[dict]:
