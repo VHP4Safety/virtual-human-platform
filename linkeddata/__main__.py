@@ -3,8 +3,8 @@
     python -m linkeddata model                  write the model's schema and tables
     python -m linkeddata check                  check the generated files, vocabularies and database against
                                                 the model's release
-    python -m linkeddata import                 import every source into the database
-    python -m linkeddata launch                 make the corrections of launch.yaml, once, after the first import
+    python -m linkeddata import                 import the weekly sources into the database
+    python -m linkeddata launch                 import every source and make the corrections, once, at launch
     python -m linkeddata export                 write the platform's records to the records repository
     python -m linkeddata push                   push the records repository to its remote
     python -m linkeddata backup                 copy the database to PLATFORM_STATE/backups (the latest 14 are kept)
@@ -55,7 +55,7 @@ def main() -> None:
     elif args.command == "launch":
         problems = launch()
         for problem in problems:
-            print(f"Not corrected: {problem}", file=sys.stderr)
+            print(f"Not imported or corrected: {problem}", file=sys.stderr)
         if problems:
             sys.exit(1)
     elif args.command == "export":

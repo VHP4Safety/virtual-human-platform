@@ -26,7 +26,8 @@ Python 3.12 or newer is needed by rdfsolve:
 
 ```
 pip install -r requirements.txt -r linkeddata/requirements.txt
-python -m linkeddata import     # every source is fetched, converted, checked and stored
+python -m linkeddata launch     # once: every source is fetched, converted, checked and stored
+python -m linkeddata import     # each week: the weekly sources are fetched, converted, checked and stored
 python -m pytest tests          # the parts are checked on small inputs, offline
 ```
 
@@ -61,6 +62,7 @@ line (`linkeddata/__main__.py`) and by `app.py`.
 | | `export.py` | export of the platform's records to a git repository |
 | `linkeddata/` | `model.py`, `model/v1/` | the model and the application profile |
 | | `parsers/`, `sources/` | how each source becomes the model |
+| | `launch/` | the sources read once when the platform goes live, and the corrections made then |
 | | `storage.py` | statements as rows of the release's tables, with rdfsolve |
 | | `documents.py` | records as JSON-LD documents, and as the dictionaries of page templates |
 | | `checks.py` | checks of records against the model's shapes |
@@ -170,6 +172,8 @@ The form is changed by changing the profile. The profile's own terms:
   The rules are the arguments of rdfsolve's `Rule.between`, one list per kind of row; rdfsolve finds the
   fields by name and writes the CONSTRUCT queries. A source whose rows are shaped like other sources' names
   them (`uses`), and takes their rules.
+- **`launch/`**: the sources read once, by `python -m linkeddata launch`, with their parsers, and the
+  corrections of `launch.yaml`. The pinned vocabularies change only with a new pin, so they are read then too.
 - **`model/v1/`**: the model. `profile/` holds the one model, in modules: its header (`ontology.ttl`) gives the base address of
   identifiers (`void:uriSpace`), the vocabularies it is built from (`owl:imports`: schema.org, the Bioschemas
   types, VoID and the VHP4Safety glossary, each pinned by `form:file` and `form:sha256` and downloaded into `vocabularies/`

@@ -32,10 +32,11 @@ def test_fields():
 
 
 def test_imports(monkeypatch, tmp_path):
-    rules = (imports.SOURCES_DIR / "tools.yaml").read_text()
+    rules = (imports.LAUNCH_DIR / "tools.yaml").read_text()
     monkeypatch.setattr(imports, "SOURCES_DIR", tmp_path / "sources")
-    (tmp_path / "sources").mkdir()
-    (tmp_path / "sources" / "tools.yaml").write_text(rules)
+    monkeypatch.setattr(imports, "LAUNCH_DIR", tmp_path / "launch")
+    (tmp_path / "launch").mkdir()
+    (tmp_path / "launch" / "tools.yaml").write_text(rules)
     tools = {
         "aop-builder": {"id": "aop-builder", "service": "AOP-Builder", "description": "Builds AOPs.", "stage": STEP},
         "x": {"id": "x", "service": "X", "stage": "Other"},
@@ -46,7 +47,7 @@ def test_imports(monkeypatch, tmp_path):
         "https://cloud.vhp4safety.nl/service/x.json": {},
     }
     monkeypatch.setattr(imports, "fetch", lambda url: json.dumps(files[url]).encode())
-    assert imports.import_all() == []
+    assert imports.import_all(once=True) == []
     tool = records.get(BASE + "tools/aop-builder")
     found = storage.graph([BASE + "tools/aop-builder", BASE + "tools/x"])
     assert (tool.name, documents.stored_values(found, tool.iri, "processFlowStep")) == ("AOP-Builder", [STEP])

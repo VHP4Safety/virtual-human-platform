@@ -1,7 +1,7 @@
 """Imports of the sources. Each source is fetched, read by its parser as rows in the terms of the model, and
 stored in place of its earlier records; records written on the platform are kept. Sources of terms run next, for
 the terms that the records are about, and sources that enrich records run last. Then the records of each source
-are checked against the model. `python -m linkeddata import` runs every import."""
+are checked against the model. `python -m linkeddata import` runs the weekly imports, and `launch` runs every import."""
 
 import hashlib
 import importlib
@@ -29,6 +29,7 @@ from linkeddata import catalogue, checks, documents, fields, storage
 from linkeddata.model import MODEL_DIR, profile, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
+LAUNCH_DIR = Path(__file__).parent / "launch"
 ITEM = "http://wikiba.se/ontology#Item"
 
 
@@ -305,7 +306,7 @@ def download(spec: dict, parser) -> dict[str, bytes]:
 
 def import_source(spec: dict) -> None:
     config = settings()
-    parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
+    parser = importlib.import_module(spec["module"])
     contents = download(spec, parser)
     # One file is given as is; several are given by name.
     parsed = parser.parse(contents if "files" in spec or "entries" in spec or "terms" in spec or "members" in spec or "documents" in spec else contents[spec["name"]])
@@ -328,7 +329,7 @@ def enrich(spec: dict) -> None:
     """A source's values are merged into other sources' records as the profile allows: a single-valued
     field keeps its value, and a different one is noted. A record's first enrichment is its first revision,
     which shows where its values came from."""
-    parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
+    parser = importlib.import_module(spec["module"])
     contents = download(spec, parser)
     data = convert(parser.parse(contents), settings()["base"])
     given = Graph().parse(data=ox.serialize(data, format=ox.RdfFormat.N_QUADS), format="nt")
@@ -360,17 +361,15 @@ def enrich(spec: dict) -> None:
     print(f"{spec['name']}: {len(contents)} records asked for, {len(notes)} conflicting values kept")
 
 
-def spec_of(name: str) -> dict:
-    """A source as its file in sources/ describes it."""
-    return yaml.safe_load((SOURCES_DIR / f"{name}.yaml").read_text(encoding="utf-8"))
-
-
 def specs() -> list[dict]:
-    """The sources that are fetched (url, files), read (a model vocabulary) or enrich records (enriches)."""
+    """The sources that are fetched (url, files), read (a model vocabulary) or enrich records (enriches), by name.
+    A source of sources/ is read weekly, except a pinned vocabulary (no url); a source of launch/ is read once."""
     found = []
-    for path in sorted(SOURCES_DIR.glob("*.yaml")):
-        spec = spec_of(path.stem)
+    for path in sorted([*SOURCES_DIR.glob("*.yaml"), *LAUNCH_DIR.glob("*.yaml")], key=lambda path: path.name):
+        spec = yaml.safe_load(path.read_text(encoding="utf-8"))
         if "url" in spec or "files" in spec or "vocabulary" in spec or "enriches" in spec:
+            spec["module"] = ("linkeddata.launch." if path.parent == LAUNCH_DIR else "linkeddata.parsers.") + spec["parser"]
+            spec["weekly"] = path.parent == SOURCES_DIR and ("url" in spec or "vocabulary" not in spec)
             found.append(spec)
     return found
 
@@ -378,7 +377,7 @@ def specs() -> list[dict]:
 def drifted(spec: dict) -> list[dict]:
     """For a source that follows a pinned vocabulary upstream: the profile's terms that it no longer gives,
     or gives under another label."""
-    parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
+    parser = importlib.import_module(spec["module"])
     pinned = {}
     for row in parser.parse((MODEL_DIR / "vocabularies" / spec["vocabulary"]).read_bytes()):
         if row.get("@type") == "DefinedTerm":
@@ -401,17 +400,15 @@ def drifted(spec: dict) -> list[dict]:
     return found
 
 
-def check(source: str) -> None:
+def check(source: str, spec: dict | None = None) -> None:
     """A source's records, or the platform's, are checked against the model as stored, with their linked
     records; misfits are kept and noted for the data quality page. A source that follows a pinned vocabulary
     upstream also notes the profile's terms it dropped or renamed."""
     with database.session() as db:
         iris = list(db.scalars(select(Record.iri).where(Record.source == source, Record.removed_at.is_(None), Record.part_of.is_(None))))
     notes = checks.notes(storage.graph(iris))
-    if source != PLATFORM:
-        spec = spec_of(source)
-        if "url" in spec and "vocabulary" in spec:
-            notes += drifted(spec)
+    if spec is not None and "url" in spec and "vocabulary" in spec:
+        notes += drifted(spec)
     with database.session() as db, db.begin():
         db.execute(delete(Note).where(Note.source == source))
         for note in notes:
@@ -429,14 +426,23 @@ def note_problem(spec: dict, problem: Exception) -> None:
         source.problem = str(problem)
 
 
-def import_all() -> list[str]:
-    """Every source is imported, then every source's records and the platform's are checked. The problems
-    of failed sources are given back; their records are kept."""
+def import_all(once: bool = False) -> list[str]:
+    """The weekly sources are imported, at launch (once) after the others; then every source is checked. The
+    problems of failed sources are given back; their records are kept."""
     problems = []
     every = []
+    if once:
+        # A record given by a source read once then belongs to it, and a weekly import keeps its values.
+        with database.session() as db, db.begin():
+            for iri in db.scalars(select(Record.iri).where(Record.source != PLATFORM, Record.part_of.is_(None))):
+                storage.delete(db, iri)
+            db.execute(delete(Record).where(Record.source != PLATFORM))
+        for spec in specs():
+            if not spec["weekly"]:
+                every.append(spec)
     for step in ("records", "terms", "enriches"):
         for spec in specs():
-            if ("terms" in spec) == (step == "terms") and ("enriches" in spec) == (step == "enriches"):
+            if spec["weekly"] and ("terms" in spec) == (step == "terms") and ("enriches" in spec) == (step == "enriches"):
                 every.append(spec)
     for spec in every:
         try:
@@ -450,8 +456,8 @@ def import_all() -> list[str]:
             problems.append(f"{spec['name']}: {problem}")
     # Records are checked after the enrichments; an enriching source has no records, and its notes are the
     # conflicting values.
-    for spec in every:
+    for spec in specs():
         if "enriches" not in spec:
-            check(spec["name"])
+            check(spec["name"], spec)
     check(PLATFORM)
     return problems

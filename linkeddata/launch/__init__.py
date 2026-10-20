@@ -1,7 +1,6 @@
-"""Corrections made once when the platform goes live, after the first import, as listed in launch.yaml.
-A correction moves a field's values, or the parts that hold them, to another field (as another class, when given),
-or replaces text in a field's values, in a record and its parts. Each is saved as a revision named with its reason; the record then belongs to the platform and is
-left alone by imports. What the checks still find is printed for editors to fix."""
+"""The import made once when the platform goes live, of every source, those of this folder too, and the corrections of
+launch.yaml. A correction moves or replaces values of a field. It is saved as a revision named with its reason;
+the record then belongs to the platform and is not changed by imports."""
 
 from pathlib import Path
 
@@ -11,6 +10,7 @@ from rdflib import RDF, BNode, Graph, Literal, URIRef
 from admin import writes
 from database import records
 from linkeddata import checks, documents, storage
+from linkeddata.imports import import_all
 
 CORRECTIONS = Path(__file__).parent / "launch.yaml"
 NAME = "VHP4Safety launch"
@@ -42,8 +42,9 @@ def corrected(found: Graph, correction: dict) -> int:
 
 
 def launch() -> list[str]:
-    """Every correction of launch.yaml is made and saved; what could not be made is given back."""
-    problems = []
+    """Every source is imported, then every correction of launch.yaml is made and saved; what could not be
+    imported or made is given back."""
+    problems = import_all(once=True)
     for correction in yaml.safe_load(CORRECTIONS.read_text(encoding="utf-8"))["corrections"]:
         iri = records.address(correction["record"])
         record = records.get(iri)

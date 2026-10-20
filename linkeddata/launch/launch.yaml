@@ -1,4 +1,4 @@
-# Corrections made once by python -m linkeddata launch, after the first import (python -m linkeddata import).
+# Corrections made once by python -m linkeddata launch, after its import of every source.
 # Each is saved as a revision named with its reason (why). Fields are named as in JSON-LD; values as stored.
 corrections:
   - record: casestudies/kidney
