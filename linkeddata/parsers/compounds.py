@@ -1,10 +1,4 @@
-"""Parser of the VHP4Safety compounds, a workaround (see linkeddata/parsers).
-
-Source: the table of chemicals in the glossary, with Compound Wiki items as identifiers, and the fields of these
-items and of the VHP4Safety items in Compound Wiki, read with rdfsolve (items).
-
-The rows are the compounds, at compound/<item>, with their identifiers and their addresses in Compound Wiki,
-Wikidata and the glossary."""
+"""Parser of the VHP4Safety compounds."""
 
 import csv
 import io

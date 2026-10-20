@@ -1,5 +1,4 @@
-"""Content of the record pages, the listings and the home page, made from the stored records, and the Markdown of a
-record (RFC 7763, GitHub variant)."""
+"""Content of the record pages, the listings and the home page."""
 
 from functools import lru_cache
 from operator import itemgetter
@@ -29,19 +28,19 @@ MEDIA = "text/markdown; charset=utf-8; variant=GFM"
 
 
 def text(value):
-    """Prepare a text for a template. Return an HTML text as {"@value": ...}."""
+    """Return a text value for a template, with an HTML text as a dict with @value."""
     if isinstance(value, Literal) and value.datatype == RDF.HTML:
         return {"@value": str(value)}
     return str(value) if value is not None else ""
 
 
 def kind_of(of_class: str) -> str:
-    """Return the label of a class in the profile, such as "Workflow page"."""
+    """Return the label of of_class in the profile."""
     return str(profile_graph().value(shape_of(of_class), RDFS.label) or "")
 
 
 def in_order(found: Graph, nodes) -> list:
-    """Sort nodes by position, then by name, then by values, with the nodes without a position last."""
+    """Return nodes sorted by position, then by name."""
     def place(node):
         try:
             number = float(found.value(node, SDO.position))
@@ -52,8 +51,7 @@ def in_order(found: Graph, nodes) -> list:
 
 
 def members(found: Graph, node, path) -> list:
-    """Return the values of a field in their order: the members of a list (rdf:List) in the order of the list, and
-    other values by position."""
+    """Return the values of a field of node in their order."""
     values = list(found.objects(node, path))
     heads = [value for value in values if (value, RDF.first, None) in found]
     if heads:
@@ -62,12 +60,12 @@ def members(found: Graph, node, path) -> list:
 
 
 def by_name(item: dict) -> str:
-    """Return the sort key of an item: its name, in lower case."""
+    """Return the name of item in lower case, for sorting."""
     return item["name"].casefold()
 
 
 def node_outline(found: Graph, node, names: dict) -> dict:
-    """Return the outline of a node from its statements, with an outline for each part."""
+    """Return the outline of node, with an outline for each part."""
     of_class = str(found.value(node, RDF.type) or "")
     shown = {"address": None if records.is_part(found, node) else str(node), "name": str(found.value(node, SDO.name) or ""),
              "kind": kind_of(of_class), "fields": [], "parts": []}
@@ -97,7 +95,7 @@ def node_outline(found: Graph, node, names: dict) -> dict:
 
 
 def named_on(record: Record) -> dict[str, list[dict]]:
-    """Return the records with links to a record, grouped by the label of the field with the link."""
+    """Return the records that link to record, by field label."""
     paths = {}
     for iri, path in records.naming(record.iri):
         paths.setdefault(iri, []).append(path)
@@ -117,7 +115,7 @@ def named_on(record: Record) -> dict[str, list[dict]]:
 
 
 def outline(record: Record) -> dict:
-    """Return the outline of a record from its public statements, without private fields."""
+    """Return the outline of record without private fields."""
     found = documents.public(records.graph([record.iri]))
     links = []
     for value in found.objects():
@@ -129,7 +127,7 @@ def outline(record: Record) -> dict:
 
 
 def markdown_lines(found: dict, level: int) -> list[str]:
-    """Write an outline as Markdown blocks. Below the sixth level, write a heading as a bold line."""
+    """Return an outline as Markdown lines."""
     title = found["name"] or found["kind"]
     lines = ["#" * level + " " + title if level <= 6 else f"**{title}**"]
     if level > 1 and found["kind"]:
@@ -157,7 +155,7 @@ def markdown_lines(found: dict, level: int) -> list[str]:
 
 
 def markdown(record: Record, formats: dict[str, str], licence: str) -> str:
-    """Write a record in Markdown, with links to its data in other formats and to the licence."""
+    """Return record in Markdown, with links to its other formats."""
     found = outline(record)
     lines = markdown_lines(found, 1)
     lines.insert(1, f"<{found['address']}>")
@@ -167,7 +165,7 @@ def markdown(record: Record, formats: dict[str, str], licence: str) -> str:
 
 
 def figures(found: Graph, node, path) -> list[dict]:
-    """List the images of a node with their address and caption."""
+    """Return the images of a field of node, with address and caption."""
     listed = []
     for figure in found.objects(node, path):
         listed.append({"address": str(found.value(figure, SDO.contentUrl) or ""), "caption": str(found.value(figure, SDO.caption) or "")})
@@ -175,7 +173,7 @@ def figures(found: Graph, node, path) -> list[dict]:
 
 
 def videos(found: Graph, node, path) -> list[dict]:
-    """List the videos of a node with their name and player address."""
+    """Return the videos of a field of node, with name and player address."""
     listed = []
     for video in found.objects(node, path):
         listed.append({"name": str(found.value(video, SDO.name) or ""), "player": str(found.value(video, SDO.embedUrl) or "")})
@@ -183,8 +181,7 @@ def videos(found: Graph, node, path) -> list[dict]:
 
 
 def outputs(grant) -> list[dict]:
-    """List the works funded by a grant, such as publications and data, by name, without organisations and
-    projects."""
+    """Return the works funded by grant, without organisations and projects."""
     if grant is None:
         return []
     funded = set()
@@ -202,8 +199,7 @@ def outputs(grant) -> list[dict]:
 
 
 def shown(found: Graph, part) -> list[dict]:
-    """Return the fields named by form:shows from the record that a section is about, in the field order of the
-    profile."""
+    """Return the fields of the record that part is about, as listed by form:shows."""
     presented = found.value(part, SDO.about)
     properties = list(found.objects(part, URIRef(settings()["prefixes"]["form"] + "shows")))
     if presented is None or not properties:
@@ -242,7 +238,7 @@ def shown(found: Graph, part) -> list[dict]:
 
 
 def sections(found: Graph, node) -> list[dict]:
-    """List the sections of a node by position, without hidden sections."""
+    """Return the sections of node in order, without hidden sections."""
     parts = in_order(found, found.objects(node, SDO.hasPart))
     listed = []
     for part in parts:
@@ -257,8 +253,7 @@ def sections(found: Graph, node) -> list[dict]:
 
 
 def kinds(term: str) -> list[dict]:
-    """List the kinds of a glossary term with a label, an anchor and a definition. Remove the name of the term from
-    each label."""
+    """Return the kinds of the glossary term term, with label, anchor and definition."""
     found = records.kinds_of(term)
     statements = records.graph([kind.iri for kind in found])
     listed = []
@@ -271,7 +266,7 @@ def kinds(term: str) -> list[dict]:
 
 
 def page(record: Record) -> dict:
-    """Return the content of a platform page from its record."""
+    """Return the content of the platform page record."""
     found = documents.public(records.graph([record.iri]))
     node = URIRef(record.iri)
     listed = sections(found, node)
@@ -282,7 +277,7 @@ def page(record: Record) -> dict:
 
 
 def kind(of_class: str) -> dict:
-    """Return the name and the description of a kind of records from the catalogue record."""
+    """Return the name and description of the kind of_class."""
     base = URIRef(settings()["base"])
     found = documents.public(records.graph([str(base)]))
     for part in found.objects(base, VOID.classPartition):
@@ -292,8 +287,7 @@ def kind(of_class: str) -> dict:
 
 
 def kind_names() -> dict[str, str]:
-    """Return the names of the kinds of records from the catalogue record, such as "Case Studies" for casestudies.
-    Name a kind without a name by its path."""
+    """Return the names of the kinds of records, by path."""
     base = URIRef(settings()["base"])
     found = documents.public(records.graph([str(base)]))
     named = {}
@@ -303,8 +297,7 @@ def kind_names() -> dict[str, str]:
 
 
 def listing(path: str, arguments, size: int = LISTED) -> dict:
-    """Return one page of *size* records of a kind, found by name and filtered by the filter fields, with the values
-    of these fields and their counts."""
+    """Return one page of records of the kind at path, with the filter counts."""
     of_class = settings()["kinds"][path]
     given = {"search": arguments.get("search", "").strip()}
     browsed = []
@@ -331,8 +324,7 @@ def listing(path: str, arguments, size: int = LISTED) -> dict:
 
 
 def items(iris: list[str]) -> list[dict]:
-    """Return the items of a listing page, such as the training materials, with the linked tools and methods and
-    the authors of each item."""
+    """Return the listing items of iris, with linked tools, methods and authors."""
     found = documents.public(records.graph(iris))
     linked = set()
     for iri in iris:
@@ -352,7 +344,7 @@ def items(iris: list[str]) -> list[dict]:
     return listed
 
 def partners(found: Graph, node) -> list[dict]:
-    """Return the partners of an organisation, sorted by role and name, and then the co-funders, sorted by name."""
+    """Return the partners and co-funders of an organisation, in order."""
     held = []
     for role in found.objects(node, SDO.member):
         held.append((str(found.value(role, SDO.roleName) or ""), str(found.value(role, SDO.member) or "")))
@@ -372,7 +364,7 @@ PARTNERS = Path(__file__).parent.parent / "static" / "images" / "partners" / "pa
 
 
 def partner_order() -> dict[str, int]:
-    """Return the place of each listed partner logo file, in the order of partners.txt."""
+    """Return the place of each partner logo file in partners.txt."""
     order = {}
     for line in PARTNERS.read_text(encoding="utf-8").splitlines():
         if line.strip() and not line.strip().startswith("#"):
@@ -381,8 +373,7 @@ def partner_order() -> dict[str, int]:
 
 
 def home_text(value) -> dict:
-    """Split the description of the platform into the parts of the home page: the line under the heading (the first
-    paragraph), the text up to the first heading, and the parts under each other heading."""
+    """Return the description of the platform in the parts of the home page."""
     soup = BeautifulSoup(value["@value"] if isinstance(value, dict) else f"<p>{value}</p>", "html.parser")
     lead = soup.find("p")
     found = {"lead": lead.decode_contents() if lead else "", "text": "", "parts": []}
@@ -399,7 +390,7 @@ def home_text(value) -> dict:
 
 
 def catalogue_of(record: Record) -> dict:
-    """Return the content of the home page from the catalogue record of the platform."""
+    """Return the content of the home page from the platform record."""
     found = documents.public(records.graph([record.iri]))
     node = URIRef(record.iri)
     paths = {}
@@ -438,26 +429,25 @@ RSD = "https://research-software-directory.org/software/"
 
 
 def plain(value) -> str:
-    """Return the text of a value without HTML tags."""
+    """Return value without HTML tags."""
     if isinstance(value, Literal) and value.datatype == RDF.HTML:
         return Markup(str(value)).striptags()
     return str(value) if value is not None else ""
 
 
 def local(address: str) -> str:
-    """Return a platform address as a path on this server (/tools/aopwiki), so that the link is valid on each copy of
-    the platform. Keep other addresses."""
+    """Return a platform address as a path on this server, and other addresses unchanged."""
     path = records.path(address)
     return address if path == address else "/" + path
 
 
 def addresses(found: Graph, node, path) -> list[str]:
-    """Return the values of a field as sorted texts."""
+    """Return the values of a field of node as sorted texts."""
     return sorted(str(value) for value in found.objects(node, path))
 
 
 def named(found: Graph, node, path) -> list[str]:
-    """Return the texts of a field and the names of its linked records, in order, without links that have no name."""
+    """Return the texts and the names of the linked records of a field of node."""
     listed = []
     for value in in_order(found, found.objects(node, path)):
         if isinstance(value, Literal):
@@ -468,8 +458,7 @@ def named(found: Graph, node, path) -> list[str]:
 
 
 def after(listed: list[str], prefix: str) -> str:
-    """Return the end of the first address that starts with the prefix, such as the identifier of a bio.tools
-    address."""
+    """Return the end of the first address in listed that starts with prefix."""
     for address in listed:
         if address.startswith(prefix):
             return address.removeprefix(prefix)
@@ -477,7 +466,7 @@ def after(listed: list[str], prefix: str) -> str:
 
 
 def parts_of(found: Graph, node, path) -> list[dict]:
-    """Return the web pages or the videos of a field, with their titles and addresses, in order."""
+    """Return the pages or videos of a field of node, with titles and addresses."""
     listed = []
     for part in in_order(found, found.objects(node, path)):
         listed.append({"title": str(found.value(part, SDO.name) or ""), "url": local(str(found.value(part, SDO.url) or found.value(part, SDO.embedUrl) or ""))})
@@ -485,8 +474,7 @@ def parts_of(found: Graph, node, path) -> list[dict]:
 
 
 def dois(found: Graph, node) -> list[str]:
-    """Return the DOIs of the publications cited by a record, such as 10.1089/aivt.2021.0010. Keep a citation in
-    text as it is written."""
+    """Return the DOIs of the publications cited by node."""
     cited = list(found.objects(node, SDO.citation))
     held = documents.public(records.graph([str(value) for value in cited if isinstance(value, URIRef)]))
     listed = []
@@ -501,19 +489,17 @@ def dois(found: Graph, node) -> list[str]:
 
 
 def platform_publisher() -> URIRef:
-    """Return the publisher of the platform, which hosts the tools marked as hosted by VHP."""
+    """Return the publisher of the platform."""
     return URIRef((void.platform()["publisher"] or {}).get("@id", ""))
 
 
 def steps() -> dict[str, dict]:
-    """Return the process flow steps of the glossary by address, each with a label, an anchor and a description."""
+    """Return the process flow steps of the glossary, by address."""
     return {step["iri"]: step for step in kinds(settings()["terms"]["processFlowStep"])}
 
 
 def tool_details(record: Record) -> dict:
-    """Return a tool in the form of a service of the cloud catalogue (service/<id>.json). Show a tool offered by the
-    publisher of the platform as hosted by VHP, with its website as the instance address unless another address is
-    given."""
+    """Return record as a service of the cloud catalogue."""
     found = documents.public(records.with_names(records.graph([record.iri])))
     node = URIRef(record.iri)
     by = platform_publisher()
@@ -549,8 +535,7 @@ def tool_details(record: Record) -> dict:
 
 
 def method_json(record: Record) -> dict:
-    """Return a method in the form of a method of the cloud catalogue (methods/<id>.json), with the kind of assay as
-    its type and as its ontology term. Of several kinds, use the last by address."""
+    """Return record as a method of the cloud catalogue."""
     found = documents.public(records.with_names(records.graph([record.iri])))
     node = URIRef(record.iri)
     known = steps()
@@ -569,11 +554,7 @@ def method_json(record: Record) -> dict:
 
 @lru_cache(maxsize=8)
 def catalogue_filters(path: str, latest: str) -> dict:
-    """Return the values of the filters of the tools, methods or data listing.
-
-    The values are the process flow steps and the case-study questions of the records, with their explanations. Each
-    question has its case study, address and open steps. Cache the values until a record is changed (*latest*,
-    records.latest_change())."""
+    """Return the filter values of the listing at path, cached until latest changes."""
     every = records.counted(settings()["kinds"][path], {"search": ""})
     labels = {}
     explained = {}
@@ -612,11 +593,7 @@ def catalogue_filters(path: str, latest: str) -> dict:
 
 
 def filtered(path: str, arguments, size: int = LISTED) -> tuple[dict, dict]:
-    """Return one page of a listing and the values of its filters.
-
-    Read the filters by label of the cloud catalogue listings (stage, case_study and reg_q) as filters of the
-    process flow steps, the case studies and the case-study questions. Use the case studies only if they are named
-    in the records. Keep the filters of the other fields."""
+    """Return one page of a listing and the values of its filters."""
     filters = catalogue_filters(path, records.latest_change())
     chosen = arguments.copy()
     chosen.setlist("processFlowStep", arguments.getlist("processFlowStep") + [filters["steps"].get(stage, stage) for stage in arguments.getlist("stage")])
@@ -636,7 +613,7 @@ def filtered(path: str, arguments, size: int = LISTED) -> tuple[dict, dict]:
 
 
 def catalogue_listing(path: str, arguments) -> dict:
-    """Return one page of the tools or the methods, in the form of the cloud catalogue listing."""
+    """Return one page of tools or methods as a listing of the cloud catalogue."""
     found, filters = filtered(path, arguments)
     shown = documents.public(records.graph([item["address"] for item in found["listed"]]))
     by = platform_publisher()
@@ -656,10 +633,7 @@ def catalogue_listing(path: str, arguments) -> dict:
 
 
 def dataset(found: Graph, node, known: dict) -> dict:
-    """Return a dataset in the form of a BioStudies study or a Zenodo record, as used by the data pages of the cloud
-    catalogue. Take the kind from the source record and the names of the process flow steps from *known* (steps()).
-    As in the cloud catalogue, the RO-Crate of a study is its crate file in BioStudies, and a Zenodo record has the
-    archive of its files."""
+    """Return a dataset as a data page of the cloud catalogue."""
     source = str(found.value(node, SDO.isBasedOn) or "")
     type_of = "study" if "/biostudies/" in source else "dataset"
     doi_url = ([address for address in addresses(found, node, SDO.identifier) + addresses(found, node, SDO.sameAs) if "doi.org/" in address] or [""])[0]
@@ -681,9 +655,7 @@ def dataset(found: Graph, node, known: dict) -> dict:
 
 
 def data_listing(arguments) -> dict:
-    """Return one page of the datasets, in the form of the data listing of the cloud catalogue.
-
-    Half of the page has BioStudies studies, and half has Zenodo records. Each half has the most recent records first."""
+    """Return one page of datasets as the data listing of the cloud catalogue."""
     every = arguments.copy()
     every.pop("page", None)
     # All records found are read at once, as the studies and the Zenodo records are paged separately.
@@ -708,10 +680,7 @@ def data_listing(arguments) -> dict:
 
 
 def catalogue_details(record: Record) -> dict:
-    """Return a dataset or a model in the form of the data pages of the cloud catalogue.
-
-    The page has the authors with their ORCID iDs and affiliations, the grants, and the DOIs of the publications. The
-    kind of a model is "model"."""
+    """Return a dataset or a model as a data page of the cloud catalogue."""
     found = documents.public(records.with_names(records.graph([record.iri])))
     node = URIRef(record.iri)
     shown = dataset(found, node, steps())
@@ -748,8 +717,7 @@ SAMPLE_VALUES = URIRef("https://bioschemas.org/terms/additionalProperty")
 
 
 def attributes_of(found: Graph, node, path) -> list[dict]:
-    """Return the values (PropertyValue) of a node as the attributes of a BioStudies section, in their order: name,
-    value, unit, page, ontology term, and other qualifiers."""
+    """Return the values of a field of node as BioStudies attributes."""
     listed = []
     for item in in_order(found, found.objects(node, path)):
         references = list(found.objects(item, SDO.valueReference))
@@ -765,8 +733,7 @@ def attributes_of(found: Graph, node, path) -> list[dict]:
 
 
 def section_of(found: Graph, node, kind: str = "") -> dict:
-    """Return a part of the experimental design as a BioStudies section: its type, its attributes and the sections
-    below it. A chemical has its name and identifiers as attributes."""
+    """Return a part of the experimental design as a BioStudies section."""
     attributes = attributes_of(found, node, URIRef(DRAFT + "additionalProperty")) + attributes_of(found, node, SAMPLE_VALUES)
     if (node, RDF.type, SDO.ChemicalSubstance) in found:
         attributes = [{"name": "Chemical", "value": str(found.value(node, SDO.name) or ""), "unit": "", "url": "", "term": "", "qualifiers": []}]
@@ -777,8 +744,7 @@ def section_of(found: Graph, node, kind: str = "") -> dict:
 
 
 def design_of(found: Graph, node) -> dict | None:
-    """Return the experimental design of a dataset (a LabProtocol part) as the sections of its BioStudies record:
-    the values of the study, the biological models, the chemicals in their order, and the other sections."""
+    """Return the experimental design of a dataset as BioStudies sections, or None."""
     for design in found.objects(node, SDO.hasPart):
         if (design, RDF.type, URIRef(DRAFT + "LabProtocol")) in found:
             sections = [section_of(found, sample, "Biological model information") for sample in in_order(found, found.objects(design, URIRef(DRAFT + "bioSample")))]
@@ -789,8 +755,7 @@ def design_of(found: Graph, node) -> dict | None:
 
 
 def files(found: Graph, node) -> list[dict]:
-    """Return the files of a dataset (its downloads) or of a model (its digital artifacts), with their addresses,
-    sizes and checksums, in their order."""
+    """Return the files of a dataset or a model, with address, size and checksum."""
     listed = []
     for part in in_order(found, [*found.objects(node, SDO.distribution), *found.objects(node, SDO.hasPart)]):
         address = found.value(part, SDO.contentUrl) or found.value(part, URIRef(documents.expand("pbpk:artifactLocation")))
@@ -805,9 +770,7 @@ def files(found: Graph, node) -> list[dict]:
 
 
 def uses(iris: list[str]) -> dict[str, dict]:
-    """Return, by address, the case studies, the questions and the process flow steps of the case-study steps that
-    use the records at these addresses. Count a record for a step if it is linked from a tool of the step (Tool,
-    method or model). The process flow step is the step of the question above the step."""
+    """Return the case studies, questions and steps that use each record in iris."""
     studies = [record.iri for record in records.of_kind("casestudies") if record.part_of is None]
     found = records.graph(studies)
     asked = URIRef(settings()["terms"]["regulatoryQuestion"])
@@ -835,9 +798,7 @@ def uses(iris: list[str]) -> dict[str, dict]:
 
 
 def model_listing(arguments) -> dict:
-    """Return one page of the models, in the form of the data listing of the cloud catalogue, with the filters of
-    the data listing. Find a model by a filter if a case-study step that uses the model fits the filter. Link the
-    Zenodo button to the Zenodo record of the model."""
+    """Return one page of models as the data listing of the cloud catalogue."""
     filters = catalogue_filters("data", records.latest_change())
     # All the models found by name are read at once, as they are filtered here.
     found = listing("models", MultiDict({"search": arguments.get("search", "")}), records.page(settings()["kinds"]["models"], {}, "", 0, 1)[0] or 1)

@@ -1,13 +1,4 @@
-"""Pages and data of the records.
-
-- Data: JSON-LD, Turtle or N-Triples, at the address of a record, requested with the Accept header or with a
-  .jsonld, .ttl or .nt extension (/tools/pathvisio.ttl).
-- Markdown: the page in Markdown, for text/markdown or a .md extension.
-- Signposting: Link headers on each page, as in FAIR Signposting (cite-as, type, describedby, and the shapes of the
-  checks with ldp:constrainedBy).
-- Removed records: 410 Gone. Earlier addresses of moved records: redirect (301).
-- Records without a page of their own: shown on a general record page.
-"""
+"""Pages and data of the records."""
 
 import json
 import re
@@ -40,10 +31,7 @@ STARTED = datetime.now(timezone.utc).replace(microsecond=0)
 
 
 def data(found: Graph, media: str, iri: str | None = None) -> Response:
-    """Return statements in JSON-LD, Turtle or N-Triples.
-
-    Also return JSON-LD if plain JSON is requested. With *iri*, return the document of that record, with the names
-    of the linked records."""
+    """Return the statements in found in JSON-LD, Turtle or N-Triples."""
     if media in ("application/ld+json", "application/json"):
         body = json.dumps(documents.document(found, iri, named=True), indent=2)
     else:
@@ -57,7 +45,7 @@ def data(found: Graph, media: str, iri: str | None = None) -> Response:
 
 
 def not_acceptable() -> Response:
-    """Return the formats of an address, if none of the requested formats (Accept) is available."""
+    """Return 406 with the formats of the address."""
     lines = ["None of the formats asked for is given here. This address answers in:", "- text/html"]
     for ending, media in FORMATS.items():
         lines.append(f"- {media}, or with the ending {ending}")
@@ -67,7 +55,7 @@ def not_acceptable() -> Response:
 
 
 def markdown_of(record: Record) -> Response:
-    """Return the page of a record in Markdown, with links to its data."""
+    """Return the page of a record in Markdown."""
     formats = {}
     for ending, name in FORMAT_NAMES.items():
         formats[name] = record.iri + ending
@@ -76,9 +64,7 @@ def markdown_of(record: Record) -> Response:
 
 
 def listing_page(kind: str):
-    """Return the page of the records of a kind, found by name and filtered by the filter fields
-    (templates/records/listing.html). List tools, methods and data as in the cloud catalogue (templates/tools,
-    templates/methods, templates/data), and models as the data."""
+    """Return the listing page of a kind."""
     if kind in ("tools", "methods"):
         found = pages.catalogue_listing(kind, request.args)
         return render_template(f"{kind}/{kind}.html", **found, page_title=f"{pages.kind_names()[kind]} — VHP4Safety")
@@ -99,7 +85,7 @@ def listing_page(kind: str):
 
 @blueprint.before_app_request
 def negotiate():
-    """Return the data of a record if it is requested; otherwise continue with the page."""
+    """Return the data of a record if it is requested."""
     if request.endpoint in ("static", "images.image") or request.path.startswith("/api/"):
         return None
     # An address with a slash at the end and without a page of its own is redirected to the address without the
@@ -158,8 +144,7 @@ def negotiate():
 
 @blueprint.get("/<path:path>/ro-crate-metadata.json")
 def ro_crate(path: str):
-    """Return the RO-Crate of a model (linkeddata/crates.py): its crate in Zenodo, unchanged, or a draft made from
-    the record."""
+    """Return the RO-Crate of a model."""
     record = records.get(records.address(path))
     if not crates.of_models(record):
         abort(404)
@@ -227,10 +212,7 @@ def link_data(response):
 
 
 def conditional(response) -> None:
-    """Return 304 Not Modified for the page or the data of a record that is not changed.
-
-    As the linked records and the records that name a record are shown on its page, return 304 only if no record was
-    changed after the copy of the client. Leave out the platform record."""
+    """Return 304 Not Modified if no record was changed since the request version."""
     latest = records.latest_change()
     changed = max(datetime.fromisoformat(latest) if latest else STARTED, STARTED)
     response.set_etag(f"{latest}-{int(STARTED.timestamp())}-{response.mimetype}", weak=True)
@@ -240,14 +222,13 @@ def conditional(response) -> None:
 
 @blueprint.app_context_processor
 def publisher_context() -> dict:
-    """Give the publisher of the platform and the licence of the records to all pages."""
+    """Return the publisher of the platform and the licence of the records for the templates."""
     return {"publisher_document": void.platform()["publisher"], "records_license": void.platform()["license"]}
 
 
 @blueprint.app_context_processor
 def record_context() -> dict:
-    """Return the JSON-LD of the record of the page, with the names of the linked records, and its data addresses,
-    for the page head."""
+    """Return the JSON-LD and data addresses of the record of the page."""
     if "record" not in g:
         return {}
     formats = {}
@@ -271,8 +252,7 @@ blueprint.add_app_template_filter(jsonld_name, "short_iri")
 
 @blueprint.app_template_filter("issue_tracker")
 def issue_tracker(addresses) -> str:
-    """Return the GitHub address for questions: an issue, or the issues of the first repository among the addresses,
-    or an empty text if no address is on GitHub."""
+    """Return the GitHub address for questions about a record, or an empty text."""
     for address in addresses or []:
         found = re.match(r"https://github\.com/([^/]+)/([^/#?]+)(/issues/\d+)?", str(address))
         if found and found.group(3):
@@ -284,16 +264,12 @@ def issue_tracker(addresses) -> str:
 
 @blueprint.app_template_filter("page_link")
 def page_link(iri: str) -> str:
-    """Return a platform address as a path on this server, so that the link is valid on each copy of the platform."""
+    """Return a platform address as a path on this server."""
     return pages.local(iri)
 
 
 def record_page(record: Record):
-    """Return the page of a record.
-
-    Show tools, methods, datasets and models as in the cloud catalogue (templates/tools, templates/methods,
-    templates/data). Show platform pages with templates/records/page.html, or with their earlier template. Show
-    other records on the general record page."""
+    """Return the page of a record."""
     kind = records.path(record.iri).split("/", 1)[0]
     if kind == "tools" and record.part_of is None:
         details = pages.tool_details(record)

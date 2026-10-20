@@ -1,9 +1,4 @@
-"""Parser of the Ontology Lookup Service responses, a workaround (see linkeddata/parsers).
-
-Source: the ontologies, and one response for each term of the records.
-
-- Terms: the label, definition and code from the defining ontology.
-- Vocabularies: the defining ontologies, with title, description and namespace."""
+"""Parser of the Ontology Lookup Service responses."""
 
 import json
 import re
@@ -14,8 +9,7 @@ OLS = "https://www.ebi.ac.uk/ols4/ontologies/"
 
 
 def namespace_of(iri: str, ontology: dict) -> str:
-    """Return the namespace of a term: the base address of its ontology at the start of its address, or else its
-    address without the local name."""
+    """Return the namespace of a term of an ontology."""
     for base in ontology.get("baseUris") or []:
         if iri.startswith(base):
             return base

@@ -112,8 +112,7 @@ PROCESS_FLOW_STEP = "https://vhp4safety.github.io/glossary#VHP0000152"
 
 
 def get_process_flow_steps() -> dict:
-    """Return {glossary_uri: {"label", "slug", "description"}} for the glossary's process flow steps, from
-    their records, by address."""
+    """Return the process flow steps of the glossary by address, with label, slug and description."""
     steps = {}
     for kind in pages.kinds(PROCESS_FLOW_STEP):
         steps[kind["iri"]] = {"label": kind["label"], "slug": kind["slug"], "description": kind["description"]}
@@ -121,8 +120,7 @@ def get_process_flow_steps() -> dict:
 
 
 def menu(kind: str) -> list[dict]:
-    """A kind's records for the navigation menus and the search bar: each one's identifier, name and page, by
-    name."""
+    """Return the records of a kind for the menus and the search bar, by name."""
     listed = []
     for record in records.of_kind(kind):
         if record.part_of is None:
@@ -143,8 +141,8 @@ def inject_seo_defaults():
 
     Routes override page_title / meta_description via render_template kwargs
     (explicit context wins over context processors). canonical_url defaults to
-    a record's own address on its page, else the page's path at the platform's
-    address, so that copies of the platform are not indexed as the platform.
+    the address of the record of the page, else the page path under the
+    platform address.
     """
     return {
         "page_title": DEFAULT_PAGE_TITLE,
@@ -157,8 +155,6 @@ def inject_seo_defaults():
 ### The landing page
 @app.route("/")
 def home():
-    """The platform's catalogue: its record, its kinds of records with their counts, the workflow page's
-    summary with the process flow steps, and its publisher's partners."""
     record = records.get(settings()["base"])
     if record is None:
         abort(404)
@@ -325,9 +321,6 @@ def case_outline(iri: str, latest: str) -> dict:
 def casestudy(case: str = "", question: str = "", step: str = "",
               step1: str = "", step2: str = "", step3: str = "",
               step4: str = "", step5: str = ""):
-    """A case study's page from its record: its content for readers without scripts, then the page drawn by
-    static/js/case-study.js at the address asked for. Its question and step addresses are views of the same
-    page, so they all have the case study's address as canonical."""
     record = records.get(records.address(f"casestudies/{case}"))
     if record is None:
         abort(404)

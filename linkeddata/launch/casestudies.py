@@ -1,7 +1,4 @@
-"""Parser of the case studies of ui-casestudy-config, a workaround (see linkeddata/parsers).
-
-Read the case studies from the RO-Crate, and the pages of each case study, level by level (step1Contents on), from a
-content file."""
+"""Parser of the case studies of ui-casestudy-config."""
 
 import json
 import re
@@ -26,14 +23,12 @@ def straight(tag) -> str:
 
 
 def html(value):
-    """Return an HTML text with straight quotes in its tags, typed as HTML if it has tags."""
+    """Return an HTML text with straight quotes in its tags."""
     return marked(TAG.sub(straight, str(value)))
 
 
 def parameters(row: dict, description) -> None:
-    """Add the inputs and outputs of a section to the page. Keep a link to a dataset of the platform as a link to the
-    dataset record. Keep the text as a named parameter, with its HTML as the description if it has tags. Leave out
-    placeholder texts."""
+    """Add the inputs and outputs of a section to the row of a page."""
     for kind, given in PARAMETERS.findall(TAG.sub(straight, str(description or ""))):
         field = "bioschemas:input" if kind.lower() == "input" else "bioschemas:output"
         for dataset in DATASET.findall(given):
@@ -47,8 +42,7 @@ def parameters(row: dict, description) -> None:
 
 
 def text(row: dict, content) -> None:
-    """Set the text of a page: in HTML, or in sections, each with a heading and an HTML text. Read a section of
-    inputs and outputs as the inputs and outputs of the page instead."""
+    """Set the text or the sections of the row of a page."""
     if isinstance(content, str) and present(content):
         row["text"] = html(content)
     elif isinstance(content, list):
@@ -63,7 +57,7 @@ def text(row: dict, content) -> None:
 
 
 def item_link(item: dict) -> dict | None:
-    """Return the platform page of the tool, method or dataset named by the id of an item."""
+    """Return the platform page of the tool, method or dataset of an item, or None."""
     if not present(item.get("id")):
         return None
     route = "data" if item.get("type") == "data" else item.get("route") or "tools"
@@ -71,7 +65,7 @@ def item_link(item: dict) -> dict | None:
 
 
 def at(levels: list[dict], depth: int, path: list[str]) -> dict:
-    """Return the node of a page at *path* of the levels of the content."""
+    """Return the node of a page at path in the levels of the content."""
     node = levels[depth] if depth < len(levels) else {}
     for key in path:
         node = node.get(key, {}) if isinstance(node, dict) else {}
@@ -79,10 +73,7 @@ def at(levels: list[dict], depth: int, path: list[str]) -> dict:
 
 
 def key_of(below: dict, item: dict):
-    """Return the key of the page linked from an item.
-
-    Find the key among the pages one level down: the key that is the value or the label of the item, or else the
-    value."""
+    """Return the key of the page linked from an item."""
     for given in (item.get("value"), item.get("label")):
         if present(given) and isinstance(below.get(given), dict):
             return given
@@ -90,9 +81,7 @@ def key_of(below: dict, item: dict):
 
 
 def step(levels: list[dict], depth: int, path: list[str], item: dict, address: str, position: int, made: set) -> list[dict]:
-    """Make the page linked from an item, from the node at *path* of the levels. Use the label of the item as the
-    title, and keep the description of the item for the button. Return the rows of the page and of the pages below
-    it."""
+    """Return the rows of the page linked from an item and of the pages below it."""
     node = at(levels, depth, path)
     row = {"@id": address, "@type": "HowTo", "name": item.get("label") or node.get("navTitle"), "position": position}
     if present(item.get("state")):
@@ -105,12 +94,7 @@ def step(levels: list[dict], depth: int, path: list[str], item: dict, address: s
 
 
 def fill(row: dict, node: dict, levels: list[dict], depth: int, path: list[str], made: set) -> list[dict]:
-    """Read the heading, summary, text and items of a page from its node.
-
-    Keep the heading if it differs from the title. An item is a page one level down, under the address of the page,
-    or a use of a tool or data. For each use, keep the label, the description and the place among the uses of the
-    page. Make a page that is linked from two items once (*made*), with the title and the position of the first
-    item. Return the rows of the pages below."""
+    """Return the rows of the pages below a page, and fill in the row of the page."""
     if present(node.get("navTitle")) and node["navTitle"] != row.get("name"):
         row["headline"] = node["navTitle"]
     if present(node.get("navDescription")):

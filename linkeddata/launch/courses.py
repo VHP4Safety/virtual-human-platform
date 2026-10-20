@@ -1,18 +1,4 @@
-"""Parser of the VHP4Safety courses on GitHub, a workaround (see linkeddata/parsers).
-
-Source: the tree of each course repository at a pinned commit, the repository (description, topics, licence and
-default branch), the README and the agenda (agenda/*.md).
-
-- Address: training/<repository>. Each course is a Bioschemas Course.
-- Name: the first heading of the agenda, else the repository name.
-- Description: the repository description, else the introduction of the README.
-- Keywords: the topics of the repository.
-- DOI: a DOI in the README.
-- Authors: the line of names under the title of the agenda, without titles such as PhD.
-- Course instance: the dates in the agenda ("21 & 22 May, 2025").
-- Learning outcomes: the learning aims in the agenda.
-- Files: slides, notebooks, data and chapters (R Markdown), at their GitHub addresses. Leave out literature,
-  archived and temporary files."""
+"""Parser of the VHP4Safety courses on GitHub."""
 
 import json
 import re
@@ -42,8 +28,7 @@ def agenda_of(tree: dict) -> str | None:
 
 
 def documents(contents: dict, addresses: dict) -> dict[str, str]:
-    """Return the repository of each course by its name and "#repository", and its README and agenda by its name
-    and path."""
+    """Return the repository, README and agenda of each course, by name."""
     found = {}
     for name in courses(contents):
         found[name + "#repository"] = addresses["repositories"] + name

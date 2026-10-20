@@ -1,8 +1,4 @@
-"""Parser of the affiliation matching of the Research Organization Registry, a workaround (see linkeddata/parsers).
-
-- For each organisation requested by name, keep the organisation chosen by ROR with confidence, if one of its names
-  is the requested name.
-- Leave out a department matched to its university, as only institutions are in ROR."""
+"""Parser of the affiliation matching of the Research Organization Registry."""
 
 import json
 import re
@@ -11,8 +7,7 @@ from linkeddata.parsers import link
 
 
 def plain(name: str) -> str:
-    """Return a name in the form used for comparison: without an acronym in brackets or a leading "The", in lower
-    case."""
+    """Return a name in lower case, without an acronym in brackets or a leading The."""
     name = re.sub(r"\s*\([^)]*\)\s*$", "", name.strip())
     return re.sub(r"^the\s+", "", name, flags=re.IGNORECASE).casefold()
 

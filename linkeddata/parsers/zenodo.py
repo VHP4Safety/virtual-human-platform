@@ -1,13 +1,4 @@
-"""Parser of the Zenodo community vhp4safety, a workaround (see linkeddata/parsers).
-
-Source: the dataset search, with the metadata of each record, read with the Zenodo client (zenodo_search).
-
-- Creators: write "Last, First" as "First Last", as in other sources.
-- Links: DOIs, ORCID iDs, licences, and affiliations as organisations.
-- DOI: the address of the record elsewhere if Zenodo registered it, and else a cited publication.
-- Files: the downloads of the record, with names, sizes and checksums, in the form of the Zenodo JSON-LD export.
-- Authors: in their order, as a list.
-- Version, and grants as funding: a grant row with title, acronym, number, project page and funder."""
+"""Parser of the datasets of the Zenodo community vhp4safety."""
 
 import json
 import mimetypes
@@ -35,8 +26,7 @@ def size(given: int) -> str:
 
 
 def download(given: dict) -> dict:
-    """Return a file of a Zenodo record at its download address, with its format from its name, as in the JSON-LD
-    export of Zenodo, and its checksum (md5:..., as Zenodo gives it) in SPDX terms."""
+    """Return a file of a Zenodo record as a DataDownload."""
     found = {"@type": "DataDownload", "name": given["key"], "contentUrl": link(given["links"]["self"]), "contentSize": size(given["size"])}
     media, _ = mimetypes.guess_type(given["key"])
     if media:
@@ -48,9 +38,7 @@ def download(given: dict) -> dict:
 
 
 def doi_of(row: dict, hit: dict, others: dict) -> None:
-    """Add the DOI of a Zenodo record to its row: as its address elsewhere if Zenodo registered the DOI
-    (10.5281/zenodo.*), and else as a cited publication. A depositor can give the DOI of an article in place of a
-    DOI of the record."""
+    """Add the DOI of a Zenodo record to its row."""
     # A DOI that Zenodo hides (10.5281/zenodo.***) is no DOI.
     if not is_valid_doi(hit.get("doi")):
         return
@@ -66,8 +54,7 @@ def doi_of(row: dict, hit: dict, others: dict) -> None:
 
 
 def grant_row(row: dict, grant: dict, others: dict) -> None:
-    """Add a grant of a Zenodo record to its funding, as a grant row: its title, acronym, number, project page and
-    funder."""
+    """Add a grant of a Zenodo record to the funding of its row."""
     if not present(grant.get("code")):
         return
     address = "grants/" + slug(grant["code"])
@@ -85,7 +72,7 @@ def grant_row(row: dict, grant: dict, others: dict) -> None:
 
 
 def fetched(spec: dict) -> dict[str, bytes]:
-    """Return the datasets of the community as one search result, read page by page with the Zenodo client."""
+    """Return the datasets of the community as one search result, by name."""
     hits = []
     while True:
         found = ZenodoExtractor().list_records(page=len(hits) // 25 + 1, size=25)

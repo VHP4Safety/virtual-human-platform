@@ -1,8 +1,4 @@
-"""Write tokens and editor sign-ins.
-
-- Show the secret of a token once, and store only its hash.
-- Expire a token after 90 days by default, and allow its revocation.
-- Allow writes with a token only for the kinds chosen for it."""
+"""Write tokens and editor sign-ins."""
 
 import hashlib
 import os
@@ -60,7 +56,7 @@ def find(secret: str | None) -> Token | None:
 
 
 def check(secret: str, kind: str) -> Token | None:
-    """Return the token of a secret, if it is valid for records of *kind*, and store the time of use."""
+    """Return the token of a secret, if it is valid for records of kind, and store the time of use."""
     token = find(secret)
     if token is None or kind not in token.kinds.split(","):
         return None

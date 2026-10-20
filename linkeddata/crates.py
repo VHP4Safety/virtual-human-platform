@@ -1,20 +1,4 @@
-"""RO-Crates of the models, at <model address>/ro-crate-metadata.json.
-
-- A model imported from Zenodo: the ro-crate-metadata.json of its crate in Zenodo, unchanged. The import keeps a
-  copy of it (imports.keep).
-- Another model, such as a model written or changed on the platform: a draft detached RO-Crate 1.2
-  (https://w3id.org/ro/crate/1.2), made with ro-crate-py from the record, as a start for the curation of a crate.
-
-The draft:
-- Root: at the model address with /ro-crate/, which leads to the crate. (ro-crate-py takes an address with a slash at
-  the end as the address without it, so the model address with a slash is not used.) Status Draft. Take the name, description, licence and publication date from the model.
-  Do not give a licence that the model does not have. Use the publisher of the platform as the publisher.
-- Metadata file: the licence of the platform records, as the metadata is a platform record.
-- Main entity: the model, with its parts, as a file data entity at its address. (RO-Crate takes source code as a
-  script, and a script is a file.) Files of the model (artifact locations) are file data entities of the root too.
-- Linked records and terms: their class and name only. Other web addresses are linked without an entity.
-- Nodes without an address: local addresses (#part-1).
-- Names: use the JSON-LD names of the platform, with the RO-Crate context and the prefixes of the platform."""
+"""RO-Crates of the models."""
 
 from pathlib import Path
 
@@ -34,7 +18,7 @@ ARTIFACT = "https://platform.vhp4safety.nl/model/v1/pbpk#artifactLocation"
 
 
 def kept() -> Path:
-    """Return the folder of the crates kept at import, by the number of their Zenodo record."""
+    """Return the folder of the crates kept at import."""
     return database.STATE_DIR / "crates"
 
 
@@ -45,8 +29,7 @@ def of_models(record: Record | None) -> bool:
 
 
 def zenodo(record: Record) -> bytes | None:
-    """Return the crate in Zenodo of an imported model, as kept at import. Return None for a model written or changed
-    on the platform."""
+    """Return the Zenodo crate of an imported model, or None."""
     if record.source == PLATFORM:
         return None
     source = str(records.graph([record.iri]).value(URIRef(record.iri), SDO.isBasedOn) or "")
@@ -57,7 +40,7 @@ def zenodo(record: Record) -> bytes | None:
 
 
 def file_name(record: Record) -> str:
-    """Return the name of the crate file, as named for a detached crate: <name>-ro-crate-metadata.json."""
+    """Return the file name of the detached crate of a record."""
     return records.path(record.iri).rsplit("/", 1)[-1] + "-ro-crate-metadata.json"
 
 
@@ -141,7 +124,7 @@ def crate(record: Record) -> dict:
 
 
 def relabelled(value, local: dict):
-    """Return a JSON-LD value with the local addresses of the nodes without an address."""
+    """Return a JSON-LD value with local addresses for the nodes without an address."""
     if isinstance(value, dict):
         return {key: (local.get(given, given) if key == "@id" else relabelled(given, local)) for key, given in value.items()}
     if isinstance(value, list):

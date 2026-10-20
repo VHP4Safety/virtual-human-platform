@@ -1,9 +1,4 @@
-"""Parser of a Wikidata API response (wbgetentities, with English labels, descriptions and aliases), such as the
-technology readiness levels, a workaround (see linkeddata/parsers).
-
-- Vocabulary: the first item. It has no namespace, as all Wikidata items have the same namespace. Its name starts
-  with a capital letter, as labels are in lower case on Wikidata.
-- Terms: the other items. The first alias is the code, and the other aliases are other names."""
+"""Parser of a Wikidata API response, such as the technology readiness levels."""
 
 import json
 

@@ -1,7 +1,4 @@
-"""JSON-LD documents of the records, compacted with the context of the platform.
-
-Write https://schema.org/name as "name", and http://purl.org/dc/terms/conformsTo as "dct:conformsTo". Use the same
-names in the pages, with lists for the fields with several values."""
+"""JSON-LD documents of the records."""
 
 import json
 from functools import cache, lru_cache
@@ -17,10 +14,7 @@ from linkeddata.profile import profile_graph, required, settings
 
 
 def context(config: dict) -> dict:
-    """Return the JSON-LD context of the platform.
-
-    The schema.org terms have no prefix, and the terms of other vocabularies have a prefix. The properties of the
-    glossary have names."""
+    """Return the JSON-LD context of the platform from config."""
     terms = {"@vocab": config["prefixes"]["schema"]}
     for prefix, namespace in config["prefixes"].items():
         if prefix != "schema":
@@ -30,8 +24,7 @@ def context(config: dict) -> dict:
 
 
 def expand(name: str) -> str:
-    """Return the property of a field name: https://schema.org/name for "name", and
-    http://purl.org/dc/terms/conformsTo for "dct:conformsTo"."""
+    """Return the property of the field name name."""
     if name in settings().get("terms", {}):
         return settings()["terms"][name]
     prefixes = settings()["prefixes"]
@@ -42,7 +35,7 @@ def expand(name: str) -> str:
 
 
 def stored_values(found: Graph, iri: str, name: str) -> list[str]:
-    """Return the values of a field of the record at *iri* in *found*, as link addresses and texts."""
+    """Return the values of the field name of the record at iri, as texts."""
     values = []
     for value in found.objects(URIRef(iri), URIRef(expand(name))):
         values.append(str(value))
@@ -50,7 +43,7 @@ def stored_values(found: Graph, iri: str, name: str) -> list[str]:
 
 
 def values(document: dict, name: str) -> list:
-    """Return the values of a field of a document, as link addresses, texts and numbers."""
+    """Return the values of the field name of document."""
     given = document.get(name)
     found = []
     if isinstance(given, list):
@@ -72,8 +65,7 @@ def statements(document: dict) -> Graph:
 
 
 def document(found: Graph, iri: str | None = None, named: bool = False) -> dict:
-    """Return the JSON-LD document of the record at *iri*, with its nodes without an address. If *named* is true,
-    include the class and the name of each linked record in *found*. Without *iri*, include all the statements."""
+    """Return the JSON-LD document of the record at iri in found."""
     if iri is None:
         expanded = jsonld.from_rdf(found.serialize(format="nt"), {"format": "application/n-quads"})
         return jsonld.compact(expanded, context(settings()))
@@ -92,7 +84,7 @@ def document(found: Graph, iri: str | None = None, named: bool = False) -> dict:
 
 
 def document_of(iri: str) -> str | None:
-    """Return the current JSON-LD of the record at this address, or None if there is no record."""
+    """Return the JSON-LD of the record at iri, or None."""
     with database.session() as db:
         record = db.get(Record, iri)
     if record is None or record.removed_at:
@@ -102,8 +94,7 @@ def document_of(iri: str) -> str | None:
 
 @cache
 def private() -> set[URIRef]:
-    """Return the properties of the private fields, which are not shown on the pages (form:private true in the
-    profile)."""
+    """Return the properties of the private fields."""
     graph = profile_graph()
     marked = URIRef(dict(graph.namespaces())["form"] + "private")
     found = set()
@@ -114,8 +105,7 @@ def private() -> set[URIRef]:
 
 @cache
 def published_as() -> dict[URIRef, URIRef]:
-    """Return the properties of the fields whose values are published with another class (form:publishedAs), with
-    that class."""
+    """Return the class of each field published as another class, by property."""
     graph = profile_graph()
     marked = URIRef(dict(graph.namespaces())["form"] + "publishedAs")
     found = {}
@@ -125,10 +115,7 @@ def published_as() -> dict[URIRef, URIRef]:
 
 
 def typed(found: Graph) -> Graph:
-    """Prepare the statements for publication. Give the values of the fields with form:publishedAs that class.
-    State each record as the main entity of its page, and use the page as its web address (schema:url) if none is
-    given, but not for a part. State the official profile of the class of a node (dct:conformsTo) only if all the fields required by
-    that profile are given."""
+    """Return found with the statements added for publication."""
     for predicate, of_class in published_as().items():
         for value in list(found.objects(None, predicate)):
             if isinstance(value, URIRef):
@@ -147,8 +134,7 @@ def typed(found: Graph) -> Graph:
 
 
 def public(found: Graph) -> Graph:
-    """Return the statements as shown on the pages. Remove the values of private fields, such as email addresses,
-    and give the values of the fields with form:publishedAs that class."""
+    """Return found without private fields, as shown on the pages."""
     for predicate in private():
         found.remove((None, predicate, None))
     return typed(found)
@@ -156,16 +142,12 @@ def public(found: Graph) -> Graph:
 
 @lru_cache(maxsize=256)
 def page_document(iri: str, latest: str) -> dict:
-    """Return the JSON-LD of a record for its page, with the names of the linked records. Cache the document until
-    a record is changed (*latest*, records.latest_change())."""
+    """Return the JSON-LD of the record at iri for its page, cached until latest changes."""
     return document(linked(records.get(iri)), iri, named=True)
 
 
 def linked(record: Record) -> Graph:
-    """Return the data of a record as published on its page.
-
-    The data has the parts of the record, the class and the name of each linked record, and the dataset of the
-    platform (void:inDataset). Remove private fields."""
+    """Return the data of record as published on its page."""
     found = public(records.with_names(records.graph([record.iri])))
     if record.iri != settings()["base"]:
         found.add((URIRef(record.iri), VOID.inDataset, URIRef(settings()["base"])))
@@ -177,8 +159,7 @@ PUBLISHED = {}
 
 
 def published_all() -> dict:
-    """Return the records with a page, with their parts, and the linked records outside the platform, such as
-    vocabulary terms. Remove private fields."""
+    """Return the records with a page and the terms they link to, without private fields."""
     latest = records.latest_change()
     if PUBLISHED.get("latest") != latest:
         own = []
@@ -194,11 +175,10 @@ def published_all() -> dict:
 
 
 def published() -> Graph:
-    """Return all records with a page, with their parts. Remove private fields."""
+    """Return all records with a page, with their parts, without private fields."""
     return published_all()["records"]
 
 
 def published_terms() -> Graph:
-    """Return the records outside the platform that are linked from the records with a page, such as vocabulary
-    terms."""
+    """Return the terms and other outside records linked from the records with a page."""
     return published_all()["terms"]

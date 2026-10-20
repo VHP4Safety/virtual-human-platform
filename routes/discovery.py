@@ -1,10 +1,4 @@
-"""Discovery addresses of the data and the services of the platform, for programs:
-- /.well-known/api-catalog: the APIs (RFC 9727), as a linkset (RFC 9264), with their OpenAPI descriptions.
-- Link headers: link the responses of the API to its description and its documentation (service-desc, service-doc,
-  RFC 8631), and the home page to the catalogue (api-catalog).
-- /.well-known/void: the published data (VoID), as returned in Turtle at the address of the platform
-  (linkeddata/void.py).
-"""
+"""Discovery addresses of the data and the services of the platform."""
 
 import json
 
@@ -22,7 +16,7 @@ DOCS = "api/docs/"
 
 
 def services() -> list[dict]:
-    """Return the APIs of the platform as linkset entries, each with its address, description and documentation."""
+    """Return the APIs of the platform as linkset entries."""
     found = [{
         "anchor": records.address("api/"),
         "service-desc": [{"href": records.address(OPENAPI), "type": "application/vnd.oai.openapi+json"}],

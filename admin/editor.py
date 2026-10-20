@@ -1,5 +1,4 @@
-"""Data of the record editor: the counts per kind, the records of a kind, and the graph for the forms of
-shacl-form."""
+"""Data of the record editor."""
 
 from rdflib import RDF, RDFS, XSD, BNode, Graph, Literal, URIRef
 from rdflib.collection import Collection
@@ -13,8 +12,7 @@ from linkeddata.profile import DASH, FORM, PARTS, fields, hierarchy, jsonld_name
 
 
 def counts() -> list[dict]:
-    """Count the records, the platform records, the removed records and the notes of each kind, with the average
-    share of filled fields."""
+    """Return the counts of records, platform records, removed records and notes of each kind."""
     found = []
     with database.session() as db:
         for name, kind in settings()["kinds"].items():
@@ -36,8 +34,7 @@ def counts() -> list[dict]:
 
 
 def listing(kind: str) -> list[dict]:
-    """List the records of a kind by name, removed records included, with the numbers of filled fields and notes of
-    each record and its parts."""
+    """Return the records of a kind by name, with the numbers of filled fields and notes."""
     of_kind = fields(settings()["kinds"][kind])
     with database.session() as db:
         statement = select(Record).where(Record.type.in_(records.within(settings()["kinds"][kind])), Record.moved_to.is_(None))
@@ -59,17 +56,12 @@ def listing(kind: str) -> list[dict]:
 
 
 def root_shape(kind: str) -> str:
-    """Return the node shape of the class of a kind, for its form."""
+    """Return the node shape of the class of a kind."""
     return str(shape_of(settings()["kinds"][kind]))
 
 
 def form_graph() -> Graph:
-    """Return the graph for shacl-form: the profile, the class hierarchy, and the names of the records, the list
-    terms (sh:in) and their vocabularies. Add two choices, a text and an address, to each sh:or of classes, so that a
-    name or an address that is not a record is shown. Give both choices an empty sh:in, so that such a value is
-    marked with the message of the field. Write each list field in the form of a list that shacl-form edits. Leave
-    out the read-only fields (dash:readOnly), such as the experimental design of a dataset; a save keeps their values
-    (admin.writes.kept)."""
+    """Return the graph of the shapes, records and terms for shacl-form."""
     found = Graph() + profile_graph() + hierarchy()
     for field in list(found.subjects(DASH.readOnly, Literal(True))):
         found.remove((None, SH.property, field))
@@ -117,12 +109,7 @@ def form_graph() -> Graph:
 
 
 def lists(found: Graph) -> None:
-    """Write each list field (sh:node dash:ListShape, with the shape of its members at
-    ( [ sh:zeroOrMorePath rdf:rest ] rdf:first )) as a node shape of a list cell: one rdf:first, the member, and one
-    rdf:rest, the next cell or rdf:nil.
-
-    shacl-form edits a list with one class of members. A choice of classes (sh:or) is made one class, of which the
-    classes are subclasses, such as "Person or organisation" (form:Dataset-creator-member)."""
+    """Write each list field in found as the list cell shape that shacl-form edits."""
     for field in list(found.subjects(SH.node, DASH.ListShape)):
         # The cell shape has an address, such as form:Dataset-creator, as it refers to itself.
         holder = jsonld_name(str(found.value(None, SH.property, field))).split(":")[-1]
@@ -163,7 +150,7 @@ def lists(found: Graph) -> None:
 
 
 def draft_vocabulary(record: Record | None) -> str | None:
-    """Return the namespace of the vocabulary of a draft term (status Draft), or None for other records."""
+    """Return the namespace of the vocabulary of a draft term, or None."""
     if record is None or record.type != str(SDO.DefinedTerm):
         return None
     found = records.graph([record.iri])
@@ -175,8 +162,7 @@ def draft_vocabulary(record: Record | None) -> str | None:
 
 
 def ordered() -> dict[str, list[str]]:
-    """Return the properties of the fields whose parts have a position, such as steps and sections, with the labels
-    of those fields, for the index of the case-study editor."""
+    """Return the properties of the fields whose parts have a position, with their labels."""
     graph = profile_graph()
     found = {}
     for field in graph.objects(None, SH.property):
@@ -187,7 +173,7 @@ def ordered() -> dict[str, list[str]]:
 
 
 def mixed() -> list[str]:
-    """Return the properties of the fields with an sh:or of a link and another value, such as an address."""
+    """Return the properties of the fields with a choice of a link or another value."""
     graph = profile_graph()
     found = []
     for field in graph.objects(None, SH.property):
@@ -203,9 +189,7 @@ def mixed() -> list[str]:
 
 
 def links() -> dict[str, dict[str, str]]:
-    """Return the properties of the fields with links to records (sh:class, or sh:or of classes, without parts),
-    with the label of each class. Take the label from the sh:or choice, else from the class shape, else from the
-    class."""
+    """Return the properties of the link fields, with the label of each class."""
     graph = profile_graph()
     found = {}
     for field in graph.objects(None, SH.property):

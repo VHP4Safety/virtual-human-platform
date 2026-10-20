@@ -1,7 +1,4 @@
-"""Writes of records on the platform, with a revision for each change.
-
-A record written on the platform replaces an imported record at the same address. Keep it unchanged at later
-imports. Store each change as a revision, with its author."""
+"""Writes of records on the platform, with a revision for each change."""
 
 import json
 import re
@@ -20,16 +17,12 @@ from linkeddata.profile import fields, jsonld_name, settings
 
 
 def version() -> str:
-    """Return the version of a record: the time of its last write, to the microsecond, so that two writes have
-    different versions."""
+    """Return the version of a record: the time of the write, to the microsecond."""
     return datetime.now(timezone.utc).isoformat()
 
 
 def class_of(kind: str, body: dict) -> str:
-    """Return the class of a written record.
-
-    The class is the @type of the body if it is the class of the kind or a subclass, such as AboutPage for pages.
-    Otherwise, use the class of the kind."""
+    """Return the class of a record of kind written with body."""
     given = body.get("@type")
     for name in given if isinstance(given, list) else [given]:
         if not isinstance(name, str):
@@ -41,7 +34,7 @@ def class_of(kind: str, body: dict) -> str:
 
 
 def document(kind: str, address: str, body: dict) -> dict:
-    """Convert a request body to a JSON-LD document, with the fixed values of the model. Refuse unknown fields."""
+    """Return the request body as a JSON-LD document of kind at address."""
     known = {}
     for field in fields(kind):
         known[field["name"]] = field
@@ -59,8 +52,7 @@ def document(kind: str, address: str, body: dict) -> dict:
 
 
 def kept(found: Graph, iri: str, kind: str) -> None:
-    """Keep the stored values of each read-only field (dash:readOnly) that *found* leaves out, with their parts. An
-    example is the experimental design of a dataset, which is edited in its source, BioStudies."""
+    """Add to found the stored values of the read-only fields that it leaves out."""
     node = URIRef(iri)
     stored = None
     for field in fields(kind):
@@ -73,9 +65,7 @@ def kept(found: Graph, iri: str, kind: str) -> None:
 
 
 def classed(found: Graph, iri: str) -> None:
-    """Give each part that *found* leaves without a class its stored class, or else the class of its field if the
-    field has one class. shacl-form writes the class of a part only from the target class of its shape
-    (sh:targetClass), and part shapes such as the files of a model have none."""
+    """Give each part in found without a class its stored class or the class of its field."""
     stored = records.graph([iri])
     pending = True
     while pending:
@@ -97,7 +87,7 @@ def slug(name: str) -> str:
 
 
 def part(found: Graph, node: BNode) -> bool:
-    """Return True if a node is in a field of parts."""
+    """Return True if node is in a field of parts."""
     for holder, predicate in found.subject_predicates(node):
         for field in fields(str(found.value(holder, RDF.type))):
             if field["iri"] == str(predicate) and field["part"]:
@@ -106,8 +96,7 @@ def part(found: Graph, node: BNode) -> bool:
 
 
 def free(base: str, taken: set) -> str:
-    """Return a free address: *base*, or *base*-2, *base*-3 and so on if *base* is in *taken*. <kind>/facets is
-    reserved for the API."""
+    """Return base, or base with the first free number, as a free address."""
     iri, number = base, 1
     while iri in taken or records.get(iri) is not None or iri.endswith("/facets"):
         number += 1
@@ -117,7 +106,7 @@ def free(base: str, taken: set) -> str:
 
 
 def renamed(found: Graph, node, iri: str) -> None:
-    """Give the node the address *iri* in *found*."""
+    """Give node the address iri in found."""
     for predicate, value in list(found.predicate_objects(node)):
         found.remove((node, predicate, value))
         found.add((URIRef(iri), predicate, value))
@@ -127,10 +116,7 @@ def renamed(found: Graph, node, iri: str) -> None:
 
 
 def addressed(found: Graph) -> None:
-    """Give an address to each new part that requires one (sh:nodeKind sh:IRI).
-
-    Make the address from the name, under the address of the node above the part. An example is a new step of a
-    question, at casestudies/kidney/Q1/exposure."""
+    """Give an address to each new part in found that requires one."""
     taken = set()
     pending = True
     while pending:
@@ -145,9 +131,7 @@ def addressed(found: Graph) -> None:
 
 
 def separate(found: Graph) -> list[tuple[str, str, Graph]]:
-    """Separate the new records that are sent as nodes without an address, such as a person added in the form.
-    Make each node of the class of a kind, if not in a field of parts, a record at <kind>/<name>, linked from the
-    record. Remove its statements from *found*, and return them with its class."""
+    """Remove the new records sent without an address from found, and return them."""
     kinds = {}
     for kind_name, kind in settings()["kinds"].items():
         kinds[URIRef(kind)] = kind_name
@@ -170,7 +154,7 @@ def separate(found: Graph) -> list[tuple[str, str, Graph]]:
 
 
 def save(document: dict, kind: str, name: str, orcid: str) -> Revision:
-    """Store a checked record document at its address, in place of the old record, with a revision."""
+    """Store document as the record of kind at its address, and return the revision."""
     iri = document["@id"]
     previous = documents.document_of(iri)
     with database.session() as db, db.begin():
@@ -192,7 +176,7 @@ def save(document: dict, kind: str, name: str, orcid: str) -> Revision:
 
 
 def retire(iri: str, name: str, orcid: str) -> Revision:
-    """Remove the record, and keep its address, so that it is not used again."""
+    """Remove the record at iri, keep its address, and return the revision."""
     previous = documents.document_of(iri)
     with database.session() as db, db.begin():
         for record in db.scalars(select(Record).where((Record.iri == iri) | (Record.part_of == iri))):
@@ -205,8 +189,7 @@ def retire(iri: str, name: str, orcid: str) -> Revision:
 
 
 def move(old: str, new: str, name: str, orcid: str) -> Revision:
-    """Move the record and its parts with an address to a new address. Redirect the old and the earlier addresses
-    to the new addresses, and store the old address in sameAs."""
+    """Move the record at old and its parts to new, and return the revision."""
     previous = documents.document_of(old)
 
     def moved(node):
@@ -240,12 +223,7 @@ def move(old: str, new: str, name: str, orcid: str) -> Revision:
 
 
 def merge(found: Graph, old: str, new: str, kind: str, name: str, orcid: str) -> Revision:
-    """Store the record at *old*, with the statements *found*, at the address *new*, as a record of class *kind*.
-
-    - If a record is at *new*, keep its class and its values, and add the other values of the old record. In a field
-      with one value, keep the value of the record at *new*.
-    - Link the records that link to the old address to the new address.
-    - Redirect the old address to the new address, and store the old address in sameAs."""
+    """Merge the record at old into the record at new, and return the revision."""
     previous = documents.document_of(old)
     target = URIRef(new)
     single = {field["iri"] for field in fields(kind) if field["single"]}
@@ -290,7 +268,7 @@ def merge(found: Graph, old: str, new: str, kind: str, name: str, orcid: str) ->
 
 
 def restore(iri: str, name: str, orcid: str) -> Revision:
-    """Restore a removed record as it was before the removal."""
+    """Restore the removed record at iri, and return the revision."""
     with database.session() as db, db.begin():
         for record in db.scalars(select(Record).where((Record.iri == iri) | (Record.part_of == iri))):
             record.removed_at = None
@@ -303,7 +281,7 @@ def restore(iri: str, name: str, orcid: str) -> Revision:
 
 
 def remove(iri: str, name: str, orcid: str) -> Revision:
-    """Remove the record and its address, and keep its revisions."""
+    """Remove the record at iri and its address, and return the revision."""
     previous = documents.document_of(iri)
     with database.session() as db, db.begin():
         records.delete(db, iri)

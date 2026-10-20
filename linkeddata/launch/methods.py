@@ -1,7 +1,4 @@
-"""Parser of the methods of the cloud catalogue, a workaround (see linkeddata/parsers).
-
-Read the methods from methods_index.json, and each method from docs/methods/<id>.json. Pass on values as written,
-and leave misfits to the checks."""
+"""Parser of the methods of the cloud catalogue."""
 
 import json
 import re

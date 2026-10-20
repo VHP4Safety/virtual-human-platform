@@ -1,24 +1,4 @@
-"""Parser of the models of the Zenodo community vhp4safety, a workaround (see linkeddata/parsers).
-
-Source: the Zenodo record search. Each record has an RO-Crate zip ("ro-crate" in the name) with
-ro-crate-metadata.json, and sometimes a PBPK description (pbpk-model-metadata.json).
-
-- Crate: read it as linked data, with the RO-Crate context of ro-crate-py. Read web addresses in text as links.
-- Models: the main entities of the crate. Address: models/<crate name> ("oppbkmodelr" for
-  oppbkmodelr-ro-crate-v1.0.1.zip), or models/<entity name> if the crate has several main entities.
-- Fields: from the entity, then from the root of the crate for missing fields.
-- Parts: the entities that are only in the crate, such as a language.
-- Separate records: people, organisations, grants (by number) and publications (by DOI). Link other entities, such
-  as a taxon.
-- Requirements: texts such as "RStudio 1.4.1717", as in schema.org.
-- Identifiers: store "CAS:15663-27-1" as identifier and value.
-- Chemicals and taxa: add the chemicals and taxa of the crate to each model.
-- Zenodo record: the DOI, date, page and files, and the keywords, licence and creators if the crate has none.
-- PBPK description: the ROBOT fields that are not in the crate. Read two layouts: the PBPK Model Reporting Template
-  of Tan et al. (2020, https://doi.org/10.1016/j.yrtph.2020.104673), with a part per model, and a curated layout of
-  one model. Store lists as parts where ROBOT has parts (compartments, connections, parameters, roles of chemicals).
-  Store inputs and outputs as formal parameters, as in RO-Crate. Store routes and scenarios in the domain of
-  applicability, and processes in the structure."""
+"""Parser of the models of the Zenodo community vhp4safety."""
 
 import copy
 import json
@@ -53,7 +33,7 @@ def crate_of(hit: dict) -> dict | None:
 
 
 def packages(index: bytes) -> dict[str, str]:
-    """Return the crate zip of each model record, by the identifier of the record."""
+    """Return the crate zip of each model record in index, by record identifier."""
     found = {}
     for hit in json.loads(index)["hits"]["hits"]:
         crate = crate_of(hit)
@@ -63,7 +43,7 @@ def packages(index: bytes) -> dict[str, str]:
 
 
 def listed(value) -> list:
-    """Return a value as a list: a list as it is, one value in a list, and nothing as an empty list."""
+    """Return value as a list."""
     if isinstance(value, list):
         return value
     if present(value):
@@ -77,7 +57,7 @@ def joined(*parts) -> str:
 
 
 def sentence(heading: str, items) -> str:
-    """Return a heading and its items as a sentence ("Processes: a; b."), or nothing without items."""
+    """Return heading and items as one sentence, or an empty text without items."""
     given = [str(item) for item in listed(items) if present(item)]
     if not given:
         return ""
@@ -85,13 +65,13 @@ def sentence(heading: str, items) -> str:
 
 
 def fill(row: dict, field: str, value) -> None:
-    """Set a field that is not in the crate, from the PBPK description."""
+    """Set field of row to value if it is not set."""
     if field not in row and present(value) and value != []:
         row[field] = value
 
 
 def entities(crate: dict) -> dict[str, dict]:
-    """Return the entities of the crate by address, as linked data."""
+    """Return the entities of crate by address."""
     contexts = []
     for context in listed(crate.get("@context")):
         if isinstance(context, str) and context.startswith("https://w3id.org/ro/crate/"):
@@ -108,7 +88,7 @@ def kinds(node: dict) -> list[str]:
 
 
 def values(node: dict, field: str) -> list:
-    """Return the values of a field, by its name in schema.org or another vocabulary."""
+    """Return the values of field of node."""
     for iri, given in node.items():
         if iri not in ("@id", "@type") and local_name(iri) == field:
             return given
@@ -123,7 +103,7 @@ def text(node: dict, field: str) -> str:
 
 
 def record(nodes: dict, node: dict, others: dict) -> dict | None:
-    """Return the link to the record of an entity, and add its row: a person, organisation, grant or publication."""
+    """Return the link to the record of node, and add its row to others."""
     iri = node["@id"]
     found = kinds(node)
     name = text(node, "name")
@@ -164,10 +144,7 @@ def record(nodes: dict, node: dict, others: dict) -> dict | None:
 
 
 def fields(nodes: dict, node: dict, others: dict, seen: frozenset = frozenset()) -> dict:
-    """Return the fields of an entity by name, as stated in the crate.
-
-    Entities that are only in the crate are parts. Records are links to their records, and other entities are
-    links."""
+    """Return the fields of the entity node by name."""
     row = {}
     for iri, given in node.items():
         if iri in ("@id", "@type"):
@@ -196,7 +173,7 @@ def converted(nodes: dict, value: dict, others: dict, seen: frozenset):
 
 
 def version_of(part) -> str:
-    """Return a requirement as a text: its name and version ("RStudio 1.4.1717"), or its address."""
+    """Return the requirement part as a text."""
     if not isinstance(part, dict):
         return str(part)
     if "@id" in part:
@@ -205,7 +182,7 @@ def version_of(part) -> str:
 
 
 def identifiers(row: dict) -> None:
-    """Store identifiers such as "CAS:15663-27-1" or "PubChem CID 2730" as identifier and value."""
+    """Store the identifiers of row as identifier type and value."""
     found = []
     for value in row.pop("identifier", []):
         if isinstance(value, str):
@@ -218,7 +195,7 @@ def identifiers(row: dict) -> None:
 
 
 def weight(row: dict) -> None:
-    """Store a molecular weight in g/mol as its number."""
+    """Store the molecular weight of row as a number."""
     for value in row.get("molecularWeight", []):
         given = re.fullmatch(r"([0-9.]+)\s*(g/mol)?", str(value).strip())
         if given:
@@ -226,19 +203,19 @@ def weight(row: dict) -> None:
 
 
 def number(value):
-    """Return a number as a decimal, and other values as they are."""
+    """Return value as a decimal if it is a number."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return value
     return {"@value": str(value), "@type": DECIMAL}
 
 
 def named_parts(kind: str, names) -> list[dict]:
-    """Return a part of a kind for each name, such as a compartment or an input."""
+    """Return a part of kind for each of names."""
     return [{"@type": kind, "name": str(name)} for name in listed(names)]
 
 
 def connections(given) -> list[dict]:
-    """Return connections ("blood <-> fat (perfusion-limited distribution)"), in both directions for <->."""
+    """Return the connections in given, in both directions for <->."""
     found = []
     for value in listed(given):
         written = CONNECTION.fullmatch(str(value).strip())
@@ -270,7 +247,7 @@ def implementations(paths) -> list[dict]:
 
 
 def roles(row: dict, named_roles: dict[str, list]) -> None:
-    """Add the roles in the model of the chemicals named in the PBPK description."""
+    """Add the roles of the chemicals in named_roles to row."""
     for chemical in row.get("pbpk:hasChemical", []):
         for name in chemical.get("name", []):
             if str(name).casefold() in named_roles and "pbpk:chemicalRole" not in chemical:
@@ -278,7 +255,7 @@ def roles(row: dict, named_roles: dict[str, list]) -> None:
 
 
 def system(described: dict, model: dict) -> list[dict]:
-    """Return the biological system of the template, with the default subject of the model in its population."""
+    """Return the biological system of the model in the template."""
     given = described.get("biological_system_description") or {}
     if not given:
         return []
@@ -292,7 +269,7 @@ def system(described: dict, model: dict) -> list[dict]:
 
 
 def chemical_notes(row: dict, described: dict) -> None:
-    """Add the roles and the physicochemical notes of the chemical of the template."""
+    """Add the roles and physicochemical notes of the template to the chemicals of row."""
     chemical = described.get("chemical_description") or {}
     if not present(chemical.get("name")):
         return
@@ -337,7 +314,7 @@ def calibration(model: dict) -> list[dict]:
 
 
 def evaluations(described: dict, model: dict) -> list[dict]:
-    """Return the pharmacokinetic evaluation of the model against the studies of the template, and its QIVIVE."""
+    """Return the evaluations of the model in the template."""
     evaluated = described.get("model_evaluation_and_validation") or {}
     found = []
     studies = listed(evaluated.get("pharmacokinetic_evaluation_data"))
@@ -371,7 +348,7 @@ def sensitivity(described: dict) -> list[dict]:
 
 
 def scenarios(row: dict, described: dict) -> str:
-    """Return the simulation scenarios of the template as sentences. Their outputs are the outputs of the model."""
+    """Return the simulation scenarios of the template as sentences."""
     sentences = []
     for scenario in listed(described.get("simulation_scenarios")):
         details = []
@@ -392,7 +369,7 @@ def scenarios(row: dict, described: dict) -> str:
 
 
 def template(row: dict, described: dict, model: dict) -> None:
-    """Set the fields of ROBOT from the PBPK Model Reporting Template (Tan et al. 2020), for one of its models."""
+    """Set the ROBOT fields of row from the PBPK Model Reporting Template."""
     general = described.get("general_model_information") or {}
     structure = model.get("structure") or {}
     kind = f"{structure['type']}." if present(structure.get("type")) else ""
@@ -415,7 +392,7 @@ def template(row: dict, described: dict, model: dict) -> None:
 
 
 def curated(row: dict, described: dict) -> None:
-    """Set the fields of ROBOT from the curated layout of one model."""
+    """Set the ROBOT fields of row from the curated layout of one model."""
     model = described.get("model") or {}
     evaluation = described.get("evaluation") or {}
     types = []
@@ -442,8 +419,7 @@ def curated(row: dict, described: dict) -> None:
 
 
 def chemicals(nodes: dict, others: dict) -> list[dict]:
-    """Return the chemicals of the crate, with their identifiers as identifier and value, and their weight as a
-    number."""
+    """Return the chemicals of the crate with their identifiers and weights."""
     found = []
     for node in nodes.values():
         if "MolecularEntity" in kinds(node) or "ChemicalSubstance" in kinds(node):
@@ -456,10 +432,7 @@ def chemicals(nodes: dict, others: dict) -> list[dict]:
 
 
 def model_row(nodes: dict, root: dict, main: dict, address: str, others: dict) -> dict:
-    """Return the row of a model.
-
-    Take the fields from its entity, and missing fields from the crate. Add links to records and terms, citations as
-    publications, and requirements as texts."""
+    """Return the row of the model main at address."""
     row = {"@id": address, "@type": "SoftwareSourceCode", **fields(nodes, main, others)}
     for field in SHARED:
         fill(row, field, [converted(nodes, value, others, frozenset({LOCAL})) for value in values(root, field)])
@@ -479,10 +452,7 @@ def model_row(nodes: dict, root: dict, main: dict, address: str, others: dict) -
 
 
 def zenodo(row: dict, hit: dict, nodes: dict, others: dict) -> None:
-    """Add the fields of the Zenodo record of the model.
-
-    Always add the page, DOI, date and files. The files are the digital artifacts, at their download addresses. Add
-    the name, licence, keywords and creators if they are not in the crate."""
+    """Add the fields of the Zenodo record hit to row."""
     metadata = hit["metadata"]
     fill(row, "name", [metadata["title"]])
     licences = [licence(value["@id"]) for value in row.get("license", []) if isinstance(value, dict) and "@id" in value]
@@ -515,7 +485,7 @@ def zenodo(row: dict, hit: dict, nodes: dict, others: dict) -> None:
 
 
 def reported(described: dict, main: dict) -> dict | None:
-    """Return the model of the template whose files include the main entity of the crate."""
+    """Return the model of the template with the main entity main in its files, or None."""
     for model in listed(described.get("models")):
         if main["@id"].removeprefix(LOCAL) in listed(model.get("implementation_files")):
             return model

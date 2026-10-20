@@ -1,20 +1,4 @@
-"""Parser of the platform pages in the website templates, a workaround (see linkeddata/parsers).
-
-Source: the website templates (files of site.yaml), and the partner list.
-
-- Page: the heading is the name, and the line under it is the description. Each tab is a section, with its first
-  paragraph as text and each item as a separate section. A tab with a commented-out link is a hidden section.
-  Images and videos in a text are the figures and videos of the section.
-- Home page: the catalogue of the platform, with its name, heading, sentence and description, the cards of the
-  kinds of records, the linked pages, and the contact links of the publisher.
-- JSON-LD of each page (base.html): the other names, logo, short description and other addresses of the project,
-  and the website of the funder.
-- First tab of the project page: the record of the project. The first item is its description. The video of an
-  item is its video, a list with a figure is its research lines, and a grant link is its grant. The items stay
-  sections of the page, with the fields of the project record in form:shows.
-- Partner list: the partners of the project by role, the co-funders, and their websites and logos.
-- Case studies page: the image of each case study.
-- Publications tab: linked to the grant of the project, so that the outputs of the grant are shown."""
+"""Parser of the platform pages in the website templates."""
 
 import json
 import re
@@ -39,13 +23,12 @@ FUNDERS = {"Co-funders", "Funder"}
 
 
 def static(path: str) -> dict:
-    """Return a file of the static folder of the website, at its address on the platform."""
+    """Return a file of the static folder as a link."""
     return link(settings()["base"] + quote(path.strip("/")))
 
 
 def text(node) -> str:
-    """Return the inner HTML of a node without layout. Remove the blocks and spans that only set the layout, with
-    their attributes, but keep the addresses of links. Write spaces once."""
+    """Return the inner HTML of a node without layout."""
     for element in node.find_all(["div", "span"]):
         element.unwrap()
     for element in node.find_all(True):
@@ -56,7 +39,7 @@ def text(node) -> str:
 
 
 def media(node) -> tuple[list, list]:
-    """Return the figures and videos of a text, removed from the text with their frames."""
+    """Return the figures and videos of a text, and remove them from it."""
     figures = []
     for image in node.find_all("img"):
         figures.append({"@type": "ImageObject", "contentUrl": static(image["src"]), "caption": image.get("alt", "")})
@@ -70,7 +53,7 @@ def media(node) -> tuple[list, list]:
 
 
 def item(entry, position: int) -> dict:
-    """Return an accordion item as a section: the text of its button, and the text, figures and videos of its body."""
+    """Return an accordion item as a section."""
     body = entry.select_one(".accordion-body")
     figures, videos = media(body)
     section = {"@type": "WebPageElement", "name": entry.select_one(".accordion-button").get_text(" ", strip=True), "position": position}
@@ -85,10 +68,7 @@ def item(entry, position: int) -> dict:
 
 
 def tabs(soup) -> list[dict]:
-    """Return the tabs of a page as sections, in their order.
-
-    Name each section by the link of its tab, and hide it if the link is commented out. Use the first paragraph as
-    the text of the section, and the items as its sections."""
+    """Return the tabs of a page as sections, in their order."""
     labels = {}
     for anchor in soup.select("a.nav-link"):
         labels[anchor["href"].lstrip("#")] = (anchor.get_text(" ", strip=True), True)
@@ -121,7 +101,7 @@ def heading(soup) -> tuple[str, str]:
 
 
 def page(key: str, content: bytes) -> dict:
-    """Return a page and its sections. A page without tabs has one section, with its text after the heading."""
+    """Return the row of a page with its sections."""
     soup = BeautifulSoup(content, "html.parser")
     name, description = heading(soup)
     row = {"@id": PAGES[key], "@type": "WebPage", "name": name}
@@ -144,8 +124,7 @@ def page(key: str, content: bytes) -> dict:
 
 
 def grant(section: dict) -> tuple[dict, dict] | None:
-    """Return the grant and the funder named in a funding text. The number is the text of the link. Read the
-    funder and the amount from the words of the text. The text is the description of the grant."""
+    """Return the grant and the funder of a funding text, or None."""
     soup = BeautifulSoup(section.get("text", {}).get("@value", "") if isinstance(section.get("text"), dict) else "", "html.parser")
     anchor = soup.find("a")
     if anchor is None:
@@ -168,7 +147,7 @@ def grant(section: dict) -> tuple[dict, dict] | None:
 
 
 def project(about: dict) -> tuple[dict, list[dict]]:
-    """Return the record of the project from the first tab of the project page, with its items, and the grant rows."""
+    """Return the row of the project, with its items, and the grant rows."""
     row = {"@id": PROJECT, "@type": "ResearchProject", "name": "VHP4Safety"}
     kept = []
     others = []
@@ -212,8 +191,7 @@ def project(about: dict) -> tuple[dict, list[dict]]:
 
 
 def partners(content: bytes) -> tuple[list[dict], list[dict], list[dict]]:
-    """Return the organisations of the partner list, the partners of the project by the heading above them, and its
-    co-funders, without commented-out entries."""
+    """Return the organisations, the partners and the co-funders of the partner list."""
     organisations = []
     roles = []
     funders = []
@@ -239,7 +217,7 @@ def partners(content: bytes) -> tuple[list[dict], list[dict], list[dict]]:
 
 
 def home(content: bytes, kinds: dict) -> tuple[dict, dict]:
-    """Return the catalogue of the platform from the home page, and the email and other addresses of its publisher."""
+    """Return the catalogue of the platform and its publisher from the home page."""
     soup = BeautifulSoup(content, "html.parser")
     hero = soup.find("h1")
     # The heading keeps its line break ("The Virtual" above "Human Platform").
@@ -277,8 +255,7 @@ def home(content: bytes, kinds: dict) -> tuple[dict, dict]:
 
 
 def organisation(content: bytes) -> dict:
-    """Return the organisation in the JSON-LD of each page, with the address of the platform in place of the address
-    of the page."""
+    """Return the organisation in the JSON-LD of a page."""
     soup = BeautifulSoup(content, "html.parser")
     for script in soup.find_all("script", type="application/ld+json"):
         written = script.string or ""
@@ -288,7 +265,7 @@ def organisation(content: bytes) -> dict:
 
 
 def case_studies(content: bytes) -> list[dict]:
-    """Return the image of each case study, from its card."""
+    """Return the image of each case study."""
     soup = BeautifulSoup(content, "html.parser")
     found = []
     for card in soup.select("a[href^='/casestudies/']"):

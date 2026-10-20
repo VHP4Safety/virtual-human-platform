@@ -1,12 +1,4 @@
-"""Each field of some records of each kind is changed in each way the shapes allow or forbid, at every
-depth: a fitting value, one more, emptied, and misfits. Each change is checked and saved through the
-records API, read back, loaded into the editor's form and serialized again. Statements lost or added, and
-checks that differ from the shapes, are written to a report and fail the test.
-
-- FIELDS_STATE: the folder of a platform.sqlite, which is copied;
-- FIELDS_RECORDS: records changed per kind (3: the least and most complete, and one between);
-- FIELDS_CHROME: a Chromium for Playwright, for the form's check;
-- FIELDS_REPORT: the report's path."""
+"""Tests of the field checks of each kind, through the records API and the editor."""
 
 import json
 import os
@@ -81,8 +73,7 @@ def fitting(field: dict, holder: str, taken: list):
 
 
 def misfits(field: dict) -> dict:
-    """Values that do not fit a field, by kind: a text where a link, part, address or number belongs, a link
-    where a text belongs, an unlisted value, or a record of another class."""
+    """Return values that do not fit a field, by kind of misfit."""
     if field["values"]:
         return {"unlisted": {"@id": "https://example.org/unlisted"}}
     found = {}
@@ -130,8 +121,7 @@ def expectation(operation: str, field: dict) -> str:
 
 
 def changed(document: dict, of_class: str, operation: str, holder: str, path: list, plan: list) -> dict:
-    """The document with an operation done on each field, parts included; each change's expected check is
-    added to the plan."""
+    """Return the document with an operation done on each field, and add the expected checks to plan."""
     new = dict(document)
     for field in fields(of_class):
         if field["fixed"]:
@@ -153,8 +143,7 @@ def changed(document: dict, of_class: str, operation: str, holder: str, path: li
 
 
 def difference(intended: Graph, found: Graph) -> dict:
-    """The statements lost and added, counted by property and value kind (link, text or part); a statement
-    only held by another node without an address is neither."""
+    """Return the statements lost and added, counted by property and value kind."""
     _, lost, added = graph_diff(to_isomorphic(intended), to_isomorphic(found))
     counted = {"lost": Counter(), "added": Counter()}
     for name, triples in (("lost", lost), ("added", added)):
@@ -172,8 +161,7 @@ def difference(intended: Graph, found: Graph) -> dict:
 
 
 def answered(plan: list, answer: dict, baseline: dict) -> list:
-    """The checks that differ from the shapes: each change's field is expected among the problems
-    (violation), the warnings, or neither (fits); a part's field is named by its path."""
+    """Return the checks in answer that differ from the shapes."""
     found = []
     for item in plan:
         top = item["field"]
@@ -241,8 +229,7 @@ def test_fields(state, site):
 
 
 def form_rows(site, secret: str, chrome: str, cases: list) -> list:
-    """What the editor's form gives back for each changed record, loaded into its form; the form's
-    statements are compared with the record's."""
+    """Return the statements that the editor form sends back for each changed record."""
     from playwright.sync_api import sync_playwright
     from werkzeug.serving import make_server
 

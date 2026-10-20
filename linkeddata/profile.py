@@ -1,4 +1,4 @@
-"""SHACL profile and pinned vocabularies of the model release, and the fields of each kind of record."""
+"""Profile and pinned vocabularies of the model release."""
 
 import hashlib
 import os
@@ -28,11 +28,7 @@ DASH = Namespace("http://datashapes.org/dash#")
 
 @cache
 def settings() -> dict:
-    """Return the settings of the model.
-
-    Read the settings from the header of the profile and from the source files. The settings are the title, the base
-    address, the pinned files, the kinds of records, the JSON-LD prefixes, and the JSON-LD names of terms from other
-    vocabularies."""
+    """Return the settings of the model."""
     graph = profile_graph()
     header = graph.value(None, RDF.type, OWL.Ontology)
     files = {}
@@ -57,7 +53,7 @@ def settings() -> dict:
 
 
 def jsonld_name(iri: str) -> str:
-    """Return the name of a property or a class in the JSON-LD of the platform."""
+    """Return the JSON-LD name of the property or class at iri."""
     for name, named in settings().get("terms", {}).items():
         if iri == named:
             return name
@@ -69,9 +65,7 @@ def jsonld_name(iri: str) -> str:
 
 
 def vocabularies(endings: tuple = (".ttl", ".jsonld")) -> list[Path]:
-    """Return the RDF files of the pinned vocabularies, or, with endings (".shacl",), the files of the official
-    shapes. Download a missing file first. A pinned file of another format, such as a JSON licence list, is for its
-    parser only."""
+    """Return the files of the pinned vocabularies, or of the official shapes with endings."""
     files = []
     for name in settings()["vocabularies"]:
         path = MODEL_DIR / "vocabularies" / name
@@ -83,8 +77,7 @@ def vocabularies(endings: tuple = (".ttl", ".jsonld")) -> list[Path]:
 
 
 def download_vocabularies() -> list[str]:
-    """Download missing vocabulary files from their pinned addresses. Return the files that do not match their
-    pinned SHA-256."""
+    """Download the missing vocabulary files, and return the files with a wrong SHA-256."""
     problems = []
     for name, pinned in settings()["vocabularies"].items():
         path = MODEL_DIR / "vocabularies" / name
@@ -100,7 +93,7 @@ def download_vocabularies() -> list[str]:
 
 
 def terms_problems() -> list[str]:
-    """Return the classes and properties that are used in the profile and defined in no pinned vocabulary."""
+    """Return the classes and properties of the profile that no pinned vocabulary defines."""
     defined = set(profile_graph().subjects())
     for path in vocabularies():
         defined |= set(vocabulary(path).subjects())
@@ -109,14 +102,14 @@ def terms_problems() -> list[str]:
 
 
 def write_tables() -> Path:
-    """Write the SQL of the release tables from the profile."""
+    """Write the SQL of the release tables, and return its path."""
     TABLES.parent.mkdir(parents=True, exist_ok=True)
     TABLES.write_text(layout(profile_text()).ddl(), encoding="utf-8")
     return TABLES
 
 
 def tables_problems() -> list[str]:
-    """Return a problem if the SQL of the release differs from the SQL made from the profile."""
+    """Return a problem if the SQL of the release differs from the profile."""
     if not TABLES.exists() or TABLES.read_text(encoding="utf-8") != layout(profile_text()).ddl():
         return [f"{TABLES} is out of date: run python -m linkeddata model, review and commit it."]
     return []
@@ -124,14 +117,13 @@ def tables_problems() -> list[str]:
 
 @cache
 def profile_text() -> str:
-    """Return the modules of the application profile as one Turtle text."""
+    """Return the profile as one Turtle text."""
     return "\n".join(path.read_text(encoding="utf-8") for path in sorted((MODEL_DIR / "profile").glob("*.ttl")))
 
 
 @cache
 def profile_graph() -> Graph:
-    """Return the application profile as a graph. If PLATFORM_BASE is set, such as for a test site, use it as the
-    address space of the profile (void:uriSpace), under which records are made."""
+    """Return the profile as a graph."""
     graph = Graph().parse(data=profile_text(), format="turtle")
     if os.environ.get("PLATFORM_BASE"):
         graph.set((graph.value(None, RDF.type, OWL.Ontology), VOID.uriSpace, Literal(os.environ["PLATFORM_BASE"].rstrip("/") + "/")))
@@ -140,11 +132,7 @@ def profile_graph() -> Graph:
 
 @cache
 def official() -> Graph:
-    """Return the official shapes (sh:shapesGraph), with targets from the profile.
-
-    Remove the targets of the official shapes. Give an official shape that is named by a node shape
-    (dct:conformsTo) the class of that node shape as its target, so that an official profile is checked only where
-    the profile declares it. Correct the upstream property addresses of discovery.biothings.io with corrected()."""
+    """Return the official shapes, with targets from the profile."""
     found = Graph()
     for path in vocabularies((".shacl",)):
         found.parse(path, format="turtle")
@@ -169,8 +157,7 @@ BIOTHINGS = {"https://discovery.biothings.io/view/bioschemas/": "https://biosche
 
 
 def corrected(path: URIRef, properties: set[str]) -> URIRef:
-    """Return the property for a discovery.biothings.io address: the schema.org property with the same name if a
-    pinned vocabulary defines it, else the Bioschemas term. Return other addresses as they are."""
+    """Return the schema.org or Bioschemas property for the discovery.biothings.io address path."""
     for prefix, namespace in BIOTHINGS.items():
         if str(path).startswith(prefix):
             name = str(path).removeprefix(prefix)
@@ -180,9 +167,7 @@ def corrected(path: URIRef, properties: set[str]) -> URIRef:
 
 @cache
 def official_fields() -> dict:
-    """Return the fields of the official shapes, by property shape, each as (shape, property, required). Of
-    alternative paths, use the schema.org path (https), else the last path. A value is required if a minimum count is
-    set at Violation severity."""
+    """Return the fields of the official shapes, by property shape."""
     graph = official()
     found = {}
     for shape, field in graph.subject_objects(SH.property):
@@ -196,8 +181,7 @@ def official_fields() -> dict:
 
 @cache
 def required() -> dict[URIRef, tuple[URIRef, set]]:
-    """Return, by class, the official shape named by the node shape of the class (dct:conformsTo) and the
-    properties required by that official shape, without dct:conformsTo."""
+    """Return the official shape and its required properties for each class."""
     found = {}
     for shape, conformed in profile_graph().subject_objects(DCTERMS.conformsTo):
         needed = set()
@@ -211,7 +195,7 @@ def required() -> dict[URIRef, tuple[URIRef, set]]:
 
 @cache
 def shapes() -> Graph:
-    """Return the shapes of the profile and the official shapes, with which the records are checked."""
+    """Return the shapes of the profile and the official shapes."""
     return profile_graph() + official()
 
 
@@ -222,8 +206,7 @@ def vocabulary(path: Path) -> Graph:
 
 @cache
 def hierarchy() -> Graph:
-    """Return the class hierarchy (rdfs:subClassOf) of the vocabularies, so that a link to a record of a subclass
-    is accepted."""
+    """Return the class hierarchy of the pinned vocabularies."""
     graph = Graph()
     for path in vocabularies():
         for statement in vocabulary(path).triples((None, RDFS.subClassOf, None)):
@@ -232,8 +215,7 @@ def hierarchy() -> Graph:
 
 
 def terms(iris: list[str]) -> dict[str, dict]:
-    """Return the vocabulary terms at these addresses, such as the steps of the glossary, each with a label, a
-    description and the title of the vocabulary."""
+    """Return the vocabulary terms at iris, with label, description and vocabulary title."""
     found = {}
     if not iris:
         return found
@@ -252,7 +234,7 @@ def terms(iris: list[str]) -> dict[str, dict]:
 
 
 def shape_of(kind: str) -> URIRef | None:
-    """Return the node shape of a class in the profile."""
+    """Return the node shape of the class kind."""
     return profile_graph().value(None, SH.targetClass, URIRef(kind))
 
 
@@ -262,10 +244,7 @@ PARTS = (SH.BlankNode, SH.BlankNodeOrIRI)
 
 @cache
 def fields(kind: str) -> list[dict]:
-    """Return the fields of a class.
-
-    Read the fields from the property shapes of its node shape and of the node shapes named with sh:node. Sort them
-    by section (sh:group) and by order (sh:order)."""
+    """Return the fields of the class kind, in the order of the form."""
     graph = profile_graph()
     kinds = set(settings()["kinds"].values())
     shape = shape_of(kind)

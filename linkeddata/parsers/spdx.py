@@ -1,8 +1,4 @@
-"""Parser of the SPDX License List, a workaround (see linkeddata/parsers).
-
-Store each licence at https://spdx.org/licenses/<identifier>, with its name, its identifier as code, and the other
-addresses of its text, such as at Creative Commons or the Open Source Initiative. So a licence is found by any of
-these addresses."""
+"""Parser of the SPDX License List."""
 
 import json
 

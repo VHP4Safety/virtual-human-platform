@@ -1,9 +1,4 @@
-"""Launch of the platform.
-
-Import all sources once, including the sources of this folder. Then make the corrections of launch.yaml. Each
-correction moves or replaces values of a field, or moves the record to another address (to), where it is merged with
-the record at that address, if there is one. Store it as a revision with its reason. After a correction, the record
-belongs to the platform, and later imports keep it unchanged."""
+"""Launch of the platform."""
 
 from pathlib import Path
 
@@ -20,7 +15,7 @@ NAME = "VHP4Safety launch"
 
 
 def corrected(found: Graph, correction: dict) -> int:
-    """Apply a correction to the statements of a record, in place, and return the number of changed values."""
+    """Apply a correction to the statements in found, and return the number of changed values."""
     changed = 0
     for move in correction.get("move") or []:
         field = URIRef(documents.expand(move["field"]))
@@ -48,8 +43,7 @@ def corrected(found: Graph, correction: dict) -> int:
 
 
 def launch() -> list[str]:
-    """Import all sources, then make and store all corrections of launch.yaml. Return what could not be imported or
-    made. Refuse a database with imported records."""
+    """Import all sources, make the corrections, and return what failed."""
     problems = import_all(once=True)
     for correction in yaml.safe_load(CORRECTIONS.read_text(encoding="utf-8"))["corrections"]:
         iri = records.address(correction["record"])

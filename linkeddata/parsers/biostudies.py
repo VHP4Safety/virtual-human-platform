@@ -1,20 +1,4 @@
-"""Parser of the BioStudies collection VHP4Safety, a workaround (see linkeddata/parsers).
-
-Source: the search results, and the file of each study (api/v1/studies/<accession>), read with the BioStudies
-client (biostudies_search).
-
-- Values: the attributes of the sections of a study. Read the address or the ontology term of a value from the
-  qualifiers of its attribute (valqual).
-- Terms: link identifiers such as NCBITaxon_9606 at their address, with labels from the Ontology Lookup Service
-  (sources/ols.yaml).
-- Authors and organisations: separate rows. The authors are kept in their order, as a list.
-- Funding: a grant row for each funding section (agency and grant number).
-- Files: the files of the study and its sections, at their addresses on the BioStudies FTP site, in their order.
-- Experimental design: a LabProtocol part with the biological models (BioSample), the chemicals (ChemicalSubstance,
-  in their order) and the other sections, such as exposures and endpoint readouts (LabProtocol parts, in their order,
-  with their sections below). Every attribute is kept as a value (PropertyValue) with its BioStudies name as
-  identifier type, its ontology term and its page. Bioassays and AOP events anywhere in the study are also linked
-  from the dataset as assays and topics."""
+"""Parser of the BioStudies collection VHP4Safety."""
 
 import json
 import re
@@ -35,8 +19,7 @@ SEPARATE = {"author", "organisation", "organization", "funding", "publication"}
 
 
 def fetched(spec: dict) -> dict[str, bytes]:
-    """Return the studies of the collection, read with the BioStudies client: the search results, and the file of
-    each study by its accession."""
+    """Return the search results and the file of each study of the collection, by name."""
     client = BioStudiesExtractor(collection=COLLECTION)
     listing = client.list_studies(page_size=100)
     if listing.get("error"):
@@ -54,7 +37,7 @@ def fetched(spec: dict) -> dict[str, bytes]:
 
 
 def qualifiers(attribute: dict) -> dict:
-    """Return the qualifiers of an attribute that have a value, by name (URL, Ontology, TermId)."""
+    """Return the qualifiers of attribute that have a value, by name."""
     found = {}
     for qualifier in attribute.get("valqual") or []:
         if present(qualifier.get("value")):
@@ -63,15 +46,14 @@ def qualifiers(attribute: dict) -> dict:
 
 
 def page_of(attribute: dict):
-    """Return the page of an attribute (its URL qualifier) as a link, or None."""
+    """Return the page of attribute as a link, or None."""
     given = qualifiers(attribute).get("URL")
     found = web_link(given) if given else None
     return found if isinstance(found, dict) else None
 
 
 def term_of(attribute: dict):
-    """Return the ontology term of an attribute (its TermId qualifier) as a link, or None. A term identifier is a
-    prefix and a code (NCBITaxon_9606, OBI:0001271)."""
+    """Return the ontology term of attribute as a link, or None."""
     found = re.fullmatch(r"([A-Za-z]+)[_:](\w+)", qualifiers(attribute).get("TermId", ""))
     if not found:
         return None
@@ -80,12 +62,12 @@ def term_of(attribute: dict):
 
 
 def value_of(attribute: dict):
-    """Return the value of an attribute: its page, else its ontology term, else its text."""
+    """Return the page, the ontology term or the text of attribute."""
     return page_of(attribute) or term_of(attribute) or attribute["value"]
 
 
 def children(section: dict) -> list[dict]:
-    """Return the sections just below a section, in their order. Read a table of sections as a list of sections."""
+    """Return the sections just below section, in their order."""
     found = []
     for part in section.get("subsections") or []:
         found.extend(part if isinstance(part, list) else [part])
@@ -93,7 +75,7 @@ def children(section: dict) -> list[dict]:
 
 
 def sections(section: dict) -> list[dict]:
-    """Return the sections below a section, at any depth."""
+    """Return the sections below section, at any depth."""
     found = []
     for each in children(section):
         found.append(each)
@@ -102,9 +84,7 @@ def sections(section: dict) -> list[dict]:
 
 
 def value(attribute: dict) -> dict:
-    """Return an attribute as a value (PropertyValue): its name as identifier type, its text, and from its
-    qualifiers its page (URL), its unit, its ontology term (valueReference) and its other qualifiers, such as the
-    concentration of a positive control (valueReference, each a PropertyValue)."""
+    """Return attribute as a PropertyValue."""
     found = {"@type": "PropertyValue", "propertyID": attribute.get("name"), "value": attribute["value"]}
     if page_of(attribute):
         found["url"] = page_of(attribute)
@@ -123,7 +103,7 @@ def value(attribute: dict) -> dict:
 
 
 def values_of(section: dict) -> list[dict]:
-    """Return the attributes of a section that have a value, as values, each with its place (position)."""
+    """Return the attributes of section that have a value, as PropertyValues."""
     found = []
     for attribute in section.get("attributes") or []:
         if present(attribute.get("value")):
@@ -132,8 +112,7 @@ def values_of(section: dict) -> list[dict]:
 
 
 def protocol(section: dict) -> dict:
-    """Return a section as a LabProtocol part: its type as name and section, its attributes as values, and the
-    sections below it, in their order."""
+    """Return section as a LabProtocol part."""
     found = {"@type": "bioschemas_draft:LabProtocol", "name": section.get("type"), "additionalType": section.get("type"),
              "bioschemas_draft:additionalProperty": values_of(section)}
     below = [protocol(part) for part in children(section)]
@@ -143,8 +122,7 @@ def protocol(section: dict) -> dict:
 
 
 def sample(section: dict) -> dict:
-    """Return a biological model section as a BioSample: the cell line as name, the RRID as identifier, the
-    description, every attribute as a value, and the sections below it, such as the cell line preparation."""
+    """Return a biological model section as a BioSample."""
     named = given(section)
     found = {"@type": "bioschemas:BioSample", "name": named.get("Cell line") or section.get("type"),
              "bioschemas:additionalProperty": values_of(section)}
@@ -156,8 +134,7 @@ def sample(section: dict) -> dict:
 
 
 def chemical(section: dict) -> dict:
-    """Return a chemical section as a ChemicalSubstance: the chemical as name, the other attributes as identifiers,
-    and the compound page of its CompoundCloud identifier."""
+    """Return a chemical section as a ChemicalSubstance."""
     named = given(section)
     found = {"@type": "ChemicalSubstance", "name": named.get("Chemical") or section.get("type"),
              "identifier": [item for item in values_of(section) if item["propertyID"] != "Chemical"]}
@@ -167,7 +144,7 @@ def chemical(section: dict) -> dict:
 
 
 def files_of(key: str, section: dict) -> list[dict]:
-    """Return the files of a study and its sections at their download addresses, in their order, each once."""
+    """Return the files of the study key and its sections, in their order."""
     client = BioStudiesExtractor()
     found = {}
 
@@ -188,8 +165,7 @@ def files_of(key: str, section: dict) -> list[dict]:
 
 
 def design(section: dict, attributes: list[dict]) -> dict:
-    """Return the experimental design of a study as a LabProtocol part, with the attributes of the study as its
-    values."""
+    """Return the experimental design of a study as a LabProtocol part."""
     samples, chemicals, parts = [], [], []
     for part in children(section):
         kind = str(part.get("type")).lower()
@@ -213,7 +189,7 @@ def design(section: dict, attributes: list[dict]) -> dict:
 
 
 def given(section: dict) -> dict:
-    """Return the attributes of a section that have a value, by name."""
+    """Return the attributes of section that have a value, by name."""
     found = {}
     for attribute in section.get("attributes") or []:
         if present(attribute.get("value")):

@@ -15,9 +15,7 @@ def statements(document: str | None) -> Graph:
 
 
 def key(graph: Graph, value, within: frozenset = frozenset()) -> str:
-    """Return the comparison key of a value. "X" and "X"^^xsd:string have the same key. Compare a part (a node
-    without an address) by its values. Compare a part with an address within it, such as a member of a list, by its
-    address and its values too, so that a change of the member is a change of the part."""
+    """Return the comparison key of a value in graph."""
     if not isinstance(value, BNode) and not (within and value not in within and records.is_part(graph, value)):
         return ("link " if isinstance(value, URIRef) else "text ") + str(value)
     held = []
@@ -27,10 +25,7 @@ def key(graph: Graph, value, within: frozenset = frozenset()) -> str:
 
 
 def compared(before: Graph, after: Graph, old, new, kind: str | None, names: dict[str, str]) -> list[dict]:
-    """Return the edges from a node to its values.
-
-    Mark each edge as added, removed or kept. *old* is the node in *before*, and *new* is the node in *after*. Compare
-    the edges of parts in the same way."""
+    """Return the edges from a node to its values, each marked as added, removed or kept."""
     form = fields(kind) if kind is not None else []
     labels = {}
     order = {}
@@ -72,7 +67,7 @@ def compared(before: Graph, after: Graph, old, new, kind: str | None, names: dic
 
 
 def edges(before: Graph, after: Graph, record: URIRef) -> dict:
-    """Return the statements of a record before and after a change, as edges from the record to each value."""
+    """Return the statements of a record before and after a change, as edges."""
     kind = after.value(record, RDF.type) or before.value(record, RDF.type)
     linked = [str(record)]
     for value in set(before.objects()) | set(after.objects()):

@@ -1,4 +1,4 @@
-"""Uploaded images, served under /images/, with headers so that they are shown only as images in browsers."""
+"""Uploaded images, served under /images/."""
 
 from flask import Blueprint, abort, send_from_directory
 

@@ -1,9 +1,4 @@
-"""Parser of the cloud catalogue, a workaround (see linkeddata/parsers).
-
-Read the tools from service_index.json, and each tool from cloud.vhp4safety.nl/service/<id>.json. The rows are the
-tools and the linked organisations, people and publications. The help pages and videos of a tool are parts of its
-row.
-"""
+"""Parser of the tools of the cloud catalogue."""
 
 import json
 import re

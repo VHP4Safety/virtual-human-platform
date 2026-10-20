@@ -1,10 +1,4 @@
-"""Export of the records written on the platform to a git repository (PLATFORM_RECORDS), so that they are kept apart
-from the server.
-
-- Write each record as one JSON-LD file at its page path (tools/aop-builder.jsonld), from its latest revision.
-- Write the images in use to images/<sha256>.webp.
-- Commit the files with `python -m linkeddata export`, and push them with `python -m linkeddata push`, each week.
-"""
+"""Export of the platform records to a git repository."""
 
 import json
 import os

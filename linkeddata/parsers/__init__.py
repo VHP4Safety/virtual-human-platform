@@ -1,12 +1,4 @@
-"""Helpers of the parsers.
-
-A parser is a temporary workaround for an upstream file that is not clean linked data. It returns rows in the terms
-of the model, for the JSON-LD context of the platform.
-
-- Addresses: write them as {"@id": ...}, under the base of the platform if there is no scheme. Also read the
-  addresses of the platform in upstream files (UPSTREAM) under the base, in links and in HTML texts.
-- Terms: write a label or a code of a term of a model vocabulary as the address of the term (term()).
-- Leave out placeholders. Keep unreadable values as text, for the checks to report."""
+"""Helpers of the parsers."""
 
 import importlib
 import re
@@ -45,13 +37,12 @@ MARKUP = re.compile(r"<\s*/?[a-zA-Z][^>]*>")
 
 
 def marked(value):
-    """Return a text, typed as HTML (rdf:HTML) if it has markup such as <p> or <b>. In HTML, write the links to the
-    platform under the base."""
+    """Return a text, typed as HTML if it has markup."""
     return {"@value": str(value).replace(UPSTREAM, settings()["base"]), "@type": HTML} if MARKUP.search(str(value)) else str(value)
 
 
 def present(value) -> bool:
-    """Return False for empty values and upstream placeholders."""
+    """Return False for an empty value or an upstream placeholder."""
     return value is not None and str(value).strip() not in MISSING and not str(value).strip().startswith("[DRAFT]")
 
 
@@ -60,8 +51,7 @@ def link(address: str) -> dict:
 
 
 def web_link(value: str):
-    """Return a link for a web address or a Markdown link ([text](address)), with the addresses of the glossary
-    site replaced by the addresses of the glossary. Return other texts as they are."""
+    """Return a link for a web address or a Markdown link, else the text."""
     text = str(value).strip()
     written = re.fullmatch(r"\[[^\]]*\]\((https?://[^)\s]+)\)", text)
     if written:
@@ -74,16 +64,13 @@ def web_link(value: str):
 
 
 def spelled(text: str) -> str:
-    """Return a text in the form used to compare names: lower case, with hyphens, underscores and spaces as one
-    space, and without a trailing slash."""
+    """Return a text in the form used to compare names."""
     return " ".join(str(text).casefold().replace("-", " ").replace("_", " ").split()).rstrip("/")
 
 
 @cache
 def terms(source: str) -> dict[str, set[str]]:
-    """Return the terms of a model vocabulary, such as the glossary.
-
-    Find the terms by label, code, other names and other addresses, in the form of spelled()."""
+    """Return the terms of a model vocabulary by their names and addresses."""
     spec = yaml.safe_load((SOURCES / f"{source}.yaml").read_text(encoding="utf-8"))
     parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
     found = {}
@@ -99,10 +86,7 @@ def terms(source: str) -> dict[str, set[str]]:
 
 
 def term(text, source: str, qualifier: str = ""):
-    """Return a link to the term with the text as its label, code, other name or other address.
-
-    A label can have a qualifier in brackets. If there is not exactly one such term, return web_link() of the
-    text."""
+    """Return a link to the term named by a text, else web_link() of the text."""
     label = f"{str(text).strip()} ({qualifier})" if qualifier else str(text).strip()
     matched = terms(source).get(spelled(label), set())
     if len(matched) == 1:
@@ -111,14 +95,12 @@ def term(text, source: str, qualifier: str = ""):
 
 
 def licence(text):
-    """Return a link to the SPDX licence named in a text by identifier, name or address, also with "license" at its
-    end; else return web_link() of the text."""
+    """Return a link to the SPDX licence named in a text, else web_link() of the text."""
     return term(re.sub(r"\s+licen[cs]e$", "", str(text).strip(), flags=re.IGNORECASE), "spdx")
 
 
 def publication(value) -> dict | None:
-    """Return the row of the publication of a DOI (10.1234/x, https://doi.org/10.1234/x or a text with a DOI), at
-    publications/<DOI>, or None for other texts."""
+    """Return the row of the publication of a DOI, or None."""
     doi = extract_doi_from_text(str(value))
     if doi is None:
         return None
@@ -127,6 +109,6 @@ def publication(value) -> dict | None:
 
 
 def slug(text: str) -> str:
-    """Return an identifier made from a name, without accents: "cafe" for "Café"."""
+    """Return an identifier made from a name, without accents."""
     plain = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
     return re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-")

@@ -1,10 +1,4 @@
-"""Storage of the images uploaded to the platform, such as tool logos.
-
-- Read each upload in full with Pillow, so that a file that is not an image is refused.
-- Refuse very large images before they are read, and scale down large images.
-- Store each image as WebP, without the metadata and the other content of the file.
-- Name the file after the SHA-256 of the stored image, so that the content of a file does not change.
-"""
+"""Storage of the uploaded images."""
 
 import hashlib
 import io
@@ -31,8 +25,7 @@ def folder():
 
 
 def picture_of(stream) -> Picture.Image:
-    """Read the image of an uploaded file in full. Raise ValueError if the file is not an image of an accepted
-    format."""
+    """Return the image of an uploaded file, or raise ValueError."""
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Picture.DecompressionBombWarning)

@@ -1,15 +1,4 @@
-"""Imports of the sources.
-
-- Fetch each source, and read it with its parser as rows in the terms of the model.
-- Replace the earlier records of the source with the rows. Keep the records written on the platform.
-- Store the people and organisations with the same ORCID iD or ROR ID as one record, at import and again after the
-  enrichments, as a ROR ID can be added by an enrichment.
-- Give the address of a moved or merged record its new address, so that an import does not bring it back.
-- Merge a draft term into the term of its vocabulary once the vocabulary has it.
-- Import the sources of records first, then the sources of terms, then the sources that enrich records.
-- Last, check the records of each source against the model.
-
-Run the weekly imports with `python -m linkeddata import`, and all imports with `python -m linkeddata launch`."""
+"""Imports of the sources into the database."""
 
 import hashlib
 import importlib
@@ -56,8 +45,7 @@ def fetch(url: str, accept: str | None = None) -> bytes:
 
 
 class Remote(io.RawIOBase):
-    """A file on the web, read in parts (HTTP Range), so that a few files of a large zip are read without a download
-    of the zip."""
+    """File on the web, read in parts with HTTP Range requests."""
 
     def __init__(self, url: str):
         self.url = url
@@ -94,7 +82,7 @@ class Remote(io.RawIOBase):
 
 
 def members(url: str, endings: list[str]) -> dict[str, bytes]:
-    """Return the files of a zip on the web whose names end as given, by their ending."""
+    """Return the files of the zip at url with names that end in endings."""
     found = {}
     with zipfile.ZipFile(io.BufferedReader(Remote(url), buffer_size=1 << 16)) as packed:
         for name in packed.namelist():
@@ -105,8 +93,7 @@ def members(url: str, endings: list[str]) -> dict[str, bytes]:
 
 
 def convert(rows: list[dict], base: str) -> ox.Dataset:
-    """Convert parsed rows to statements of the model. Read the rows with the JSON-LD context of the platform, and
-    keep only the types and the properties of the fields of the profile."""
+    """Return the statements of the parsed rows in the terms of the profile."""
     document = {"@context": {**documents.context(settings()), "@base": base}, "@graph": rows}
     # The cells of an RDF list (rdf:first, rdf:rest) are kept too, as a list field takes a list.
     kept = {str(path) for path in profile_graph().objects(None, SH.path)} | {str(RDF.type), str(RDF.first), str(RDF.rest)}
@@ -118,8 +105,7 @@ def convert(rows: list[dict], base: str) -> ox.Dataset:
 
 
 def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[tuple[list[dict], Graph]]:
-    """Return the records of each class in converted data, with the rows of the records and their parts for the
-    records table, and their statements. Keep values as given, and leave misfits to the checks."""
+    """Return the records of classes in data, with their rows and statements."""
     graph = Graph().parse(data=ox.serialize(data, format=ox.RdfFormat.N_QUADS), format="nt")
     found = []
     for kind in classes:
@@ -132,13 +118,13 @@ def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[tuple[
 
 
 def words(name) -> set[str]:
-    """Return the words of four or more letters of a name, in lower case and without accents."""
+    """Return the words of four or more letters of name, in lower case."""
     plain = "".join(letter for letter in unicodedata.normalize("NFKD", str(name or "")) if not unicodedata.combining(letter))
     return set(re.findall(r"\w{4,}", plain.casefold()))
 
 
 def forwards() -> dict[str, str]:
-    """Return the new address of each moved or merged address, at the end of its chain of moves."""
+    """Return the new address of each moved or merged address."""
     with database.session() as db:
         moved = dict(db.execute(select(Record.iri, Record.moved_to).where(Record.moved_to.is_not(None))).all())
     found = {}
@@ -152,13 +138,7 @@ def forwards() -> dict[str, str]:
 
 
 def one_per_identifier(found: list[tuple[list[dict], Graph]]) -> list[tuple[list[dict], Graph]]:
-    """Store the records of one class with the same registry address in sameAs (REGISTRIES) as one record.
-
-    - Give a moved or merged address its new address.
-    - Use the address of the stored record with that registry address, or else the first address in *found*.
-    - Merge their statements as in an enrichment. Change the links of the other records to that address.
-    - Keep records apart if their names have no common word. The registry address of one of them is then wrong in
-      its source. Report them."""
+    """Return found with the records that have the same registry address as one record."""
     names = {listed[0]["iri"]: listed[0]["name"] for listed, _ in found}
     first, renamed = {}, forwards()
     for listed, statements in found:
@@ -199,14 +179,7 @@ def one_per_identifier(found: list[tuple[list[dict], Graph]]) -> list[tuple[list
 
 
 def one_record_each(order: list[str]) -> None:
-    """Merge the stored records of one kind with the same registry address in sameAs (REGISTRIES), such as a ROR ID
-    added by an enrichment.
-
-    - Keep a platform record, or else the record of the source imported first (*order*). Add the names of the others
-      to its other names, if its class has that field. Merge their other values as in an enrichment.
-    - Give the links of other records the kept address. Rewrite them in place, so that they keep their source.
-    - Forward the other addresses to the kept address.
-    - Keep records apart if their names have no common word, as in one_per_identifier."""
+    """Merge the stored records of one kind that have the same registry address."""
     rank = {PLATFORM: -1}
     for number, name in enumerate(order):
         rank[name] = number
@@ -227,9 +200,7 @@ def one_record_each(order: list[str]) -> None:
 
 
 def drafts_found() -> None:
-    """Merge each draft term (status Draft) into the term that its vocabulary now has: the term at an address that
-    the draft gives in sameAs, or else the term with the same name, without a bracketed ending such as
-    "(Process Flow Step)". Leave out the status. Leave a draft as it is until then."""
+    """Merge each draft term into the term of its vocabulary, if the vocabulary has it."""
     term = str(SDO.DefinedTerm)
 
     def plain(name) -> str:
@@ -256,8 +227,7 @@ def drafts_found() -> None:
 
 
 def merge_into(other: Record, kept: Record, reason: str, without: set = frozenset()) -> None:
-    """Merge the record *other* into the record *kept*, without the fields *without*, as in one_record_each and
-    drafts_found. Store the change as a revision of the other record."""
+    """Merge the record other into the record kept, without the fields without."""
     target = URIRef(kept.iri)
 
     def moved(node):
@@ -295,14 +265,11 @@ def merge_into(other: Record, kept: Record, reason: str, without: set = frozense
 
 
 class Refused(Exception):
-    """An import that is refused, such as an import that would remove most of the records of a source, or a second
-    launch."""
+    """Import that is refused."""
 
 
 def store(source: Source, found: list[tuple[list[dict], Graph]]) -> None:
-    """Store the records of a source in place of its earlier records. Keep the records written on the platform. For
-    records of another source, keep their values and add the new values that the profile allows, as in an
-    enrichment. Refuse an import of no records, or of less than half of the earlier records."""
+    """Store the records in found in place of the earlier records of source."""
     with database.session() as db, db.begin():
         before = db.scalar(select(func.count()).select_from(Record).where(Record.source == source.name, Record.part_of.is_(None)))
         if not found or (before >= 10 and len(found) < before / 2):
@@ -332,7 +299,7 @@ def store(source: Source, found: list[tuple[list[dict], Graph]]) -> None:
 
 
 def files_of(spec: dict) -> dict[str, str]:
-    """Return the files of a source by name: its url, its files, or else the pinned vocabulary in its definition."""
+    """Return the files of the source spec, by name."""
     if "files" in spec:
         return dict(spec["files"])
     if "enriches" in spec:
@@ -346,10 +313,7 @@ ENTRY = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
 def linked_terms() -> list[str]:
-    """Return the linked terms of the records and parts.
-
-    The terms are the addresses in the term fields (sh:class schema:DefinedTerm, alone or in sh:or), by the shape of
-    the class of each node. Leave out the records and terms of the vocabularies of the model."""
+    """Return the addresses of the terms linked from records and parts."""
     vocabularies = []
     for spec in specs():
         if "vocabulary" in spec:
@@ -370,11 +334,7 @@ def linked_terms() -> list[str]:
 
 
 def identified(spec: dict) -> list[tuple[str, str]]:
-    """Return the records to enrich from a source, each with its key.
-
-    Leave out records written on the platform. The key is the end of the sameAs address after the identifier of the
-    source, if it matches the keys of the source. For a source matched by name (by: name), the key is the name of
-    each record without such an address."""
+    """Return the records to enrich from the source spec, each with its key."""
     with database.session() as db:
         iris = list(db.scalars(select(Record.iri).where(
             Record.type.in_(records.within(settings()["kinds"][spec["enriches"]])), Record.part_of.is_(None), Record.removed_at.is_(None), Record.source != PLATFORM)))
@@ -398,10 +358,7 @@ def identified(spec: dict) -> list[tuple[str, str]]:
 
 
 def wikibase_items(wikibase: dict, items: list[str]) -> bytes:
-    """Return the given items of a Wikibase and the members of its class, read with rdfsolve.
-
-    Each item is a JSON row of its fields, named by rdfsolve after the labels of the properties. The row has the
-    address of the item, texts without their language, and other values with their datatype."""
+    """Return the items of a Wikibase and the members of its class, as JSON."""
     strategy = WikibaseScopeStrategy(items, classes=[wikibase["members"]], membership=wikibase["membership"],
                                      prefix_classes={wikibase["entity"] + "Q": ITEM})
     with SchemaMiner(wikibase["endpoint"], strategy=strategy, counts=False) as miner:
@@ -429,11 +386,7 @@ def wikibase_items(wikibase: dict, items: list[str]) -> bytes:
 
 
 def download(spec: dict, parser) -> dict[str, bytes]:
-    """Return the files of a source by name.
-
-    For a source with entries, also return the file of each entry, by its key in the index. The keys are the keys of
-    the JSON object, or the keys read by the parser. A parser with a client of its source (fetched), such as the
-    Zenodo parser, reads the files itself."""
+    """Return the files of the source spec, by name."""
     if hasattr(parser, "fetched"):
         return parser.fetched(spec)
     contents = {}
@@ -522,8 +475,7 @@ def import_source(spec: dict) -> None:
 
 
 def keep(contents: dict[str, bytes]) -> None:
-    """Keep a copy of each RO-Crate metadata file read from the zip of an entry, by the key of the entry (the number
-    of a Zenodo record), so that the crate is served unchanged (crates.zenodo)."""
+    """Store a copy of each RO-Crate metadata file in contents."""
     folder = crates.kept()
     folder.mkdir(parents=True, exist_ok=True)
     for name, content in contents.items():
@@ -533,9 +485,7 @@ def keep(contents: dict[str, bytes]) -> None:
 
 
 def enrich(spec: dict) -> None:
-    """Merge the values of a source into the records of other sources, as the profile allows. Keep the value of a
-    single-valued field, and note a different value. Store the first enrichment of a record as its first revision,
-    so that the origin of its values is shown."""
+    """Merge the values of the source spec into the records of other sources."""
     parser = importlib.import_module(spec["module"])
     contents = download(spec, parser)
     data = convert(parser.parse(contents), settings()["base"])
@@ -569,9 +519,7 @@ def enrich(spec: dict) -> None:
 
 
 def specs() -> list[dict]:
-    """Return the sources by name: fetched (url, files), read from a model vocabulary, or enriching records
-    (enriches). Read a source in sources/ each week. Read a source in launch/, or a pinned vocabulary without url,
-    once, at launch."""
+    """Return the sources, from sources/ and launch/."""
     found = []
     for path in sorted([*SOURCES_DIR.glob("*.yaml"), *LAUNCH_DIR.glob("*.yaml")], key=lambda path: path.name):
         spec = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -583,10 +531,7 @@ def specs() -> list[dict]:
 
 
 def drifted(spec: dict) -> list[dict]:
-    """Return the terms of the profile that changed upstream.
-
-    This applies to a source of a pinned vocabulary with an upstream address. A term changed if it is no longer in the
-    upstream file, or if it has another label there."""
+    """Return the terms of the profile that changed upstream in the source spec."""
     parser = importlib.import_module(spec["module"])
     pinned = {}
     for row in parser.parse((MODEL_DIR / "vocabularies" / spec["vocabulary"]).read_bytes()):
@@ -611,9 +556,7 @@ def drifted(spec: dict) -> list[dict]:
 
 
 def check(source: str, spec: dict | None = None) -> None:
-    """Check the records of a source, or of the platform, against the model as stored, with their linked records.
-    Keep the misfits and note them for the data quality page. For a source of a pinned vocabulary with an upstream
-    address, also note the terms of the profile that were dropped or renamed."""
+    """Check the records of source against the model, and store the notes."""
     with database.session() as db:
         iris = list(db.scalars(select(Record.iri).where(Record.source == source, Record.removed_at.is_(None), Record.part_of.is_(None))))
     notes = checks.notes(records.graph(iris))
@@ -627,7 +570,7 @@ def check(source: str, spec: dict | None = None) -> None:
 
 
 def note_problem(spec: dict, problem: Exception) -> None:
-    """Store the problem of a failed import with its source, and keep the records of the source."""
+    """Store the problem of the failed import of spec."""
     with database.session() as db, db.begin():
         source = db.get(Source, spec["name"])
         if source is None:
@@ -637,9 +580,7 @@ def note_problem(spec: dict, problem: Exception) -> None:
 
 
 def import_all(once: bool = False) -> list[str]:
-    """Import the weekly sources. At launch (once), import the sources that are read once first, and refuse a
-    database with imported records. Then check each source. Return the problems of failed sources, and keep their
-    records."""
+    """Import the sources, and return the problems of the failed sources."""
     problems = []
     every = []
     if once:

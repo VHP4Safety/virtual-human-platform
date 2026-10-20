@@ -1,4 +1,4 @@
-"""Checks of the records against the model, with pyshacl, and the content of the data quality page."""
+"""Checks of the records against the model, and the data quality page."""
 
 import re
 
@@ -33,9 +33,7 @@ def meaning(component: str | None) -> str:
 
 
 def official(result, results: Graph) -> tuple | None:
-    """Return the property and the reason of a result of an official shape, such as "Required by Bioschemas Person
-    0.3-DRAFT.". Report such a result as a note or a recommendation, and do not refuse a write for it. Return None
-    for a result of the shapes of the model."""
+    """Return the property and the reason of a result of an official shape, or None."""
     if results.value(result, SH.sourceShape) not in official_fields():
         return None
     shape, path, needs = official_fields()[results.value(result, SH.sourceShape)]
@@ -52,8 +50,7 @@ PUBLISHED = {RDF.type, SDO.url, SDO.mainEntityOfPage, DCTERMS.conformsTo}
 
 
 def record_of(found: Graph, node):
-    """Return the record of a node: the node if it has an address, else the record above it. A part address
-    (<record>#<field>-<n>) gives its record."""
+    """Return the record of a node: the node itself or the record above it."""
     match = records.PART.match(str(node)) if isinstance(node, URIRef) else None
     if match:
         return URIRef(match["record"])
@@ -65,8 +62,7 @@ def record_of(found: Graph, node):
 
 
 def in_form(found: Graph, node, path) -> bool:
-    """Return True if *path* is a field of the node shape of a class of *node*, so that it can be filled in the
-    editor."""
+    """Return True if path is a field of the node shape of a class of the node."""
     for of_class in found.objects(node, RDF.type):
         for field in fields(str(of_class)):
             if field["iri"] == str(path):
@@ -75,11 +71,7 @@ def in_form(found: Graph, node, path) -> bool:
 
 
 def gaps() -> list[dict]:
-    """Return, for each node shape that declares an official profile (dct:conformsTo), the fields of that profile
-    that are not in the node shape.
-
-    Such fields cannot be filled in the editor, so they are not reported for records. Add a field to the profile to
-    check it."""
+    """Return the fields of the official profiles that the node shapes do not have."""
     graph = profile_graph()
     found = []
     for shape, conformed in sorted(graph.subject_objects(DCTERMS.conformsTo)):
@@ -98,20 +90,14 @@ def gaps() -> list[dict]:
 
 
 def validate(found: Graph) -> Graph:
-    """Check statements with the shapes of the model. Add the class and the name of each linked record first, so
-    that a link is checked against the class of that record."""
+    """Return the validation report of the statements in found."""
     validated = documents.typed(records.with_names(found))
     _, results, _ = pyshacl.validate(validated, shacl_graph=shapes(), ont_graph=hierarchy())
     return results
 
 
 def notes(found: Graph) -> list[dict]:
-    """Make the notes of the checks for the records in *found*.
-
-    Make one note for each record, field and value. Do not report linked records with their class only. Of several
-    results for the same record, field and value, choose in this order: the most severe result, a result with a
-    message in the profile, a result of a shape of the class of the record, then by constraint and reason. So the
-    notes are the same on each run."""
+    """Return the notes of the checks of the records in found."""
     described = set()
     for subject, predicate in found.subject_predicates():
         if predicate != RDF.type:
@@ -153,9 +139,7 @@ def notes(found: Graph) -> list[dict]:
 
 
 def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]]]:
-    """Convert a record document to statements and check them. Return the problems and the recommendations by
-    field. A value that does not fit a field of sh:Warning severity is a recommendation, with the message of the
-    profile. Name a field of a part by the path of fields to it (regulatoryQuestion > step > name)."""
+    """Return the statements of a record document, with its problems and recommendations."""
     found = documents.statements(new)
     record = URIRef(new["@id"])
     results = validate(found)
@@ -194,8 +178,7 @@ def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]
 
 
 def named(of_class: str, path: str) -> str:
-    """Return the labels of a field path, such as "Regulatory questions › Process flow steps › Title" for
-    "regulatoryQuestion > step > name"."""
+    """Return the labels of a field path."""
     names = []
     for term in path.split(" > "):
         found = None
@@ -212,10 +195,7 @@ def named(of_class: str, path: str) -> str:
 
 
 def report() -> dict:
-    """Return the content of the data quality page.
-
-    Summarise each kind of records, group the notes of the checks by kind, field and problem, and list the failed
-    imports, the gaps of the profile (gaps()) and the draft terms that their vocabularies do not have yet."""
+    """Return the content of the data quality page."""
     with database.session() as db:
         kept = list(db.scalars(select(Record).where(Record.removed_at.is_(None), Record.moved_to.is_(None), Record.part_of.is_(None))))
         notes = list(db.scalars(select(Note).order_by(Note.iri, Note.field)))

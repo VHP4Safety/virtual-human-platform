@@ -1,8 +1,4 @@
-"""Pages of the changes made on the platform, for editors.
-
-    /changes                      the latest changes, or those of one record (?record=<address>)
-    /changes/<number>             one change
-"""
+"""Pages of the changes made on the platform."""
 
 from flask import Blueprint, abort, redirect, render_template, request, url_for
 from rdflib import URIRef

@@ -1,5 +1,4 @@
-"""Pages of the record editor, and the data quality page. Make the forms with shacl-form from the shapes of the
-model, and write the records through the records API."""
+"""Pages of the record editor and the data quality page."""
 
 import json
 
@@ -22,7 +21,7 @@ def named_kinds() -> dict:
 
 
 def logged_in(kind: str | None = None):
-    """Return the editor of the request. Return a 404 error if records of *kind* may not be written by the editor."""
+    """Return the editor of the request, or abort with 404 if kind may not be written."""
     found = current_editor()
     if found is not None and kind is not None and (kind not in settings()["kinds"] or kind not in found.kinds):
         abort(404)

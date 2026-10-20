@@ -1,12 +1,4 @@
-"""Parser of the VHP4Safety videos on video.edu.nl, a PeerTube site, a workaround (see linkeddata/parsers).
-
-Source: the video list of the account, and the response for each video, with the full description.
-
-- Address: training/<name>. Each video is a training material.
-- Video: the player, with its address, thumbnail and duration (ISO 8601, such as PT5M38S).
-- Other fields: the language, the licence by name ("Unknown" is left out), the dates, and the tags as keywords.
-- Author: the owner of the account, at organizations/<owner name>.
-- Description: Markdown, kept as text."""
+"""Parser of the VHP4Safety videos on video.edu.nl."""
 
 import json
 

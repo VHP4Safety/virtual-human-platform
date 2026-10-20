@@ -1,15 +1,4 @@
-"""The commands of the linked data of the platform.
-
-    python -m linkeddata model                  write the tables of the model
-    python -m linkeddata check                  check the generated files, the vocabularies and the database
-                                                against the release of the model
-    python -m linkeddata import                 import the weekly sources into the database
-    python -m linkeddata launch                 import all sources and make the corrections, once, at launch
-    python -m linkeddata export                 write the platform records to the records repository
-    python -m linkeddata push                   push the records repository to its remote
-    python -m linkeddata backup                 copy the database to PLATFORM_STATE/backups (the latest 14 are kept)
-    python -m linkeddata token ORCID NAME KIND  create a write token, such as the first token
-"""
+"""Commands of the linked data of the platform."""
 
 import argparse
 import sys
@@ -21,9 +10,21 @@ from linkeddata.imports import Refused, import_all
 from linkeddata.launch import launch
 from linkeddata.profile import RELEASE, download_vocabularies, tables_problems, terms_problems, write_tables
 
+COMMANDS = """
+    python -m linkeddata model                  write the tables of the model
+    python -m linkeddata check                  check the generated files, the vocabularies and the database
+                                                against the release of the model
+    python -m linkeddata import                 import the weekly sources into the database
+    python -m linkeddata launch                 import all sources and make the corrections, once, at launch
+    python -m linkeddata export                 write the platform records to the records repository
+    python -m linkeddata push                   push the records repository to its remote
+    python -m linkeddata backup                 copy the database to PLATFORM_STATE/backups (the latest 14 are kept)
+    python -m linkeddata token ORCID NAME KIND  create a write token, such as the first token
+"""
+
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog="python -m linkeddata", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(prog="python -m linkeddata", description=COMMANDS, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("command", choices=["model", "check", "import", "launch", "export", "push", "backup", "token"])
     parser.add_argument("arguments", nargs="*", help="token: ORCID iD, name and kinds")
     parser.add_argument("--days", type=int, default=tokens.DEFAULT_DAYS, help="days a new token is valid")

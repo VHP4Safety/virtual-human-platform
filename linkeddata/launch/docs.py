@@ -1,18 +1,4 @@
-"""Parser of the tutorials of the VHP4Safety documentation (https://docs.vhp4safety.nl), a workaround (see
-linkeddata/parsers).
-
-Source: the repository tree at a pinned commit, with the tutorials (tutorials/<name>/<file>.md or .rst), the files
-next to them, the latest change of each tutorial, and the repository.
-
-- Address: training/<name>. The folder name is also the identifier of the tool, at tools/<name>.
-- Title: the first heading.
-- Authors: the bold line under the title ("**Author:** A, B"). A team is an organisation.
-- Description: the first paragraph before the first section after the introduction, without HTML blocks.
-- Web page: the tutorial page on the documentation site. Its sections are the headings below the title, outside
-  code. Each section has the address of its Sphinx anchor ("#free-text-search" for "3.1 Free-Text Search").
-- Format: the documentation format (tutorials/documentation_format.md), if the sections match it.
-- Files: the notebooks and scripts next to the tutorial, at their GitHub addresses.
-- Date: the date of the latest change."""
+"""Parser of the tutorials of the VHP4Safety documentation."""
 
 import json
 import re
@@ -35,8 +21,7 @@ UNDERLINE = re.compile(r"([=\-~^\"'`#*+])\1{2,}\s*")
 
 
 def tutorials(tree: dict) -> dict[str, str]:
-    """Return the source of each tutorial by the name of its folder: its Markdown file, else its reStructuredText
-    file."""
+    """Return the source file of each tutorial in the tree, by folder name."""
     found = {}
     for entry in tree["tree"]:
         written = TUTORIAL.fullmatch(entry["path"])
@@ -49,8 +34,7 @@ def tutorials(tree: dict) -> dict[str, str]:
 
 
 def documents(contents: dict, addresses: dict) -> dict[str, str]:
-    """Return the source of each tutorial by its path, its latest change by its path and "#changes", and the
-    repository."""
+    """Return the source of each tutorial and its latest change, by path."""
     found = {"repository": addresses["repository"]}
     for path in tutorials(json.loads(contents["docs"])).values():
         found[path] = addresses["source"] + path
@@ -59,14 +43,14 @@ def documents(contents: dict, addresses: dict) -> dict[str, str]:
 
 
 def anchor(heading: str) -> str:
-    """Return the identifier of a heading as made by docutils: lower case, other characters as -, no leading digits."""
+    """Return the identifier of a heading, as made by docutils."""
     plain = unicodedata.normalize("NFKD", heading).encode("ascii", "ignore").decode().lower()
     plain = re.sub(r"[^a-z0-9]+", "-", plain)
     return re.sub(r"^[-0-9]+|-+$", "", plain)
 
 
 def plain(text: str) -> str:
-    """Return a Markdown text without the addresses of its links, its emphasis, its footnote marks and other HTML."""
+    """Return a Markdown text as plain text."""
     text = re.sub(r"<sup>.*?</sup>", "", text)
     text = re.sub(r"<[^>]+>", "", text)
     text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text)
@@ -75,7 +59,7 @@ def plain(text: str) -> str:
 
 
 def headings(text: str, rst: bool) -> list[tuple[int, str]]:
-    """Return the headings of a source by level (1 is the title), outside code blocks."""
+    """Return the headings of a source by level, outside code blocks."""
     found = []
     fenced = False
     lines = text.splitlines()
@@ -101,7 +85,7 @@ def headings(text: str, rst: bool) -> list[tuple[int, str]]:
 
 
 def heading_at(lines: list[str], number: int, rst: bool) -> bool:
-    """Return True if a line of a source is a heading, the underline of a heading, or a rule."""
+    """Return True if a line of a source is a heading, a heading underline or a rule."""
     line = lines[number]
     if UNDERLINE.fullmatch(line):
         return True
@@ -112,14 +96,13 @@ def heading_at(lines: list[str], number: int, rst: bool) -> bool:
 
 
 def names(line: str) -> list[str]:
-    """Return the names in an authors line ("**Author:** A, B and C")."""
+    """Return the names in an authors line."""
     text = re.sub(r"^Authors?:\s*", "", plain(line), flags=re.IGNORECASE)
     return [name.strip() for name in re.split(r",|;|\band\b", text) if name.strip()]
 
 
 def opening(text: str, rst: bool) -> tuple[list[str], str]:
-    """Return the authors and the first paragraph at the start of a tutorial, before its first section other than
-    its introduction."""
+    """Return the authors and the first paragraph of a tutorial."""
     lines = text.splitlines()
     authors = []
     paragraph = []
@@ -150,7 +133,7 @@ def opening(text: str, rst: bool) -> tuple[list[str], str]:
 
 
 def author(name: str, others: dict) -> dict:
-    """Return the link to the record of an author, and add its row: a team is an organisation, anyone else a person."""
+    """Return the link to the record of an author, and add its row to others."""
     if "team" in name.lower():
         address = "organizations/" + slug(name)
         others.setdefault(address, {"@id": address, "@type": "Organization", "name": name})
@@ -161,7 +144,7 @@ def author(name: str, others: dict) -> dict:
 
 
 def follows(found: list[tuple[int, str]]) -> bool:
-    """Return True if the sections below the title are the sections of the documentation format, in order."""
+    """Return True if the sections of a tutorial follow the documentation format."""
     named = [re.sub(r"^[0-9.]+\s*", "", heading) for level, heading in found if level == 2]
     position = 0
     for heading in named:

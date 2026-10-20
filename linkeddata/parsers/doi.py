@@ -1,7 +1,4 @@
-"""Parser of the doi.org responses for the DOIs of the records, a workaround (see linkeddata/parsers).
-
-Each response is a citation in CSL JSON, as registered at Crossref or DataCite. The rows have the title, the
-publication date (a date, a month or a year) and the journal, as a part."""
+"""Parser of the doi.org citations of the records."""
 
 import json
 

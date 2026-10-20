@@ -1,6 +1,4 @@
-"""Database of the platform: one SQLite file in PLATFORM_STATE, used through SQLAlchemy. Make the file and its
-tables (tables.py) on first use.
-"""
+"""Database of the platform, one SQLite file in PLATFORM_STATE."""
 
 import os
 import sqlite3
@@ -31,8 +29,7 @@ def columns(connection: sqlite3.Connection) -> dict[str, list[str]]:
 
 
 def differences(path: Path) -> list[str]:
-    """Return the differences between the tables of the database at *path* and the release tables, apart from the
-    tables of tables.py. A database of another release must be migrated before use."""
+    """Return the differences between the tables of the database at path and the release tables."""
     with closing(sqlite3.connect(":memory:")) as release:
         release.executescript(TABLES.read_text(encoding="utf-8"))
         expected = columns(release)
@@ -49,8 +46,7 @@ def differences(path: Path) -> list[str]:
 
 
 def engine() -> Engine:
-    """Return the database engine, made on first use with the file and the tables. Refuse a database with tables
-    that differ from the release tables."""
+    """Return the database engine, and make the file and the tables on first use."""
     path = STATE_DIR / "platform.sqlite"
     with _making:
         if path not in _engines:
@@ -78,8 +74,7 @@ def write_ahead_log(connection, _record) -> None:
 
 
 def backup(keep: int = 14) -> Path:
-    """Copy the database with the online backup of SQLite, and keep the latest *keep* copies in
-    PLATFORM_STATE/backups."""
+    """Copy the database to PLATFORM_STATE/backups, keep the latest copies, and return the path."""
     engine()
     folder = STATE_DIR / "backups"
     folder.mkdir(parents=True, exist_ok=True)

@@ -1,9 +1,4 @@
-"""Database tables.
-
-The records table has one row per record, with its address, class, source, dates and name. The statements of the
-records are in the release tables (v1/tables.sql), one table per class of the profile, written with
-`python -m linkeddata model`.
-"""
+"""Database tables of the records, revisions, notes, sources and tokens."""
 
 from datetime import datetime, timezone
 
@@ -21,8 +16,7 @@ class Base(DeclarativeBase):
 
 
 class Record(Base):
-    """A record, such as a tool, a method, an organisation or a person, with its address, class and name. Parts
-    with an address, such as case-study questions, also have a row, with their record."""
+    """Record or part with an address, with its class, source, dates and name."""
 
     __tablename__ = "records"
     iri: Mapped[str] = mapped_column(primary_key=True, doc="The record's address.")
@@ -36,8 +30,7 @@ class Record(Base):
 
 
 class Revision(Base):
-    """A change made on the platform, as in ToxTempAssistant, with the record in JSON-LD before and after the
-    change, the editor and the time."""
+    """Change made on the platform, with the record before and after it."""
 
     __tablename__ = "revisions"
     id: Mapped[int] = mapped_column(primary_key=True)

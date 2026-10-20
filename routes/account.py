@@ -1,13 +1,4 @@
-"""Editor sign-in with ORCID, as in ToxTempAssistant, and write tokens.
-
-- Sign in with the OAuth of ORCID and the /authenticate scope (the sandbox if FLASK_DEBUG=1). Store only the ORCID
-  iD and the name.
-- The editors are the ORCID iDs in PLATFORM_EDITORS. The credentials are ORCID_CLIENT_ID and ORCID_CLIENT_SECRET,
-  and the redirect URI is <platform>/orcid/callback/.
-- End a sign-in with a write token if the token is revoked or expires. Allow writes only for the kinds of the token.
-- Write the records of the editor page through the write API, with the form token of the session in the
-  X-Form-Token header, which cannot be sent by other sites.
-"""
+"""Editor sign-in with ORCID, and write tokens."""
 
 import hmac
 import os
@@ -35,7 +26,7 @@ def callback_address() -> str:
 
 
 def form_token() -> str:
-    """Return the token that is sent back by the account forms, so that the forms cannot be sent by other sites."""
+    """Return the token of the account forms of the session."""
     if "form_token" not in session:
         session["form_token"] = secrets.token_urlsafe(32)
     return session["form_token"]
@@ -59,7 +50,7 @@ def current_editor() -> tokens.Editor | None:
 
 
 def editor_of_request(kind: str) -> tokens.Editor | None:
-    """Return the editor of a request of an editor page, if *kind* may be written."""
+    """Return the editor of a request of an editor page, if kind may be written."""
     editor = current_editor()
     if editor is None or kind not in editor.kinds or "form_token" not in session:
         return None

@@ -1,13 +1,4 @@
-"""VoID description (https://www.w3.org/TR/void/) of the data of the platform, as one dataset.
-
-The description is returned at /.well-known/void and at the address of the platform in Turtle, JSON-LD or N-Triples.
-It is a void:DatasetDescription with these parts:
-
-- The catalogue record, in the Dublin Core and FOAF terms of VoID.
-- The access points: the address space, the dump and the formats.
-- A partition for each class, with the VoID models of rdfsolve, counted from the tables.
-- A linkset for each registry of the sameAs addresses.
-- The linked vocabulary terms, as a separate dataset."""
+"""VoID description of the data of the platform."""
 
 import re
 from collections import Counter
@@ -38,9 +29,7 @@ PLATFORM = {}
 
 
 def platform() -> dict:
-    """Return the name, abstract and licence of the platform, and the JSON-LD document of its publisher.
-
-    Read the values from the catalogue record. Return empty values if there is no catalogue record."""
+    """Return the name, abstract, licence and publisher of the platform."""
     latest = records.latest_change()
     if PLATFORM.get("latest") != latest:
         found = records.graph([settings()["base"]])
@@ -53,8 +42,7 @@ def platform() -> dict:
 
 
 def general(void: Graph, dataset: URIRef) -> None:
-    """Add the catalogue record as published on its page, with its fields also in the terms of VoID, and with the
-    partners of the publisher as contributors."""
+    """Add the platform record to the description."""
     record = records.get(str(dataset))
     if record is None:
         return
@@ -71,8 +59,7 @@ def general(void: Graph, dataset: URIRef) -> None:
 
 
 def name(*iris: str) -> URIRef:
-    """Return the address of a partition in the description, made from the IRIs of the partition (class, property,
-    datatype)."""
+    """Return the address of a partition in the description."""
     parts = []
     for iri in iris:
         parts.append(re.sub(r"[^A-Za-z0-9]+", "-", jsonld_name(iri)).strip("-"))
@@ -80,11 +67,7 @@ def name(*iris: str) -> URIRef:
 
 
 def partitions(void: Graph, dataset: URIRef, base: str) -> None:
-    """Add a partition for each class of the records and parts of the platform.
-
-    Each partition has its entities and properties, from the VoID models of rdfsolve, counted from the tables. It
-    also has the name, description and position of the kind in the catalogue. Keep a kind without records as
-    described in the catalogue."""
+    """Add a partition for each class of the records and parts."""
     named = {}
     for part in void.objects(dataset, VOID.classPartition):
         named[void.value(part, VOID["class"])] = part
@@ -104,9 +87,7 @@ def partitions(void: Graph, dataset: URIRef, base: str) -> None:
 
 
 def linksets(void: Graph, dataset: URIRef, found: Graph, base: str) -> None:
-    """Add a linkset for each registry of the sameAs addresses of the records, such as ORCID.
-
-    Add each registry as a dataset, with its site as its home page."""
+    """Add a linkset for each registry of the sameAs addresses."""
     counted = Counter()
     for subject, value in found.subject_objects(SDO.sameAs):
         if isinstance(subject, URIRef) and str(subject).startswith(base) and isinstance(value, URIRef) and not str(value).startswith(base):
@@ -125,8 +106,7 @@ def linksets(void: Graph, dataset: URIRef, found: Graph, base: str) -> None:
 
 
 def terms(void: Graph, dataset: URIRef) -> None:
-    """Add the vocabulary terms that are linked from the records as a dataset, with its dump and a part per
-    vocabulary."""
+    """Add the linked vocabulary terms as a dataset."""
     found = documents.published_terms()
     subset = URIRef(records.address(DESCRIPTION) + "#terms")
     void.add((dataset, VOID.subset, subset))
@@ -152,7 +132,7 @@ DESCRIBED = {}
 
 
 def described() -> Graph:
-    """Return the VoID description, made again when a record is changed."""
+    """Return the VoID description."""
     latest = records.latest_change()
     if DESCRIBED.get("latest") != latest:
         DESCRIBED.update(latest=latest, graph=description())

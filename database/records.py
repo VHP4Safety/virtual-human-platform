@@ -1,7 +1,4 @@
-"""Reads and writes of the records.
-
-Store the statements of each record in the release tables, made from the profile with rdfsolve. Select the records of
-the listing pages and their facet counts in SQL."""
+"""Reads and writes of the records in the release tables."""
 
 import logging
 import re
@@ -22,8 +19,7 @@ logging.getLogger("rdflib.term").setLevel(logging.ERROR)
 
 
 def address(path: str) -> str:
-    """Return the address of a record from the path of its page, under the base address. Keep a full address
-    elsewhere, such as an ontology term, and read https:/... as https://...."""
+    """Return the address of the record at the page path path."""
     whole = re.fullmatch(r"(https?):/+(.*)", path)
     if whole:
         return whole.group(1) + "://" + whole.group(2)
@@ -31,7 +27,7 @@ def address(path: str) -> str:
 
 
 def path(iri: str) -> str:
-    """Return the path of a record under the base address (the inverse of address()). Keep an address elsewhere."""
+    """Return the page path of the record at iri."""
     return iri.removeprefix(settings()["base"])
 
 
@@ -41,16 +37,14 @@ def get(iri: str) -> Record | None:
 
 
 def of_kind(kind: str) -> list[Record]:
-    """Return the records with a page under /<kind>/ that are not removed."""
+    """Return the records under /<kind>/ that are not removed."""
     statement = select(Record).where(Record.iri.startswith(address(kind) + "/"), Record.removed_at.is_(None))
     with database.session() as db:
         return list(db.scalars(statement.order_by(Record.iri)))
 
 
 def search(text: str, classes: list[str], within: str = "", parts: bool = True, limit: int | None = 20, among=None) -> list[Record]:
-    """Return the records of these classes and their subclasses with *text* in the name or the address, sorted by
-    name. Include parts unless *parts* is false. Limit the addresses to those that start with *within*, such as a
-    vocabulary namespace, and to those *among* a select of addresses."""
+    """Return the records of classes with text in the name or the address, sorted by name."""
     every = set(classes)
     for of_class in classes:
         every |= {str(sub) for sub in hierarchy().transitive_subjects(RDFS.subClassOf, URIRef(of_class))}
@@ -68,21 +62,20 @@ def search(text: str, classes: list[str], within: str = "", parts: bool = True, 
 
 
 def parts_of(iri: str) -> list[str]:
-    """Return the addresses of the parts of a record, such as the questions and steps of a case study."""
+    """Return the addresses of the parts of the record at iri."""
     with database.session() as db:
         return list(db.scalars(select(Record.iri).where(Record.part_of == iri, Record.removed_at.is_(None))))
 
 
 def latest_change() -> str:
-    """Return the time when a record was last written, removed or moved, in UTC (ISO 8601)."""
+    """Return the time of the last change of a record, in UTC."""
     with database.session() as db:
         found = db.execute(select(func.max(Record.updated_at), func.max(Record.removed_at))).one()
     return max([value for value in found if value] or [""])
 
 
 def with_pages() -> list[tuple[str, str]]:
-    """Return the address and the time of the last change of each record with a page on the platform. Leave out
-    parts, removed or moved records, and records outside the base address."""
+    """Return the address and the time of the last change of each record with a page."""
     with database.session() as db:
         return list(db.execute(select(Record.iri, Record.updated_at).where(
             Record.iri.startswith(settings()["base"]), Record.part_of.is_(None), Record.removed_at.is_(None),
@@ -90,13 +83,13 @@ def with_pages() -> list[tuple[str, str]]:
 
 
 def kept(iris: list[str]) -> list[Record]:
-    """Return the records and parts at these addresses that are not removed or moved."""
+    """Return the records and parts at iris that are not removed or moved."""
     with database.session() as db:
         return list(db.scalars(select(Record).where(Record.iri.in_(iris), Record.removed_at.is_(None), Record.moved_to.is_(None))))
 
 
 def names(iris: list[str]) -> dict[str, str]:
-    """Return the names of the records at these addresses, and the labels of vocabulary terms."""
+    """Return the names of the records and terms at iris."""
     with database.session() as db:
         found = dict(db.execute(select(Record.iri, Record.name).where(Record.iri.in_(iris))).all())
     others = []
@@ -109,13 +102,13 @@ def names(iris: list[str]) -> dict[str, str]:
 
 
 def earlier_addresses(iri: str) -> list[str]:
-    """Return the addresses of a record before it was moved to *iri*."""
+    """Return the addresses of the record at iri before it was moved."""
     with database.session() as db:
         return list(db.scalars(select(Record.iri).where(Record.moved_to == iri)))
 
 
 def kinds_of(term: str) -> list[Record]:
-    """Return the kinds of a term in the glossary, named "<name> (<name of the term>)", sorted by address."""
+    """Return the kinds of the glossary term term, sorted by address."""
     named = get(term)
     if named is None or not named.name:
         return []
@@ -126,8 +119,7 @@ def kinds_of(term: str) -> list[Record]:
 
 @cache
 def tables() -> dict:
-    """Return the release tables by name, as SQLAlchemy tables, with the columns of the rdfsolve layout of the
-    profile."""
+    """Return the release tables by name."""
     found = {}
     for name, columns in sql_tables.layout(profile_text()).columns().items():
         found[name] = table(name, *[column(name_of_column) for name_of_column in columns])
@@ -135,7 +127,7 @@ def tables() -> dict:
 
 
 def read(records: list[str]) -> Graph:
-    """Read the statements of these records from their rows. Pass only the tables with rows to rdfsolve."""
+    """Return the statements of the records at records."""
     if not records:
         return Graph()
     found = {}
@@ -153,14 +145,12 @@ PART = re.compile(r"^(?P<record>[^#]+)#[A-Za-z_][A-Za-z0-9_]*-[0-9]+$")
 
 
 def is_part(found: Graph, node) -> bool:
-    """Return True if a node is a part of a record: a blank node, or a part address with statements in *found*. An
-    outside address of the same form, such as a page section, has no statements."""
+    """Return True if node is a part of a record in found."""
     return isinstance(node, BNode) or (isinstance(node, URIRef) and PART.match(str(node)) is not None and (node, None, None) in found)
 
 
 def blank_parts(found: Graph, record: str) -> Graph:
-    """Return the statements with the part addresses of a record as blank nodes, so that the parts are numbered again
-    under another record, as in a merge."""
+    """Return found with the part addresses of record as blank nodes."""
     blanks = {}
 
     def blank(node):
@@ -176,16 +166,13 @@ def blank_parts(found: Graph, record: str) -> Graph:
 
 
 def delete(db, record: str) -> None:
-    """Delete the rows of a record in the session *db*."""
+    """Delete the rows of the record at record in the session db."""
     for of_table in tables().values():
         db.execute(of_table.delete().where(of_table.c.record == record))
 
 
 def save(db, found: Graph, record: str, before: Graph | None = None) -> None:
-    """Replace the rows of a record in the session *db*, with the statements of its parts.
-
-    Give each part an address under the record (rdfsolve, tables with skolem). A part keeps its address when it is
-    given with it, or when it has the same values as a part of the stored record (*before*, else read here)."""
+    """Replace the rows of the record at record with the statements in found."""
     if before is None:
         before = read([record])
     delete(db, record)
@@ -195,9 +182,7 @@ def save(db, found: Graph, record: str, before: Graph | None = None) -> None:
 
 
 def described(found: Graph, iri: str | BNode) -> Graph:
-    """Return the statements of the record at *iri*, or of a node without an address, with the statements of its
-    parts at any depth. Parts are nodes without an address, addresses under the record address
-    (casestudies/kidney/Q1), and part addresses (PART)."""
+    """Return the statements of the node at iri and of its parts."""
     own = Graph()
     nodes = [iri if isinstance(iri, BNode) else URIRef(iri)]
     # Part addresses are under the record or under a part with an address, also for parts of parts:
@@ -222,8 +207,7 @@ def described(found: Graph, iri: str | BNode) -> Graph:
 
 
 def rows(found: Graph, iri: str, kind: str, source: str) -> list[dict]:
-    """Return the rows of the records table for a record and its parts with an address, each with a class and a
-    name."""
+    """Return the rows of the records table for the record at iri and its parts."""
     listed = {iri: kind}
     # A part address (<record>#<field>-<n>) has no row, as it has no page.
     for subject in described(found, iri).subjects():
@@ -238,7 +222,7 @@ def rows(found: Graph, iri: str, kind: str, source: str) -> list[dict]:
 
 
 def graph(iris: list[str]) -> Graph:
-    """Return the records at these addresses that are not removed, as linked data. Read parts from their records."""
+    """Return the records at iris that are not removed, with their parts."""
     with database.session() as db:
         listed = list(db.execute(select(Record.iri, Record.part_of).where(Record.iri.in_(iris), Record.removed_at.is_(None))))
     held = read(sorted({part_of or iri for iri, part_of in listed}))
@@ -251,8 +235,7 @@ def graph(iris: list[str]) -> Graph:
 
 
 def with_names(found: Graph) -> Graph:
-    """Add the class and the name of each linked record to the statements, so that links are shown with names. Do not
-    name an address in sameAs, as it is not a record."""
+    """Return found with the class and the name of each linked record."""
     linked = set()
     for _, predicate, value in found:
         if isinstance(value, URIRef) and predicate != SDO.sameAs and (value, None, None) not in found:
@@ -269,16 +252,12 @@ def with_names(found: Graph) -> Graph:
 
 
 def within(of_class: str) -> list[str]:
-    """Return the class and its subclasses in the profile. The records of these classes are of the kind of the
-    class."""
+    """Return of_class and its subclasses in the profile."""
     return sql_tables.layout(profile_text()).within(of_class, hierarchy())
 
 
 def sources(of_class: str, path: str) -> list[dict]:
-    """Return the places of the values of a field, for the class and its subclasses.
-
-    A place is a field table, a column of the class table, or the statements table. Each place has a value column, a
-    term column ("@id" for an IRI) and a row condition."""
+    """Return the tables and columns of the values of a field of of_class."""
     rest = tables()[sql_tables.STATEMENTS]
     found = []
     in_statements = False
@@ -300,7 +279,7 @@ def sources(of_class: str, path: str) -> list[dict]:
 
 
 def values(of_class: str, path: str) -> list[tuple[str, str]]:
-    """Return each node of a class with each of its values of a field."""
+    """Return each node of of_class with each value of the field path."""
     selects = []
     for source in sources(of_class, path):
         selects.append(select(source["table"].c.iri, source["value"]).where(source["where"]))
@@ -309,8 +288,7 @@ def values(of_class: str, path: str) -> list[tuple[str, str]]:
 
 
 def places() -> list[tuple]:
-    """Return each table and column with values in the rdfsolve layout, with the property of the column (None for the
-    statements table, which has a property column)."""
+    """Return each table and column with values in the layout, with its property."""
     found = [(tables()[sql_tables.STATEMENTS], "value", None)]
     for of_layout in sql_tables.layout(profile_text()).classes.values():
         own = tables()[of_layout.name]
@@ -322,7 +300,7 @@ def places() -> list[tuple]:
 
 
 def united(selects: list) -> set[tuple]:
-    """Return the rows of the union of *selects*. Up to 500 selects are allowed in one SQLite union."""
+    """Return the rows of the union of selects."""
     found = set()
     with database.engine().connect() as connection:
         for first in range(0, len(selects), 400):
@@ -331,7 +309,7 @@ def united(selects: list) -> set[tuple]:
 
 
 def naming(iri: str) -> set[tuple[str, str]]:
-    """Return the nodes with *iri* as a value of a field, each with the property of the field."""
+    """Return the nodes with iri as a value, with the property of the value."""
     selects = []
     for of_table, name, path in places():
         property_of = of_table.c.property if path is None else literal(path)
@@ -340,7 +318,7 @@ def naming(iri: str) -> set[tuple[str, str]]:
 
 
 def linking(iri: str) -> set[str]:
-    """Return the addresses of the records with a link to *iri*, in their own fields or in the fields of their parts."""
+    """Return the addresses of the records that link to iri."""
     selects = []
     for of_table, name, _ in places():
         selects.append(select(of_table.c.record).where(of_table.c[name] == iri))
@@ -348,7 +326,7 @@ def linking(iri: str) -> set[str]:
 
 
 def nodes_with(of_class: str, path: str, wanted: list[str]):
-    """Return the select of the nodes of a class with one of the wanted values of a field."""
+    """Return the select of the nodes of of_class with one of the wanted values of a field."""
     selects = []
     for source in sources(of_class, path):
         selects.append(select(source["table"].c.iri).where(source["value"].in_(wanted), source["where"]))
@@ -356,10 +334,7 @@ def nodes_with(of_class: str, path: str, wanted: list[str]):
 
 
 def chosen(of_class: str, filters: dict, search: str = ""):
-    """Return the select of the records of a class and its subclasses.
-
-    Leave out removed and moved records and parts. Select the records with *search* in the name or the address, and
-    with a value of each field in *filters* (property: values)."""
+    """Return the select of the records of of_class found by filters and search."""
     statement = select(Record.iri, Record.name).where(
         Record.type.in_(within(of_class)), Record.removed_at.is_(None), Record.moved_to.is_(None), Record.part_of.is_(None))
     if search:
@@ -370,8 +345,7 @@ def chosen(of_class: str, filters: dict, search: str = ""):
 
 
 def page(of_class: str, filters: dict, search: str, first: int, size: int) -> tuple[int, list[str]]:
-    """Return the number of records found by *filters* and *search*, and the addresses of one page of them, sorted
-    by name."""
+    """Return the number of records found and the addresses of one page of them."""
     statement = chosen(of_class, filters, search).add_columns(func.count().over().label("total"))
     statement = statement.order_by(func.lower(Record.name).nulls_last(), Record.iri).limit(size).offset(first)
     found = []
@@ -387,9 +361,7 @@ def page(of_class: str, filters: dict, search: str, first: int, size: int) -> tu
 
 
 def facets(of_class: str, paths: list[str], filters: dict, search: str = "") -> dict[str, dict[tuple[str, bool], int]]:
-    """Count the records found for each value of each field in *paths*, by the value and by whether it is an IRI.
-    Do not apply the filter of a field to the counts of that field, so that each count is the number of records
-    found with that value."""
+    """Return the number of records found for each value of each field in paths."""
     # The records are found once (MATERIALIZED), not once per field.
     every = chosen(of_class, filters, search).with_only_columns(Record.iri).cte("chosen").prefix_with("MATERIALIZED")
     branches = []
@@ -416,16 +388,12 @@ def facets(of_class: str, paths: list[str], filters: dict, search: str = "") -> 
 
 
 def browsed(field: dict) -> bool:
-    """Return True if a listing can be filtered by a field.
-
-    Such a field has a list of values (sh:in) or links to records or terms (sh:class, sh:or). It has no parts and no
-    fixed values."""
+    """Return True if a listing can be filtered by field."""
     return bool(field["values"] or field["classes"]) and not field["part"] and not field["fixed"]
 
 
 def filters(of_class: str, given: dict) -> dict:
-    """Return the requested values of each filter field, by the property of the field. Read the values from
-    *given* by the field name."""
+    """Return the requested values of each filter field of of_class, by property."""
     found = {}
     for field in fields(of_class):
         if browsed(field) and given.get(field["name"]):
@@ -434,10 +402,7 @@ def filters(of_class: str, given: dict) -> dict:
 
 
 def counted(of_class: str, given: dict) -> dict:
-    """Return the values of each filter field, by field name.
-
-    Each value has a name, the number of records found with the filters and the search of *given*, and a flag for
-    whether it fits the field."""
+    """Return the values of each filter field of of_class with their counts, by field name."""
     browsed_fields = [field for field in fields(of_class) if browsed(field)]
     counts = facets(of_class, [field["iri"] for field in browsed_fields], filters(of_class, given), given["search"])
     every = []
