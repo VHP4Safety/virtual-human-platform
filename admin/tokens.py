@@ -1,5 +1,5 @@
-"""Write tokens are made here for the editors that are listed in PLATFORM_EDITORS. The secret of a token is shown
-once and only its hash is kept, and a token expires after 90 days by default."""
+"""Write tokens, like ToxTempAssistant's workspace tokens: the secret is shown once and only its hash is
+kept. A token expires (after 90 days by default), can be revoked, and lists the kinds it may write."""
 
 import hashlib
 import os
