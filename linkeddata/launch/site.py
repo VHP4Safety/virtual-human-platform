@@ -305,10 +305,6 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             if section.get("name") == "Publications" and found.get("funding") and section.get("creativeWorkStatus") != "hidden":
                 section["about"] = found["funding"][0]
     platform, contact = home(contents["home"], kinds)
-    # The training page lists the training materials; its heading and sentence describe them in the catalogue.
-    name, description = heading(BeautifulSoup(contents["training"], "html.parser"))
-    platform["void:classPartition"].append({"void:class": link(kinds["training"]), "name": name, "description": description,
-                                            "position": len(platform["void:classPartition"]) + 1})
     found.update({key: value for key, value in contact.items() if value})
     described = organisation(contents["base"])
     for name in [described.get("alternateName")] if described.get("alternateName") else []:
