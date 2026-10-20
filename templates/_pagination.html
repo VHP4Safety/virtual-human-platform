@@ -1,0 +1,36 @@
+{# Pagination + result count. Expects: page, page_size, total, has_prev,
+   has_next in scope. Inherits all current query params from request.args,
+   only overriding `page` so filters/search/page_size are preserved. The
+   caller may set `extra_class` via `{% with %}` to tweak vertical spacing. #}
+{% if total and total > 0 %}
+  {% set start = (page - 1) * page_size + 1 %}
+  {% set end = [page * page_size, total] | min %}
+  {% set pagination_args = request.args.to_dict(flat=False) %}
+  {% set _ = pagination_args.pop('page', None) %}
+  <nav aria-label="Page navigation"
+       class="pagination-container d-flex align-items-center flex-wrap gap-2 {{ extra_class | default('pt-3 pt-sm-2 pb-3') }}">
+    <div style="flex: 1 1 0;"></div>
+    <ul class="pagination mb-0">
+      <li class="page-item {% if not has_prev %}disabled{% endif %}">
+        <a class="page-link"
+           href="{{ url_for(request.endpoint, page=page-1, **pagination_args) }}"
+           aria-label="Previous">
+          <i class="bi bi-caret-left-fill" aria-hidden="true"></i>
+        </a>
+      </li>
+      <li class="page-item active" aria-current="page">
+        <span class="page-link bg-secondary border-secondary">{{ page }}</span>
+      </li>
+      <li class="page-item {% if not has_next %}disabled{% endif %}">
+        <a class="page-link"
+           href="{{ url_for(request.endpoint, page=page+1, **pagination_args) }}"
+           aria-label="Next">
+          <i class="bi bi-caret-right-fill" aria-hidden="true"></i>
+        </a>
+      </li>
+    </ul>
+    <div class="text-end text-secondary small" style="flex: 1 1 0;">
+      Showing {{ start }}–{{ end }} of {{ total }} results
+    </div>
+  </nav>
+{% endif %}

@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css') }}">
+<link rel="stylesheet" property="stylesheet" href="https://elixirtess.github.io/TeSS_widgets/css/tess-widget.css"/>
+
+<section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
+    <div class="pb-2">
+        <h1><span class="text-vhpblue" id="collection-name">{{ tool_json.service }}
+        {% if tool_details.get("developed-by-VHP") == "true" %}
+            <img src="/static/images/logos/icon/PNG/300ppi/VHP_Icon_HexaHead_300.png" alt="Developed by VHP" class="vhp-badge" data-bs-toggle="tooltip" data-bs-title="Developed by VHP">
+        {% endif %}
+        {% if tool_details.instance and tool_details.instance.get("vhp-platform") == "Development" %}
+            <img src="/static/images/logos/icon/PNG/300ppi/VHP_Icon_Head_300.png" alt="Hosted by VHP" class="vhp-badge" data-bs-toggle="tooltip" data-bs-title="Hosted by VHP">
+        {% elif tool_details.instance and tool_details.instance.get("vhp-platform") == "development" %}
+            <img src="/static/images/logos/icon/PNG/300ppi/VHP_Icon_Head_300.png" alt="Hosted by VHP" class="vhp-badge" data-bs-toggle="tooltip" data-bs-title="Hosted by VHP">
+        {% endif %}
+        </span></h1>
+    </div>
+
+<div class="card">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <a class="nav-link text-vhpblue active" id="simple-tab-0" data-bs-toggle="tab" href="#simple-tabpanel-0" role="tab" aria-controls="simple-tabpanel-0" aria-selected="true">Overview</a>
+      </li>
+      <li class="nav-item" role="presentation">
+        <a class="nav-link text-vhpblue" id="simple-tab-2" data-bs-toggle="tab" href="#simple-tabpanel-1" role="tab" aria-controls="simple-tabpanel-2" aria-selected="false">Documentation</a>
+      </li>
+      <li class="nav-item" role="presentation">
+        <a class="nav-link text-vhpblue" id="simple-tab-3" data-bs-toggle="tab" href="#simple-tabpanel-2" role="tab" aria-controls="simple-tabpanel-3" aria-selected="false">Support</a>
+      </li>
+    </ul>
+  </div>
+  <div class="card-body">
+    <div class="tab-content" id="tab-content">
+      <!-- first tab -->
+      <div class="tab-pane active" id="simple-tabpanel-0" role="tabpanel" aria-labelledby="simple-tab-0">
+        {% if tool_details.screenshot %}
+        <div class="row">
+          <div class="col-md-6">
+            <p>{{ tool_json.description }}
+        {% for stage in tool_details.stage if stage in process_flow_steps %}
+          {% set step = process_flow_steps[stage] %}
+          <div style="margin-top: 5px">
+            <a href="/safety_assessment_workflow#definition-{{ step.slug }}"
+               class="btn btn-vhppurple"
+               data-bs-toggle="tooltip"
+               title="{{ step.description }}">
+              {{ step.label }}
+            </a>
+          </div>
+        {% endfor %}
+        {% if tool_details.get("regulatory-question") %}
+        <div style="margin-top: 5px">
+          {% if tool_details.get("regulatory-question").get("1a") == "true" or
+                tool_details.get("regulatory-question").get("1b") == "true" %}
+          <span data-bs-toggle="tooltip" title="Used in the Kidney Case Study"><img src="/static/images/image43_hexagon.svg" alt="Kidney case study" style="max-width: 40px; margin: 0 auto; align: left"></span>
+          {% endif %}
+          {% if tool_details.get("regulatory-question").get("2a") == "true" or
+                tool_details.get("regulatory-question").get("2b") == "true" %}
+          <span data-bs-toggle="tooltip" title="Used in the Parkinson Case Study"><img src="/static/images/image45_hexagon.svg" alt="Parkinson case study" style="max-width: 40px; margin: 0 auto; align: left"></span>
+          {% endif %}
+          {% if tool_details.get("regulatory-question").get("3a") == "true" or
+                tool_details.get("regulatory-question").get("3b") == "true" %}
+          <span data-bs-toggle="tooltip" title="Used in the Thyroid Hormone Case Study"><img src="/static/images/image47_hexagon.svg" alt="Thyroid hormone case study" style="max-width: 40px; margin: 0 auto; align: left"></span>
+          {% endif %}
+        </div>
+        {% endif %}
+          </div>
+          <div class="col-md-6 pt-md-0 pt-2 mt-md-0 mt-1">
+            {% if tool_details.instance and tool_details.instance.url %}
+            <a href="{{ tool_details.instance.url }}" target="_blank"><img src="{{ tool_details.screenshot }}" class="card-img-bottom" alt="Image showing the logo or screenshot of the project."></a>
+            {% else %}
+            <img src="{{ tool_details.screenshot }}" class="card-img-bottom" alt="Image showing the logo or screenshot of the project.">
+            {% endif %}
+          </div>
+        </div>
+        {%else%}
+        <div class="row">
+          <p>{{ tool_json.description }}
+        {% if tool_details.get("regulatory-question") %}
+        <div style="margin-top: 5px">
+          {% if tool_details.get("regulatory-question").get("1a") == "true" or
+                tool_details.get("regulatory-question").get("1b") == "true" %}
+          <span data-bs-toggle="tooltip" title="Used in the Kidney Case Study"><img src="/static/images/image43_hexagon.svg" alt="Kidney case study" style="max-width: 40px; margin: 0 auto; align: left"></span>
+          {% endif %}
+          {% if tool_details.get("regulatory-question").get("2a") == "true" or
+                tool_details.get("regulatory-question").get("2b") == "true" %}
+          <span data-bs-toggle="tooltip" title="Used in the Parkinson Case Study"><img src="/static/images/image45_hexagon.svg" alt="Parkinson case study" style="max-width: 40px; margin: 0 auto; align: left"></span>
+          {% endif %}
+          {% if tool_details.get("regulatory-question").get("3a") == "true" or
+                tool_details.get("regulatory-question").get("3b") == "true" %}
+          <span data-bs-toggle="tooltip" title="Used in the Thyroid Hormone Case Study"><img src="/static/images/image47_hexagon.svg" alt="Thyroid hormone case study" style="max-width: 40px; margin: 0 auto; align: left"></span>
+          {% endif %}
+        </div>
+        {% endif %}
+        </div>
+        {% endif %}
+        {% if tool_details.Other %}
+          {% if tool_details.Other.wikipedia %}
+          <p>More at <a href="{{ tool_details.Other.wikipedia }}">Wikipedia</a>.</p>
+          {% endif %}
+        {% endif %}
+        <!-- Instance Page -->
+        {% if tool_details.instance %}
+          {% if tool_details.instance.url %}
+          <div style="margin-top: 5px">
+            <a type="button" href="{{ tool_details.instance.url }}" class="btn btn-vhpblue flex-grow-1" target="_blank" rel="noopener" data-bs-toggle="tooltip" data-bs-title="Try VHP-hosted instance">Run the tool</a>
+          </div>
+          {% endif %}
+        {% elif tool_details.url %}
+          <div style="margin-top: 5px">
+            <a type="button" href="{{ tool_details.url}}" class="btn btn-outline-vhpblue flex-grow-1" data-bs-toggle="tooltip" data-bs-title="Try non-VHP instance">Run the tool</a>
+          </div>
+        {% endif %}
+      </div>
+      <!-- second tab -->
+      <div class="tab-pane" id="simple-tabpanel-1" role="tabpanel" aria-labelledby="simple-tab-1">
+        <div class="accordion accordion-flush" id="tool-documentation-accordion">
+
+          {% if tool_details.intro or tool_details.demo or tool_details.workflow %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="doc-heading-vhp-info">
+              <button class="accordion-button collapsed" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#doc-collapse-vhp-info"
+                      aria-expanded="false" aria-controls="doc-collapse-vhp-info">
+                VHP service information
+              </button>
+            </h2>
+            <div id="doc-collapse-vhp-info" class="accordion-collapse collapse"
+                 aria-labelledby="doc-heading-vhp-info"
+                 data-bs-parent="#tool-documentation-accordion">
+              <div class="accordion-body">
+                <ul style="list-style-type:disc">
+                  {% for intro in tool_details.intro %}
+                  <li><a href="{{ intro.url }}">{{ intro.title }}</a></li>
+                  {% endfor %}
+                  {% for workflow in tool_details.workflow %}
+                  <li>Workflow: <a href="{{ workflow.url }}">{{ workflow.title }}</a></li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if tool_details.peertube %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="doc-heading-vhp-info">
+              <button class="accordion-button collapsed" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#doc-collapse-vhp-info"
+                      aria-expanded="false" aria-controls="doc-collapse-vhp-info">
+                Introduction video
+              </button>
+            </h2>
+            <div id="doc-collapse-vhp-info" class="accordion-collapse collapse"
+                 aria-labelledby="doc-heading-vhp-info"
+                 data-bs-parent="#tool-documentation-accordion">
+              <div class="accordion-body">
+                {% for peertube in tool_details.peertube %}
+                <h3>Introduction video</h3>
+                <div style="position: relative; padding-top: 56.25%;"><iframe title="{{ peertube.title }}" width="100%" height="100%" src="{{ peertube.url }}" allow="fullscreen" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" style="border: 0px; position: absolute; inset: 0px;"></iframe></div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if tool_details.get('ELIXIR') and tool_details.ELIXIR.get('tess') %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="doc-heading-taxila">
+              <button class="accordion-button collapsed" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#doc-collapse-taxila"
+                      aria-expanded="false" aria-controls="doc-collapse-taxila">
+                Taxila.nl
+              </button>
+            </h2>
+            <div id="doc-collapse-taxila" class="accordion-collapse collapse"
+                 aria-labelledby="doc-heading-taxila"
+                 data-bs-parent="#tool-documentation-accordion">
+              <div class="accordion-body">
+                <div id="taxila-widget-materials-table" class="tess-widget tess-widget-faceted-table"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="doc-heading-tess">
+              <button class="accordion-button collapsed" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#doc-collapse-tess"
+                      aria-expanded="false" aria-controls="doc-collapse-tess">
+                ELIXIR TeSS
+              </button>
+            </h2>
+            <div id="doc-collapse-tess" class="accordion-collapse collapse"
+                 aria-labelledby="doc-heading-tess"
+                 data-bs-parent="#tool-documentation-accordion">
+              <div class="accordion-body">
+                <div id="tess-widget-materials-table" class="tess-widget tess-widget-faceted-table"></div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if tool_details.get('ELIXIR') and tool_details.ELIXIR.get('biotools') %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="doc-heading-biotools">
+              <button class="accordion-button collapsed" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#doc-collapse-biotools"
+                      aria-expanded="false" aria-controls="doc-collapse-biotools">
+                Technical documentation
+              </button>
+            </h2>
+            <div id="doc-collapse-biotools" class="accordion-collapse collapse"
+                 aria-labelledby="doc-heading-biotools"
+                 data-bs-parent="#tool-documentation-accordion">
+              <div class="accordion-body">
+                <ul>
+                  <li><a href="https://bio.tools/{{ tool_details.ELIXIR.get('biotools') }}">bio.tools</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if tool_details.doi %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="doc-heading-references">
+              <button class="accordion-button collapsed" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#doc-collapse-references"
+                      aria-expanded="false" aria-controls="doc-collapse-references">
+                References
+              </button>
+            </h2>
+            <div id="doc-collapse-references" class="accordion-collapse collapse"
+                 aria-labelledby="doc-heading-references"
+                 data-bs-parent="#tool-documentation-accordion">
+              <div class="accordion-body">
+                <div id="bibliography"></div>
+              </div>
+            </div>
+          </div>
+          <script src="https://cdn.jsdelivr.net/npm/citation-js@0.9.0" integrity="sha384-wop5NlY7ORa1+WSchJbyKhM2UGNF+nuCoelh0sH4SAaS31ho6ehlpFyULYk/Q9dC" crossorigin="anonymous"></script>
+          <script>var Cite = require('citation-js')</script>
+          <script>
+            const cite = new Cite();
+            dois = [];
+            dois.push("{{ tool_details.doi }}");
+            Cite.async(dois).then(function(cite) {
+              content = cite.format('bibliography', {
+                format: 'html', template : 'apa',
+                prepend: function (entry) {
+                  return '<li><i class="bi bi-file-earmark"></i>&nbsp;'
+                },
+                append: function (entry) {
+                  return '<a href="https://doi.org/' + entry.DOI + '">CrossRef</a> <a href="https://scholia.toolforge.org/doi/' + entry.DOI + '">Scholia</a></li>'
+                }
+              })
+              document.getElementById('bibliography').innerHTML = "<ul>" + content + "</ul>"
+            })
+          </script>
+          {% endif %}
+
+          {% if tool_details.instance %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="doc-heading-technical">
+              <button class="accordion-button collapsed" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#doc-collapse-technical"
+                      aria-expanded="false" aria-controls="doc-collapse-technical">
+                Technical information
+              </button>
+            </h2>
+            <div id="doc-collapse-technical" class="accordion-collapse collapse"
+                 aria-labelledby="doc-heading-technical"
+                 data-bs-parent="#tool-documentation-accordion">
+              <div class="accordion-body">
+                <ul>
+                  {% if tool_details.instance.version %}<li>Version: {{ tool_details.instance.version }}</li>{% endif %}
+                  {% if tool_details.instance.license %}<li>License: {{ tool_details.instance.license }}</li>{% endif %}
+                  {% for source in tool_details.instance.source %}<li>Source code: <a href="{{ source }}">{{ source }}</a></li>{% endfor %}
+                  {% for docker in tool_details.instance.docker %}<li>Download: <a href="{{ docker }}">{{ docker }}</a></li>{% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if tool_details.Other and tool_details.Other.rsd %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="doc-heading-other">
+              <button class="accordion-button collapsed" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#doc-collapse-other"
+                      aria-expanded="false" aria-controls="doc-collapse-other">
+                Other links
+              </button>
+            </h2>
+            <div id="doc-collapse-other" class="accordion-collapse collapse"
+                 aria-labelledby="doc-heading-other"
+                 data-bs-parent="#tool-documentation-accordion">
+              <div class="accordion-body">
+                <ul>
+                  <li>Research Software Directory: <a href="https://research-software-directory.org/software/{{ tool_details.Other.rsd }}">{{ tool_details.Other.rsd }}</a>.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+      <!-- third tab -->
+      <div class="tab-pane" id="simple-tabpanel-2" role="tabpanel" aria-labelledby="simple-tab-3">
+        <h2 class="pt-2">Contact</h2>
+        <ul>
+          {% if tool_details.provider %}{% if tool_details.provider.contact %}
+            {% if tool_details.provider.contact.name %}
+              <li>{% if tool_details.provider.email %}<a href="mailto:{{tool_details.provider.email}}">{% endif %}{{ tool_details.provider.contact.name }}{% if tool_details.provider.name %}{% if tool_details.provider.email %}</a>{% endif %} ({{ tool_details.provider.name }}){% endif %}</li>
+            {% else %}
+              {% if tool_details.provider.name %}<li>{{ tool_details.provider.name }}</li>{% endif%}
+            {% endif %}
+            {% if tool_details.provider.contact.get("vhp-partner") %}
+              {% if tool_details.provider.contact.get("vhp-partner") != "" %}
+                <li>Partner: {{ tool_details.provider.contact.get("vhp-partner") | replace(";", " and ") }}</li>
+              {% endif %}
+            {% endif %}
+          {% endif %}{% endif %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function initTeSSWidgets() {
+    if (typeof TessWidget === 'undefined' || !TessWidget.Materials) {
+        console.warn('TeSS widget library not available, skipping initialization.');
+        return;
+    }
+
+    const taxilaContainer = document.getElementById('taxila-widget-materials-table');
+    if (!taxilaContainer) {
+        console.warn('No Taxila widget container found.');
+        return;
+    }
+
+    TessWidget.Materials(taxilaContainer, 'FacetedTable', {
+        opts: {
+            columns: [
+                { name: 'Name', field: 'title' },
+                { name: 'Description', field: 'description' }
+            ],
+            allowedFacets: ['scientific-topics', 'target-audience'],
+            facetOptionLimit: 5
+        },
+        params: {
+            pageSize: 5,
+            q: '{{ tool_details.get("ELIXIR", {}).get("tess", "") }}'
+        },
+        baseUrl: 'https://taxila.nl'
+    });
+
+    const tessContainer = document.getElementById('tess-widget-materials-table');
+    if (!tessContainer) {
+        console.warn('No TeSS widget container found.');
+        return;
+    }
+
+    TessWidget.Materials(tessContainer, 'FacetedTable', {
+        opts: {
+            columns: [
+                { name: 'Name', field: 'title' },
+                { name: 'Description', field: 'description' }
+            ],
+            allowedFacets: ['scientific-topics', 'target-audience'],
+            facetOptionLimit: 5
+        },
+        params: {
+            pageSize: 5,
+            q: '{{ tool_details.get("ELIXIR", {}).get("tess", "") }}'
+        }
+    });
+}
+</script>
+
+
+<script async defer src="https://elixirtess.github.io/TeSS_widgets/js/tess-widget-standalone.js"
+        onload="if (typeof initTeSSWidgets === 'function') initTeSSWidgets();">
+</script>
+
+{% include "records/_data_links.html" %}
+</section>
+{% endblock %}

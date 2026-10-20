@@ -1,0 +1,224 @@
+/* tool.css - Styles for tool.html with individual tool pages like QSPRpred */
+.tool-container {
+  background: var(--white);
+  max-width: 70%;
+  margin: 140px auto 0 auto;
+  position: relative;
+}
+
+.tool-title {
+  margin-bottom: 0px;
+  font-size: 3em;
+}
+
+.tool-tabs {
+  display: flex;
+  margin: 0;
+  gap: 0;
+}
+
+.tool-tab {
+  background: #888;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.2em;
+  border: none;
+  outline: none;
+  padding: 10px 36px 12px 36px;
+  border-radius: 10px 10px 0 0;
+  margin-right: 8px;
+  transition: background 0.2s, color 0.2s;
+  position: relative;
+  top: 8px;
+}
+
+.tool-tab.active {
+  background: #e6007e;
+  color: #fff;
+  z-index: 0;
+}
+
+.tool-tab:not(.active):hover {
+  background: #bdbdbd;
+  color: #29235c;
+}
+
+.tool-window {
+  background: #e0e0e0;
+  border-radius: 0 10px 10px 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+  padding: 40px 0 40px 0;
+  min-height: 340px;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+.tool-window .tool-content {
+  max-width: 70%;
+  margin-left: 48px;
+  text-align: left;
+}
+
+.tool-run-btn {
+  position: absolute;
+  top: 45px;
+  right: 55px;
+  background: #29235c;
+  font-size: 1.1em;
+  padding: 25px;
+  transition: opacity 0.3s ease; /* Smooth hover transition */
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.tool-run-btn:hover {
+  opacity: 0.5;
+}
+
+.tool-run-version {
+  display: block;
+  font-size: 0.6em;
+  color: #e0e0e0;
+  font-weight: 400;
+  margin-top: 2px;
+  letter-spacing: 0.01em;
+}
+
+.tool-run-note {
+  position: absolute;
+  top: 95px;
+  right: 55px;
+  font-size: 0.8em;
+  color: #29235c;
+  opacity: 0.8;
+  text-align: center;
+  width: 240px;
+}
+
+@media (max-width: 1000px) {
+  .tool-container {
+    max-width: 98vw;
+    padding: 0 0 20px 0;
+  }
+  .tool-window,
+  .tool-tabs {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .tool-run-btn {
+    right: 16px;
+    top: 24px;
+    padding: 12px 18px;
+    font-size: 1em;
+  }
+}
+
+/* --- setting for dropdownmenu inside tool pages --- */
+.dropdown-menu.dropdown-scroll {
+  max-height: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-word;
+
+  width: 100%;      
+  min-width: 100%;   
+  max-width: none;  
+
+  padding: 5px 0;
+}
+
+.dropdown-menu.dropdown-scroll .dropdown-item {
+  white-space: normal;
+  line-height: 1.2;
+  padding: 6px 12px;
+}
+
+
+/* Settings for the dropdownmenu and small mobile phones (screens ≤ 375px) */
+.dropdown-menu.dropdown-scroll {
+  max-height: 200px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-word;
+  width: 100%;      
+  min-width: 100%;   
+  max-width: none;  
+  padding: 5px 0;
+}
+
+.dropdown-menu.dropdown-scroll .dropdown-item {
+  white-space: normal;
+  line-height: 1.2;
+  padding: 6px 12px;
+}
+
+@media (max-width: 375px) {
+
+  .results-section {
+      padding-top: 80px; 
+      padding-left: 0.25rem;
+      padding-right: 0.25rem;
+      width: 100vw;     
+      max-width: 100vw;
+      box-sizing: border-box;
+      overflow-x: hidden; 
+  }
+
+  .results-section .card-wrapper,
+  .results-section .card {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      flex-shrink: 1;
+      box-sizing: border-box;
+  }
+
+  .results-section .card-img-top {
+      width: 100%;
+      height: auto;      
+      aspect-ratio: auto; 
+      max-width: 100%;
+      overflow: hidden;
+  }
+
+  .results-section .card-img-top img {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      display: block;
+  }
+
+  .results-section .btn-group {
+      flex-wrap: wrap !important;
+      gap: 4px;
+  }
+
+  .results-section .card-body p,
+  .results-section .card-body h2 {
+      word-break: break-word;
+      overflow-wrap: break-word;
+  }
+}
+
+/* Setting to make ontology tab mobile-friendly */
+#ontology-widget-container {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+#ontology-widget-container iframe,
+#ontology-widget-container .widget {
+  width: 100% ;
+  max-width: 100% ;
+}

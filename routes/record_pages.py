@@ -13,6 +13,7 @@ import re
 from datetime import datetime, timezone
 
 from flask import Blueprint, Response, abort, current_app, g, redirect, render_template, request, url_for
+from markupsafe import Markup
 from rdflib import Graph
 from rdflib.namespace import SDO
 
@@ -29,6 +30,9 @@ OFFERED = ["text/html", *FORMATS.values(), "application/json", "text/markdown"]
 SERIALIZATIONS = {"text/turtle": "turtle", "application/n-triples": "nt"}
 
 blueprint = Blueprint("pages", __name__)
+# The platform pages that keep the template they had before their records; their texts are read from the records.
+PAGE_TEMPLATES = {"safety_assessment_workflow": "safety_assessment_workflow.html", "legal/privacypolicy": "legal/privacypolicy.html",
+                  "legal/terms_of_service": "legal/terms_of_service.html"}
 # A page also changes with the code that makes it, as after a new release.
 STARTED = datetime.now(timezone.utc).replace(microsecond=0)
 
@@ -63,7 +67,16 @@ def markdown_of(record: Record) -> Response:
 
 
 def listing_page(kind: str):
-    """A kind's records, found by name and filtered by its browsable fields (templates/records/listing.html)."""
+    """A kind's records, found by name and filtered by its browsable fields (templates/records/listing.html). Tools,
+    methods and data are listed as in the cloud catalogue (templates/tools, templates/methods, templates/data); models
+    are listed as the data are."""
+    if kind in ("tools", "methods"):
+        found = pages.catalogue_listing(kind, request.args)
+        return render_template(f"{kind}/{kind}.html", **found, page_title=f"{pages.kind_names()[kind]} — VHP4Safety")
+    if kind == "data":
+        return render_template("data/data.html", **pages.data_listing(request.args), page_title=f"{pages.kind_names()[kind]} — VHP4Safety")
+    if kind == "models":
+        return render_template("data/data.html", **pages.model_listing(request.args), page_title=f"{pages.kind_names()[kind]} — VHP4Safety")
     found = pages.listing(kind, request.args)
     return render_template("records/listing.html", listing=found, page_title=f"{found['name'] or kind.capitalize()} — VHP4Safety")
 
@@ -136,6 +149,23 @@ def ro_crate(path: str):
     body = json.dumps(crates.crate(record), indent=2)
     return Response(body, mimetype="application/ld+json", headers={"Access-Control-Allow-Origin": "*",
                     "Link": f'<{crates.PROFILE}>; rel="profile", <{record.iri}>; rel="cite-as"'})
+
+
+# The models are listed as the data are, so their listing has an address of its own for its page links.
+@blueprint.get("/models")
+def models():
+    return listing_page("models")
+
+
+# The addresses of the model pages of the cloud catalogue lead to the models.
+@blueprint.get("/models_page")
+def models_page():
+    return redirect("/models", code=301)
+
+
+@blueprint.get("/model/<name>")
+def model_page(name: str):
+    return redirect("/models/" + name, code=301)
 
 
 # A case study's page takes the next parts of its address (app.py), so its crate's address is named here.
@@ -227,15 +257,38 @@ def issue_tracker(addresses) -> str:
 @blueprint.app_template_filter("page_link")
 def page_link(iri: str) -> str:
     """A platform address as a path on this server, so it works on every copy of the platform."""
-    path = records.path(iri)
-    return iri if path == iri else "/" + path
+    return pages.local(iri)
 
 
 def record_page(record: Record):
-    """A record's page: a platform page's own (templates/records/page.html), or the general record page."""
+    """A record's page: a tool, a method, a dataset or a model as in the cloud catalogue (templates/tools,
+    templates/methods, templates/data), a platform page (templates/records/page.html, or the template it had before its
+    record), or the general record page."""
+    kind = records.path(record.iri).split("/", 1)[0]
+    if kind == "tools" and record.part_of is None:
+        details = pages.tool_details(record)
+        return render_template("tools/tool.html", tool_json=details, tool_details=details, process_flow_steps=pages.steps(),
+                               page_title=f"{details['service']} — VHP4Safety",
+                               meta_description=details["description"][:160]
+                               or f"{details['service']}, a tool in the VHP4Safety Virtual Human Platform.")
+    if kind == "methods" and record.part_of is None:
+        method = pages.method_json(record)
+        return render_template("methods/method.html", method_json=method, method_details={}, page_title=f"{method['method']} — VHP4Safety",
+                               meta_description=method["method_description_content"][:160]
+                               or f"{method['method']}, a method in the VHP4Safety Virtual Human Platform.")
+    if kind in ("data", "models") and record.part_of is None:
+        found = pages.catalogue_details(record)
+        filters = pages.catalogue_filters(kind, records.latest_change())
+        description = Markup(found["norm_metadata"]["description"]).striptags()
+        return render_template("data/data_details.html", data=found, kind=kind, reg_q_labels=filters["reg_q_labels"],
+                               reg_q_urls=filters["reg_q_urls"], reg_q_steps=filters["reg_q_steps"],
+                               outline=pages.outline(record) if kind == "models" else None, page_title=f"{found['title']} — VHP4Safety {kind}",
+                               meta_description=description[:160] or f"{found['title']}: a record of the VHP4Safety {kind}.")
     if record.type in records.within(str(SDO.WebPage)):
         found = pages.page(record)
-        return render_template("records/page.html", page=found, page_title=f"{found['name']} — VHP4Safety",
+        steps = {term["iri"]: term for term in found["kinds"]}
+        return render_template(PAGE_TEMPLATES.get(records.path(record.iri), "records/page.html"), page=found, process_flow_steps=steps,
+                               page_title=f"{found['name']} — VHP4Safety",
                                meta_description=found["description"][:160] or f"{found['name']}, a page of the VHP4Safety Virtual Human Platform.")
     found = pages.outline(record)
     first = {}

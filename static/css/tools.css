@@ -1,0 +1,207 @@
+
+/* Settings for the tooltips */
+
+.tooltip-icon {
+    display: inline-block;
+    margin-left: 5px;
+    color: var(--vhp-pink);
+    cursor: pointer;
+    position: relative;
+    font-weight: bold;
+}
+
+.tooltip-icon::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 125%; /* Position above the icon */
+    background-color: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 4px;
+    white-space: pre-line; /* allows line breaks */
+    font-size: 0.85em;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out;
+    width: max-content;
+    max-width: 250px;
+    text-align: center;
+    z-index: 1000;
+}
+
+.tooltip-icon:hover::after {
+    opacity: 1;
+}
+
+.card img {
+  filter: grayscale(100%);
+  opacity: 0.6;
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+.card:hover img {
+  filter: grayscale(0%);
+  opacity: 1;
+}
+
+.vhp-badge {
+  height: 32px;
+  width: auto;
+  padding: 4px;
+  background-color: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 50%;
+  filter: none !important;
+  opacity: 1 !important;
+  flex-shrink: 0;
+  box-sizing: content-box;
+}
+
+
+/* Mobile phone screens ≤ 375px */
+@media (max-width: 408px) {
+
+    .dropdown-menu.dropdown-scroll {
+    max-height: 200px;
+    overflow-y: scroll;
+    overflow-x: hidden; 
+    white-space: normal;
+    word-wrap: break-word;
+    word-break: break-word;
+    width: 100%;      
+    min-width: 100%;   
+    max-width: none;  
+    padding: 5px 0;
+    }
+
+    .dropdown-menu.dropdown-scroll .dropdown-item {
+    white-space: normal;
+    line-height: 1.2;
+    padding: 6px 12px;
+    }
+
+  nav.navbar {
+    float: left;
+    display: inline-flex;       
+    align-items: center;
+    justify-content: flex-start;
+    width: auto;
+    margin: 0;
+    padding-right: 8px;        
+    box-sizing: border-box;
+  }
+
+  .flex-grow-1.d-flex.justify-content-center {
+    float: left;
+    display: inline-flex;
+    align-items: center;
+    width: calc(100% - 56px) !important;  /* to reserve ~56px for toggler + gap */
+    max-width: 60% !important;           /*I set this specifically to 60% so that on small iphones the searchbar and hamburger toggle are not placed on top of each other*/
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  .flex-grow-1.d-flex.justify-content-center form.d-flex {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+  }
+
+  /* Input and button sizing & alignment */
+  .flex-grow-1.d-flex.justify-content-center input.form-control {
+    flex: 1;
+    min-width: 60%;
+    max-width: 100%;
+    height: 38px;
+    box-sizing: border-box;
+  }
+
+  .flex-grow-1.d-flex.justify-content-center button.btn {
+    flex-shrink: 0;
+    height: 38px;
+    padding: 0 10px;
+    box-sizing: border-box;
+  }
+
+  /* Toggler sizing*/
+  .navbar-toggler {
+    flex-shrink: 0;
+    width: 40px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 6px 0 0;   /* to give more space between toggler and searchbar */
+    box-sizing: border-box;
+  }
+
+ 
+  nav.navbar + .flex-grow-1.d-flex.justify-content-center + * {
+    clear: both;
+  }
+  .results-section {
+      padding-left: 0.25rem;
+      padding-right: 0.25rem;
+      box-sizing: border-box;
+      overflow-x: hidden;
+  }
+
+  .pagination-container {
+      clear: both;
+  }
+
+  .results-section .card-wrapper,
+  .results-section .card {
+      width: 100%;
+      min-width: 0;
+      flex-shrink: 1;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+  }
+
+  .results-section .card-img-top {
+      width: 100%;
+      height: auto;      
+      aspect-ratio: auto; 
+      max-width: 100%;
+      overflow: hidden;
+      flex-shrink: 0; 
+  }
+
+  .results-section .card-img-top img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+  }
+
+  .results-section .card-body {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+  }
+
+  .results-section .card-body p,
+  .results-section .card-body h2 {
+      word-break: break-word;
+      overflow-wrap: break-word;
+  }
+
+  .results-section .card-footer {
+      flex-shrink: 0;
+  }
+
+  .results-section .btn-group {
+      flex-wrap: wrap !important;
+      gap: 4px;
+  }
+
+}

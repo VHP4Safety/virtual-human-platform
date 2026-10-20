@@ -1,0 +1,7 @@
+{% extends "base.html" %} {% block content %}
+<section>
+<h1>{{ page.name }}</h1>
+{% for section in page.sections %}{% if section.text is mapping %}{{ section.text["@value"]|sanitize_html }}{% elif section.text %}<p>{{ section.text }}</p>{% endif %}{% endfor %}
+{% include "records/_data_links.html" %}
+</section>
+{% endblock %}

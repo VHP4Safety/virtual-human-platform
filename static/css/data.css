@@ -1,0 +1,189 @@
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* Selected Filters Display */
+.selected-filters {
+    margin: 15px 0;
+    padding: 15px;
+    background-color: white;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: var(--blue);
+    margin-right: 10px;
+    font-size: 1em;
+}
+
+.filter-tags {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.filter-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--blue);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+.filter-tag-remove {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.3em;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+    line-height: 1;
+}
+
+.filter-tag-remove:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.filter-buttons .btn-primary,
+.filter-buttons .btn-secondary {
+    width: auto;
+    padding: 8px 20px;
+    height: auto;
+}
+
+
+/* --- setting for dropdownmenu in data pages --- */
+.dropdown-menu.dropdown-scroll {
+  max-height: 200px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-word;
+  width: 100%;      
+  min-width: 100%;   
+  max-width: none;  
+  padding: 5px 0;
+}
+
+.dropdown-menu.dropdown-scroll .dropdown-item {
+  white-space: normal;
+  line-height: 1.2;
+  padding: 6px 12px;
+}
+
+
+/* Hide scrollbar while keeping scroll/swipe (e.g. one-line pill strips) */
+.scrollbar-none {
+  -ms-overflow-style: none;   /* IE / old Edge */
+  scrollbar-width: none;      /* Firefox */
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;              /* Chrome, Safari, Edge */
+}
+
+
+/* Mobile phone screens ≤ 375px */
+@media (max-width: 408px) {
+
+  nav.navbar {
+    float: left;
+    display: inline-flex;       
+    align-items: center;
+    justify-content: flex-start;
+    width: auto;
+    margin: 0;
+    padding-right: 8px;        
+    box-sizing: border-box;
+  }
+
+  .flex-grow-1.d-flex.justify-content-center {
+    float: left;
+    display: inline-flex;
+    align-items: center;
+    width: calc(100% - 56px) !important;  /* to reserve ~56px for toggler + gap */
+    max-width: 60% !important;           /*I set this specifically to 60% so that on small iphones the searchbar and hamburger toggle are not placed on top of each other*/
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  .flex-grow-1.d-flex.justify-content-center form.d-flex {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+  }
+
+  /* Input and button sizing & alignment */
+  .flex-grow-1.d-flex.justify-content-center input.form-control {
+    flex: 1;
+    min-width: 60%;
+    max-width: 100%;
+    height: 38px;
+    box-sizing: border-box;
+  }
+
+  .flex-grow-1.d-flex.justify-content-center button.btn {
+    flex-shrink: 0;
+    height: 38px;
+    padding: 0 10px;
+    box-sizing: border-box;
+  }
+
+  /* Toggler sizing*/
+  .navbar-toggler {
+    flex-shrink: 0;
+    width: 40px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 6px 0 0;   /* to give more space between toggler and searchbar */
+    box-sizing: border-box;
+  }
+
+ 
+  nav.navbar + .flex-grow-1.d-flex.justify-content-center + * {
+    clear: both;
+  }
+
+  .pagination-container {
+    display: flex;
+    justify-content: center;
+    padding: 1rem 0;
+}
+
+
+}

@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="/static/css/tool.css" />
+<link rel="stylesheet" property="stylesheet" href="https://elixirtess.github.io/TeSS_widgets/css/tess-widget.css"/>
+<!-- Terminology Service Suite CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ts4nfdi/terminology-service-suite@3298f2d4c938b8a108ef8dd32b8baa6dfaeba33c/js-modules/latest/terminology-service-suite.min.css" integrity="sha384-CRw3xuZVsoeRqhmRBujMUtmHrdhRKj9esQLPz1mmaQOMSZyz4lVGvR5xTTbB6vfj" crossorigin="anonymous"/>
+
+<section class="container py-5">
+    {# 
+      Helper macros to access data:
+      - get(key): Gets value from method_json or method_details, returns empty string if "No response" or "NA"
+      - val(value, default): Returns value or default, filtering out "No response" and "NA"
+      - format_date(iso): Converts ISO timestamp to readable format
+    #}
+    {% macro val(v, default='—') %}{{ default if (not v or v == 'NA' or 'no response' in v.lower()) else v }}{% endmacro %}
+    {% macro get(key, default='—') %}{{ val(method_json.get(key) or method_details.get(key) or '', default) }}{% endmacro %}
+    {% macro format_date(iso) %}{% if iso and iso != '—' %}{% set parts = iso[:10].split('-') %}{% set months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] %}{{ parts[2] | int }} {{ months[parts[1] | int - 1] }} {{ parts[0] }}{% else %}—{% endif %}{% endmacro %}
+    
+    {# Page header #}
+    {% set title = get('method', '') or get('method_name_content', '') or get('service', 'Method') %}
+    {% set description = get('method_description_content', '') or get('method_description', '') or get('description', '—') %}
+    
+    <div class="pb-2">
+        <h1><span class="text-vhpblue" id="collection-name">{{ title }}</span></h1>
+        <p class="text-secondary">{{ description }}</p>
+    </div>
+    
+<div class="card">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <a class="nav-link text-vhpblue active" id="simple-tab-0" data-bs-toggle="tab" href="#simple-tabpanel-0" role="tab" aria-controls="simple-tabpanel-0" aria-selected="true">Overview</a>
+      </li>
+      <li class="nav-item" role="presentation">
+        <a class="nav-link text-vhpblue" id="simple-tab-5" data-bs-toggle="tab" href="#simple-tabpanel-5" role="tab" aria-controls="simple-tabpanel-5" aria-selected="false">Publications</a>
+      </li>
+      {% set ontology_iri_nav = (method_json.get('ontology_term_content') or method_details.get('ontology_term_content') or '') %}
+      {% if ontology_iri_nav and ontology_iri_nav.startswith('http') %}
+      <li class="nav-item" role="presentation">
+        <a class="nav-link text-vhpblue" id="simple-tab-6" data-bs-toggle="tab" href="#simple-tabpanel-6" role="tab" aria-controls="simple-tabpanel-6" aria-selected="false">Ontology</a>
+      </li>
+      {% endif %}
+    </ul>
+  </div>
+  <div class="card-body">
+    <div class="tab-content" id="tab-content">
+      <div class="tab-pane active" id="simple-tabpanel-0" role="tabpanel" aria-labelledby="simple-tab-0">
+        <div class="row g-3">
+          <div class="col-md-8">
+            <h4>Summary</h4>
+            <p>{{ description }}</p>
+
+            {# Extract key details - using val() for fields needing special handling #}
+            {% set catalog_url = val(method_json.get('catalog_webpage_url') or method_details.get('catalog_webpage_url') or '', '') %}
+            {% set sop_url = val(method_json.get('sop') or method_details.get('sop') or '', '') %}
+            {% set type_iri = val(method_json.get('type_content') or method_details.get('type_content') or '', '') %}
+
+            <h5 class="mt-3">Key details</h5>
+            <dl class="row">
+              <!--<dt class="col-sm-4">Data producer</dt>
+              <dd class="col-sm-8">{{ get('data_producer_content') }}</dd> -->
+
+              <dt class="col-sm-4">Vendor</dt>
+              <dd class="col-sm-8">{{ get('vendor_content') or get('vendor') }}</dd>
+
+              <dt class="col-sm-4">Catalog number</dt>
+              <dd class="col-sm-8">
+                {%- if catalog_url -%}
+                  <a href="{{ catalog_url }}" target="_blank">{{ get('catalog_number_content', catalog_url) }}</a>
+                {%- else -%}
+                  {{ get('catalog_number_content') }}
+                {%- endif -%}
+              </dd>
+
+              <dt class="col-sm-4">SOP</dt>
+              <dd class="col-sm-8">{% if sop_url %}<a href="{{ sop_url }}" target="_blank">Download SOP</a>{% else %}—{% endif %}</dd>
+
+              <dt class="col-sm-4">Type</dt>
+              <dd class="col-sm-8">
+                {%- if type_iri and type_iri.startswith('http') -%}
+                  <a class="ontology-iri-link" href="{{ type_iri }}" target="_blank">{{ type_iri }}</a>
+                {%- else -%}
+                  {{ type_iri or '—' }}
+                {%- endif -%}
+              </dd>
+
+              <dt class="col-sm-4">Citation</dt>
+              <dd class="col-sm-8">{{ get('citation_content') or get('citation') }}</dd>
+
+              <dt class="col-sm-4">Last updated</dt>
+              <dd class="col-sm-8">{{ format_date(get('timestamp', '')) }}</dd>
+            </dl>
+
+            <h5 class="mt-3">Safety Assessment Workflow</h5>
+            {% set stage = get('vhp4safety_workflow_stage_content', '') or get('vhp4safety_workflow_stage', '—') %}
+            {% set substage = get('workflow_substage_content', '') %}
+            <p>
+              <span class="badge bg-vhppurple me-2">{{ stage or '—' }}</span>
+              {% if substage %}<small class="text-muted">{{ substage }}</small>{% endif %}
+            </p>
+
+            <h5 class="mt-3">Regulatory question</h5>
+            {% set reg_text = get('relevant_vhp4safety_regulatory_question(s)_content', '') or get('regulatory_question', '—') %}
+            <p>{{ reg_text }}</p>
+
+          </div>
+          <div class="col-md-4">
+            {% if method_details.screenshot or method_json.get('screenshot') %}
+              <img src="{{ (method_json.get('screenshot') or method_details.screenshot) | default('') }}" class="img-fluid rounded" alt="Method screenshot">
+            {% endif %}
+
+            <div class="mt-3">
+              <!-- Run / Instance button -->
+              {% if method_json.get('instance') and method_json.instance.get('url') %}
+                <a href="{{ method_json.instance.url }}" class="btn btn-vhpblue w-100 mb-2" target="_blank" rel="noopener">Run the method</a>
+              {% elif method_details.get('instance') and method_details.instance.get('url') %}
+                <a href="{{ method_details.instance.url }}" class="btn btn-vhpblue w-100 mb-2" target="_blank" rel="noopener">Run the method</a>
+              {% elif method_json.get('catalog_webpage_url') or method_details.get('catalog_webpage_url') %}
+                <a href="{{ method_json.get('catalog_webpage_url') or method_details.get('catalog_webpage_url') }}" class="btn btn-outline-vhpblue w-100 mb-2" target="_blank" rel="noopener">Method webpage</a>
+              {% else %}
+                <button class="btn btn-outline-secondary w-100 mb-2" disabled>No instance available</button>
+              {% endif %}
+
+              <!-- Metadata / MD file -->
+              {% set md = method_json.get('meta_data') or method_details.get('meta_data') or '' %}
+              {% if md %}
+                <button type="button" class="btn btn-outline-vhpblue w-100" onclick='showMetadata({{ (md or "") | tojson }}, {{ (title or "") | tojson }})'>View metadata</button>
+              {% endif %}
+            </div>
+
+            <div class="mt-4 small text-muted">
+              <strong>Provider</strong><br>
+              {{ get('data_producer_content') }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="simple-tabpanel-1" role="tabpanel" aria-labelledby="simple-tab-1">
+        {% if (method_json.get('ELIXIR') and method_json.ELIXIR.get('tess')) or (method_details.get('ELIXIR') and method_details.ELIXIR.get('tess')) %}
+        <h2 class="pt-2">Taxila.nl</h2>
+        <div id="taxila-widget-materials-table" class="tess-widget tess-widget-faceted-table"></div>
+        <h2 class="pt-2">ELIXIR TeSS</h2>
+        <div id="tess-widget-materials-table" class="tess-widget tess-widget-faceted-table"></div>
+        {% else %}
+        At this moment no documentation is (known to be) registered in <a href="https://taxila.nl/">Taxila.nl</a> or
+        <a href="https://tess.elixir-europe.org/">ELIXIR TeSS</a>.
+        {% endif %}
+      </div>
+
+      <div class="tab-pane" id="simple-tabpanel-2" role="tabpanel" aria-labelledby="simple-tab-2">
+        <ul style="list-style-type:disc">
+        {% if method_json.get('intro') %}
+          <li>Intro: <a href="{{ method_json.intro.url }}">{{ method_json.intro.title }}</a></li>
+        {% elif method_details.get('intro') %}
+          <li>Intro: <a href="{{ method_details.intro.url }}">{{ method_details.intro.title }}</a></li>
+        {% endif %}
+        {% if method_json.get('demo') %}
+          <li>Demo: <a href="{{ method_json.demo.url }}">{{ method_json.demo.title }}</a></li>
+        {% elif method_details.get('demo') %}
+          <li>Demo: <a href="{{ method_details.demo.url }}">{{ method_details.demo.title }}</a></li>
+        {% endif %}
+        {% if method_json.get('workflow') %}
+          <li>Workflow: <a href="{{ method_json.workflow.url }}">{{ method_json.workflow.title }}</a></li>
+        {% elif method_details.get('workflow') %}
+          <li>Workflow: <a href="{{ method_details.workflow.url }}">{{ method_details.workflow.title }}</a></li>
+        {% endif %}
+      </ul>
+      </div>
+
+      <div class="tab-pane" id="simple-tabpanel-3" role="tabpanel" aria-labelledby="simple-tab-3">
+        <h2 class="pt-2">Contact</h2>
+        <ul>
+          {% set provider_name = (method_json.get('provider', {}).get('name') or method_details.get('provider', {}).get('name') or '') %}
+          {% set contact = (method_json.get('provider', {}).get('contact') or method_details.get('provider', {}).get('contact') or {}) %}
+          {% if contact %}
+            {% if contact.get('name') %}
+              <li>{{ contact.get('name') }}{% if provider_name %} ({{ provider_name }}){% endif %}</li>
+            {% elif provider_name %}
+              <li>{{ provider_name }}</li>
+            {% endif %}
+          {% else %}
+            <li>No contact information available.</li>
+          {% endif %}
+        </ul>    
+      </div>
+
+      <div class="tab-pane" id="simple-tabpanel-4" role="tabpanel" aria-labelledby="simple-tab-4">
+        {% if method_json.get('instance') or method_details.get('instance') %}
+        <ul>
+          {% set inst = method_json.get('instance') or method_details.get('instance') %}
+          {% if inst.get('version') %}<li>Version: {{ inst.get('version') }}</li>{% endif %}
+          {% if inst.get('license') %}<li>License: {{ inst.get('license') }}</li>{% endif %}
+          {% if inst.get('source') %}<li>Source code: <a href="{{ inst.get('source') }}">{{ inst.get('source') }}</a></li>{% endif %}
+          {% if inst.get('docker') %}<li>Docker: <a href="{{ inst.get('docker') }}">{{ inst.get('docker') }}</a></li>{% endif %}
+        </ul>
+        {% endif %}
+        {% if (method_json.get('ELIXIR') and method_json.ELIXIR.get('biomethods')) or (method_details.get('ELIXIR') and method_details.ELIXIR.get('biomethods')) %}
+        <h2 class="pt-2">Technical documentation</h2>
+        <ul>
+          <li><a href="https://bio.methods/{{ (method_json.get('ELIXIR') or method_details.get('ELIXIR')).get('biomethods') }}">bio.methods</a></li>
+        </ul>
+        {% endif %}
+      </div>
+      <div class="tab-pane" id="simple-tabpanel-5" role="tabpanel" aria-labelledby="simple-tab-5">
+        {% set doi = get('citation_content', '') %}
+        {% if doi %}
+        {% set doi_url = doi if doi.startswith('http') else 'https://doi.org/' ~ doi %}
+        <h2 class="pt-2">References</h2>
+        <div id="bibliography">
+          <p><a href="{{ doi_url }}" target="_blank" class="text-primary">{{ doi }}</a></p>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/citation-js@0.9.0" integrity="sha384-wop5NlY7ORa1+WSchJbyKhM2UGNF+nuCoelh0sH4SAaS31ho6ehlpFyULYk/Q9dC" crossorigin="anonymous"></script>
+        <script>
+        (function() {
+          var Cite = require('citation-js');
+          var doiInput = "{{ doi }}".split('doi.org/').pop();
+          Cite.async(doiInput).then(function(cite) {
+            document.getElementById('bibliography').innerHTML = "<ul>" + cite.format('bibliography', {
+              format: 'html', template: 'apa',
+              prepend: function() { return '<li>'; },
+              append: function(e) { return ' <a href="https://doi.org/' + e.DOI + '">CrossRef</a> <a href="https://scholia.toolforge.org/doi/' + e.DOI + '">Scholia</a></li>'; }
+            }) + "</ul>";
+          }).catch(function() {});
+        })();
+        </script>
+        {% else %}
+        <p>No publications available.</p>
+        {% endif %}
+      </div>
+
+      <!-- Ontology Tab -->
+      {% set ontology_iri = (method_json.get('ontology_term_content') or method_details.get('ontology_term_content') or '') %}
+      {% if ontology_iri and ontology_iri.startswith('http') %}
+      <div class="tab-pane" id="simple-tabpanel-6" role="tabpanel" aria-labelledby="simple-tab-6">
+        <h2 class="pt-2">Ontology Term</h2>
+        <div id="ontology-widget-container"></div>
+        <p>Generated with the <a href="https://terminology.services.base4nfdi.de/" target="_blank" rel="noopener">NFDI
+            Terminology
+            Service</a> widget</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Ontology label resolution for IRI links -->
+<script src="/static/js/get_ontology_label.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    processOntologyLinks('.ontology-iri-link');
+  });
+</script>
+
+<script>
+function initTeSSWidgets() {
+    if (typeof TessWidget === 'undefined' || !TessWidget.Materials) {
+        console.warn('TeSS widget library not available, skipping initialization.');
+        return;
+    }
+
+    const taxilaContainer = document.getElementById('taxila-widget-materials-table');
+    if (!taxilaContainer) {
+        console.warn('No Taxila widget container found.');
+        return;
+    }
+
+    TessWidget.Materials(taxilaContainer, 'FacetedTable', {
+        opts: {
+            columns: [
+                { name: 'Name', field: 'title' },
+                { name: 'Description', field: 'description' }
+            ],
+            allowedFacets: ['scientific-topics', 'target-audience'],
+            facetOptionLimit: 5
+        },
+        params: {
+            pageSize: 5,
+            q: '{{ (method_json.get("ELIXIR", {}) or method_details.get("ELIXIR", {})).get("tess", "") }}'
+        },
+        baseUrl: 'https://taxila.nl'
+    });
+
+    const tessContainer = document.getElementById('tess-widget-materials-table');
+    if (!tessContainer) {
+        console.warn('No TeSS widget container found.');
+        return;
+    }
+
+    TessWidget.Materials(tessContainer, 'FacetedTable', {
+        opts: {
+            columns: [
+                { name: 'Name', field: 'title' },
+                { name: 'Description', field: 'description' }
+            ],
+            allowedFacets: ['scientific-topics', 'target-audience'],
+            facetOptionLimit: 5
+        },
+        params: {
+            pageSize: 5,
+            q: '{{ (method_json.get("ELIXIR", {}) or method_details.get("ELIXIR", {})).get("tess", "") }}'
+        }
+    });
+}
+</script>
+
+
+<script async defer src="https://elixirtess.github.io/TeSS_widgets/js/tess-widget-standalone.js"
+        onload="if (typeof initTeSSWidgets === 'function') initTeSSWidgets();">
+</script>
+
+<!-- Terminology Service Suite -->
+{% set ontology_iri_script = (method_json.get('ontology_term_content') or method_details.get('ontology_term_content') or '') %}
+{% if ontology_iri_script and ontology_iri_script.startswith('http') %}
+<script src="https://cdn.jsdelivr.net/gh/ts4nfdi/terminology-service-suite@3298f2d4c938b8a108ef8dd32b8baa6dfaeba33c/js-modules/latest/terminology-service-suite.min.js" integrity="sha384-y/NCSfOa5MId2pwU2uZSe53yVaT15IFlFEtMv8VA1SuJSSImNZGfL0PUy4Dblj3o" crossorigin="anonymous"></script>
+<script src="/static/js/ontology_widget.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  initOntologyWidget("{{ ontology_iri_script }}", "#ontology-widget-container");
+});
+</script>
+{% endif %}
+
+{% include "records/_data_links.html" %}
+</section>
+{% endblock %}

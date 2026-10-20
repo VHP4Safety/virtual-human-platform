@@ -1,13 +1,19 @@
 """The content of the record pages, the listings and the home page is made here from the stored records. A record
 is also given in Markdown (RFC 7763, GitHub variant) for readers of plain text."""
 
+from functools import lru_cache
+from operator import itemgetter
+
 from markdownify import markdownify
+from markupsafe import Markup
 from rdflib import RDF, RDFS, BNode, Graph, Literal, URIRef
 from rdflib.namespace import SDO, VOID
+from werkzeug.datastructures import MultiDict
 
 from database import records
 from database.tables import Record
-from linkeddata import documents
+from linkeddata import documents, void
+from linkeddata.parsers import QUESTIONS
 from linkeddata.profile import fields, jsonld_name, profile_graph, settings, shape_of
 
 # The name is the heading of a node, and the position sets its order. They are not listed with the fields.
@@ -283,9 +289,9 @@ def kind_names() -> dict[str, str]:
     return {path: named.get(of_class) or path.capitalize() for path, of_class in settings()["kinds"].items()}
 
 
-def listing(path: str, arguments) -> dict:
-    """One page of the records of a kind is made here. The records are found by name and filtered by the browsed
-    fields. The values of these fields are given with their counts."""
+def listing(path: str, arguments, size: int = LISTED) -> dict:
+    """One page of the records of a kind is made here, of *size* records. The records are found by name and filtered
+    by the browsed fields. The values of these fields are given with their counts."""
     of_class = settings()["kinds"][path]
     given = {"search": arguments.get("search", "").strip()}
     browsed = []
@@ -294,7 +300,7 @@ def listing(path: str, arguments) -> dict:
             browsed.append(field)
             given[field["name"]] = arguments.getlist(field["name"])
     number = max(arguments.get("page", 1, type=int), 1)
-    total, iris = records.page(of_class, records.filters(of_class, given), given["search"], (number - 1) * LISTED, LISTED)
+    total, iris = records.page(of_class, records.filters(of_class, given), given["search"], (number - 1) * size, size)
     found = documents.public(records.graph(iris))
     listed = []
     for iri in iris:
@@ -307,7 +313,7 @@ def listing(path: str, arguments) -> dict:
             filters.append({"name": field["name"], "label": field["label"], "values": values})
     query = [(name, value) for name in arguments for value in arguments.getlist(name) if name != "page"]
     return {**kind(of_class), "path": path, "search": given["search"], "chosen": given, "filters": filters, "listed": listed,
-            "total": total, "page": number, "pages": (total + LISTED - 1) // LISTED, "query": query}
+            "total": total, "page": number, "pages": (total + size - 1) // size, "query": query}
 
 
 def partners(found: Graph, node) -> list[dict]:
@@ -348,3 +354,362 @@ def catalogue_of(record: Record) -> dict:
             "elsewhere": sorted(str(address) for address in held.objects(publisher, SDO.sameAs)) if publisher is not None else [],
             "email": str(held.value(publisher, SDO.email) or "") if publisher is not None else "",
             "partners": partners(held, publisher) if publisher is not None else []}
+
+
+# The pages and the listings of the tools, methods, data and models (templates/tools, templates/methods,
+# templates/data) read the records in the form of the cloud catalogue that the platform read before.
+SPDX = "https://spdx.org/licenses/"
+RSD = "https://research-software-directory.org/software/"
+
+
+def plain(value) -> str:
+    """A text without HTML tags."""
+    if isinstance(value, Literal) and value.datatype == RDF.HTML:
+        return Markup(str(value)).striptags()
+    return str(value) if value is not None else ""
+
+
+def local(address: str) -> str:
+    """A platform address is given as a path on this server (/tools/aopwiki), so that its link works on every copy of
+    the platform. Other addresses are kept."""
+    path = records.path(address)
+    return address if path == address else "/" + path
+
+
+def addresses(found: Graph, node, path) -> list[str]:
+    """The values of a field, as texts, sorted."""
+    return sorted(str(value) for value in found.objects(node, path))
+
+
+def named(found: Graph, node, path) -> list[str]:
+    """The texts of a field and the names of the records it links to, in order. Links without a name are left out."""
+    listed = []
+    for value in in_order(found, found.objects(node, path)):
+        if isinstance(value, Literal):
+            listed.append(plain(value))
+        elif found.value(value, SDO.name) is not None:
+            listed.append(str(found.value(value, SDO.name)))
+    return listed
+
+
+def after(listed: list[str], prefix: str) -> str:
+    """The end of the first address that starts with the prefix, such as the identifier of a bio.tools address."""
+    for address in listed:
+        if address.startswith(prefix):
+            return address.removeprefix(prefix)
+    return ""
+
+
+def parts_of(found: Graph, node, path) -> list[dict]:
+    """The web pages or the videos of a field, with their titles and addresses, in order."""
+    listed = []
+    for part in in_order(found, found.objects(node, path)):
+        listed.append({"title": str(found.value(part, SDO.name) or ""), "url": local(str(found.value(part, SDO.url) or found.value(part, SDO.embedUrl) or ""))})
+    return listed
+
+
+def dois(found: Graph, node) -> list[str]:
+    """The DOIs of the publications that a record cites, such as 10.1089/aivt.2021.0010. A citation given as a
+    text is kept as it is written."""
+    cited = list(found.objects(node, SDO.citation))
+    held = documents.public(records.graph([str(value) for value in cited if isinstance(value, URIRef)]))
+    listed = []
+    for value in cited:
+        if isinstance(value, Literal):
+            listed.append(str(value))
+        for address in [*held.objects(value, SDO.identifier), *held.objects(value, SDO.sameAs)]:
+            doi = str(address).partition("doi.org/")[2]
+            if doi and doi not in listed:
+                listed.append(doi)
+    return listed
+
+
+def platform_publisher() -> URIRef:
+    """The organisation that publishes the platform. A tool that it offers is hosted by VHP."""
+    return URIRef((void.platform()["publisher"] or {}).get("@id", ""))
+
+
+def steps() -> dict[str, dict]:
+    """The process flow steps of the glossary by address, each with a label, an anchor and a description."""
+    return {step["iri"]: step for step in kinds(settings()["terms"]["processFlowStep"])}
+
+
+def tool_details(record: Record) -> dict:
+    """A tool is given in the form of a service of the cloud catalogue (service/<id>.json). A tool offered by the
+    publisher of the platform is hosted by VHP, and it runs at its website unless another address is given."""
+    found = documents.public(records.with_names(records.graph([record.iri])))
+    node = URIRef(record.iri)
+    by = platform_publisher()
+    hosted = by in found.objects(node, SDO.provider)
+    url = local(str(found.value(node, SDO.url) or ""))
+    licences = addresses(found, node, SDO.license)
+    instance = {"url": local(str(found.value(node, SDO.installUrl) or "")) or (url if hosted else ""), "vhp-platform": "Development" if hosted else "",
+                "version": str(found.value(node, SDO.softwareVersion) or ""), "license": after(licences, SPDX) or ", ".join(named(found, node, SDO.license)),
+                "source": [local(address) for address in addresses(found, node, SDO.isBasedOn)],
+                "docker": [local(address) for address in addresses(found, node, SDO.downloadUrl)]}
+    elsewhere = addresses(found, node, SDO.sameAs)
+    wikipedia = [address for address in elsewhere if "wikipedia.org/" in address]
+    codes = {}
+    for flag, path in QUESTIONS.items():
+        codes[records.address(path)] = flag.removeprefix("reg_q_")
+    asked = {}
+    for question in addresses(found, node, URIRef(settings()["terms"]["regulatoryQuestion"])):
+        if question in codes:
+            asked[codes[question]] = "true"
+    # The organisations other than the publisher are named, else the publisher.
+    others = [str(found.value(value, SDO.name) or value) for value in found.objects(node, SDO.provider) if value != by]
+    return {"id": record.iri.rsplit("/", 1)[-1], "service": str(found.value(node, SDO.name) or ""), "description": plain(found.value(node, SDO.description)),
+            "url": url, "screenshot": local(str(found.value(node, SDO.image) or "")),
+            "developed-by-VHP": "true" if by in found.objects(node, SDO.creator) else "",
+            "instance": {key: value for key, value in instance.items() if value},
+            "stage": addresses(found, node, URIRef(settings()["terms"]["processFlowStep"])), "regulatory-question": asked,
+            "Other": {"wikipedia": wikipedia[0] if wikipedia else "", "rsd": after(elsewhere, RSD)},
+            "ELIXIR": {"tess": str(found.value(node, SDO.keywords) or ""), "biotools": after(elsewhere, "https://bio.tools/")},
+            "doi": (dois(found, node) or [""])[0], "intro": parts_of(found, node, SDO.softwareHelp), "workflow": parts_of(found, node, SDO.subjectOf),
+            "peertube": parts_of(found, node, SDO.video),
+            "provider": {"name": ", ".join(sorted(others) or named(found, node, SDO.provider)),
+                         "contact": {"name": ", ".join(named(found, node, SDO.maintainer))}}}
+
+
+def method_json(record: Record) -> dict:
+    """A method is given in the form of a method of the cloud catalogue (methods/<id>.json). A kind of assay is
+    given as its type and as its ontology term. Of several kinds, the last by address is given."""
+    found = documents.public(records.with_names(records.graph([record.iri])))
+    node = URIRef(record.iri)
+    known = steps()
+    labels = []
+    for stage in addresses(found, node, URIRef(settings()["terms"]["processFlowStep"])):
+        labels.append(known[stage]["label"] if stage in known else stage)
+    types = addresses(found, node, SDO.additionalType)
+    return {"method": str(found.value(node, SDO.name) or ""), "method_description_content": plain(found.value(node, SDO.description)),
+            "vendor_content": ", ".join(named(found, node, SDO.provider)), "catalog_number_content": str(found.value(node, SDO.identifier) or ""),
+            "catalog_webpage_url": local(str(found.value(node, SDO.url) or "")), "sop": local((addresses(found, node, SDO.subjectOf) or [""])[0]),
+            "type_content": (types or [""])[-1], "ontology_term_content": (types or [""])[-1], "citation_content": (dois(found, node) or [""])[0],
+            "timestamp": record.updated_at or "", "vhp4safety_workflow_stage_content": ", ".join(labels),
+            "workflow_substage_content": ", ".join(named(found, node, SDO.about)), "data_producer_content": ", ".join(named(found, node, SDO.creator)),
+            "relevant_vhp4safety_regulatory_question(s)_content": ", ".join(named(found, node, URIRef(settings()["terms"]["regulatoryQuestion"])))}
+
+
+@lru_cache(maxsize=8)
+def catalogue_filters(path: str, latest: str) -> dict:
+    """The values of the filters of the tools, methods or data listing: the process flow steps and the case-study
+    questions that the records have, with their explanations, and the case study, the address and the open steps of
+    each question. They are kept until a record changes (*latest*, records.latest_change())."""
+    every = records.counted(settings()["kinds"][path], {"search": ""})
+    labels = {}
+    explained = {}
+    for step in steps().values():
+        labels[step["iri"]] = step["label"]
+        explained[step["label"]] = step["description"]
+    stages = sorted(labels.get(value["value"], value["value"]) for value in every["processFlowStep"] if value["count"])
+    if "Other" in stages:
+        stages.remove("Other")
+        stages.append("Other")
+    questions = {}
+    for value in every["regulatoryQuestion"]:
+        if value["count"]:
+            questions[value["name"]] = value["value"]
+    held = records.graph(list(questions.values()))
+    parts = records.graph([str(step) for step in held.objects(None, SDO.step)])
+    texts = {}
+    names = {}
+    opened = {}
+    for name, iri in questions.items():
+        texts[name] = str(held.value(URIRef(iri), SDO.text) or "")
+        names[iri] = name
+        opened[iri] = []
+        # The steps of a question that are not greyed out are opened by their process flow step.
+        for step in held.objects(URIRef(iri), SDO.step):
+            if str(parts.value(step, SDO.creativeWorkStatus) or "") != "disabled" and str(parts.value(step, SDO.additionalType)) in labels:
+                opened[iri].append(labels[str(parts.value(step, SDO.additionalType))].lower())
+    cases = {}
+    for question in records.kept(list(questions.values())):
+        if question.part_of:
+            cases[question.iri] = question.part_of
+    return {"stages": stages, "stage_explanations": explained, "reg_questions": questions, "reg_question_explanations": texts,
+            "reg_question_cases": {name: cases.get(iri, "").rsplit("/", 1)[-1] for name, iri in questions.items()},
+            "case_studies": sorted({case.rsplit("/", 1)[-1] for case in cases.values()}), "steps": {label: iri for iri, label in labels.items()},
+            "cases": cases, "reg_q_labels": names, "reg_q_urls": {iri: "/" + records.path(iri) for iri in names}, "reg_q_steps": opened}
+
+
+def filtered(path: str, arguments, size: int = LISTED) -> tuple[dict, dict]:
+    """One page of a listing and the values of its filters. The filters by label of the cloud catalogue listings
+    (stage, case_study and reg_q) are read as filters of the process flow steps, the case studies (when the records
+    name them) and the case-study questions. The filters of the other fields are kept."""
+    filters = catalogue_filters(path, records.latest_change())
+    chosen = arguments.copy()
+    chosen.setlist("processFlowStep", arguments.getlist("processFlowStep") + [filters["steps"].get(stage, stage) for stage in arguments.getlist("stage")])
+    asked = [filters["reg_questions"][name] for name in arguments.getlist("reg_q") if name in filters["reg_questions"]]
+    studies = sorted({case for case in filters["cases"].values() if case.rsplit("/", 1)[-1].title() in arguments.getlist("case_study")})
+    given = [field["name"] for field in fields(settings()["kinds"][path])]
+    if arguments.getlist("case_study") and "isPartOf" in given:
+        chosen.setlist("isPartOf", arguments.getlist("isPartOf") + (studies or [""]))
+    elif arguments.getlist("case_study"):
+        within = [iri for iri, case in filters["cases"].items() if case in studies]
+        asked = [iri for iri in asked if iri in within] if arguments.getlist("reg_q") else within
+    # When no question fits the filters, a value that no record has is asked for, so that no record is found.
+    if (arguments.getlist("reg_q") or (arguments.getlist("case_study") and "isPartOf" not in given)) and not asked:
+        asked = [""]
+    chosen.setlist("regulatoryQuestion", arguments.getlist("regulatoryQuestion") + asked)
+    return listing(path, chosen, size), filters
+
+
+def catalogue_listing(path: str, arguments) -> dict:
+    """One page of the tools or the methods, in the form of the cloud catalogue listing."""
+    found, filters = filtered(path, arguments)
+    shown = documents.public(records.graph([item["address"] for item in found["listed"]]))
+    by = platform_publisher()
+    listed = []
+    for item in found["listed"]:
+        node = URIRef(item["address"])
+        hosted = by in shown.objects(node, SDO.provider)
+        url = local(str(shown.value(node, SDO.url) or ""))
+        run = local(str(shown.value(node, SDO.installUrl) or "")) or (url if hosted else "")
+        listed.append({"id": item["address"].rsplit("/", 1)[-1], "service": item["name"], "description": plain(shown.value(node, SDO.description)),
+                       "png": local(str(shown.value(node, SDO.image) or "")), "inst_url": run or "no_url", "main_url": url or "no_url",
+                       "vhp_deved": by in shown.objects(node, SDO.creator), "vhp_hosted": hosted,
+                       "meta_data": "/" + records.path(item["address"]) + ".md"})
+    return {**filters, path: listed, "selected_stages": arguments.getlist("stage"), "selected_case_studies": arguments.getlist("case_study"),
+            "selected_questions": arguments.getlist("reg_q"), "page": found["page"], "page_size": LISTED, "total": found["total"],
+            "has_prev": found["page"] > 1, "has_next": found["page"] < found["pages"], "search_query": found["search"]}
+
+
+def dataset(found: Graph, node, known: dict) -> dict:
+    """A dataset is given in the form of a study of BioStudies or a record of Zenodo, as the data pages of the cloud
+    catalogue read it. The kind follows the source record. Its RO-Crate is the RO-Crate of the record. The process
+    flow steps are named by *known* (steps())."""
+    source = str(found.value(node, SDO.isBasedOn) or "")
+    type_of = "study" if "/biostudies/" in source else "dataset"
+    doi_url = ([address for address in addresses(found, node, SDO.identifier) + addresses(found, node, SDO.sameAs) if "doi.org/" in address] or [""])[0]
+    published = str(found.value(node, SDO.datePublished) or "")
+    metadata = {"case_study": [case.rsplit("/", 1)[-1] for case in addresses(found, node, SDO.isPartOf)],
+                "regulatory_question": addresses(found, node, URIRef(settings()["terms"]["regulatoryQuestion"])),
+                "flow_step": [known[stage]["label"] if stage in known else stage
+                              for stage in addresses(found, node, URIRef(settings()["terms"]["processFlowStep"]))],
+                "rocrate_url": "/" + records.path(str(node)) + "/ro-crate-metadata.json", "raw_data": {}, "resource_type": {"type": type_of},
+                "publication_date": published}
+    return {"id": str(node).rsplit("/", 1)[-1], "accession": str(node).rsplit("/", 1)[-1], "type": type_of, "title": str(found.value(node, SDO.name) or ""),
+            "release_date": published, "doi": doi_url.partition("doi.org/")[2], "doi_url": doi_url, "url": local(source), "metadata": metadata, "links": {},
+            "parsed_metadata": {}}
+
+
+def data_listing(arguments) -> dict:
+    """One page of the datasets, in the form of the data listing of the cloud catalogue: half a page of studies of
+    BioStudies and half a page of records of Zenodo, each the most recent first."""
+    every = arguments.copy()
+    every.pop("page", None)
+    # All the records found are read at once, as the studies and the Zenodo records are paged apart.
+    found, filters = filtered("data", every, records.page(settings()["kinds"]["data"], {}, "", 0, 1)[0] or 1)
+    shown = documents.public(records.graph([item["address"] for item in found["listed"]]))
+    known = steps()
+    listed = []
+    for item in found["listed"]:
+        listed.append(dataset(shown, URIRef(item["address"]), known))
+    listed.sort(key=itemgetter("release_date"), reverse=True)
+    number = max(arguments.get("page", 1, type=int), 1)
+    half = LISTED // 2
+    first = (number - 1) * half
+    studies = [one for one in listed if one["type"] == "study"]
+    datasets = [one for one in listed if one["type"] == "dataset"]
+    chosen = arguments.getlist("case_study") + arguments.getlist("reg_q") + arguments.getlist("stage")
+    return {**filters, "studies": studies[first:first + half], "datasets": datasets[first:first + half], "total": len(listed), "page": number,
+            "page_size": LISTED, "search_query": found["search"], "collection_name": (void.platform()["publisher"] or {}).get("name", ""), "errors": {},
+            "has_next": first + half < max(len(studies), len(datasets)), "has_prev": number > 1, "filter_case_study": arguments.getlist("case_study"),
+            "filter_regulatory_question": arguments.getlist("reg_q"), "filter_flow_step": arguments.getlist("stage"), "filters_applied": bool(chosen),
+            "hits_returned": len(listed), "pages_fetched": 1, "page_size_met": True, "process_flow_steps": known, "kind": "data"}
+
+
+def catalogue_details(record: Record) -> dict:
+    """A dataset or a model is given for its page in the form of the data pages of the cloud catalogue, with its
+    authors, their ORCID iDs and affiliations, its grants, and the DOIs of its publications. A model is of the kind
+    "model"."""
+    found = documents.public(records.with_names(records.graph([record.iri])))
+    node = URIRef(record.iri)
+    shown = dataset(found, node, steps())
+    if record.type != settings()["kinds"]["data"]:
+        shown["type"] = kind_of(record.type).lower()
+    people = documents.public(records.with_names(records.graph(addresses(found, node, SDO.creator))))
+    authors = []
+    for person in in_order(found, found.objects(node, SDO.creator)):
+        orcid = after(addresses(people, person, SDO.sameAs), "https://orcid.org/")
+        authors.append({"name": str(found.value(person, SDO.name) or person), "affiliation": ", ".join(named(people, person, SDO.affiliation)), "orcid": orcid})
+    grants = documents.public(records.with_names(records.graph(addresses(found, node, SDO.funding))))
+    funding = []
+    for grant in in_order(grants, found.objects(node, SDO.funding)):
+        funding.append({"funder": ", ".join(named(grants, grant, SDO.funder)) or str(grants.value(grant, SDO.name) or ""),
+                        "code": str(grants.value(grant, SDO.identifier) or ""), "url": local(str(grants.value(grant, SDO.url) or ""))})
+    description = found.value(node, SDO.description)
+    shown["norm_metadata"] = {"type": shown["type"], "id": shown["id"], "ReleaseDate": shown["release_date"],
+                              "version": str(found.value(node, SDO.version) or ""),
+                              "license": after(addresses(found, node, SDO.license), SPDX) or ", ".join(named(found, node, SDO.license)),
+                              "url": shown["url"], "doi": shown["doi"], "doi_url": shown["doi_url"], "title": shown["title"],
+                              "description": str(description) if description is not None else "", "publications": [{"doi": doi} for doi in dois(found, node)],
+                              "files": [], "authors": authors, "funding": funding}
+    return shown
+
+
+def uses(iris: list[str]) -> dict[str, dict]:
+    """The case studies, the questions and the process flow steps of the case-study steps that use the records at
+    these addresses, by address. A step uses a record that one of its tools (Tool, method or model) links to. The
+    process flow step is the step of the question that holds the step."""
+    studies = [record.iri for record in records.of_kind("casestudies") if record.part_of is None]
+    found = records.graph(studies)
+    asked = URIRef(settings()["terms"]["regulatoryQuestion"])
+    above = {}
+    for upper, lower in found.subject_objects(SDO.step):
+        above[lower] = upper
+    known = steps()
+    used = {}
+    for iri in iris:
+        used[iri] = {"case_study": set(), "regulatory_question": set(), "flow_step": set()}
+    for step, tool in found.subject_objects(SDO.tool):
+        item = str(found.value(tool, SDO.item) or "")
+        if item not in used:
+            continue
+        held = [step]
+        while held[-1] in above and found.value(None, asked, held[-1]) is None:
+            held.append(above[held[-1]])
+        for study in found.subjects(asked, held[-1]):
+            used[item]["case_study"].add(str(study).rsplit("/", 1)[-1])
+            used[item]["regulatory_question"].add(str(held[-1]))
+            stage = str(found.value(held[-2] if len(held) > 1 else held[-1], SDO.additionalType) or "")
+            if stage in known:
+                used[item]["flow_step"].add(known[stage]["label"])
+    return used
+
+
+def model_listing(arguments) -> dict:
+    """One page of the models, in the form of the data listing of the cloud catalogue, with the filters of the data
+    listing. A model is found by a filter when a case-study step that uses it fits the filter. Its button to Zenodo
+    leads to the Zenodo record that it is made from."""
+    filters = catalogue_filters("data", records.latest_change())
+    # All the models found by name are read at once, as they are filtered here.
+    found = listing("models", MultiDict({"search": arguments.get("search", "")}), records.page(settings()["kinds"]["models"], {}, "", 0, 1)[0] or 1)
+    used = uses([item["address"] for item in found["listed"]])
+    names = filters["reg_q_labels"]
+    shown = documents.public(records.graph([item["address"] for item in found["listed"]]))
+    known = steps()
+    listed = []
+    for item in found["listed"]:
+        use = used[item["address"]]
+        if arguments.getlist("case_study") and not {case.title() for case in use["case_study"]} & set(arguments.getlist("case_study")):
+            continue
+        if arguments.getlist("reg_q") and not {names.get(question, "") for question in use["regulatory_question"]} & set(arguments.getlist("reg_q")):
+            continue
+        if arguments.getlist("stage") and not use["flow_step"] & set(arguments.getlist("stage")):
+            continue
+        model = dataset(shown, URIRef(item["address"]), known)
+        source = str(shown.value(URIRef(item["address"]), SDO.isBasedOn) or "")
+        model["metadata"]["resource_type"] = {"type": kind_of(settings()["kinds"]["models"]).lower()}
+        model.update(type=kind_of(settings()["kinds"]["models"]).lower(), doi="", doi_url=local(source) if "zenodo.org/" in source else "",
+                     links={"archive": model["metadata"]["rocrate_url"]}, parsed_metadata={"is_rocrate": True})
+        listed.append(model)
+    listed.sort(key=itemgetter("release_date"), reverse=True)
+    number = max(arguments.get("page", 1, type=int), 1)
+    first = (number - 1) * LISTED
+    chosen = arguments.getlist("case_study") + arguments.getlist("reg_q") + arguments.getlist("stage")
+    return {**filters, "kind": "models", "studies": [], "datasets": listed[first:first + LISTED], "total": len(listed), "page": number, "page_size": LISTED,
+            "search_query": found["search"], "collection_name": (void.platform()["publisher"] or {}).get("name", ""), "errors": {},
+            "has_next": first + LISTED < len(listed), "has_prev": number > 1, "filter_case_study": arguments.getlist("case_study"),
+            "filter_regulatory_question": arguments.getlist("reg_q"), "filter_flow_step": arguments.getlist("stage"), "filters_applied": bool(chosen),
+            "hits_returned": len(listed), "pages_fetched": 1, "page_size_met": True, "process_flow_steps": known}

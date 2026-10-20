@@ -79,7 +79,7 @@ def test_pages(site):
     assert json.loads(site.get("/tools/t.jsonld").data)["processFlowStep"] == {"@id": STEP}
     assert b"schema:SoftwareApplication" in site.get("/tools/t", headers={"Accept": "text/turtle"}).data
     assert "Does T." in site.get("/tools").data.decode()
-    assert "<h1>Models</h1>" in site.get("/models").data.decode()
+    assert "<h1>Publications</h1>" in site.get("/publications").data.decode()
     assert site.get("/api/tools", query_string={"processFlowStep": STEP}).json["@graph"][0]["name"] == "T"
     assert {"value": STEP, "count": 1} in [{"value": item["value"], "count": item["count"]} for item in site.get("/api/tools/facets").json["processFlowStep"]]
     assert "tools" in site.get("/api/docs/openapi.json").json["paths"]["/api/{kind}"]["parameters"][0]["schema"]["enum"]
