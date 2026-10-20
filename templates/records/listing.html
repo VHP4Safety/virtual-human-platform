@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{# A kind's records (routes/record_pages.py: negotiate, linkeddata/pages.py: listing): found by name and
-   filtered by the kind's browsable fields, each value with the count of records it finds. #}
+{# The records of a kind (routes/record_pages.py: negotiate, linkeddata/pages.py: listing), found by name and
+   filtered by the filter fields of the kind, with the number of records for each value. #}
 
 {% macro page_link_of(number) -%}
 ?{{ (listing.query + [("page", number)])|urlencode }}

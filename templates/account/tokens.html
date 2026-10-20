@@ -2,7 +2,7 @@
 {% block content %}
 <div class="container-fluid px-lg-4 py-4">
   <h1 class="h3 text-vhppurple mb-1">Write tokens</h1>
-  <p class="text-secondary">For programs and the editor page to write records. The secret is shown once.</p>
+  <p class="text-secondary">Write tokens are used by programs and by the editor page to write records. The secret of a token is shown once.</p>
 
   {% if not editor %}
   <div class="alert alert-secondary">This ORCID iD is not on the list of editors.</div>
@@ -46,7 +46,7 @@
   -H "Content-Type: application/json" \
   -d '{"name": "My tool", "description": "What it does.",
        "url": {"@id": "https://example.org"}}'</code></pre>
-          <p class="mb-0"><code>POST /api/tools</code> makes the address from the name; <code>DELETE /api/tools/my-tool</code> removes the record; <code>POST /api/images</code> uploads an image; <code>{{ request.url_root }}tools/my-tool.jsonld</code> gives the saved record. The <a class="link-vhpblue" href="{{ url_for('admin.admin') }}">record editor</a> does the same with a form.</p>
+          <p class="mb-0">With <code>POST /api/tools</code>, the address is made from the name. With <code>DELETE /api/tools/my-tool</code>, the record is removed. With <code>POST /api/images</code>, an image is uploaded. The saved record is at <code>{{ request.url_root }}tools/my-tool.jsonld</code>. The same is done with a form in the <a class="link-vhpblue" href="{{ url_for('admin.admin') }}">record editor</a>.</p>
         </div>
       </div>
     </div>

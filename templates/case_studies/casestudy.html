@@ -22,10 +22,11 @@
 <script type="module">
   import { renderCaseStudy } from "{{ url_for('static', filename='js/case-study.js') }}";
 
-  // The page in view is the browser's address, so it can be shared and the back button returns to the last one.
+  // The address of the page in view is kept in the address bar, so that it can be shared, and the previous page is
+  // opened with the back button.
   const container = document.getElementById("case-study");
   const base = {{ config_base|tojson }};
-  // The case study is in the page as its JSON-LD; it is asked for only when the page has none.
+  // The JSON-LD of the case study is in the page. It is requested only if the page has none.
   const given = document.getElementById("case-document") || document.getElementById("record-document");
   let caseStudy = given ? JSON.parse(given.textContent) : null;
   if (!caseStudy) {
@@ -46,7 +47,7 @@
         },
       });
     };
-    // As on the platform, a page further in is reached from the case study page, sliding into place.
+    // As on the platform, a page further in is reached from the case study page, with a slide into place.
     show(container.dataset.at, true);
     window.addEventListener("popstate", function () {
       show(base + window.location.pathname.replace(/^\//, ""), false);

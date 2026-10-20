@@ -1,8 +1,9 @@
 {% extends "base.html" %}
-{# A page of the platform from its record (routes/record_pages.py: page): its sections as tabs with their items,
-   or as text when it has one section without a heading. A section shows the fields it names of the record it
-   presents, or, presenting a grant without them, lists what names it; a page that explains a term lists the
-   term's kinds. A kind's page (the training page) lists the kind's records as the items of its first section. #}
+{# A page of the platform, made from its record (routes/record_pages.py: page). The sections are tabs with their
+   items, or text if the page has one section without a heading. In a section with a presented record, the named
+   fields of that record are shown; for a grant without named fields, the records that name the grant are listed.
+   On a page that explains a term, the kinds of the term are listed. On the page of a kind (the training page), the
+   records of the kind are the items of the first section. #}
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
@@ -140,7 +141,7 @@
 {% endblock %}
 
 {% block scripts %}
-{# The accordion item that the address's fragment names (#definition-toxicokinetics) is opened. #}
+{# The accordion item named by the fragment of the address (#definition-toxicokinetics) is opened. #}
 <script>
   (function () {
     function openFromHash() {
