@@ -24,6 +24,7 @@ rules:
   Publication:
     - {predicate: a, value: "https://schema.org/ScholarlyArticle"}
     - {predicate: "https://schema.org/sameAs", object: doi}
+    - {predicate: "https://schema.org/identifier", object: doi}
     - {predicate: "https://schema.org/name", object: title}
     - {predicate: "https://schema.org/datePublished", object: year}
     - {predicate: "https://schema.org/funding", object: grants}

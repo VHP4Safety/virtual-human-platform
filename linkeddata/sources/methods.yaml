@@ -32,3 +32,4 @@ rules:
   Publication:
     - {predicate: a, value: "https://schema.org/ScholarlyArticle"}
     - {predicate: "https://schema.org/sameAs", object: doi}
+    - {predicate: "https://schema.org/identifier", object: doi}

@@ -40,4 +40,6 @@ form:Dataset a sh:NodeShape ;
         sh:description "The BioStudies or Zenodo record this one is made from, every night." ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 13 ; sh:name "DOI and other addresses" ; sh:nodeKind sh:IRI ] ;
     sh:property [ sh:path schema:keywords ; sh:order 14 ; sh:name "Keywords" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
-        sh:message "Choose a vocabulary term, or register it; text is kept until then." ] .
+        sh:message "Choose a vocabulary term, or register it; text is kept until then." ] ;
+    sh:property [ sh:path schema:identifier ; sh:order 15 ; sh:name "DOI" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
+        sh:description "The DOI, as a web address." ] .
