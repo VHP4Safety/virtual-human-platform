@@ -2,6 +2,7 @@
 record are read from the profile."""
 
 import hashlib
+import os
 from functools import cache
 from operator import itemgetter
 from pathlib import Path
@@ -127,8 +128,12 @@ def profile_text() -> str:
 
 @cache
 def profile_graph() -> Graph:
-    """The application profile as a graph."""
-    return Graph().parse(data=profile_text(), format="turtle")
+    """The application profile as a graph. The base address of a deployment, such as a test site, is set in
+    PLATFORM_BASE. It is then the address space of the profile (void:uriSpace), under which records are made."""
+    graph = Graph().parse(data=profile_text(), format="turtle")
+    if os.environ.get("PLATFORM_BASE"):
+        graph.set((graph.value(None, RDF.type, OWL.Ontology), VOID.uriSpace, Literal(os.environ["PLATFORM_BASE"].rstrip("/") + "/")))
+    return graph
 
 
 @cache

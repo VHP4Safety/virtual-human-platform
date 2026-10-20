@@ -10,7 +10,6 @@ import re
 from linkeddata.parsers import QUESTIONS, licence, link, present, publication, slug, web_link
 
 STUDIES = "https://www.ebi.ac.uk/biostudies/studies/"
-PLATFORM = "https://platform.vhp4safety.nl/"
 DATE = "http://www.w3.org/2001/XMLSchema#date"
 # Ontologies whose terms are not at purl.obolibrary.org.
 ONTOLOGIES = {"BAO": "http://www.bioassayontology.org/bao#"}
@@ -97,8 +96,8 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             elif name == "Bioassay":
                 found = value_of(attribute)
                 # An assay that links to a method's page is that method.
-                if isinstance(found, dict) and found["@id"].startswith(PLATFORM + "methods/"):
-                    row.setdefault("measurementMethod", []).append(link(found["@id"].removeprefix(PLATFORM)))
+                if isinstance(found, dict) and found["@id"].startswith("methods/"):
+                    row.setdefault("measurementMethod", []).append(found)
                 else:
                     row.setdefault("measurementTechnique", []).append(found)
         organisations = {}

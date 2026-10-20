@@ -28,7 +28,7 @@ from routes.discovery import blueprint as discovery_blueprint
 from routes.editor import blueprint as admin_blueprint
 from routes.images import blueprint as images_blueprint
 from routes.record_pages import blueprint as pages_blueprint
-from routes.record_pages import listing_page, page_link, record_page
+from routes.record_pages import listing_page, page_link, record_page, ro_crate
 
 ################################################################################
 
@@ -96,10 +96,15 @@ def add_security_headers(response):
     return response
 
 
+def local_link(tag: str, attribute: str, value: str) -> str:
+    """A link or an image of a text on the platform is given as a path on this server."""
+    return page_link(value) if attribute in ("href", "src") else value
+
+
 @app.template_filter("sanitize_html")
 def sanitize_html(value) -> Markup:
     """Keep the formatting tags of upstream HTML; scripts and event handlers are removed."""
-    return Markup(nh3.clean(str(value or "")))
+    return Markup(nh3.clean(str(value or ""), attribute_filter=local_link))
 
 
 # --- Case studies & regulatory questions -----------------------------------
@@ -175,7 +180,6 @@ def home():
 @app.route("/sitemap.xml")
 def sitemap():
     """The static pages, and each record's page with its last change."""
-    BASE = "https://platform.vhp4safety.nl"
 
     # Static, parameter-less GET pages, derived from the URL map so new pages
     # are picked up automatically. Machine endpoints are excluded. Routes with
@@ -194,7 +198,7 @@ def sitemap():
     listed = records.with_pages()
     with_pages = {address.rstrip("/") for address, _ in listed}
     # A static page that is also a record's page, such as the home page, is listed once, with its last change.
-    entries = [f"  <url>\n    <loc>{BASE}{p}</loc>\n  </url>" for p in paths if f"{BASE}{p}".rstrip("/") not in with_pages]
+    entries = [f"  <url>\n    <loc>{records.address(p)}</loc>\n  </url>" for p in paths if records.address(p).rstrip("/") not in with_pages]
     for address, changed in listed:
         entries.append(f"  <url>\n    <loc>{address}</loc>\n    <lastmod>{changed}</lastmod>\n  </url>")
     sitemapContent = (
@@ -215,7 +219,7 @@ def robots():
         "Allow: /\n"
         "Disallow: /admin/\n"
         "\n"
-        "Sitemap: https://platform.vhp4safety.nl/sitemap.xml\n"
+        f"Sitemap: {records.address('sitemap.xml')}\n"
     )
     return Response(robotsContent, mimetype="text/plain")
 
@@ -325,6 +329,9 @@ def casestudy(case: str = "", question: str = "", step: str = "",
     """A case study's page from its record: its content for readers without scripts, then the page drawn by
     static/js/case-study.js at the address asked for. Its question and step addresses are views of the same
     page, so they all have the case study's address as canonical."""
+    # The RO-Crate of a question or a step is at its address followed by /ro-crate-metadata.json, as for every record.
+    if request.path.endswith("/ro-crate-metadata.json"):
+        return ro_crate(request.path.strip("/").removesuffix("/ro-crate-metadata.json"))
     record = records.get(records.address(f"casestudies/{case}"))
     if record is None:
         abort(404)

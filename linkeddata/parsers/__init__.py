@@ -1,8 +1,9 @@
 """Helpers of the parsers. A parser is a temporary workaround for an upstream file that is not clean linked data.
 It reads the file and gives rows in the terms of the model, which are read with the JSON-LD context of the platform.
-An address is written as {"@id": ...}, under the base of the platform when it has no scheme. A text that is a label
-or code of a term of a model vocabulary is written as the address of the term (term). Placeholders are left out, and
-unreadable values are given as text, for the checks to report."""
+An address is written as {"@id": ...}, under the base of the platform when it has no scheme. An address of the
+platform in an upstream file (UPSTREAM) is also read under the base, in links and in HTML texts. A text that is a
+label or code of a term of a model vocabulary is written as the address of the term (term). Placeholders are left
+out, and unreadable values are given as text, for the checks to report."""
 
 import importlib
 import re
@@ -12,9 +13,12 @@ from pathlib import Path
 
 import yaml
 
-from linkeddata.profile import MODEL_DIR
+from linkeddata.profile import MODEL_DIR, settings
 
 SOURCES = Path(__file__).parent.parent / "sources"
+# The address of the platform in upstream files. Its addresses are read under the base, so that the records of a
+# test site are linked on that site.
+UPSTREAM = "https://platform.vhp4safety.nl/"
 # The glossary's site gives its terms at other addresses than its file.
 GLOSSARY_SITE = "https://glossary.vhp4safety.nl/#"
 GLOSSARY = "https://vhp4safety.github.io/glossary#"
@@ -37,8 +41,9 @@ MARKUP = re.compile(r"<\s*/?[a-zA-Z][^>]*>")
 
 
 def marked(value):
-    """A text, typed as HTML (rdf:HTML) when it has markup such as <p> or <b>."""
-    return {"@value": str(value), "@type": HTML} if MARKUP.search(str(value)) else str(value)
+    """A text, typed as HTML (rdf:HTML) when it has markup such as <p> or <b>. In HTML, the links to the platform
+    are written under the base."""
+    return {"@value": str(value).replace(UPSTREAM, settings()["base"]), "@type": HTML} if MARKUP.search(str(value)) else str(value)
 
 
 def present(value) -> bool:
@@ -47,7 +52,7 @@ def present(value) -> bool:
 
 
 def link(address: str) -> dict:
-    return {"@id": address}
+    return {"@id": address.removeprefix(UPSTREAM)}
 
 
 def web_link(value: str):

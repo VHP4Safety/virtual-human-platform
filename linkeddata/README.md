@@ -168,7 +168,7 @@ The form is changed by changing the profile. The profile's own terms:
   corrections of `launch.yaml`. The pinned vocabularies change only with a new pin, so they are read then too.
   Launch is refused on a database that holds imported records.
 - **`model/v1/`**: the model. `profile/` holds the one model, in modules: its header (`ontology.ttl`) gives the base address of
-  identifiers (`void:uriSpace`), the vocabularies it is built from (`owl:imports`: schema.org, the Bioschemas
+  identifiers (`void:uriSpace`, replaced by `PLATFORM_BASE` when it is set), the vocabularies it is built from (`owl:imports`: schema.org, the Bioschemas
   types, VoID and the VHP4Safety glossary, each pinned by `form:file` and `form:sha256` and downloaded into `vocabularies/`
   when it is missing; the folder is not committed)
   and the prefixes of its JSON-LD (`sh:declare`); its shapes give the classes by kind (`form:path`) and what
@@ -272,4 +272,5 @@ The settings are environment variables:
 | `ORCID_CLIENT_ID`, `ORCID_CLIENT_SECRET` | the platform's ORCID public API credentials; the redirect URI is `<platform>/orcid/callback/` |
 | `SECRET_KEY` | the key that signs login sessions |
 | `PLATFORM_STATE` | the database folder |
+| `PLATFORM_BASE` | the base address of a deployment at another address, such as `https://pseudo.platform.vhp4safety.nl/`; it replaces the base address of the profile (`void:uriSpace`). Records are stored with their full addresses, so it is set before `launch` and is not changed after it |
 | `PLATFORM_RECORDS` | the records repository, written by `export` and pushed by `push` (such as `VHP4Safety/platform-data`) |

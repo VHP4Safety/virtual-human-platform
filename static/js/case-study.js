@@ -245,6 +245,10 @@ function safeHtml(text, options) {
       }
     }
     if (element.tagName === "A") {
+      // A link to the platform is opened on this server.
+      if (element.hasAttribute("href")) {
+        element.setAttribute("href", local(element.getAttribute("href"), options));
+      }
       opens(element, options);
     }
     // An image on the platform is loaded from this server, as links are.

@@ -5,7 +5,7 @@ import json
 import re
 from html import unescape
 
-from linkeddata.parsers import link, marked, present, slug, term, web_link
+from linkeddata.parsers import UPSTREAM, link, marked, present, slug, term, web_link
 
 # The item kinds that are pages one level down.
 PAGES = {"process-flow-step", "workflow step", "workflow-step", "workflow substep"}
@@ -16,7 +16,7 @@ STRAIGHT = str.maketrans({"\u201c": '"', "\u201d": '"', "\u2018": "'", "\u2019":
 PARAMETERS = re.compile(r"<strong>\s*(Input|Output)\s*:?\s*</strong>(.*?)(?=</?li|</ul>|$)", re.S | re.I)
 PLACEHOLDER = re.compile(r"plac\w*holder", re.I)
 # A link to a dataset page of the platform, such as <a href="https://platform.vhp4safety.nl/data/20306850">.
-DATASET = re.compile(r'href="(?:https://platform\.vhp4safety\.nl)?/data/([^"/?#]+)"')
+DATASET = re.compile(rf'href="(?:{re.escape(UPSTREAM)}|/)data/([^"/?#]+)"')
 
 
 def straight(tag) -> str:
