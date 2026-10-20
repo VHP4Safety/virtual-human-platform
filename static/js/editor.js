@@ -244,6 +244,18 @@ import { outline, reveal as showPart, select, whenSelected } from "./record-inde
     }
   }
 
+  // The statements of the form, as N-Triples. A new part with an address of its own, such as a new step, is
+  // given a bare identifier by shacl-form (<8f2c-...>); it is written as a node without an address, which the
+  // platform gives an address from its name. Nodes without an address are labelled with letters and digits
+  // only, as jsonld reads them. A node stands first on a line (subject) or last before " ." (object); a text in
+  // quotes is not changed.
+  function statements() {
+    const label = function (given) { return "_:b" + given.replace(/[^A-Za-z0-9]/g, ""); };
+    return form.serialize("application/n-quads")
+      .replace(/^(?:<([^>:]*)>|_:(\S+)) /gm, function (all, bare, blank) { return label(bare || blank) + " "; })
+      .replace(/ (?:<([^>:]*)>|_:(\S+)) \.$/gm, function (all, bare, blank) { return " " + label(bare || blank) + " ."; });
+  }
+
   // The published case study gives the JSON-LD context and the names of the linked records.
   let published = null;
 
@@ -264,7 +276,7 @@ import { outline, reveal as showPart, select, whenSelected } from "./record-inde
     if (!published) {
       await showPublishedCaseStudy();
     }
-    const flat = await jsonld.compact(await jsonld.fromRDF(form.serialize("application/n-quads"), { format: "application/n-quads" }), published["@context"]);
+    const flat = await jsonld.compact(await jsonld.fromRDF(statements(), { format: "application/n-quads" }), published["@context"]);
     const nodes = flat["@graph"] || [flat];
     const root = nodes.find(function (node) { return node["@id"] === editor.graph; });
     if (!root) {
@@ -314,7 +326,7 @@ import { outline, reveal as showPart, select, whenSelected } from "./record-inde
     say(view === "page" ? "Making the page…" : "Checking…", true);
     let turtle = "";
     if (edited || !editor.version) {
-      turtle = form.serialize("text/turtle");
+      turtle = statements();
     } else {
       turtle = await (await fetch(graph, { headers: { Accept: "text/turtle" } })).text();
     }
@@ -471,6 +483,20 @@ import { outline, reveal as showPart, select, whenSelected } from "./record-inde
       discard.classList.toggle("d-none", !edited);
       schedulePreview();
     });
+    // While a field is typed in, its value is taken after a short pause, so the preview follows the typing.
+    let typingTimer = null;
+    form.addEventListener("input", function () {
+      window.clearTimeout(typingTimer);
+      typingTimer = window.setTimeout(function () {
+        let typing = form.shadowRoot.activeElement;
+        while (typing && typing.shadowRoot && typing.shadowRoot.activeElement && !typing.classList.contains("editor")) {
+          typing = typing.shadowRoot.activeElement;
+        }
+        if (typing) {
+          typing.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+        }
+      }, 600);
+    });
     discard.addEventListener("click", function () {
       if (window.confirm("Discard the changes? The record is opened again as it was saved.")) {
         busy(discard, "Discarding…", column);
@@ -516,7 +542,7 @@ import { outline, reveal as showPart, select, whenSelected } from "./record-inde
     save.addEventListener("click", async function () {
       problems.classList.add("d-none");
       const working = busy(save, "Checking…", column);
-      if (await saved(form.serialize("text/turtle"), working)) {
+      if (await saved(statements(), working)) {
         working.say("Saved; reloading…");
         reopen(editor.graph);
       } else {

@@ -12,6 +12,8 @@ const HAS_PART = "https://schema.org/hasPart";
 const TOOL = "https://schema.org/tool";
 const SUPPLY = "https://schema.org/supply";
 const QUESTIONS = "https://vhp4safety.github.io/glossary#VHP0000151";
+// The colours of the stages, as the case study pages give them.
+const COLOURS = ["--bs-vhppink-distinct", "--bs-vhpdarkpurple", "--bs-vhpdarkteal", "--bs-vhplightteal", "--bs-vhpblue"];
 // The stages of the process flow, as the case study pages name them.
 const STAGES = ["Regulatory Question", "Safety Assessment Workflow Step", "Case Study Step", "Case Study Substep", "Tools, Models and Data"];
 // The fields that give a step something to show; a step without them, and without such steps, is empty.
@@ -28,8 +30,8 @@ rokit-collapsible.focus-chrome::part(header) { display: none; }
 .focus-chrome > rokit-button.add-button, .focus-chrome > .add-button-wrapper { display: none; }
 .property-instance.focus-parts { display: none; }
 shacl-property:has(> .property-instance[data-path="${POSITION}"]) { display: none; }
-rokit-collapsible.shacl-group:not(.focus-chrome) { display: block; margin: 0 0 1rem; border: 1px solid #d9d4ec; border-left: 4px solid #29235c; border-radius: 6px; background: #fff; }
-rokit-collapsible.shacl-group:not(.focus-chrome)::part(header) { font-weight: 600; color: #29235c; background: #f3f1f9; border-radius: 0 6px 0 0; }
+rokit-collapsible.shacl-group:not(.focus-chrome) { display: block; margin: 0 0 1rem; border: 1px solid #d9d4ec; border-left: 4px solid var(--stage, #29235c); border-radius: 6px; background: #fff; }
+rokit-collapsible.shacl-group:not(.focus-chrome)::part(header) { font-weight: 600; color: var(--stage, #29235c); background: color-mix(in srgb, var(--stage, #29235c) 7%, white); border-radius: 0 6px 0 0; }
 `;
 
 function make(tag, className, text) {
@@ -147,7 +149,7 @@ function way(page) {
 function stage(node) {
   const level = way(node).length - 1;
   const steps = pagesBelow(node).some(function (step) { return !empty(step); });
-  if (!steps && (filled(node, TOOL) || filled(node, SUPPLY))) {
+  if (!steps && (filled(node, TOOL) || filled(node, SUPPLY) || node.dataset.intended === "5")) {
     return 5;
   }
   return Math.min(level + 1, 4);
@@ -172,6 +174,13 @@ export function select(target) {
     form.shadowRoot.append(style);
   }
   shown = target;
+  // The cards of the form take the colour of the stage of the page being edited, or of the page of a section.
+  let page = target;
+  while (isSection(page) && above(page)) {
+    page = above(page);
+  }
+  caseStudy = Boolean(own(root, QUESTIONS)) || Boolean(addButton(root, QUESTIONS));
+  document.documentElement.style.setProperty("--stage", caseStudy ? "var(" + COLOURS[stage(page) - 1] + ")" : "var(--bs-vhppurple)");
   for (const element of root.querySelectorAll("rokit-collapsible, shacl-property, .property-instance, shacl-node")) {
     const around = element !== target && element.contains(target);
     const inside = target.contains(element) && element !== target;
@@ -261,22 +270,11 @@ export function outline(givenForm, nav) {
     }
   }
 
-  // A list of parts of the page that can be dragged, with a button to add one at its end.
-  function list(title, page, path, parts, add) {
+  // A list of parts of the page that can be dragged and removed, with buttons to add one at its end. Each button
+  // says what it adds; for a case study, the number in the process flow of the page it adds.
+  function list(title, page, path, parts, adds) {
     const box = make("section", "record-index-list");
-    const head = make("div", "record-index-list-head");
-    head.append(make("span", "", title));
-    const native = addButton(page, path);
-    const button = make("button", "btn btn-sm btn-outline-vhppurple py-0", "+ " + add);
-    button.type = "button";
-    button.disabled = !native;
-    button.addEventListener("click", function () {
-      adding = { page: page, path: path };
-      native.click();
-      window.setTimeout(added, 400);
-    });
-    head.append(button);
-    box.append(head);
+    box.append(make("div", "record-index-list-head", title));
     const items = make("ol", "record-index-items");
     const section = path === HAS_PART;
     parts.forEach(function (part, at) {
@@ -289,15 +287,31 @@ export function outline(givenForm, nav) {
       link.title = section ? "Edit this section" : "Open this page";
       link.addEventListener("click", function () { select(part); draw(); });
       row.append(link);
-      if (!section && caseStudy && empty(part)) {
+      if (!section && caseStudy && empty(part) && part.dataset.intended !== "5") {
         row.classList.add("record-index-empty");
         link.title = name + " (empty: hidden on the website)";
       }
       dot(part, row);
-      const count = (partsOf(part).get(HAS_PART) || []).length + pagesBelow(part).length;
-      const into = make("span", "record-index-into", count ? count + " ›" : "›");
-      into.title = count ? count + " pages and sections inside" : "Nothing inside yet";
+      const inside = (partsOf(part).get(HAS_PART) || []).length + pagesBelow(part).length;
+      const into = make("span", "record-index-into", inside ? inside + " ›" : "›");
+      into.title = inside ? inside + " pages and sections inside" : "Nothing inside yet";
       row.append(into);
+      const remove = make("button", "record-index-remove bi bi-trash", "");
+      remove.type = "button";
+      remove.title = "Remove";
+      remove.addEventListener("click", function () {
+        const more = inside ? " The " + inside + " pages and sections inside it are removed too." : "";
+        if (!window.confirm("Remove “" + name + "”?" + more + " Nothing is removed from the platform until Save.")) {
+          return;
+        }
+        const field = part.parentElement.closest(".property-instance");
+        const button = field ? field.querySelector(":scope > .remove-button-wrapper rokit-button.remove-button") : null;
+        if (button) {
+          button.click();
+        }
+        window.setTimeout(function () { select(page); draw(); }, 300);
+      });
+      row.append(remove);
       items.append(row);
     });
     if (!parts.length) {
@@ -317,6 +331,25 @@ export function outline(givenForm, nav) {
       },
     });
     box.append(items);
+    const native = addButton(page, path);
+    const buttons = make("div", "record-index-adds");
+    for (const add of adds) {
+      const button = make("button", "btn btn-sm btn-outline-vhppurple");
+      button.type = "button";
+      button.append(document.createTextNode("+ "));
+      if (add.stage) {
+        button.append(make("span", "record-index-stage stage-" + add.stage, String(add.stage)));
+      }
+      button.append(document.createTextNode(add.text));
+      button.disabled = !native;
+      button.addEventListener("click", function () {
+        adding = { page: page, path: path, stage: add.stage };
+        native.click();
+        window.setTimeout(added, 400);
+      });
+      buttons.append(button);
+    }
+    box.append(buttons);
     return box;
   }
 
@@ -362,10 +395,19 @@ export function outline(givenForm, nav) {
         continue;
       }
       const question = field === QUESTIONS;
-      below.append(list(question ? "Questions" : "Pages below", page, field, parts.get(field) || [], question ? "Add question" : "Add step"));
+      let adds = [{ text: "Add " + ((editor.ordered[field] || [])[0] || "part").toLowerCase() }];
+      if (caseStudy && question) {
+        adds = [{ stage: 2, text: "Regulatory question" }];
+      } else if (caseStudy) {
+        // A page below is a page of steps (the next stage, at most 4), or a page of tools, models and data (5).
+        const next = Math.min(trail.length + 1, 4);
+        adds = [{ stage: next, text: STAGES[next - 1] + " page" }, { stage: 5, text: STAGES[4] + " page" }];
+      }
+      below.append(list(question ? "Questions" : "Pages below", page, field, parts.get(field) || [], adds));
     }
     if (parts.has(HAS_PART) || addButton(page, HAS_PART)) {
-      below.append(list(section ? "Subsections" : "Sections of text", page, HAS_PART, parts.get(HAS_PART) || [], section ? "Add subsection" : "Add section"));
+      below.append(list(section ? "Subsections" : "Sections of text", page, HAS_PART, parts.get(HAS_PART) || [],
+        [{ text: section ? "§ Subsection" : "§ Text section" }]));
     }
     view.append(below);
     nav.replaceChildren(view);
@@ -389,12 +431,24 @@ export function outline(givenForm, nav) {
     if (!found) {
       return false;
     }
-    adding = null;
     for (const node of form.shadowRoot.querySelectorAll("shacl-node")) {
       node.dataset.seen = "1";
     }
+    if (adding.stage === 5) {
+      found.dataset.intended = "5";
+    }
+    adding = null;
     place(found, list.length);
     select(found);
+    if (found.dataset.intended === "5") {
+      const card = Array.from(found.querySelectorAll("rokit-collapsible")).find(function (collapsible) {
+        return collapsible.closest("shacl-node") === found && /tool/i.test(collapsible.label || "");
+      });
+      if (card) {
+        card.open = true;
+        card.scrollIntoView({ block: "start", behavior: "smooth" });
+      }
+    }
     return true;
   }
 
