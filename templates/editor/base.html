@@ -11,7 +11,7 @@
     <link href="{{ url_for('static', filename='css/editor.css') }}" rel="stylesheet">
     <link rel="icon" href="/static/images/logos/icon/PNG/300ppi/VHP_Icon_Head_300.png" type="image/x-icon" />
   </head>
-  <body class="editor d-flex flex-column min-vh-100">
+  <body class="editor d-flex flex-column min-vh-100 {% block body_class %}{% endblock %}">
     <header class="bg-white border-bottom">
       <div class="container-fluid px-lg-4 d-flex flex-wrap align-items-center gap-3 py-2">
         <a href="{{ url_for('admin.admin') }}" class="d-flex align-items-center gap-2 text-decoration-none">
@@ -44,6 +44,7 @@
       {% block content %}{% endblock %}
     </main>
     <footer class="bg-white border-top py-3">
+      {% block footer_bar %}{% endblock %}
       <div class="container-fluid px-lg-4 d-flex flex-wrap gap-3 small text-secondary">
         <span>VHP4Safety platform · editor pages</span>
         <span class="flex-grow-1"></span>

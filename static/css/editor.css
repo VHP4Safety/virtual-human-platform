@@ -266,18 +266,42 @@ body.editor {
   }
 }
 
-/* Save and Discard in a bar at the foot of the form column, in view while the form is scrolled */
+/* While a record is edited, the page has the height of the window: the main part is scrolled, and the footer with
+   Save and Discard is under it. 100cqh is the height of the main part. */
+.editor-app {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.editor-app > main {
+  min-height: 0;
+  overflow-y: auto;
+  container-type: size;
+}
+
+.editor-app > footer {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+@media (min-width: 992px) {
+  .editor-app .editor-side {
+    max-height: calc(100cqh - 2rem);
+  }
+}
+
+@media (min-width: 1200px) {
+  .editor-app .editor-preview {
+    height: calc(100cqh - 2rem);
+  }
+}
+
 .editor-save {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 0;
-  background: var(--bs-body-bg, #fff);
-  border-top: 1px solid var(--bs-border-color);
+  padding-bottom: 0.5rem;
 }
 
 /* Locked and dimmed while the platform answers */
@@ -376,7 +400,12 @@ body.editor {
 }
 
 .record-dialog .editor-save {
+  position: sticky;
   bottom: 0;
+  z-index: 2;
+  padding: 0.75rem 0;
+  background: var(--bs-body-bg, #fff);
+  border-top: 1px solid var(--bs-border-color);
 }
 
 .record-dialog::backdrop {

@@ -1,4 +1,17 @@
 {% extends "editor/base.html" %}
+{% set editing = selected and (not record or not record.removed_at) %}
+{# While a record is edited, the page has the height of the window. The form is scrolled above the footer, and Save
+   is in the footer, so that it is never over the form. #}
+{% block body_class %}{% if editing %}editor-app{% endif %}{% endblock %}
+{% block footer_bar %}
+{% if editing %}
+<div class="container-fluid px-lg-4 editor-save">
+  <div class="alert alert-danger small py-2 mb-0 d-none" id="save-problems" role="alert"></div>
+  <button type="button" class="btn btn-success" id="save" disabled><i class="bi bi-check-lg"></i> Save</button>
+  <button type="button" class="btn btn-light border d-none" id="discard"><i class="bi bi-arrow-counterclockwise"></i> Discard changes</button>
+</div>
+{% endif %}
+{% endblock %}
 {% block content %}
 {% set names = kind_names() %}
 <div class="container-fluid px-lg-4 py-4">
@@ -70,11 +83,6 @@
                     {% if record %}data-values-url="{{ url_for('records.read', path=selected.removeprefix(base)) }}"{% elif values %}data-values="{{ values }}"{% endif %}
                     data-values-subject="{{ selected }}" data-generate-node-shape-reference="" data-collapse="open"></shacl-form>
       </div></div>
-      <div class="editor-save mt-3">
-        <div class="alert alert-danger small py-2 mb-2 d-none" id="save-problems" role="alert"></div>
-        <button type="button" class="btn btn-success" id="save" disabled><i class="bi bi-check-lg"></i> Save</button>
-        <button type="button" class="btn btn-light border d-none" id="discard"><i class="bi bi-arrow-counterclockwise"></i> Discard changes</button>
-      </div>
       {% endif %}
       {% else %}
       <p class="text-secondary">Choose or add a record.</p>
