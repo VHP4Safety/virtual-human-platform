@@ -24,6 +24,8 @@ form:Study a sh:NodeShape ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ;
         sh:description "The people and organisations who wrote the case study (Bioschemas' creator); kept in its data, not shown on its page." ] ;
     sh:property [ sh:path schema:name ; sh:group form:casestudy ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
+    sh:property [ sh:path schema:headline ; sh:group form:casestudy ; sh:order 8 ; sh:name "Heading of its page" ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:description "The heading of its page, when other than the name." ] ;
     sh:property [ sh:path schema:description ; sh:group form:casestudy ; sh:order 2 ; sh:name "Aim" ; sh:maxCount 1 ; sh:datatype xsd:string ;
         sh:description "In one sentence." ] ;
     sh:property [ sh:path schema:about ; sh:group form:casestudy ; sh:order 3 ; sh:name "Condition" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
@@ -51,7 +53,7 @@ form:HowTo a sh:NodeShape ;
     sh:property [ sh:path schema:text ; sh:group form:workflow ; sh:order 2 ; sh:name "Text" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ;
         sh:description "For a question: the question, shown on its button and on its page. For a step: text shown on its page, above its sections." ] ;
     sh:property [ sh:path schema:headline ; sh:group form:workflow ; sh:order 3 ; sh:name "Heading of its page" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "Only for a question: the heading of its page, in place of the title." ] ;
+        sh:description "The heading of its page, when other than the title." ] ;
     sh:property [ sh:path schema:description ; sh:group form:workflow ; sh:order 4 ; sh:name "Summary" ; sh:maxCount 1 ; sh:datatype xsd:string ;
         sh:description "Shown under the heading of its page." ] ;
     sh:property [ sh:path schema:additionalType ; sh:group form:workflow ; sh:order 5 ; sh:name "Process flow step" ; sh:maxCount 1 ;
@@ -63,6 +65,8 @@ form:HowTo a sh:NodeShape ;
         sh:description "Empty: the page is shown and opened by its button. disabled: its button is shown greyed out, and the page cannot be opened yet." ] ;
     sh:property [ sh:path schema:position ; sh:group form:workflow ; sh:order 7 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
         sh:description "Button order on the parent page; 1 is first." ] ;
+    sh:property [ sh:path schema:disambiguatingDescription ; sh:group form:workflow ; sh:order 8 ; sh:name "Description under its button" ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:description "Only for a step: shown under the title on its button." ] ;
     sh:property [ sh:path schema:hasPart ; sh:group form:parts ; sh:order 1 ; sh:name "Sections" ; sh:class schema:WebPageElement ; sh:node form:WebPageElement ; sh:nodeKind sh:BlankNode ;
         sh:description "Page sections, each with a heading, an HTML text and a position." ] ;
     sh:property [ sh:path schema:step ; sh:group form:parts ; sh:order 2 ; sh:name "Steps" ;
@@ -70,10 +74,10 @@ form:HowTo a sh:NodeShape ;
         sh:description "Each a page under this page's address; a question's are its process flow steps." ] ;
     sh:property [ sh:path schema:tool ; sh:group form:parts ; sh:order 3 ; sh:name "Tools and methods" ;
         sh:class schema:HowToTool ; sh:node form:HowToTool ; sh:nodeKind sh:BlankNode ;
-        sh:description "Each tool, method or model that is used on the page. The names and descriptions are read from the records." ] ;
+        sh:description "Each use of a tool, method or model on the page, with the label and the description on its button." ] ;
     sh:property [ sh:path schema:supply ; sh:group form:parts ; sh:order 4 ; sh:name "Data" ;
         sh:class schema:HowToSupply ; sh:node form:HowToSupply ; sh:nodeKind sh:BlankNode ;
-        sh:description "Each use of a dataset on the page; names and descriptions come from their records." ] ;
+        sh:description "Each use of a dataset on the page, with the label and the description on its button." ] ;
     sh:property [ sh:path bioschemas:input ; sh:group form:parts ; sh:order 5 ; sh:name "Input" ;
         sh:or ( [ sh:class schema:Dataset ; rdfs:label "Data" ] [ sh:node form:FormalParameter ; rdfs:label "Name only" ] ) ;
         sh:description "What a step takes, such as an estimated daily intake. A dataset is linked, or a name is given when no record of it exists yet." ] ;
@@ -86,13 +90,21 @@ form:HowToTool a sh:NodeShape ;
     rdfs:label "Tool, method or model used" ;
     sh:property [ sh:path schema:item ; sh:order 1 ; sh:name "Tool, method or model" ; sh:minCount 1 ; sh:maxCount 1 ; sh:severity sh:Warning ; sh:nodeKind sh:IRI ;
         sh:or ( [ sh:class schema:SoftwareApplication ; rdfs:label "Tool" ] [ sh:class bioschemas_draft:LabProtocol ; rdfs:label "Method" ] [ sh:class schema:SoftwareSourceCode ; rdfs:label "Model" ] ) ;
-        sh:message "Link a tool, method or model." ] .
+        sh:message "Link a tool, method or model." ] ;
+    sh:property [ sh:path schema:name ; sh:order 2 ; sh:name "Label on its button" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:description ; sh:order 3 ; sh:name "Description under the label" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:position ; sh:order 4 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+        sh:description "Button order among the tools and data of the page; 1 is first." ] .
 
 form:HowToSupply a sh:NodeShape ;
     sh:targetClass schema:HowToSupply ;
     rdfs:label "Data used" ;
     sh:property [ sh:path schema:item ; sh:order 1 ; sh:name "Dataset" ; sh:minCount 1 ; sh:maxCount 1 ; sh:severity sh:Warning ; sh:nodeKind sh:IRI ; sh:class schema:Dataset ;
-        sh:message "Link a dataset." ] .
+        sh:message "Link a dataset." ] ;
+    sh:property [ sh:path schema:name ; sh:order 2 ; sh:name "Label on its button" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:description ; sh:order 3 ; sh:name "Description under the label" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path schema:position ; sh:order 4 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+        sh:description "Button order among the tools and data of the page; 1 is first." ] .
 
 form:WorkflowStep a sh:NodeShape ;
     sh:targetObjectsOf schema:step ;
@@ -105,4 +117,4 @@ form:FormalParameter a sh:NodeShape ;
     dct:conformsTo <https://bioschemas.org/profiles/FormalParameter/1.0-RELEASE> ;
     rdfs:label "Input or output" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
-    sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] .
+    sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; sh:or ( form:PlainText form:HTMLText ) ] .

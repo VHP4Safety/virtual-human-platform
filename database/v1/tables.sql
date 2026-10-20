@@ -104,6 +104,8 @@ CREATE TABLE IF NOT EXISTS "bioschemas_draft_study" (
   "schema_abstract__term" TEXT,
   "schema_description" TEXT,
   "schema_description__term" TEXT,
+  "schema_headline" TEXT,
+  "schema_headline__term" TEXT,
   "schema_image" TEXT,
   "schema_image__term" TEXT,
   "schema_name" TEXT,
@@ -906,6 +908,8 @@ CREATE TABLE IF NOT EXISTS "schema_how_to" (
   "schema_creative_work_status__term" TEXT,
   "schema_description" TEXT,
   "schema_description__term" TEXT,
+  "schema_disambiguating_description" TEXT,
+  "schema_disambiguating_description__term" TEXT,
   "schema_headline" TEXT,
   "schema_headline__term" TEXT,
   "schema_name" TEXT,
@@ -975,8 +979,14 @@ CREATE TABLE IF NOT EXISTS "schema_how_to_supply" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
   "type" TEXT,
+  "schema_description" TEXT,
+  "schema_description__term" TEXT,
   "schema_item" TEXT,
   "schema_item__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  "schema_position" TEXT,
+  "schema_position__term" TEXT,
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_how_to_supply__record" ON "schema_how_to_supply" ("record");
@@ -984,8 +994,14 @@ CREATE TABLE IF NOT EXISTS "schema_how_to_tool" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
   "type" TEXT,
+  "schema_description" TEXT,
+  "schema_description__term" TEXT,
   "schema_item" TEXT,
   "schema_item__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  "schema_position" TEXT,
+  "schema_position__term" TEXT,
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_how_to_tool__record" ON "schema_how_to_tool" ("record");
