@@ -153,13 +153,19 @@ def published_as() -> dict[URIRef, URIRef]:
 
 
 def typed(found: Graph) -> Graph:
-    """The statements as published: the values of fields published as another class are given that class too; and
-    the official profile of the class of a node is stated (dct:conformsTo) only when every field required by that
+    """The statements as published: the values of fields published as another class are given that class too; a
+    record is the main entity of its page, and that page is its web address (schema:url) when none is given; and the
+    official profile of the class of a node is stated (dct:conformsTo) only when every field required by that
     profile is given."""
     for predicate, of_class in published_as().items():
         for value in list(found.objects(None, predicate)):
             if isinstance(value, URIRef):
                 found.add((value, RDF.type, of_class))
+    for node in set(found.subjects(RDF.type, None)):
+        if isinstance(node, URIRef) and str(node).startswith(settings()["base"]):
+            found.add((node, SDO.mainEntityOfPage, node))
+            if found.value(node, SDO.url) is None:
+                found.add((node, SDO.url, node))
     for of_class, (official, fields) in required().items():
         for node in set(found.subjects(RDF.type, of_class)):
             if fields <= set(found.predicates(node, None)):
