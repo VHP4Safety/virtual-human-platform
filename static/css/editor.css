@@ -266,15 +266,18 @@ body.editor {
   }
 }
 
-/* Save stays in view */
+/* Save and Discard in a bar at the foot of the form column, in view while the form is scrolled */
 .editor-save {
   position: sticky;
-  bottom: 1rem;
+  bottom: 0;
   z-index: 2;
-}
-
-.editor-save > .btn {
-  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+  background: var(--bs-body-bg, #fff);
+  border-top: 1px solid var(--bs-border-color);
 }
 
 /* Locked and dimmed while the platform answers */
@@ -287,11 +290,11 @@ body.editor {
   transition: opacity 0.2s;
 }
 
-/* What blocks saving, next to Save */
+/* What blocks saving, above Save */
 .editor-save .alert {
+  flex-basis: 100%;
   max-height: 40vh;
   overflow-y: auto;
-  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.25);
 }
 
 /* The record's statements as a diagram: an arrow per value */
@@ -373,7 +376,7 @@ body.editor {
 }
 
 .record-dialog .editor-save {
-  bottom: 1rem;
+  bottom: 0;
 }
 
 .record-dialog::backdrop {

@@ -37,7 +37,7 @@ rokit-collapsible.focus-chrome::part(header) { display: none; }
 .focus-chrome > rokit-button.add-button, .focus-chrome > .add-button-wrapper { display: none; }
 .property-instance.focus-parts { display: none; }
 shacl-property:has(> .property-instance[data-path="${POSITION}"]) { display: none; }
-rokit-collapsible.shacl-group:not(.focus-chrome) { display: block; margin: 0 0 1rem; border: 1px solid #d9d4ec; border-left: 4px solid var(--stage, #29235c); border-radius: 6px; background: #fff; }
+rokit-collapsible.shacl-group:not(.focus-chrome) { display: block; margin: 0 0 1rem; border: 1px solid #d9d4ec; border-radius: 6px; background: #fff; }
 .focus-list { display: block; box-sizing: border-box; width: 100%; padding: 0.25rem 0.75rem 0.75rem; font-size: 0.95em; text-align: left; }
 .focus-list ol { margin: 0; padding: 0; list-style: none; }
 .focus-list .record-index-list-head { display: none; }
@@ -55,7 +55,7 @@ rokit-collapsible.shacl-group:not(.focus-chrome) { display: block; margin: 0 0 1
 .focus-list .record-index-adds { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; }
 .focus-list .record-index-adds button { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.1rem 0.5rem; border: 1px solid #29235c; border-radius: 4px; background: #fff; color: #29235c; font: inherit; font-size: 0.85em; cursor: pointer; }
 .focus-list .record-index-adds button:hover { background: #29235c; color: #fff; }
-rokit-collapsible.shacl-group:not(.focus-chrome)::part(header) { font-weight: 600; color: var(--stage, #29235c); background: color-mix(in srgb, var(--stage, #29235c) 7%, white); border-radius: 0 6px 0 0; }
+rokit-collapsible.shacl-group:not(.focus-chrome)::part(header) { font-weight: 600; color: var(--stage, #29235c); background: color-mix(in srgb, var(--stage, #29235c) 7%, white); border-radius: 6px 6px 0 0; }
 `;
 
 function make(tag, className, text) {
