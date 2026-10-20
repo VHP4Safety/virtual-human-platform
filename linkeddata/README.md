@@ -223,8 +223,8 @@ are set by the shapes at `/api/shapes.ttl`. `{kind}` is one of the kinds of the 
 - `GET /api/{kind}` lists the records of the kind, found by name (`search`) and by field values, by the
   name of the field (`/api/tools?processFlowStep=<address>&provider=<address>`). Several values of one
   field match any; several fields match all. A page is given at a time (`page`, `page_size`, and the
-  `X-Pagination` header of flask-smorest), in JSON-LD (`@graph`, the default), Turtle or N-Triples, by the
-  Accept header.
+  `X-Pagination` header of flask-smorest), in JSON-LD (`@graph`, the default), Turtle, N-Triples or
+  Markdown, by the Accept header.
 - `GET /api/{kind}/facets` counts the found records per value of those fields; the filter of a field is
   not used for its own counts. The queries are made in SQL from the rdfsolve layout of the profile
   (`catalogue.py`).

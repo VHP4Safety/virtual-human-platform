@@ -13,7 +13,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 import database
 from admin import changes, tokens, writes
 from database import images, records
-from linkeddata import catalogue, checks, documents, storage
+from linkeddata import catalogue, checks, documents, markdown, storage
 from linkeddata.model import RELEASE, settings, shapes
 from routes import account, limiter
 from routes.record_pages import SERIALIZATIONS, data, markdown_of
@@ -319,13 +319,14 @@ class Query(Schema):
 
 
 KIND = "/<any({}):kind>".format(", ".join(settings()["kinds"]))
-LISTED = "The records in JSON-LD (the default), Turtle or N-Triples, by the Accept header."
+LISTED = "The records in JSON-LD (the default), Turtle, N-Triples or Markdown, by the Accept header."
 
 
 @blueprint.route(KIND, methods=["GET"])
 @blueprint.response(200, {"type": "object"}, content_type="application/ld+json", description=LISTED)
 @blueprint.alt_response(200, schema={"type": "string"}, content_type="text/turtle", success=True, description=LISTED)
 @blueprint.alt_response(200, schema={"type": "string"}, content_type="application/n-triples", success=True, description=LISTED)
+@blueprint.alt_response(200, schema={"type": "string"}, content_type="text/markdown", success=True, description=LISTED)
 @blueprint.arguments(Query, location="query", unknown=INCLUDE)
 @blueprint.paginate(page_size=20, max_page_size=200)
 def listed(given, kind, pagination_parameters):
@@ -339,7 +340,12 @@ def listed(given, kind, pagination_parameters):
     pagination_parameters.item_count = total
     found = readable(storage.graph(iris), kind)
     # The format asked for at the page of a kind (/tools) is used, also when it is asked by an ending (/tools.ttl).
-    media = g.get("media") or request.accept_mimetypes.best_match(["application/ld+json", *SERIALIZATIONS], "application/ld+json")
+    media = g.get("media") or request.accept_mimetypes.best_match(["application/ld+json", *SERIALIZATIONS, "text/markdown"], "application/ld+json")
+    if media == "text/markdown":
+        pages = []
+        for iri in iris:
+            pages.append(markdown_of(records.get(iri)).get_data(as_text=True))
+        return Response("\n".join(pages), content_type=markdown.MEDIA, headers={"Vary": "Accept"})
     if media in SERIALIZATIONS:
         return data(found, media)
     documented = []
