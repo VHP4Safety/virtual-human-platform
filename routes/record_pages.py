@@ -73,6 +73,13 @@ def negotiate():
     """A record's data is sent when asked for; otherwise its page is made as usual."""
     if request.endpoint in ("static", "images.image") or request.path.startswith("/api/"):
         return None
+    # An address with a slash at the end and no page of its own is the address without it (/casestudies/ is
+    # /casestudies), so that one address gives one page.
+    if request.url_rule is None and len(request.path) > 1 and request.path.endswith("/"):
+        target = request.path.rstrip("/")
+        if request.query_string:
+            target += "?" + request.query_string.decode()
+        return redirect(target, code=308)
     path = request.path.strip("/")
     media = None
     for ending, ending_media in {**FORMATS, MARKDOWN: "text/markdown"}.items():
