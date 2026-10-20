@@ -165,6 +165,13 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                     identifier = named[slug(name)]
                     if present(email):
                         others[identifier].setdefault("email", email.strip())
+                elif "team" in name.lower():
+                    # A team is an organisation, as for the authors of the documentation (docs.py).
+                    identifier = "organizations/" + slug(name)
+                    organization = {"@id": identifier, "@type": "Organization", "name": name.strip()}
+                    if present(email):
+                        organization["email"] = email.strip()
+                    others.setdefault(identifier, organization)
                 else:
                     identifier = "people/" + slug(name)
                     row_of_person = {"@id": identifier, "@type": "Person", "name": name.strip()}
