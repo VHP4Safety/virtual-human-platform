@@ -70,15 +70,15 @@ body.editor {
 
 @media (min-width: 1600px) {
   .editor-layout {
-    grid-template-columns: 30rem minmax(0, 1fr);
+    grid-template-columns: 21rem minmax(0, 1fr);
   }
 
   .editor-layout.with-preview {
-    grid-template-columns: 30rem minmax(0, 1fr) minmax(0, 0.85fr);
+    grid-template-columns: 21rem minmax(0, 1fr) minmax(0, 0.85fr);
   }
 }
 
-/* Records and sections: tabs, or two columns on wide screens */
+/* Records and sections are two tabs */
 .editor-side {
   display: flex;
   flex-direction: column;
@@ -146,24 +146,7 @@ body.editor {
   color: var(--bs-secondary-color);
 }
 
-@media (min-width: 1600px) {
-  .editor-side-tabs {
-    display: none;
-  }
 
-  .editor-side[data-pane] #records-pane,
-  .editor-side[data-pane] #sections-pane {
-    display: block;
-  }
-
-  .editor-side-title {
-    display: block;
-  }
-
-  #sections-pane {
-    border-left: 1px solid var(--bs-border-color);
-  }
-}
 
 /* The outline of the record */
 .record-index ul {
@@ -232,8 +215,11 @@ body.editor {
   text-align: left;
   color: var(--bs-body-color);
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  line-height: 1.25;
+  /* A name takes up to two lines in the index. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .record-index-count {
@@ -441,4 +427,100 @@ body.editor {
 .record-index-empty .record-index-link {
   color: #9a95b8;
   font-style: italic;
+}
+
+/* The index shows one page: the way down to it, the page, the pages below it and its sections of text. */
+.record-index-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.3rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+}
+.record-index-crumb {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--bs-vhpblue);
+  text-align: left;
+}
+.record-index-crumb:hover {
+  text-decoration: underline;
+}
+.record-index-crumb-gap {
+  color: var(--bs-secondary-color);
+}
+.record-index-page {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-bottom: 0.75rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #d9d4ec;
+  border-radius: 0.5rem;
+  background: #fff;
+  text-align: left;
+}
+.record-index-page.active {
+  border-color: var(--bs-vhppurple);
+  box-shadow: 0 0 0 2px #e7e5f2;
+}
+.record-index-page .record-index-stage {
+  width: 1.8rem;
+  height: 1.8rem;
+  font-size: 0.95rem;
+}
+.record-index-page-words {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.record-index-page-name {
+  font-weight: 600;
+  color: var(--bs-vhppurple);
+  line-height: 1.25;
+}
+.record-index-page-stage {
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color);
+}
+.record-index-list {
+  margin-bottom: 0.75rem;
+}
+.record-index-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+.record-index-list-head .btn {
+  font-size: 0.75rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.record-index-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.record-index-items .record-index-row {
+  padding: 0.15rem 0.25rem;
+}
+.record-index-none {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.8rem;
+  color: var(--bs-secondary-color);
+}
+.record-index-into {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color);
 }

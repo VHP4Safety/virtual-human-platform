@@ -103,16 +103,16 @@ def form_graph() -> Graph:
     return found
 
 
-def ordered() -> list[str]:
-    """The properties of the fields whose parts have a position, such as steps and sections. These parts are
-    shown in the index of the editor, and their order is set by dragging them."""
+def ordered() -> dict[str, list[str]]:
+    """The properties of the fields whose parts have a position, such as steps and sections, with the labels of
+    those fields. These parts are shown in the index of the editor, and their order is set by dragging them."""
     graph = profile_graph()
-    found = set()
+    found = {}
     for field in graph.objects(None, SH.property):
         node = graph.value(field, SH.node)
         if node is not None and any(graph.value(own, SH.path) == SDO.position for own in graph.objects(node, SH.property)):
-            found.add(str(graph.value(field, SH.path)))
-    return sorted(found)
+            found.setdefault(str(graph.value(field, SH.path)), set()).add(str(graph.value(field, SH.name) or ""))
+    return {path: sorted(names) for path, names in sorted(found.items())}
 
 
 def mixed() -> list[str]:

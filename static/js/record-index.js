@@ -1,6 +1,9 @@
-// The index beside the form: the record and its parts with a position, such as questions, steps and sections,
-// in their order. A click on a part shows the form of that part only. A part is dragged up or down among the
-// parts beside it to change their order, which sets their positions. A part with values to fix gets a dot.
+// The index beside the form shows one page at a time, as the website does: the way down to the page, the page
+// with its number in the process flow, the pages below it and its sections of text. A click on a page or a
+// section below goes down to it and shows its form only; a section shows its subsections. A click on the way
+// goes up.
+// Pages and sections are dragged up or down to change their order, which sets their positions, and they are
+// added at the end of their list. A part with values to check gets a dot.
 import Sortable from "https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/modular/sortable.esm.js";
 
 const NAME = "https://schema.org/name";
@@ -22,6 +25,7 @@ const STYLE = `
 .focus-chrome { padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; }
 rokit-collapsible.focus-chrome::part(header) { display: none; }
 .property-instance.focus-chrome > .remove-button-wrapper { display: none; }
+.focus-chrome > rokit-button.add-button, .focus-chrome > .add-button-wrapper { display: none; }
 .property-instance.focus-parts { display: none; }
 shacl-property:has(> .property-instance[data-path="${POSITION}"]) { display: none; }
 rokit-collapsible.shacl-group:not(.focus-chrome) { display: block; margin: 0 0 1rem; border: 1px solid #d9d4ec; border-left: 4px solid #29235c; border-radius: 6px; background: #fff; }
@@ -58,15 +62,23 @@ function position(node) {
   return isNaN(found) ? Infinity : found;
 }
 
+function parentNode(node) {
+  return node.parentElement ? node.parentElement.closest("shacl-node") : null;
+}
+
 // The record, or a part with a position: a node of the index.
 function indexed(node) {
   const field = node.parentElement ? node.parentElement.closest(".property-instance") : null;
-  return !field || editor.ordered.includes(field.dataset.path);
+  return !field || field.dataset.path in editor.ordered;
+}
+
+function isSection(node) {
+  return node.dataset.nodeId.startsWith("_:");
 }
 
 // The nearest node of the index above an element.
 function above(element) {
-  for (let node = element.parentElement ? element.parentElement.closest("shacl-node") : null; node; node = node.parentElement ? node.parentElement.closest("shacl-node") : null) {
+  for (let node = parentNode(element); node; node = parentNode(node)) {
     if (indexed(node)) {
       return node;
     }
@@ -121,9 +133,19 @@ function empty(node) {
   return !CONTENT.some(function (path) { return filled(node, path); }) && pagesBelow(node).every(empty);
 }
 
+// The way from the record down to a page: the record, then each page in between.
+function way(page) {
+  const found = [];
+  for (let node = page; node; node = above(node)) {
+    found.unshift(node);
+  }
+  return found;
+}
+
 // The stage of a page, as the process flow of the website shows it (stageOf in case-study.js): the stage of
 // its level, or 5 when it has tools or data and no pages below it.
-function stage(node, level) {
+function stage(node) {
+  const level = way(node).length - 1;
   const steps = pagesBelow(node).some(function (step) { return !empty(step); });
   if (!steps && (filled(node, TOOL) || filled(node, SUPPLY))) {
     return 5;
@@ -166,6 +188,14 @@ export function select(target) {
     element.classList.toggle("focus-hidden", !around && element !== target && !ownField);
   }
   root.classList.toggle("focus-chrome", root !== target);
+  // Parts with a position are added and ordered in the index, so their own cards are left out of the form.
+  for (const path of Object.keys(editor.ordered)) {
+    const button = addButton(target, path);
+    const card = button ? button.closest("rokit-collapsible") : null;
+    if (card) {
+      card.classList.add("focus-hidden");
+    }
+  }
   for (const listener of listeners) {
     listener(target);
   }
@@ -185,102 +215,109 @@ export function reveal(target) {
   });
 }
 
-// The positions of the parts beside each other are set in their order: 1, 2, 3 and so on.
-function renumber(parts) {
-  parts.forEach(function (part, at) {
-    const field = own(part, POSITION);
-    const input = field && field.querySelector(".editor");
-    if (input && String(input.value) !== String(at + 1)) {
-      input.value = String(at + 1);
-      input.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
-    }
-  });
-}
-
 // *listener* is called with each part that is shown.
 export function whenSelected(listener) {
   listeners.push(listener);
 }
 
+// The position of a part is set, when the part has a position field.
+function place(part, at) {
+  const field = own(part, POSITION);
+  const input = field && field.querySelector(".editor");
+  if (input && String(input.value) !== String(at)) {
+    input.value = String(at);
+    input.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+  }
+}
+
+// The add button of the form for a field of a node, found by the label of the field.
+function addButton(node, path) {
+  const names = editor.ordered[path] || [];
+  for (const button of node.querySelectorAll(".add-button-wrapper rokit-button.add-button")) {
+    if (button.closest("shacl-node") === node && names.includes(button.textContent.trim())) {
+      return button;
+    }
+  }
+  return null;
+}
+
 export function outline(givenForm, nav) {
   form = givenForm;
-  const closed = new Set();
+  // The field a part is added to; once the form has drawn the new part, it is placed last and shown.
+  let adding = null;
 
-  // An entry of the index: a page with its number in the process flow, as the website shows it, then the pages
-  // below it in their order, then its sections of text in their order.
-  function entry(node, label, depth, number) {
-    const item = make("li", "record-index-item");
-    const row = make("div", "record-index-row" + (node === shown ? " active" : ""));
-    const parts = partsOf(node);
-    const toggle = make("button", "record-index-toggle");
-    toggle.type = "button";
-    if (node.parentElement.closest("shacl-node")) {
-      row.append(make("span", "record-index-handle bi bi-grip-vertical", ""));
-    }
-    row.append(toggle);
-    if (node.dataset.nodeId.startsWith("_:")) {
-      row.append(make("span", "record-index-section", "§" + number));
-    } else if (caseStudy) {
-      const at = stage(node, depth);
-      const badge = make("span", "record-index-stage stage-" + at, String(at));
-      badge.title = STAGES[at - 1];
-      row.append(badge);
-    }
-    const link = make("button", "record-index-link", label);
-    link.type = "button";
-    link.title = label;
-    link.addEventListener("click", function () { select(node); draw(); });
-    row.append(link);
-    if (caseStudy && depth && !node.dataset.nodeId.startsWith("_:") && empty(node)) {
-      row.classList.add("record-index-empty");
-      link.title = label + " (empty: hidden on the website)";
-    }
+  function badge(node) {
+    const at = stage(node);
+    const found = make("span", "record-index-stage stage-" + at, String(at));
+    found.title = STAGES[at - 1];
+    return found;
+  }
+
+  function dot(node, row) {
     if (node.querySelector(".property-instance.invalid")) {
-      const dot = make("span", "record-index-problem");
-      dot.title = "Values to check";
-      row.append(dot);
+      const found = make("span", "record-index-problem");
+      found.title = "Values to check";
+      row.append(found);
     }
-    item.append(row);
-    const key = node.dataset.nodeId;
-    if (parts.size) {
-      const open = !closed.has(key);
-      toggle.setAttribute("aria-expanded", String(open));
-      toggle.addEventListener("click", function () {
-        if (closed.has(key)) {
-          closed.delete(key);
-        } else {
-          closed.add(key);
-        }
-        draw();
-      });
-      if (open) {
-        // Pages first, as their buttons come first on the page; sections of text last.
-        const fields = Array.from(parts.keys()).sort(function (one, other) { return (one === HAS_PART) - (other === HAS_PART); });
-        for (const path of fields) {
-          const list = parts.get(path);
-          const branch = make("ul", "record-index-branch");
-          list.forEach(function (part, at) {
-            branch.append(entry(part, valueOf(part, NAME) || "Untitled", depth + (path === HAS_PART ? 0 : 1), at + 1));
-          });
-          // A part is dragged among the parts beside it; their positions follow.
-          Sortable.create(branch, {
-            handle: ".record-index-handle",
-            animation: 150,
-            onEnd: function (event) {
-              if (event.oldIndex !== event.newIndex) {
-                const moved = list.splice(event.oldIndex, 1)[0];
-                list.splice(event.newIndex, 0, moved);
-                renumber(list);
-              }
-            },
-          });
-          item.append(branch);
-        }
+  }
+
+  // A list of parts of the page that can be dragged, with a button to add one at its end.
+  function list(title, page, path, parts, add) {
+    const box = make("section", "record-index-list");
+    const head = make("div", "record-index-list-head");
+    head.append(make("span", "", title));
+    const native = addButton(page, path);
+    const button = make("button", "btn btn-sm btn-outline-vhppurple py-0", "+ " + add);
+    button.type = "button";
+    button.disabled = !native;
+    button.addEventListener("click", function () {
+      adding = { page: page, path: path };
+      native.click();
+      window.setTimeout(added, 400);
+    });
+    head.append(button);
+    box.append(head);
+    const items = make("ol", "record-index-items");
+    const section = path === HAS_PART;
+    parts.forEach(function (part, at) {
+      const row = make("li", "record-index-row" + (part === shown ? " active" : ""));
+      row.append(make("span", "record-index-handle bi bi-grip-vertical", ""));
+      row.append(section ? make("span", "record-index-section", "§" + (at + 1)) : caseStudy ? badge(part) : make("span", "record-index-section", String(at + 1)));
+      const name = valueOf(part, NAME) || "Untitled";
+      const link = make("button", "record-index-link", name);
+      link.type = "button";
+      link.title = section ? "Edit this section" : "Open this page";
+      link.addEventListener("click", function () { select(part); draw(); });
+      row.append(link);
+      if (!section && caseStudy && empty(part)) {
+        row.classList.add("record-index-empty");
+        link.title = name + " (empty: hidden on the website)";
       }
-    } else {
-      toggle.disabled = true;
+      dot(part, row);
+      const count = (partsOf(part).get(HAS_PART) || []).length + pagesBelow(part).length;
+      const into = make("span", "record-index-into", count ? count + " ›" : "›");
+      into.title = count ? count + " pages and sections inside" : "Nothing inside yet";
+      row.append(into);
+      items.append(row);
+    });
+    if (!parts.length) {
+      items.append(make("li", "record-index-none", "None yet."));
     }
-    return item;
+    // A part is dragged among the parts beside it; their positions follow, 1, 2, 3 and so on.
+    Sortable.create(items, {
+      handle: ".record-index-handle",
+      draggable: ".record-index-row",
+      animation: 150,
+      onEnd: function (event) {
+        if (event.oldIndex !== event.newIndex) {
+          const moved = parts.splice(event.oldIndex, 1)[0];
+          parts.splice(event.newIndex, 0, moved);
+          parts.forEach(function (part, at) { place(part, at + 1); });
+        }
+      },
+    });
+    box.append(items);
+    return box;
   }
 
   function draw() {
@@ -288,38 +325,90 @@ export function outline(givenForm, nav) {
     if (!root) {
       return;
     }
-    const tree = make("ul", "record-index-tree");
-    caseStudy = Boolean(own(root, QUESTIONS)) || partsOf(root).has(QUESTIONS);
-    tree.append(entry(root, valueOf(root, NAME) || "This record", 0, 1));
-    nav.replaceChildren(tree);
+    caseStudy = Boolean(own(root, QUESTIONS)) || Boolean(addButton(root, QUESTIONS));
+    const page = shown || root;
+    const view = make("div", "record-index-view");
+    // The way down to the page; a click goes up.
+    const trail = way(page);
+    if (trail.length > 1) {
+      const crumbs = make("nav", "record-index-crumbs");
+      trail.slice(0, -1).forEach(function (node) {
+        const up = make("button", "record-index-crumb", (isSection(node) ? "§ " : "") + (valueOf(node, NAME) || "Untitled"));
+        up.type = "button";
+        up.addEventListener("click", function () { select(node); draw(); });
+        crumbs.append(up, make("span", "record-index-crumb-gap", "›"));
+      });
+      view.append(crumbs);
+    }
+    // The page itself; a click shows its own form.
+    const card = make("button", "record-index-page" + (shown === page ? " active" : ""));
+    card.type = "button";
+    card.title = "Edit this page";
+    const section = isSection(page);
+    if (section) {
+      card.append(make("span", "record-index-section", "§"));
+    } else if (caseStudy) {
+      card.append(badge(page));
+    }
+    const words = make("span", "record-index-page-words");
+    words.append(make("span", "record-index-page-name", valueOf(page, NAME) || "Untitled"));
+    if (section) {
+      words.append(make("span", "record-index-page-stage", "Section of text"));
+    } else if (caseStudy) {
+      words.append(make("span", "record-index-page-stage", STAGES[stage(page) - 1]));
+    }
+    card.append(words);
+    dot(page, card);
+    card.addEventListener("click", function () { select(page); draw(); });
+    view.append(card);
+    // Its pages below, then its sections of text, as the website shows them.
+    const parts = partsOf(page);
+    for (const path of Object.keys(editor.ordered)) {
+      if (path === HAS_PART || !(parts.has(path) || addButton(page, path))) {
+        continue;
+      }
+      const question = path === QUESTIONS;
+      view.append(list(question ? "Questions" : "Pages below", page, path, parts.get(path) || [], question ? "Add question" : "Add step"));
+    }
+    if (parts.has(HAS_PART) || addButton(page, HAS_PART)) {
+      view.append(list(section ? "Subsections" : "Sections of text", page, HAS_PART, parts.get(HAS_PART) || [], section ? "Add subsection" : "Add section"));
+    }
+    nav.replaceChildren(view);
   }
 
   listeners.push(draw);
   let timer = null;
   form.addEventListener("ready", function () {
-    select(form.shadowRoot.querySelector("shacl-node"));
-  });
-  form.addEventListener("change", function () {
-    window.clearTimeout(timer);
-    timer = window.setTimeout(function () {
-      // A part added in the form is shown at once.
-      const added = shown && Array.from(shown.querySelectorAll("shacl-node")).find(function (node) {
-        return indexed(node) && above(node) === shown && !node.dataset.seen;
-      });
-      for (const node of form.shadowRoot.querySelectorAll("shacl-node")) {
-        node.dataset.seen = "1";
-      }
-      if (added && form.dataset.ready) {
-        select(added);
-      } else if (shown) {
-        select(shown);
-      }
-    }, 300);
-  });
-  form.addEventListener("ready", function () {
     for (const node of form.shadowRoot.querySelectorAll("shacl-node")) {
       node.dataset.seen = "1";
     }
-    form.dataset.ready = "1";
+    select(form.shadowRoot.querySelector("shacl-node"));
+  });
+  // The part that was added is the one not seen before; it goes last in its list and is shown.
+  function added() {
+    if (!adding) {
+      return false;
+    }
+    const list = partsOf(adding.page).get(adding.path) || [];
+    const found = list.find(function (part) { return !part.dataset.seen; });
+    if (!found) {
+      return false;
+    }
+    adding = null;
+    for (const node of form.shadowRoot.querySelectorAll("shacl-node")) {
+      node.dataset.seen = "1";
+    }
+    place(found, list.length);
+    select(found);
+    return true;
+  }
+
+  form.addEventListener("change", function () {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(function () {
+      if (!added()) {
+        select(shown || form.shadowRoot.querySelector("shacl-node"));
+      }
+    }, 300);
   });
 }
