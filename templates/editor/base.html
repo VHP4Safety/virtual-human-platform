@@ -37,8 +37,6 @@
             <a class="nav-link{% if request.endpoint == endpoint or request.blueprint == endpoint.split('.')[0] and endpoint != 'account.account_tokens' %} active{% endif %}" href="{{ url_for(endpoint) }}"><i class="bi bi-{{ icon }}"></i> {{ label }}</a>
           </li>
           {% endfor %}
-          <li class="nav-item ms-auto d-flex align-items-center small text-white-50 px-2">Public pages:</li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('sources.sources') }}">Sources <i class="bi bi-box-arrow-up-right small"></i></a></li>
         </ul>
       </div>
     </nav>

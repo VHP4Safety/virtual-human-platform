@@ -1,17 +1,14 @@
 """The pages of the record editor are served here. The forms are made by shacl-form from the shapes of the model,
-and the records are written through the records API. The data quality page and the sources page are served here too."""
+and the records are written through the records API. The data quality page is served here too."""
 
 import json
 
 from flask import Blueprint, Response, abort, redirect, render_template, request, url_for
-from sqlalchemy import func, select
 
-import database
 from admin import editor, writes
 from database import records
-from database.tables import PLATFORM, Note, Record, Source
+from database.tables import PLATFORM
 from linkeddata import checks, pages
-from linkeddata.imports import files_of, specs
 from linkeddata.profile import settings, shape_of
 from routes.account import current_editor, form_token
 
@@ -22,7 +19,6 @@ blueprint = Blueprint("admin", __name__)
 def named_kinds() -> dict:
     """The names of the kinds of records are given to the pages of the editor, such as "Case Studies"."""
     return {"kind_names": pages.kind_names}
-sources_blueprint = Blueprint("sources", __name__)
 
 
 def logged_in(kind: str | None = None):
@@ -86,30 +82,3 @@ def form():
     if logged_in() is None:
         abort(401)
     return Response(editor.form_graph().serialize(format="turtle"), mimetype="text/turtle")
-
-
-@sources_blueprint.get("/sources")
-def sources():
-    """The sources are listed with their files, the last import, and the counts of their records and notes."""
-    with database.session() as db:
-        fetched = {source.name: source for source in db.scalars(select(Source))}
-        counts = dict(db.execute(select(Record.source, func.count()).where(Record.removed_at.is_(None)).group_by(Record.source)).all())
-        noted = dict(db.execute(select(Note.source, func.count()).group_by(Note.source)).all())
-    found = []
-    for spec in specs():
-        found.append({
-            "name": spec["name"],
-            "title": spec.get("title", spec["name"]),
-            "files": files_of(spec),
-            "parser": spec["module"].replace(".", "/") + ".py",
-            "fetched": fetched.get(spec["name"]),
-            "records": counts.get(spec["name"], 0),
-            "notes": noted.get(spec["name"], 0),
-        })
-    return render_template(
-        "records/sources.html",
-        sources=found,
-        written=counts.get(PLATFORM, 0),
-        page_title="Sources — VHP4Safety",
-        meta_description="The sources of the records of the VHP4Safety platform, and how each source is read into the model.",
-    )

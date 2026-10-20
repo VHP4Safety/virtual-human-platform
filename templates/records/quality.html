@@ -4,7 +4,7 @@
   <div class="pb-2">
     <h1><span class="text-vhpblue">Data quality</span></h1>
     <p class="text-secondary fs-5">Record completeness, and what the model's checks found.</p>
-    <p>Records follow the platform's model, built on <a class="link-vhpblue" href="https://schema.org">schema.org</a> and <a class="link-vhpblue" href="https://bioschemas.org">Bioschemas</a>. Imports are converted with <a class="link-vhpblue" href="https://github.com/jmillanacosta/rdfsolve">rdfsolve</a> and checked against the model; records written on the platform are checked before they are saved. See also <a class="link-vhpblue" href="{{ url_for('sources.sources') }}">where the records come from</a>.</p>
+    <p>Records follow the platform's model, built on <a class="link-vhpblue" href="https://schema.org">schema.org</a> and <a class="link-vhpblue" href="https://bioschemas.org">Bioschemas</a>. Imports are converted with <a class="link-vhpblue" href="https://github.com/jmillanacosta/rdfsolve">rdfsolve</a> and checked against the model; records written on the platform are checked before they are saved.</p>
   </div>
 
   <h2 class="h4 mt-3">Completeness</h2>
@@ -53,7 +53,7 @@
               <tr>
                 <td class="ps-3"><a class="link-vhpblue text-break" href="{{ note.iri|page_link }}">{{ names.get(note.iri) or note.iri|page_link }}</a></td>
                 <td class="text-break"><code>{{ note.value or "(empty)" }}</code></td>
-                <td>{% if note.source == written %}<a class="link-vhpblue" href="{{ url_for('changes.changes', record=note.iri) }}">written on the platform</a>{% else %}<a class="link-vhpblue" href="{{ url_for('sources.sources') }}#{{ note.source }}">{{ note.source }}</a>{% endif %}</td>
+                <td>{% if note.source == written %}<a class="link-vhpblue" href="{{ url_for('changes.changes', record=note.iri) }}">written on the platform</a>{% else %}{{ note.source }}{% endif %}</td>
               </tr>
               {% endfor %}
             </tbody>

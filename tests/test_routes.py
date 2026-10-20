@@ -90,4 +90,3 @@ def test_pages(site):
 def test_data(site):
     add_records()
     assert site.get("/admin/quality").status_code == 302
-    assert site.get("/sources").status_code == 200

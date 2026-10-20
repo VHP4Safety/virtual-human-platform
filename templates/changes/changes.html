@@ -5,7 +5,7 @@
   {% if record %}
   <p class="text-secondary">Changes to <a class="link-vhpblue" href="{{ record|page_link }}">{{ names.get(record) or record|page_link }}</a>. <a class="link-vhpblue" href="{{ url_for('changes.changes') }}">All changes</a></p>
   {% else %}
-  <p class="text-secondary">The changes that editors made to records are listed here, the newest first. Imported records are listed on the <a class="link-vhpblue" href="{{ url_for('sources.sources') }}">sources page</a>.</p>
+  <p class="text-secondary">The changes that editors made to records are listed here, the newest first.</p>
   {% endif %}
 
   <div class="card">

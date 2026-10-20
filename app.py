@@ -25,7 +25,6 @@ from routes.account import blueprint as account_blueprint
 from routes import limiter, records_api
 from routes.changes import blueprint as changes_blueprint
 from routes.discovery import blueprint as discovery_blueprint
-from routes.editor import sources_blueprint
 from routes.editor import blueprint as admin_blueprint
 from routes.images import blueprint as images_blueprint
 from routes.record_pages import blueprint as pages_blueprint
@@ -79,7 +78,6 @@ app.register_blueprint(admin_blueprint)
 limiter.init_app(app)
 records_api.register(app)
 app.register_blueprint(pages_blueprint)
-app.register_blueprint(sources_blueprint)
 app.register_blueprint(changes_blueprint)
 app.register_blueprint(images_blueprint)
 app.register_blueprint(discovery_blueprint)
