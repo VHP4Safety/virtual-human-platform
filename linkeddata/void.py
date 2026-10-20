@@ -79,8 +79,8 @@ def name(*iris: str) -> URIRef:
 
 def partitions(void: Graph, dataset: URIRef, base: str) -> None:
     """A partition per class of the records and parts at the platform's addresses, with its entities and its
-    properties (rdfsolve's VoID models, counted from the tables), and the catalogue's name and description of
-    each kind of records."""
+    properties (rdfsolve's VoID models, counted from the tables), and the name, description and position given in
+    the catalogue for each kind of records; a kind without records is kept as the catalogue gives it."""
     named = {}
     for part in void.objects(dataset, VOID.classPartition):
         named[void.value(part, VOID["class"])] = part
@@ -90,14 +90,13 @@ def partitions(void: Graph, dataset: URIRef, base: str) -> None:
         found = patches.void_partitions(storage.profile(), connection, published, left_out, lambda *iris: str(name(*iris)))
     for partition in found:
         void.add((dataset, VOID.classPartition, partition.to_rdf(void)))
-        given = named.get(URIRef(partition.class_uri))
+        given = named.pop(URIRef(partition.class_uri), None)
         if given is not None:
-            for field, term in ((SDO.name, DCTERMS.title), (SDO.description, DCTERMS.description)):
+            for field, term in ((SDO.name, DCTERMS.title), (SDO.description, DCTERMS.description), (SDO.position, SDO.position)):
                 for value in void.objects(given, field):
                     void.add((URIRef(partition.uri), term, value))
-    for part in named.values():
-        void.remove((dataset, VOID.classPartition, part))
-        void.remove((part, None, None))
+            void.remove((dataset, VOID.classPartition, given))
+            void.remove((given, None, None))
 
 
 def linksets(void: Graph, dataset: URIRef, found: Graph, base: str) -> None:
