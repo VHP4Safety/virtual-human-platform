@@ -9,8 +9,8 @@ from sqlalchemy import select
 import database
 from database import records
 from database.tables import Note, Record
-from linkeddata import documents, fields, storage
-from linkeddata.model import hierarchy, official_fields, settings, shapes
+from linkeddata import documents, storage
+from linkeddata.profile import fields, hierarchy, jsonld_name, official_fields, settings, shapes
 
 # Messages by SHACL constraint.
 CONSTRAINTS = {
@@ -114,16 +114,16 @@ def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]
         node = focus
         while node != record and node in holders and len(trail) < len(holders):
             holder, predicate = holders[node]
-            trail.insert(0, documents.term(str(predicate)))
+            trail.insert(0, jsonld_name(str(predicate)))
             node = holder
         if node != record:
             continue
         form = {}
-        for field in fields.of(str(found.value(focus, RDF.type))):
+        for field in fields(str(found.value(focus, RDF.type))):
             form[field["iri"]] = field
         given = official(result, results)
         path = str(given[0] if given else results.value(result, SH.resultPath))
-        field = " > ".join(trail + [documents.term(path)])
+        field = " > ".join(trail + [jsonld_name(path)])
         message = form[path]["message"] if path in form and form[path]["message"] else meaning(str(results.value(result, SH.sourceConstraintComponent)))
         warning = form[path]["warning"] if path in form else results.value(result, SH.resultSeverity) != SH.Violation
         if given:
@@ -134,7 +134,7 @@ def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]
     # Only web addresses are taken, so a link never runs a script (javascript:) or opens a file.
     for _, predicate, value in found:
         if isinstance(value, URIRef) and predicate != RDF.type and not str(value).startswith(("https://", "http://")):
-            field = documents.term(str(predicate))
+            field = jsonld_name(str(predicate))
             if field not in problems:
                 problems[field] = ["Only https:// or http:// addresses."]
     return found, problems, warnings
@@ -146,7 +146,7 @@ def named(of_class: str, path: str) -> str:
     names = []
     for term in path.split(" > "):
         found = None
-        for field in fields.of(of_class):
+        for field in fields(of_class):
             if field["name"] == term:
                 found = field
         if found is None:
@@ -166,7 +166,7 @@ def report() -> dict:
         notes = list(db.scalars(select(Note).order_by(Note.field, Note.reason, Note.iri)))
     labels = {}
     for kind in settings()["kinds"].values():
-        for field in fields.of(kind):
+        for field in fields(kind):
             labels[(kind, field["iri"])] = field["label"]
     types = {}
     of_class = {}
@@ -177,7 +177,7 @@ def report() -> dict:
     classes = []
     for kind in sorted(of_class):
         completeness = []
-        for field in fields.of(kind):
+        for field in fields(kind):
             filled = 0
             for record in of_class[kind]:
                 if documents.stored_values(statements, record.iri, field["name"]):

@@ -14,7 +14,7 @@ from sqlalchemy import bindparam, column, select, table, text
 
 import database
 from database.tables import Record
-from linkeddata.model import profile_text, settings
+from linkeddata.profile import profile_text, settings
 
 # An HTML text that does not parse is flagged by the checks; rdflib's warning on each read is left out.
 logging.getLogger("rdflib.term").setLevel(logging.ERROR)

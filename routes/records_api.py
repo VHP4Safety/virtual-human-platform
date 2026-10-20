@@ -14,7 +14,7 @@ import database
 from admin import changes, tokens, writes
 from database import images, records
 from linkeddata import catalogue, checks, documents, pages, storage
-from linkeddata.model import RELEASE, settings, shapes
+from linkeddata.profile import RELEASE, jsonld_name, settings, shapes
 from routes import account, limiter
 from routes.record_pages import SERIALIZATIONS, data, markdown_of
 
@@ -292,7 +292,7 @@ def search(given):
     found = []
     among = catalogue.holders(str(SDO.DefinedTerm), str(SDO.inDefinedTermSet), [given["vocabulary"]]) if given["vocabulary"] else None
     for record in records.search(given["text"], given["of_class"] or list(settings()["kinds"].values()), given["within"], limit=given["limit"], among=among):
-        found.append({"@id": record.iri, "@type": documents.term(record.type), "name": record.name or record.iri})
+        found.append({"@id": record.iri, "@type": jsonld_name(record.type), "name": record.name or record.iri})
     return jsonify({"@context": documents.context(settings()), "@graph": found})
 
 
@@ -386,7 +386,7 @@ def added(body, kind):
     if given is not None:
         writes.renamed(given, node, address)
         body = documents.document(given, address)
-    body = {"@type": documents.term(settings()["kinds"][kind]), **body}
+    body = {"@type": jsonld_name(settings()["kinds"][kind]), **body}
     return store(address, body)
 
 

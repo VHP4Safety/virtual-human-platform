@@ -18,7 +18,7 @@ from werkzeug.routing import BaseConverter
 # Import BioStudies extractor
 from database import records
 from linkeddata import documents, pages, storage, void
-from linkeddata.model import hierarchy, settings
+from linkeddata.profile import hierarchy, settings
 from routes.account import blueprint as account_blueprint
 from routes import limiter, records_api
 from routes.changes import blueprint as changes_blueprint

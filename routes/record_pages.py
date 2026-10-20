@@ -19,7 +19,7 @@ from rdflib.namespace import SDO
 from database import records
 from database.tables import Record
 from linkeddata import catalogue, crates, documents, pages, void
-from linkeddata.model import settings
+from linkeddata.profile import jsonld_name, settings
 
 FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "application/n-triples"}
 FORMAT_NAMES = {".jsonld": "JSON-LD", ".ttl": "Turtle", ".nt": "N-Triples"}
@@ -197,7 +197,7 @@ def record_context() -> dict:
 
 
 # An address written with the model's prefixes: https://schema.org/name is name.
-blueprint.add_app_template_filter(documents.term, "short_iri")
+blueprint.add_app_template_filter(jsonld_name, "short_iri")
 
 
 @blueprint.app_template_filter("issue_tracker")

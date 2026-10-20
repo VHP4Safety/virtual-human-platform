@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 
 import database
 from database.tables import Record
-from linkeddata.model import hierarchy, settings, terms
+from linkeddata.profile import hierarchy, settings, terms
 
 
 def address(path: str) -> str:

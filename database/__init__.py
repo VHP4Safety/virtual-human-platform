@@ -14,7 +14,7 @@ from sqlalchemy import Engine, StaticPool, create_engine, event
 from sqlalchemy.orm import Session
 
 from database.tables import Base
-from linkeddata.model import RELEASE, TABLES
+from linkeddata.profile import RELEASE, TABLES
 
 STATE_DIR = Path(os.environ.get("PLATFORM_STATE", "instance"))
 _engines = {}

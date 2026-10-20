@@ -14,9 +14,9 @@ from sqlalchemy import delete, insert, select
 import database
 from database import records
 from database.tables import PLATFORM, Record, Revision, now
-from linkeddata import catalogue, documents, fields, storage
+from linkeddata import catalogue, documents, storage
 from linkeddata.documents import context
-from linkeddata.model import settings
+from linkeddata.profile import fields, jsonld_name, settings
 
 
 def version() -> str:
@@ -40,9 +40,9 @@ def class_of(kind: str, body: dict) -> str:
 def document(kind: str, address: str, body: dict) -> dict:
     """A request body as a JSON-LD document, with the values the model fixes; an unknown field is refused."""
     known = {}
-    for field in fields.of(kind):
+    for field in fields(kind):
         known[field["name"]] = field
-    found = {"@context": context(settings()), "@id": address, "@type": documents.term(kind)}
+    found = {"@context": context(settings()), "@id": address, "@type": jsonld_name(kind)}
     for name, value in body.items():
         if name.startswith("@"):
             continue
@@ -62,7 +62,7 @@ def slug(name: str) -> str:
 def part(found: Graph, node: BNode) -> bool:
     """Whether a node is held in a field of parts."""
     for holder, predicate in found.subject_predicates(node):
-        for field in fields.of(str(found.value(holder, RDF.type))):
+        for field in fields(str(found.value(holder, RDF.type))):
             if field["iri"] == str(predicate) and field["part"]:
                 return True
     return False
@@ -98,7 +98,7 @@ def addressed(found: Graph) -> None:
         for holder, predicate, node in list(found):
             if not isinstance(node, BNode) or not isinstance(holder, URIRef):
                 continue
-            for field in fields.of(str(found.value(holder, RDF.type))):
+            for field in fields(str(found.value(holder, RDF.type))):
                 if field["iri"] == str(predicate) and field["addressed"]:
                     renamed(found, node, free(f"{holder}/{slug(str(found.value(node, SDO.name) or 'page'))}", taken))
                     pending = True

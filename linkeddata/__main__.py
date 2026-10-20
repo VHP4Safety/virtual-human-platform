@@ -19,7 +19,7 @@ from admin import tokens
 from database import export
 from linkeddata.imports import Refused, import_all
 from linkeddata.launch import launch
-from linkeddata.model import RELEASE, download_vocabularies, tables_problems, terms_problems, write_tables
+from linkeddata.profile import RELEASE, download_vocabularies, tables_problems, terms_problems, write_tables
 
 
 def main() -> None:

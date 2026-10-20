@@ -50,7 +50,7 @@ It is run by the Docker build, and by the container before the platform starts.
 ## The modules
 
 The code is in four packages, one concern each. A package uses only those listed before it, except that
-`database/` reads the base address of records from `linkeddata/model.py`. All are used by the command
+`database/` reads the profile from `linkeddata/profile.py`. All are used by the command
 line (`linkeddata/__main__.py`) and by `app.py`.
 
 | Package | Module | Concern |
@@ -59,14 +59,13 @@ line (`linkeddata/__main__.py`) and by `app.py`.
 | | `records.py` | reading records |
 | | `images.py` | uploaded images, checked and saved as WebP |
 | | `export.py` | export of the platform's records to a git repository |
-| `linkeddata/` | `model.py`, `model/v1/` | the model and the application profile |
+| `linkeddata/` | `profile.py`, `model/v1/` | the model, the application profile and the fields of each class |
 | | `parsers/`, `sources/` | how each source becomes the model |
 | | `launch/` | the sources read once when the platform goes live, and the corrections made then |
 | | `storage.py` | statements as rows of the release's tables, with rdfsolve |
 | | `documents.py` | records as JSON-LD documents, and as the dictionaries of page templates |
 | | `checks.py` | checks of records against the model's shapes |
 | | `imports.py` | sources fetched, converted and checked with rdfsolve, and stored as records |
-| | `fields.py` | the fields of a class, from its shape in the profile |
 | | `catalogue.py` | the records of a kind in SQL: filtered pages, and counts of each value |
 | | `quality.py` | completeness, the checks' notes, and how each source becomes the model |
 | `admin/` | `accounts.py`, `tokens.py` | editors and their write tokens |

@@ -25,8 +25,8 @@ from sqlalchemy import delete, func, insert, select
 
 import database
 from database.tables import PLATFORM, Note, Record, Revision, Source, now
-from linkeddata import catalogue, checks, documents, fields, storage
-from linkeddata.model import MODEL_DIR, profile, settings
+from linkeddata import catalogue, checks, documents, storage
+from linkeddata.profile import MODEL_DIR, fields, profile_graph, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
 LAUNCH_DIR = Path(__file__).parent / "launch"
@@ -95,7 +95,7 @@ def convert(rows: list[dict], base: str) -> ox.Dataset:
     """Parsed rows as statements of the model. The rows are read with the platform's JSON-LD context, and only
     the types and the properties of the profile's fields are kept."""
     document = {"@context": {**documents.context(settings()), "@base": base}, "@graph": rows}
-    kept = {str(path) for path in profile().objects(None, SH.path)} | {str(RDF.type)}
+    kept = {str(path) for path in profile_graph().objects(None, SH.path)} | {str(RDF.type)}
     found = ox.Dataset()
     for quad in ox.parse(json.dumps(document).encode(), format=ox.RdfFormat.JSON_LD):
         if quad.predicate.value in kept:
@@ -177,7 +177,7 @@ def linked_terms() -> list[str]:
     found = storage.graph(iris)
     terms = set()
     for node, of_class in found.subject_objects(RDF.type):
-        for field in fields.of(str(of_class)):
+        for field in fields(str(of_class)):
             if str(SDO.DefinedTerm) not in field["classes"]:
                 continue
             for value in found.objects(node, URIRef(field["iri"])):
@@ -383,7 +383,7 @@ def drifted(spec: dict) -> list[dict]:
         if row.get("@type") == "DefinedTerm":
             pinned[row["@id"]] = row.get("name") or ""
     used = set()
-    for node in profile().all_nodes():
+    for node in profile_graph().all_nodes():
         if str(node) in pinned:
             used.add(str(node))
     with database.session() as db:

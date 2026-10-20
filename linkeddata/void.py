@@ -26,7 +26,7 @@ import database
 from database import records
 from database.tables import Record
 from linkeddata import documents, storage
-from linkeddata.model import settings
+from linkeddata.profile import jsonld_name, settings
 
 DESCRIPTION = ".well-known/void"
 # The catalogue's fields, as VoID's general metadata names them.
@@ -75,7 +75,7 @@ def name(*iris: str) -> URIRef:
     """A partition's address in the description, from the IRIs it partitions by (class, property, datatype)."""
     parts = []
     for iri in iris:
-        parts.append(re.sub(r"[^A-Za-z0-9]+", "-", documents.term(iri)).strip("-"))
+        parts.append(re.sub(r"[^A-Za-z0-9]+", "-", jsonld_name(iri)).strip("-"))
     return URIRef(records.address(DESCRIPTION) + "#" + "_".join(parts))
 
 

@@ -11,8 +11,8 @@ from sqlalchemy import column, func, literal, or_, select, table, union_all
 import database
 from database import records as stored
 from database.tables import Record
-from linkeddata import fields, storage
-from linkeddata.model import hierarchy
+from linkeddata import storage
+from linkeddata.profile import fields, hierarchy
 
 RECORDS = Record.__table__
 
@@ -168,7 +168,7 @@ def browsed(field: dict) -> bool:
 def filters(of_class: str, given: dict) -> dict:
     """The values asked for of each browsed field, by its name in *given*, by the field's property."""
     found = {}
-    for field in fields.of(of_class):
+    for field in fields(of_class):
         if browsed(field) and given.get(field["name"]):
             found[field["iri"]] = given[field["name"]]
     return found
@@ -182,7 +182,7 @@ def ranked(value: dict) -> tuple:
 def counted(of_class: str, given: dict) -> dict:
     """Each browsed field's values, by the field's name, with their names and counts of records found (as
     filtered and searched in *given*), and whether they fit the field."""
-    browsed_fields = [field for field in fields.of(of_class) if browsed(field)]
+    browsed_fields = [field for field in fields(of_class) if browsed(field)]
     counts = facets(of_class, [field["iri"] for field in browsed_fields], filters(of_class, given), given["search"])
     every = []
     for field in browsed_fields:

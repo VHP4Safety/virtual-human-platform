@@ -16,7 +16,7 @@ from rocrate.rocrate import ROCrate
 from database import records
 from database.tables import Record
 from linkeddata import documents, storage, void
-from linkeddata.model import settings
+from linkeddata.profile import settings
 
 PROFILE = "https://w3id.org/ro/crate/1.2"
 

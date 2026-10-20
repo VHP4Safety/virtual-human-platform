@@ -5,7 +5,7 @@ from rdflib import RDF, BNode, Graph, URIRef
 from rdflib.namespace import SDO
 
 from database import records
-from linkeddata import documents, fields
+from linkeddata.profile import fields, jsonld_name
 
 
 def statements(document: str | None) -> Graph:
@@ -29,7 +29,7 @@ def key(graph: Graph, value) -> str:
 def compared(before: Graph, after: Graph, old, new, kind: str | None, names: dict[str, str]) -> list[dict]:
     """The edges from a node to its values are given. *old* is the node in *before*, and *new* is the node in
     *after*. Each edge is added, removed or kept. A part has its own edges, which are compared in the same way."""
-    form = fields.of(kind) if kind is not None else []
+    form = fields(kind) if kind is not None else []
     labels = {}
     order = {}
     for position, field in enumerate(form):
@@ -46,8 +46,8 @@ def compared(before: Graph, after: Graph, old, new, kind: str | None, names: dic
     edges = []
     for (predicate, _), (status, graph, value) in values.items():
         edge = {
-            "label": labels.get(str(predicate), documents.term(str(predicate))),
-            "property": documents.term(str(predicate)),
+            "label": labels.get(str(predicate), jsonld_name(str(predicate))),
+            "property": jsonld_name(str(predicate)),
             "value": str(value),
             "link": isinstance(value, URIRef),
             "status": status,
@@ -56,7 +56,7 @@ def compared(before: Graph, after: Graph, old, new, kind: str | None, names: dic
         if isinstance(value, BNode) or str(value).startswith(f"{old or new}/"):
             part = graph.value(value, RDF.type)
             edge["value"] = str(graph.value(value, SDO.name) or "")
-            edge["type"] = documents.term(str(part)) if part is not None else ""
+            edge["type"] = jsonld_name(str(part)) if part is not None else ""
             edge["link"] = False
             if isinstance(value, BNode):
                 edge["parts"] = compared(graph, graph, value if status != "added" else None, value if status != "removed" else None, str(part) if part is not None else None, names)
@@ -82,6 +82,6 @@ def edges(before: Graph, after: Graph, record: URIRef) -> dict:
     return {
         "record": str(record),
         "record_name": str(name or record),
-        "type": documents.term(str(kind)) if kind is not None else "",
+        "type": jsonld_name(str(kind)) if kind is not None else "",
         "edges": found,
     }

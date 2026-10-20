@@ -7,8 +7,8 @@ from rdflib.namespace import SDO, VOID
 
 from database import records
 from database.tables import Record
-from linkeddata import catalogue, documents, fields, storage
-from linkeddata.model import profile, settings
+from linkeddata import catalogue, documents, storage
+from linkeddata.profile import fields, jsonld_name, profile_graph, settings, shape_of
 
 # The name is the heading of a node, and the position sets its order. They are not listed with the fields.
 HEADING = {str(SDO.name), str(SDO.position)}
@@ -28,7 +28,7 @@ def text(value):
 
 def kind_of(of_class: str) -> str:
     """The label of a class is read from the profile, such as "Workflow page"."""
-    return str(profile().value(fields.shape_of(of_class), RDFS.label) or "")
+    return str(profile_graph().value(shape_of(of_class), RDFS.label) or "")
 
 
 def in_order(found: Graph, nodes) -> list:
@@ -52,7 +52,7 @@ def node_outline(found: Graph, node, names: dict) -> dict:
     of_class = str(found.value(node, RDF.type) or "")
     shown = {"address": None if isinstance(node, BNode) else str(node), "name": str(found.value(node, SDO.name) or ""),
              "kind": kind_of(of_class), "fields": [], "parts": []}
-    for field in fields.of(of_class):
+    for field in fields(of_class):
         values = list(found.objects(node, URIRef(field["iri"])))
         if field["iri"] in HEADING or not values or not field["shown"]:
             continue
@@ -84,10 +84,10 @@ def named_on(record: Record) -> dict[str, list[dict]]:
         if other.iri == record.iri:
             continue
         labels = {}
-        for field in fields.of(other.type):
+        for field in fields(other.type):
             labels[field["iri"]] = field["label"]
         for path in paths[other.iri]:
-            found.setdefault(labels.get(path) or documents.term(path), []).append(
+            found.setdefault(labels.get(path) or jsonld_name(path), []).append(
                 {"address": other.iri, "name": other.name or other.iri, "kind": kind_of(other.type)})
     for listed in found.values():
         listed.sort(key=by_name)
@@ -189,7 +189,7 @@ def shown(found: Graph, part) -> list[dict]:
     held = documents.public(storage.with_names(storage.graph([str(presented)])))
     node = URIRef(str(presented))
     positions = {}
-    for field in fields.of(str(held.value(node, RDF.type) or "")):
+    for field in fields(str(held.value(node, RDF.type) or "")):
         positions[field["iri"]] = field["position"]
 
     def place(prop):
@@ -275,7 +275,7 @@ def listing(path: str, arguments) -> dict:
     of_class = settings()["kinds"][path]
     given = {"search": arguments.get("search", "").strip()}
     browsed = []
-    for field in fields.of(of_class):
+    for field in fields(of_class):
         if catalogue.browsed(field):
             browsed.append(field)
             given[field["name"]] = arguments.getlist(field["name"])

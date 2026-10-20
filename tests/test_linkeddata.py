@@ -8,8 +8,8 @@ import database
 from admin import writes
 from database import records
 from database.tables import Note, Source
-from linkeddata import checks, documents, fields, imports, model, storage
-from linkeddata.model import settings
+from linkeddata import checks, documents, imports, storage
+from linkeddata.profile import download_vocabularies, fields, settings, tables_problems, terms_problems
 
 BASE = "https://platform.vhp4safety.nl/"
 TOOL = "https://schema.org/SoftwareApplication"
@@ -25,9 +25,9 @@ def test_rdf():
 
 
 def test_fields():
-    assert model.download_vocabularies() + model.terms_problems() + model.tables_problems() == []
+    assert download_vocabularies() + terms_problems() + tables_problems() == []
     for kind in settings()["kinds"].values():
-        for field in fields.of(kind):
+        for field in fields(kind):
             assert field["label"], (kind, field["name"])
 
 

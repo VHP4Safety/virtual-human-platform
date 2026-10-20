@@ -8,8 +8,8 @@ from sqlalchemy import func, select
 
 import database
 from database.tables import PLATFORM, Note, Record
-from linkeddata import catalogue, documents, fields, storage
-from linkeddata.model import hierarchy, profile, settings, terms
+from linkeddata import catalogue, storage
+from linkeddata.profile import fields, hierarchy, jsonld_name, profile_graph, settings, shape_of, terms
 
 
 def counts() -> list[dict]:
@@ -30,7 +30,7 @@ def counts() -> list[dict]:
                 "edited": db.scalar(select(func.count()).select_from(Record).where(Record.type.in_(catalogue.within(kind)), Record.source == PLATFORM)),
                 "removed": db.scalar(select(func.count()).select_from(Record).where(Record.type.in_(catalogue.within(kind)), Record.removed_at.is_not(None))),
                 "notes": db.scalar(select(func.count()).select_from(Note).where(Note.iri.in_(of_kind))),
-                "complete": round(100 * filled / (len(listed) * len(fields.of(kind)))) if listed else 0,
+                "complete": round(100 * filled / (len(listed) * len(fields(kind)))) if listed else 0,
             })
     return found
 
@@ -38,7 +38,7 @@ def counts() -> list[dict]:
 def listing(kind: str) -> list[dict]:
     """A kind's records, removed ones too, by name, each with its filled fields and its notes (parts
     included)."""
-    of_kind = fields.of(settings()["kinds"][kind])
+    of_kind = fields(settings()["kinds"][kind])
     with database.session() as db:
         statement = select(Record).where(Record.type.in_(catalogue.within(settings()["kinds"][kind])), Record.moved_to.is_(None))
         listed = list(db.scalars(statement.order_by(func.lower(Record.name), Record.iri)))
@@ -60,7 +60,7 @@ def listing(kind: str) -> list[dict]:
 
 def root_shape(kind: str) -> str:
     """The node shape of a kind's class in the profile, from which the form is built."""
-    return str(fields.shape_of(settings()["kinds"][kind]))
+    return str(shape_of(settings()["kinds"][kind]))
 
 
 def form_graph() -> Graph:
@@ -68,7 +68,7 @@ def form_graph() -> Graph:
     vocabulary. An sh:or of
     classes gets two more choices, a text and an address, so the form shows a bare name or an address that is
     no record; neither takes a value (an empty sh:in), so the form flags it with the field's message."""
-    found = Graph() + profile() + hierarchy()
+    found = Graph() + profile_graph() + hierarchy()
     for alternatives in list(found.objects(None, SH["or"])):
         listed = Collection(found, alternatives)
         classes = 0
@@ -94,8 +94,8 @@ def form_graph() -> Graph:
     for iri, vocabulary in catalogue.values(str(SDO.DefinedTerm), str(SDO.inDefinedTermSet)):
         found.add((URIRef(iri), SDO.inDefinedTermSet, URIRef(vocabulary)))
     listed = []
-    for collection in profile().objects(None, SH["in"]):
-        for value in Collection(profile(), collection):
+    for collection in profile_graph().objects(None, SH["in"]):
+        for value in Collection(profile_graph(), collection):
             if isinstance(value, URIRef):
                 listed.append(str(value))
     for iri, term in terms(listed).items():
@@ -105,7 +105,7 @@ def form_graph() -> Graph:
 
 def mixed() -> list[str]:
     """The properties of fields whose sh:or offers a link or another value, such as an address."""
-    graph = profile()
+    graph = profile_graph()
     found = []
     for field in graph.objects(None, SH.property):
         for alternatives in graph.objects(field, SH["or"]):
@@ -122,7 +122,7 @@ def mixed() -> list[str]:
 def links() -> dict[str, dict[str, str]]:
     """The properties of fields that link to records (sh:class, or sh:or of classes, without parts), each
     with its classes by label: the sh:or choice's, else the class shape's, else the class's own name."""
-    graph = profile()
+    graph = profile_graph()
     found = {}
     for field in graph.objects(None, SH.property):
         if graph.value(field, SH.node) is not None or graph.value(field, SH.nodeKind) == SH.BlankNode:
@@ -135,6 +135,6 @@ def links() -> dict[str, dict[str, str]]:
                 for of_class in graph.objects(alternative, SH["class"]):
                     named.append((of_class, graph.value(alternative, RDFS.label)))
         for of_class, label in named:
-            label = label or graph.value(graph.value(None, SH.targetClass, of_class), RDFS.label) or documents.term(str(of_class)).split(":")[-1]
+            label = label or graph.value(graph.value(None, SH.targetClass, of_class), RDFS.label) or jsonld_name(str(of_class)).split(":")[-1]
             found.setdefault(str(graph.value(field, SH.path)), {}).setdefault(str(of_class), str(label))
     return found

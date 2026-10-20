@@ -12,7 +12,7 @@ from pathlib import Path
 
 import yaml
 
-from linkeddata.model import MODEL_DIR
+from linkeddata.profile import MODEL_DIR
 
 SOURCES = Path(__file__).parent.parent / "sources"
 # The glossary's site gives its terms at other addresses than its file.

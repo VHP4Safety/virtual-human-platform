@@ -11,7 +11,7 @@ from sqlalchemy import select
 
 import database
 from database.tables import Token, now
-from linkeddata.model import settings
+from linkeddata.profile import settings
 
 PREFIX = "vhp_"
 DEFAULT_DAYS = 90

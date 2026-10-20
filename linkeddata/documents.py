@@ -6,7 +6,6 @@ import json
 from functools import cache
 
 from pyld import jsonld
-from rdfsolve.iris import curie
 from rdflib import RDF, Graph, Literal, URIRef
 from rdflib.namespace import DCTERMS, SDO, SH, VOID
 
@@ -14,7 +13,7 @@ import database
 from database import records
 from database.tables import Record
 from linkeddata import storage
-from linkeddata.model import profile, required, settings
+from linkeddata.profile import profile_graph, required, settings
 
 
 def context(config: dict) -> dict:
@@ -26,18 +25,6 @@ def context(config: dict) -> dict:
             terms[prefix] = namespace
     terms.update(config.get("terms", {}))
     return terms
-
-
-def term(iri: str) -> str:
-    """The name of a property or class in the platform's JSON-LD."""
-    for name, named in settings().get("terms", {}).items():
-        if iri == named:
-            return name
-    found = curie(iri, settings()["prefixes"])
-    if found is None:
-        return iri
-    written, prefix, namespace = found
-    return iri.removeprefix(namespace) if prefix == "schema" else written
 
 
 def expand(name: str) -> str:
@@ -114,7 +101,7 @@ def document_of(iri: str) -> str | None:
 @cache
 def private() -> set[URIRef]:
     """The properties of fields kept off the pages (form:private true in the profile)."""
-    graph = profile()
+    graph = profile_graph()
     marked = URIRef(dict(graph.namespaces())["form"] + "private")
     found = set()
     for field in graph.subjects(marked, Literal(True)):
@@ -125,7 +112,7 @@ def private() -> set[URIRef]:
 @cache
 def published_as() -> dict[URIRef, URIRef]:
     """The properties of fields whose values the pages give another class too (form:publishedAs), by class."""
-    graph = profile()
+    graph = profile_graph()
     marked = URIRef(dict(graph.namespaces())["form"] + "publishedAs")
     found = {}
     for field, of_class in graph.subject_objects(marked):

@@ -10,9 +10,9 @@ import database
 from admin import editor, writes
 from database import records
 from database.tables import PLATFORM, Note, Record, Source
-from linkeddata import checks, fields
+from linkeddata import checks
 from linkeddata.imports import files_of, specs
-from linkeddata.model import settings
+from linkeddata.profile import settings, shape_of
 from routes.account import current_editor, form_token
 
 blueprint = Blueprint("admin", __name__)
@@ -61,7 +61,7 @@ def edit(kind: str):
         selected=selected,
         base=settings()["base"],
         record=record,
-        shape=str(fields.shape_of(record.type)) if record is not None else editor.root_shape(kind),
+        shape=str(shape_of(record.type)) if record is not None else editor.root_shape(kind),
         values=f"<{selected}> a <{settings()['kinds'][kind]}> ; <https://schema.org/name> {json.dumps(name)} ." if name and record is None else "",
         links=editor.links(),
         mixed=editor.mixed(),

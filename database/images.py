@@ -17,7 +17,7 @@ from PIL import ImageOps, UnidentifiedImageError
 
 import database
 from database.tables import Image
-from linkeddata.model import settings
+from linkeddata.profile import settings
 
 MAX_BYTES = 5 * 1024 * 1024
 MAX_PIXELS = 40_000_000

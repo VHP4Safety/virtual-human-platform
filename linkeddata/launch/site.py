@@ -21,7 +21,7 @@ from urllib.parse import quote
 
 from bs4 import BeautifulSoup, Comment
 
-from linkeddata.model import settings
+from linkeddata.profile import settings
 from linkeddata.parsers import link, marked, term, slug
 
 PROJECT = "organizations/vhp4safety"

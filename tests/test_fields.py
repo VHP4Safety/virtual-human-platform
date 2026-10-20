@@ -23,8 +23,8 @@ from rdflib.compare import graph_diff, to_isomorphic
 
 from admin import editor, tokens, writes
 from database import records
-from linkeddata import documents, fields, storage
-from linkeddata.model import hierarchy, settings
+from linkeddata import documents, storage
+from linkeddata.profile import fields, hierarchy, jsonld_name, settings
 
 ORCID = "0000-0002-1825-0097"
 XSD = "http://www.w3.org/2001/XMLSchema#"
@@ -57,10 +57,10 @@ def fitting(field: dict, holder: str, taken: list):
                 return {"@id": value} if value.startswith("http") else value
         return None
     if field["part"]:
-        part = {"@type": documents.term(field["classes"][0])}
+        part = {"@type": jsonld_name(field["classes"][0])}
         if field["addressed"]:
             part["@id"] = f"{holder}/changed-{writes.slug(field['label'])}"
-        for inner in fields.of(field["classes"][0]):
+        for inner in fields(field["classes"][0]):
             value = fitting(inner, part.get("@id", holder), []) if inner["required"] and not inner["fixed"] else None
             if value is not None:
                 part[inner["name"]] = value
@@ -133,7 +133,7 @@ def changed(document: dict, of_class: str, operation: str, holder: str, path: li
     """The document with an operation done on each field, parts included; each change's expected check is
     added to the plan."""
     new = dict(document)
-    for field in fields.of(of_class):
+    for field in fields(of_class):
         if field["fixed"]:
             continue
         current = listed(document.get(field["name"]))
@@ -160,7 +160,7 @@ def difference(intended: Graph, found: Graph) -> dict:
     for name, triples in (("lost", lost), ("added", added)):
         for _, predicate, value in triples:
             given = "part" if isinstance(value, BNode) else "link" if isinstance(value, URIRef) else "text"
-            counted[name][(documents.term(str(predicate)), given, "" if given == "part" else str(value))] += 1
+            counted[name][(jsonld_name(str(predicate)), given, "" if given == "part" else str(value))] += 1
     kept = counted["lost"] & counted["added"]
     answer = {"lost": Counter(), "added": Counter(), "examples": []}
     for name in ("lost", "added"):

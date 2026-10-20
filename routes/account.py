@@ -18,7 +18,7 @@ import requests
 from flask import Blueprint, abort, redirect, render_template, request, session, url_for
 
 from admin import tokens
-from linkeddata.model import settings
+from linkeddata.profile import settings
 
 blueprint = Blueprint("account", __name__)
 
