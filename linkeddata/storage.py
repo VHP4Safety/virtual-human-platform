@@ -14,7 +14,6 @@ from sqlalchemy import bindparam, column, select, table, text
 
 import database
 from database.tables import Record
-from linkeddata import patches
 from linkeddata.model import profile_text, settings
 
 # An HTML text that does not parse is flagged by the checks; rdflib's warning on each read is left out.
@@ -24,7 +23,7 @@ logging.getLogger("rdflib.term").setLevel(logging.ERROR)
 @cache
 def profile() -> str:
     """The application profile, whose prefixes name the tables and columns."""
-    return patches.inherited(profile_text())
+    return profile_text()
 
 
 def names() -> list[str]:
@@ -64,10 +63,9 @@ def delete(db, record: str) -> None:
 def save(db, found: Graph, record: str) -> None:
     """A record's statements, its parts' included, replace its rows in the session *db*."""
     delete(db, record)
-    for name, frame in tables(found, profile()).items():
-        if len(frame):
-            frame["record"] = record
-            frame.to_sql(name, db.connection(), index=False, if_exists="append")
+    for name, frame in tables(found, profile(), empty=False).items():
+        frame["record"] = record
+        frame.to_sql(name, db.connection(), index=False, if_exists="append")
 
 
 def described(found: Graph, iri: str | BNode) -> Graph:

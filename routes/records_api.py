@@ -29,12 +29,13 @@ from flask_smorest import Api, Blueprint, abort
 from marshmallow import INCLUDE, Schema, fields
 from rdflib import RDF, Graph, Literal, URIRef
 from rdflib.namespace import SDO, XSD
+from rdfsolve.ontology.service import PROVIDERS, Ontologies, serving
 from werkzeug.exceptions import RequestEntityTooLarge
 
 import database
 from admin import changes, tokens, writes
 from database import images, records
-from linkeddata import catalogue, checks, documents, fields as model_fields, patches, storage
+from linkeddata import catalogue, checks, documents, fields as model_fields, storage
 from linkeddata.catalogue import browsed
 from linkeddata.model import RELEASE, settings, shapes
 from routes import account, limiter
@@ -255,7 +256,7 @@ def registered() -> None:
 def registries():
     """The vocabulary registries searched by the editor."""
     registered()
-    return jsonify(patches.REGISTRIES)
+    return jsonify(PROVIDERS)
 
 
 @blueprint.get("/registries/<registry>/vocabularies")
@@ -263,9 +264,10 @@ def registries():
 def registry_vocabularies(given, registry):
     """A registry's vocabularies whose identifier or title has the text: title, namespace and description."""
     registered()
-    if registry not in patches.REGISTRIES:
+    if registry not in PROVIDERS:
         abort(404, message="No such registry.")
-    return jsonify(patches.vocabularies(registry, given["text"], database.STATE_DIR / "registries.json")[:50])
+    with Ontologies(registry, cache=database.STATE_DIR / "registries.json") as provider:
+        return jsonify(provider.vocabularies(given["text"])[:50])
 
 
 @blueprint.get("/registries/terms")
@@ -276,9 +278,14 @@ def registry_terms(given):
     registered()
     if not given["text"].strip() or not given["namespace"]:
         return jsonify({"registry": None, "terms": []})
-    registry = patches.serving(given["namespace"], database.STATE_DIR / "registries.json")
-    found = patches.terms(registry, given["text"], given["namespace"], database.STATE_DIR / "registries.json") if registry else []
-    return jsonify({"registry": registry, "title": patches.REGISTRIES.get(registry), "terms": found})
+    registry = serving(given["namespace"], cache=database.STATE_DIR / "registries.json")
+    found = []
+    if registry:
+        with Ontologies(registry, cache=database.STATE_DIR / "registries.json") as provider:
+            for term in provider.terms(given["text"], given["namespace"]):
+                found.append({"@id": term["iri"], "name": term.get("label") or term["iri"],
+                              "description": " ".join(term.get("description") or []), "code": term["code"]})
+    return jsonify({"registry": registry, "title": PROVIDERS.get(registry), "terms": found})
 
 
 @blueprint.get("/search")

@@ -18,6 +18,7 @@ import requests
 import yaml
 from rdfsolve import SchemaMiner
 from rdfsolve.api import Client
+from rdfsolve.client.sql_tables import merge
 from rdfsolve.conversion import Profile, Rule, write_query
 from rdfsolve.mining.wikibase_strategy import WikibaseScopeStrategy
 from rdflib import RDF, Graph, Literal, URIRef
@@ -26,7 +27,7 @@ from sqlalchemy import delete, func, insert, select
 
 import database
 from database.tables import PLATFORM, Note, Record, Revision, Source, now
-from linkeddata import catalogue, checks, documents, fields, patches, storage
+from linkeddata import catalogue, checks, documents, fields, storage
 from linkeddata.model import MODEL_DIR, RELEASE, profile, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
@@ -158,7 +159,7 @@ def store(source: Source, found: list[tuple[list[dict], Graph]]) -> None:
         for listed, statements in found:
             iri = listed[0]["iri"]
             if iri in given:
-                merged = patches.merge(storage.read([iri]), statements, storage.profile())
+                merged = merge(storage.read([iri]), statements, storage.profile())
                 if merged.added:
                     storage.save(db, merged.graph, iri)
             elif iri not in written:
@@ -359,7 +360,7 @@ def enrich(spec: dict) -> None:
         for iri in sorted(contents):
             record = db.get(Record, iri)
             current = storage.read([iri])
-            merged = patches.merge(current, storage.described(given, iri), storage.profile())
+            merged = merge(current, storage.described(given, iri), storage.profile())
             for subject, predicate, kept, offered in merged.conflicts:
                 notes.append(Note(source=spec["name"], iri=subject, field=predicate, value=offered, component="enrichment",
                                   reason=f"{spec['title']} gives {offered}; the record keeps {kept}."))

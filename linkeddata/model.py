@@ -13,7 +13,6 @@ from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SH, VOID
 from rdfsolve.client.sql_tables import layout
 from rdfsolve.schema_models import MinedSchema
 
-from linkeddata import patches
 
 # The served release: its model is in model/<release>, its tables in database/<release>.
 RELEASE = "v1"
@@ -102,7 +101,7 @@ def approved_schema() -> dict:
     config = settings()
     classes = sorted({str(kind) for kind in profile().objects(None, SH.targetClass)})
     # The profile is a vocabulary too: it declares the platform's own terms, such as its PBPK ones.
-    return patches.from_vocabulary(vocabularies(config) + profile_files(), classes, profile_text()).to_dict()
+    return MinedSchema.from_vocabulary(vocabularies(config) + profile_files(), classes, profile=profile_text()).to_dict()
 
 
 def write_schema() -> Path:
@@ -119,7 +118,7 @@ def schema_problems() -> list[str]:
 
 
 def tables_sql() -> str:
-    return layout(patches.inherited(profile_text())).ddl()
+    return layout(profile_text()).ddl()
 
 
 def write_tables() -> Path:

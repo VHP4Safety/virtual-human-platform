@@ -6,13 +6,14 @@ import json
 from functools import cache
 
 from pyld import jsonld
+from rdfsolve.iris import curie
 from rdflib import RDF, Graph, Literal, URIRef
 from rdflib.namespace import DCTERMS, SDO, SH, VOID
 
 import database
 from database import records
 from database.tables import Record
-from linkeddata import patches, storage
+from linkeddata import storage
 from linkeddata.model import profile, required, settings
 
 
@@ -32,7 +33,7 @@ def term(iri: str) -> str:
     for name, named in settings().get("terms", {}).items():
         if iri == named:
             return name
-    found = patches.curie(iri, settings()["prefixes"])
+    found = curie(iri, settings()["prefixes"])
     if found is None:
         return iri
     written, prefix, namespace = found

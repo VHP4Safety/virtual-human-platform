@@ -23,9 +23,9 @@ import re
 from importlib.resources import files
 
 from pyld import jsonld
+from rdfsolve.iris import local_name
 
 from linkeddata.parsers import licence, link, present, publication, slug, term
-from linkeddata.patches import local_name
 
 DATE = "http://www.w3.org/2001/XMLSchema#date"
 DECIMAL = "http://www.w3.org/2001/XMLSchema#decimal"

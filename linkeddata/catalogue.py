@@ -11,7 +11,7 @@ from sqlalchemy import column, func, literal, or_, select, table, union_all
 import database
 from database import records as stored
 from database.tables import Record
-from linkeddata import fields, patches, storage
+from linkeddata import fields, storage
 from linkeddata.model import hierarchy
 
 RECORDS = Record.__table__
@@ -28,7 +28,7 @@ def tables() -> dict:
 
 def within(of_class: str) -> list[str]:
     """The class and its subclasses that the profile has, whose records are of its kind too."""
-    return patches.within(of_class, storage.profile(), hierarchy())
+    return layout(storage.profile()).within(of_class, hierarchy())
 
 
 def sources(of_class: str, path: str) -> list[dict]:

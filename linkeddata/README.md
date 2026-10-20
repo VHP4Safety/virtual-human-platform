@@ -188,8 +188,6 @@ An import:
 - checks each source's records against the model once every source is stored, with their linked records
   as stored; misfits are noted, and kept as given.
 
-Where rdfsolve lacks a call, `patches.py` stands in for it, under the name of its rdfsolve proposal.
-
 The sources:
 
 - the tool and method catalogues of the cloud repository;

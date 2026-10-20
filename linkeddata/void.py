@@ -17,13 +17,15 @@ from urllib.parse import urlsplit
 
 from rdflib import RDF, XSD, Graph, Literal, URIRef
 from rdflib.namespace import DCTERMS, FOAF, SDO, VOID
+from rdfsolve.client.sql_tables import layout
+from rdfsolve.iris import local_name
 from rdfsolve.ontology.terms import namespace
 from sqlalchemy import select
 
 import database
 from database import records
 from database.tables import Record
-from linkeddata import documents, patches, storage
+from linkeddata import documents, storage
 from linkeddata.model import settings
 
 DESCRIPTION = ".well-known/void"
@@ -87,7 +89,7 @@ def partitions(void: Graph, dataset: URIRef, base: str) -> None:
     published = select(Record.iri).where(Record.iri.startswith(base), Record.part_of.is_(None), Record.removed_at.is_(None), Record.moved_to.is_(None))
     left_out = {str(field) for field in documents.private()}
     with database.engine().connect() as connection:
-        found = patches.void_partitions(storage.profile(), connection, published, left_out, lambda *iris: str(name(*iris)))
+        found = layout(storage.profile()).void(connection, published, name=lambda *iris: str(name(*iris)), left_out=left_out)
     for partition in found:
         void.add((dataset, VOID.classPartition, partition.to_rdf(void)))
         given = named.pop(URIRef(partition.class_uri), None)
@@ -132,7 +134,7 @@ def terms(void: Graph, dataset: URIRef) -> None:
     counted = Counter(found.objects(None, SDO.inDefinedTermSet))
     held = storage.graph(sorted(str(vocabulary) for vocabulary in counted))
     for vocabulary, count in sorted(counted.items()):
-        part = URIRef(records.address(DESCRIPTION) + "#terms-" + patches.local_name(str(vocabulary)))
+        part = URIRef(records.address(DESCRIPTION) + "#terms-" + local_name(str(vocabulary)))
         void.add((subset, VOID.subset, part))
         void.add((part, RDF.type, VOID.Dataset))
         void.add((part, DCTERMS.source, vocabulary))
