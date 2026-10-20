@@ -21,7 +21,13 @@ form:DefinedTerm a sh:NodeShape ;
     sh:property [ sh:path schema:sameAs ; sh:order 6 ; sh:name "Other addresses" ;
         sh:or ( [ sh:class schema:DefinedTerm ; rdfs:label "Term" ] [ sh:nodeKind sh:IRI ; rdfs:label "Address" ] ) ;
         sh:description "The same term in another vocabulary, or another address, such as the text of a license." ] ;
-    sh:property [ sh:path schema:description ; sh:order 4 ; sh:name "Definition" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] .
+    sh:property [ sh:path schema:description ; sh:order 4 ; sh:name "Definition" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;
+    sh:property [ sh:path rdfs:isDefinedBy ; sh:order 7 ; sh:name "References" ; sh:nodeKind sh:IRI ;
+        sh:description "The sources of the definition (ref in the VHP4Safety glossary)." ] ;
+    sh:property [ sh:path rdfs:seeAlso ; sh:order 8 ; sh:name "See also" ; sh:class schema:DefinedTerm ] ;
+    sh:property [ sh:path dct:relation ; sh:order 9 ; sh:name "Related terms" ; sh:class schema:DefinedTerm ] ;
+    sh:property [ sh:path schema:creativeWorkStatus ; sh:order 10 ; sh:name "Status" ; sh:maxCount 1 ; sh:in ( "Draft" ) ;
+        sh:description "Draft: a term proposed for its vocabulary and not yet in it, at a platform address." ] .
 
 form:DefinedTermSet a sh:NodeShape ;
     form:path "vocabularies" ; sh:order 10 ;

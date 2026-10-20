@@ -3,7 +3,7 @@ shacl-form."""
 
 from rdflib import RDF, RDFS, XSD, BNode, Graph, Literal, URIRef
 from rdflib.collection import Collection
-from rdflib.namespace import SDO, SH
+from rdflib.namespace import SDO, SH, VOID
 from sqlalchemy import func, select
 
 import database
@@ -101,6 +101,18 @@ def form_graph() -> Graph:
     for iri, term in terms(listed).items():
         found.add((URIRef(iri), RDFS.label, Literal(term["name"])))
     return found
+
+
+def draft_vocabulary(record: Record | None) -> str | None:
+    """Return the namespace of the vocabulary of a draft term (status Draft), or None for other records."""
+    if record is None or record.type != str(SDO.DefinedTerm):
+        return None
+    found = records.graph([record.iri])
+    if str(found.value(URIRef(record.iri), SDO.creativeWorkStatus) or "") != "Draft":
+        return None
+    vocabulary = found.value(URIRef(record.iri), SDO.inDefinedTermSet)
+    space = records.graph([str(vocabulary)]).value(vocabulary, VOID.uriSpace) if vocabulary is not None else None
+    return str(space or "")
 
 
 def ordered() -> dict[str, list[str]]:

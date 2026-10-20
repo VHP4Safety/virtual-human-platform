@@ -2,6 +2,7 @@
 // API (Graph Store Protocol) with the version of the record. Next to the form, the published page or the linked data
 // of the record is previewed.
 import { busy } from "./busy.js";
+import { GLOSSARY, openRequest, tableChoice } from "./glossary.js";
 import { current, outline, reveal as showPart, select, whenSelected } from "./record-index.js";
 
 (function () {
@@ -591,6 +592,14 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     restore: function (event) {
       act(event.currentTarget, "Restoring…", "POST", "/api/restore", JSON.stringify({ record: path }), editor.graph);
     },
+    // A draft term of the glossary is requested with the term request form of the glossary, filled in with its values.
+    request: async function () {
+      const term = await (await fetch(graph, { headers: { Accept: "application/ld+json" } })).json();
+      const references = [].concat(term["http://www.w3.org/2000/01/rdf-schema#isDefinedBy"] || []).map(function (given) { return given["@id"] || given; });
+      const definition = term.description && term.description["@value"] !== undefined ? term.description["@value"] : term.description;
+      openRequest({ name: term.name, abbreviation: [].concat(term.alternateName || [])[0], definition: definition, references: references,
+                    address: editor.graph }, document.getElementById("term-table").value);
+    },
     // An imported model is saved unchanged, so that it is a platform record, with a draft RO-Crate.
     own: function () {
       if (window.confirm("Make this model a platform record? Imports from Zenodo then leave it unchanged, and its RO-Crate is a draft made from the record.")) {
@@ -604,6 +613,15 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
       }
     },
   };
+  // The request of a draft term is offered for the glossary, with a choice of its table.
+  const requesting = document.getElementById("term-request");
+  if (requesting && editor.draftVocabulary === GLOSSARY) {
+    const table = tableChoice();
+    table.id = "term-table";
+    table.classList.add("w-auto");
+    requesting.querySelector("label").after(table);
+    requesting.classList.replace("d-none", "d-inline-flex");
+  }
   for (const button of document.querySelectorAll("[data-action]")) {
     button.addEventListener("click", actions[button.dataset.action]);
   }

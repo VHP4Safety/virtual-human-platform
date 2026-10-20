@@ -4,9 +4,11 @@
 // - Text fields: values are passed to shacl-form as literals, so that HTML is not read as an address.
 import { Plugin, registerPlugin, findLabel, loadRDF } from "https://cdn.jsdelivr.net/npm/@ulb-darmstadt/shacl-form@3.7.3/dist/bundle.js";
 import { busy } from "./busy.js";
+import { GLOSSARY, openRequest, tableChoice } from "./glossary.js";
 
 const IRI = "http://www.w3.org/ns/shacl#IRI";
 const LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
+const IS_DEFINED_BY = "http://www.w3.org/2000/01/rdf-schema#isDefinedBy";
 const TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 const TARGET = "http://www.w3.org/ns/shacl#targetClass";
 const CLASS = "http://www.w3.org/ns/shacl#class";
@@ -432,6 +434,68 @@ function registerTerm(text, vocabulary, added) {
   shown.body.append(labelled("Label", label), labelled("Address", address), add);
 }
 
+// Propose a term for the VHP4Safety glossary. Store it as a draft term at a platform address, so that it can be used
+// at once, and open the term request form of the glossary if asked.
+function proposeTerm(text, vocabulary, added) {
+  const shown = opened("Propose a term for " + vocabulary.name);
+  const label = make("input", "form-control form-control-sm");
+  label.value = text;
+  const abbreviation = make("input", "form-control form-control-sm");
+  const definition = make("textarea", "form-control form-control-sm");
+  definition.rows = 3;
+  const references = make("textarea", "form-control form-control-sm");
+  references.rows = 2;
+  references.placeholder = "Web addresses of the sources of the definition, one on each line";
+  const table = tableChoice();
+  const draft = make("button", "btn btn-outline-success btn-sm", "Use as a draft");
+  const request = make("button", "btn btn-success btn-sm", "Use as a draft, and request it on GitHub");
+  draft.type = "button";
+  request.type = "button";
+
+  async function store(button, asked) {
+    const term = {
+      name: label.value.trim(),
+      abbreviation: abbreviation.value.trim(),
+      definition: definition.value.trim(),
+      references: references.value.split(/\s+/).filter(function (given) { return /^https?:\/\//.test(given); }),
+    };
+    if (!term.name) {
+      shown.refuse("A label is needed.");
+      return;
+    }
+    if (asked) {
+      openRequest(term, table.value);
+    }
+    const working = busy(button, "Storing…", shown.body);
+    try {
+      const body = { name: term.name, inDefinedTermSet: { "@id": vocabulary["@id"] }, creativeWorkStatus: "Draft" };
+      if (term.abbreviation) {
+        body.alternateName = term.abbreviation;
+      }
+      if (term.definition) {
+        body.description = term.definition;
+      }
+      if (term.references.length) {
+        body[IS_DEFINED_BY] = term.references.map(function (given) { return { "@id": given }; });
+      }
+      const answer = await api("POST", "/api/terms", body);
+      shown.dialog.close();
+      added(answer["@id"], term.name);
+    } catch (error) {
+      working.done();
+      shown.refuse(error.message);
+    }
+  }
+  draft.addEventListener("click", function () { store(draft, false); });
+  request.addEventListener("click", function () { store(request, true); });
+  const bar = make("div", "d-flex flex-wrap gap-2 mt-2");
+  bar.append(draft, request);
+  shown.body.append(
+    make("p", "small text-secondary", "The term is stored as a draft at a platform address, and can be used at once. Its glossary address is given when the request is accepted."),
+    labelled("Label", label), labelled("Abbreviation", abbreviation), labelled("Definition", definition),
+    labelled("References", references), labelled("Table of the glossary", table), bar);
+}
+
 // The earlier values of each link field while the form is open, by node and property, so that a removed value is put
 // back as it was: a text as a text, a link with its name.
 const held = new Map();
@@ -767,7 +831,15 @@ class RecordLink extends Plugin {
             }, "record-link-new record-link-registry");
           }
           for (const of_class of Object.keys(classes)) {
-            if (of_class === TERM && vocabulary) {
+            // A term of the glossary is proposed, as its address is given in the glossary.
+            if (of_class === TERM && vocabulary && vocabulary[SPACE] === GLOSSARY) {
+              option(["＋ Propose “" + text + "” for " + vocabulary.name + "…"], function () {
+                options.replaceChildren();
+                proposeTerm(text, vocabulary, function (iri, name) {
+                  attempt(function () { return known(iri, name, TERM); });
+                });
+              }, "record-link-new");
+            } else if (of_class === TERM && vocabulary) {
               option(["＋ Register “" + text + "” as a term of " + vocabulary.name + " by hand…"], function () {
                 options.replaceChildren();
                 registerTerm(text, vocabulary, function (iri, name) {
