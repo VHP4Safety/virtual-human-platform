@@ -2,7 +2,7 @@
 // API (Graph Store Protocol) with the record's version. The preview beside it shows what is published: the
 // record's page, or its linked data.
 import { busy } from "./busy.js";
-import { outline, reveal as showPart } from "./record-index.js";
+import { outline, reveal as showPart, select, whenSelected } from "./record-index.js";
 
 (function () {
   const editor = JSON.parse(document.getElementById("editor").textContent);
@@ -190,8 +190,15 @@ import { outline, reveal as showPart } from "./record-index.js";
       base: editor.base,
       linkTarget: "_blank",
       openDisabled: true,
-      onNavigate: function () {
+      // A page opened in the preview is shown in the form too.
+      onNavigate: function (address) {
         pageView.scrollTop = 0;
+        const node = Array.from(form.shadowRoot.querySelectorAll("shacl-node")).find(function (found) {
+          return found.dataset.nodeId === address;
+        });
+        if (node) {
+          select(node);
+        }
       },
       onPick: showEditing,
     });
@@ -473,6 +480,20 @@ import { outline, reveal as showPart } from "./record-index.js";
 
   if (form) {
     outline(form, document.getElementById("record-index"));
+    // A part shown in the form is shown in the preview: its page, or the section on the page that holds it.
+    whenSelected(function (node) {
+      if (!caseStudyComponent || !caseStudy) {
+        return;
+      }
+      if (node.dataset.nodeId.startsWith("_:")) {
+        const page = node.parentElement.closest("shacl-node:not([data-node-id^='_:'])");
+        if (page) {
+          caseStudyComponent.markField(caseStudy, page.dataset.nodeId, "", { position: valueOf(node, SCHEMA + "position"), name: valueOf(node, SCHEMA + "name") });
+        }
+      } else {
+        caseStudyComponent.markField(caseStudy, node.dataset.nodeId, "", null);
+      }
+    });
     // A change that leaves the record as loaded, such as an empty field drawn, is no edit.
     let loaded = null;
     form.addEventListener("ready", function () {

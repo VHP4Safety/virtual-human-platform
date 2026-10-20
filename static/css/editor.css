@@ -398,3 +398,47 @@ body.editor {
   max-height: 22rem;
   overflow-y: auto;
 }
+
+/* A part of the index is dragged by its handle to change its order. */
+.record-index-handle {
+  cursor: grab;
+  color: #9a95b8;
+  padding: 0 2px;
+}
+.record-index-row:hover .record-index-handle {
+  color: #29235c;
+}
+.record-index .sortable-ghost {
+  opacity: 0.4;
+  background: #e7e5f2;
+}
+
+/* The stage of a case study page in its process flow, in the colours of the website. */
+.record-index-stage {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-right: 4px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.record-index-stage.stage-1 { background: var(--bs-vhppink-distinct); }
+.record-index-stage.stage-2 { background: var(--bs-vhpdarkpurple); }
+.record-index-stage.stage-3 { background: var(--bs-vhpdarkteal); }
+.record-index-stage.stage-4 { background: var(--bs-vhplightteal); }
+.record-index-stage.stage-5 { background: var(--bs-vhpblue); }
+.record-index-section {
+  flex: none;
+  margin-right: 4px;
+  color: #6c6891;
+  font-size: 0.8rem;
+}
+.record-index-empty .record-index-link {
+  color: #9a95b8;
+  font-style: italic;
+}

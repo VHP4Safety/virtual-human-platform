@@ -103,6 +103,18 @@ def form_graph() -> Graph:
     return found
 
 
+def ordered() -> list[str]:
+    """The properties of the fields whose parts have a position, such as steps and sections. These parts are
+    shown in the index of the editor, and their order is set by dragging them."""
+    graph = profile_graph()
+    found = set()
+    for field in graph.objects(None, SH.property):
+        node = graph.value(field, SH.node)
+        if node is not None and any(graph.value(own, SH.path) == SDO.position for own in graph.objects(node, SH.property)):
+            found.add(str(graph.value(field, SH.path)))
+    return sorted(found)
+
+
 def mixed() -> list[str]:
     """The properties of fields whose sh:or offers a link or another value, such as an address."""
     graph = profile_graph()
