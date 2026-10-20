@@ -1,8 +1,5 @@
 {% extends "base.html" %}
-{# The home page, made from the catalogue record of the platform (linkeddata/pages.py: catalogue_of): the heading
-   and the sentence, the kinds of records with their counts, the description and the pages, the summary of the
-   workflow page with the process flow steps, the partners of the publisher, and the contact addresses of the
-   publisher. #}
+{# The home page, made from the catalogue record of the platform. #}
 
 {% block head %}
 <!-- Page-specific CSS for home page -->
@@ -139,7 +136,7 @@
 	{{ part.html|sanitize_html }}
 	{% endfor %}
 
-	{# The pages about the platform, with their icons, in this order; other pages after them. #}
+	{# The pages about the platform, with their icons, in this order. Other pages are listed after them. #}
 	{% set icons = {"explore_our_work": "diagram-3", "training": "mortarboard", "impact": "graph-up-arrow"} %}
 	{% set ordered = [] %}
 	{% for path in icons %}{% for page in platform.pages if (page.address|page_link).strip("/") == path %}{% set _ = ordered.append(page) %}{% endfor %}{% endfor %}
@@ -163,7 +160,9 @@
       Supported by
     </h1>
     <p class="text-secondary fs-5">Collaboration in innovation.</p>
-    <!-- Partner logo grid: grayscale, full colour on hover; the publisher's partners and co-funders. -->
+
+    <!-- Partner logo grid: grayscale, full colour on hover. Order, names and
+         links come from the partner records, in the order of static/images/partners/partners.txt. -->
     <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3">
       {% for partner in platform.partners if partner.logo %}
         <div class="col">

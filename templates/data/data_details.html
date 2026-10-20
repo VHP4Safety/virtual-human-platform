@@ -130,7 +130,7 @@
       {% set bio_models = [] %}
       {% set ns_bio = namespace(organisms=[], organ=None, organ_url=None, tissue=None, tissue_url=None, cell_type=None, cell_type_url=None, bioassays=[], aop_name=None, aop_url=None, aop_events=[]) %}
       {% if record.type == "study" %}
-        {# The experimental design of the study, read from its record (linkeddata/pages.py: design_of). #}
+        {# The experimental design of the study. #}
         {% set sec_attrs = data.design.attributes if data.design else [] %}
         {% set subs_bio = data.design.subsections if data.design else [] %}
 

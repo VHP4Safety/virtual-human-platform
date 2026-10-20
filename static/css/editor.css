@@ -1,5 +1,5 @@
-/* Editor pages: the platform's Bootstrap theme with their own header and navigation. */
-/* Room is left for the public navbar only; the editor's header is not fixed. */
+/* Editor pages, with the Bootstrap theme of the platform and a header of their own. */
+/* Room is left for the public navbar only. The header of the editor is not fixed. */
 body.editor {
   font-family: "Open Sans", Arial, sans-serif;
   padding-top: 0;
@@ -21,7 +21,7 @@ body.editor {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-/* The record editor: records and sections, the form, and the preview, side by side on wide screens */
+/* The record editor, with the records, the form and the preview side by side on wide screens */
 .editor-layout {
   display: grid;
   gap: 1.25rem;
@@ -240,7 +240,7 @@ body.editor {
   background: var(--bs-danger);
 }
 
-/* The preview: the record's page, or its linked data */
+/* The preview of the page or the linked data of the record */
 .editor-preview {
   display: flex;
   flex-direction: column;
@@ -266,7 +266,7 @@ body.editor {
   }
 }
 
-/* While a record is edited, the page has the height of the window: the main part is scrolled, and the footer with
+/* While a record is edited, the page has the height of the window. The main part is scrolled, and the footer with
    Save and Discard is under it. 100cqh is the height of the main part. */
 .editor-app {
   height: 100vh;
@@ -304,7 +304,7 @@ body.editor {
   padding-bottom: 0.5rem;
 }
 
-/* Locked and dimmed while the platform answers */
+/* Locked and dimmed while a request is sent */
 .busy {
   cursor: progress;
 }
@@ -314,14 +314,14 @@ body.editor {
   transition: opacity 0.2s;
 }
 
-/* What blocks saving, above Save */
+/* The reasons why a record is not saved, above Save */
 .editor-save .alert {
   flex-basis: 100%;
   max-height: 40vh;
   overflow-y: auto;
 }
 
-/* The record's statements as a diagram: an arrow per value */
+/* The statements of the record as a diagram, with an arrow for each value */
 .graph-node {
   display: inline-flex;
   flex-wrap: wrap;
@@ -461,7 +461,7 @@ body.editor {
   font-style: italic;
 }
 
-/* The index shows one page: the way down to it, the page, the pages below it and its sections of text. */
+/* One page is shown in the index, with the pages above it, the pages below it and its sections. */
 .record-index-path {
   margin: 0 0 0.5rem;
   padding: 0;

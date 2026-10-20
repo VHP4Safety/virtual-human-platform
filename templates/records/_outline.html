@@ -1,4 +1,4 @@
-{# The outline of a record (linkeddata/pages.py): the fields, and the parts with a heading each. #}
+{# The outline of a record. #}
 
 {% macro value(found) -%}
   {%- if found.link -%}
@@ -38,7 +38,7 @@
 {% endfor %}
 {% endmacro %}
 
-{# An outline to read: headings, fields as a list, and texts as paragraphs. #}
+{# An outline with headings, fields as a list, and texts as paragraphs. #}
 {% macro article(found, level) %}
 <section class="mb-4">
   <h{{ [level, 6]|min }}>{{ found.name or found.kind }}</h{{ [level, 6]|min }}>

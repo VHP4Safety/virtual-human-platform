@@ -33,12 +33,12 @@
     {% endif %}
 
     {% if publisher_document %}
-    <!-- The organisation that publishes the platform, as its record gives it, for search engines -->
+    <!-- The publisher of the platform, from its record, for search engines -->
     <script type="application/ld+json">{{ publisher_document|tojson }}</script>
     {% endif %}
 
     {% if record_document %}
-    <!-- The page's record, as the platform publishes it -->
+    <!-- The record of the page, as published -->
     <script type="application/ld+json" id="record-document">{{ record_document|tojson }}</script>
     {% endif %}
 

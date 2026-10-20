@@ -1,8 +1,6 @@
-/* A case study as the website shows it (static/js/case-study.js), beside casestudies.css, and the
-   editor's panel that shows it under the form. */
+/* Styles of the case study drawn by static/js/case-study.js, on the website and in the editor preview. */
 
-/* Taken from the website's base.css: accordion colours, links in the text colour, and rows of six or
-   more buttons wrapped three to a row. */
+/* Accordion colours, link colours and button rows, as in base.css. */
 .case-study .accordion-button {
   background-color: var(--bs-white);
   color: var(--bs-body-color);
@@ -42,7 +40,7 @@
   display: none;
 }
 
-/* The pages are panels side by side, each as wide as the case study; they are scrolled sideways by script. */
+/* The pages are panels side by side, each as wide as the case study. They are scrolled sideways by script. */
 .case-study-strip {
   align-items: flex-start;
 }
@@ -58,7 +56,7 @@
   text-decoration: none;
 }
 
-/* The mark of the field the editor's form is on */
+/* The mark of the field that is edited in the form */
 .case-study-mark {
   outline: 3px solid var(--bs-vhppink);
   outline-offset: 4px;
