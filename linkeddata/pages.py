@@ -316,6 +316,29 @@ def listing(path: str, arguments, size: int = LISTED) -> dict:
             "total": total, "page": number, "pages": (total + size - 1) // size, "query": query}
 
 
+
+def items(iris: list[str]) -> list[dict]:
+    """The records that a page lists as its items, such as the training materials on the training page: each with its
+    name, description, kind of material, address elsewhere, publication date and videos, the records it mentions (the
+    tools and methods that a training teaches) and its authors."""
+    found = documents.public(records.graph(iris))
+    linked = set()
+    for iri in iris:
+        for predicate in (SDO.mentions, SDO.author):
+            linked.update(str(value) for value in found.objects(URIRef(iri), predicate))
+    names = records.names(sorted(linked))
+    listed = []
+    for iri in iris:
+        node = URIRef(iri)
+        named = {}
+        for predicate in (SDO.mentions, SDO.author):
+            named[predicate] = sorted(({"address": str(value), "name": names.get(str(value), str(value))} for value in found.objects(node, predicate)), key=by_name)
+        listed.append({"address": iri, "name": str(found.value(node, SDO.name) or iri), "description": text(found.value(node, SDO.description)),
+                       "kinds": sorted(str(value) for value in found.objects(node, SDO.learningResourceType)),
+                       "url": str(found.value(node, SDO.url) or ""), "published": str(found.value(node, SDO.datePublished) or ""),
+                       "videos": videos(found, node, SDO.video), "mentions": named[SDO.mentions], "authors": named[SDO.author]})
+    return listed
+
 def partners(found: Graph, node) -> list[dict]:
     """The partners of an organisation are sorted by role and name. The co-funders follow, sorted by name."""
     held = []

@@ -30,7 +30,7 @@ LICENSE = "https://spdx.org/licenses/CC0-1.0"
 SCHEMA = "https://schema.org/"
 DECIMAL = "http://www.w3.org/2001/XMLSchema#decimal"
 # The pages, by the templates' route names, and the files read.
-PAGES = {"explore_our_work": "explore_our_work", "impact": "impact",
+PAGES = {"explore_our_work": "explore_our_work", "impact": "impact", "training": "training",
          "SafetyAssessmentWorkflow": "safety_assessment_workflow", "terms_of_service": "legal/terms_of_service",
          "privacypolicy": "legal/privacypolicy"}
 # Partner list headings that name co-funders, not partners.

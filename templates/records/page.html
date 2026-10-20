@@ -2,7 +2,7 @@
 {# A page of the platform from its record (routes/record_pages.py: page): its sections as tabs with their items,
    or as text when it has one section without a heading. A section shows the fields it names of the record it
    presents, or, presenting a grant without them, lists what names it; a page that explains a term lists the
-   term's kinds. #}
+   term's kinds. A kind's page (the training page) lists the kind's records as the items of its first section. #}
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
@@ -60,6 +60,20 @@
 {% endif %}
 {% endmacro %}
 
+{% macro listed_item(found) %}
+{% if found.kinds or found.published %}
+<p class="mb-2">{% for value in found.kinds %}<span class="badge bg-vhplight-blue text-secondary rounded-pill me-1">{{ value }}</span>{% endfor %}{% if found.published %}<span class="small text-muted">Published {{ found.published }}</span>{% endif %}</p>
+{% endif %}
+{{ html(found.description) }}
+{{ media(found) }}
+{% if found.authors %}<p class="small text-muted">By {% for author in found.authors %}<a class="link-vhpblue" href="{{ author.address|page_link }}">{{ author.name }}</a>{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
+<div class="d-flex flex-wrap gap-2">
+  {% if found.url %}<a class="btn btn-vhpblue" href="{{ found.url }}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right pe-1"></i>Open</a>{% endif %}
+  {% for mentioned in found.mentions %}<a class="btn btn-outline-vhpblue" href="{{ mentioned.address|page_link }}"><i class="bi bi-tools pe-1"></i>{{ mentioned.name }}</a>{% endfor %}
+  <a class="btn btn-outline-secondary" href="{{ found.address|page_link }}"><i class="bi bi-info-circle pe-1"></i>Details</a>
+</div>
+{% endmacro %}
+
 {% block content %}
 <section class="container py-md-5 py-3" id="about-section">
   <h1>{{ page.name }}</h1>
@@ -88,6 +102,9 @@
             {% for part in section.sections %}
             {% call item("item-" ~ tab ~ "-" ~ loop.index, part.heading or "") %}{{ html(part.text) }}{{ media(part) }}{{ shown(part.shown) }}{{ outputs(part.outputs) }}{% endcall %}
             {% endfor %}
+            {% if loop.first %}{% for found in listed|default([]) %}
+            {% call item("record-" ~ loop.index, found.name) %}{{ listed_item(found) }}{% endcall %}
+            {% endfor %}{% endif %}
           </div>
           {{ outputs(section.outputs) }}
         </div>

@@ -77,6 +77,13 @@ def listing_page(kind: str):
         return render_template("data/data.html", **pages.data_listing(request.args), page_title=f"{pages.kind_names()[kind]} — VHP4Safety")
     if kind == "models":
         return render_template("data/data.html", **pages.model_listing(request.args), page_title=f"{pages.kind_names()[kind]} — VHP4Safety")
+    page = records.get(records.address(kind))
+    if page is not None and page.type in records.within(str(SDO.WebPage)):
+        # A kind with a page record at its path, such as the training page, is listed as the items of that page.
+        found = pages.page(page)
+        _, iris = records.page(settings()["kinds"][kind], {}, "", 0, None)
+        return render_template("records/page.html", page=found, listed=pages.items(iris), page_title=f"{found['name']} — VHP4Safety",
+                               meta_description=found["description"][:160] or f"{found['name']}, a page of the VHP4Safety Virtual Human Platform.")
     found = pages.listing(kind, request.args)
     return render_template("records/listing.html", listing=found, page_title=f"{found['name'] or kind.capitalize()} — VHP4Safety")
 
