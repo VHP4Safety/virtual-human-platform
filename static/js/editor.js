@@ -115,11 +115,12 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     box.append(node, renderEdges(found.edges));
   }
 
-  function listMessages(id, messages) {
+  // The messages of each field are listed with the label of the field in the form, if it is known.
+  function listMessages(id, messages, labels) {
     const list = document.getElementById(id);
     list.replaceChildren();
     for (const [field, found] of Object.entries(messages || {})) {
-      list.append(make("li", "", field + ": " + found.join(" ")));
+      list.append(make("li", "", ((labels || {})[field] || field) + ": " + found.join(" ")));
     }
     list.parentElement.classList.toggle("d-none", !list.children.length);
   }
@@ -388,8 +389,8 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     const removed = answer.edges.filter(function (edge) { return edge.status === "removed"; }).length;
     say(added || removed ? "On save: " + added + " added, " + removed + " removed" : "Nothing to save");
     renderGraph(document.getElementById("rdf-graph"), answer);
-    listMessages("rdf-problems", answer.fields);
-    listMessages("rdf-warnings", answer.warnings);
+    listMessages("rdf-problems", answer.fields, answer.labels);
+    listMessages("rdf-warnings", answer.warnings, answer.labels);
   }
 
   function schedulePreview() {
