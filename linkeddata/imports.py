@@ -107,7 +107,8 @@ def convert(rows: list[dict], base: str) -> ox.Dataset:
     """Convert parsed rows to statements of the model. Read the rows with the JSON-LD context of the platform, and
     keep only the types and the properties of the fields of the profile."""
     document = {"@context": {**documents.context(settings()), "@base": base}, "@graph": rows}
-    kept = {str(path) for path in profile_graph().objects(None, SH.path)} | {str(RDF.type)}
+    # The cells of an RDF list (rdf:first, rdf:rest) are kept too, as a list field takes a list.
+    kept = {str(path) for path in profile_graph().objects(None, SH.path)} | {str(RDF.type), str(RDF.first), str(RDF.rest)}
     found = ox.Dataset()
     for quad in ox.parse(json.dumps(document).encode(), format=ox.RdfFormat.JSON_LD):
         if quad.predicate.value in kept:
