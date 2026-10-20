@@ -58,6 +58,20 @@ def document(kind: str, address: str, body: dict) -> dict:
     return found
 
 
+def kept(found: Graph, iri: str, kind: str) -> None:
+    """Keep the stored values of each read-only field (dash:readOnly) that *found* leaves out, with their parts. An
+    example is the experimental design of a dataset, which is edited in its source, BioStudies."""
+    node = URIRef(iri)
+    stored = None
+    for field in fields(kind):
+        if not field["read_only"] or (node, URIRef(field["iri"]), None) in found:
+            continue
+        stored = records.graph([iri]) if stored is None else stored
+        for value in stored.objects(node, URIRef(field["iri"])):
+            found.add((node, URIRef(field["iri"]), value))
+            found += records.described(stored, value)
+
+
 def slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:60] or "record"
 

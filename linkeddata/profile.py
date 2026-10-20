@@ -23,6 +23,7 @@ TABLES = Path(__file__).parent.parent / "database" / RELEASE / "tables.sql"
 
 
 FORM = Namespace("https://platform.vhp4safety.nl/model/v1/form#")
+DASH = Namespace("http://datashapes.org/dash#")
 
 
 @cache
@@ -312,6 +313,7 @@ def fields(kind: str) -> list[dict]:
                 "part": graph.value(field, SH.nodeKind) in PARTS or (
                     graph.value(field, SH.node) is not None and str(graph.value(field, SH["class"])) not in kinds),
                 "addressed": graph.value(field, SH.nodeKind) == SH.IRI,
+                "read_only": graph.value(field, DASH.readOnly) == Literal(True),
                 "position": (int(graph.value(group, SH.order) or 0) if group is not None else 0, str(group or ""), int(graph.value(field, SH.order) or 0)),
                 "section": str(graph.value(group, RDFS.label) or "") if group is not None else "",
             })

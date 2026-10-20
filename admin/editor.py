@@ -3,15 +3,13 @@ shacl-form."""
 
 from rdflib import RDF, RDFS, XSD, BNode, Graph, Literal, URIRef
 from rdflib.collection import Collection
-from rdflib.namespace import SDO, SH, VOID, Namespace
+from rdflib.namespace import SDO, SH, VOID
 from sqlalchemy import func, select
 
 import database
 from database import records
 from database.tables import PLATFORM, Note, Record
-from linkeddata.profile import FORM, PARTS, fields, hierarchy, jsonld_name, profile_graph, settings, shape_of, terms
-
-DASH = Namespace("http://datashapes.org/dash#")
+from linkeddata.profile import DASH, FORM, PARTS, fields, hierarchy, jsonld_name, profile_graph, settings, shape_of, terms
 
 
 def counts() -> list[dict]:
@@ -69,8 +67,12 @@ def form_graph() -> Graph:
     """Return the graph for shacl-form: the profile, the class hierarchy, and the names of the records, the list
     terms (sh:in) and their vocabularies. Add two choices, a text and an address, to each sh:or of classes, so that a
     name or an address that is not a record is shown. Give both choices an empty sh:in, so that such a value is
-    marked with the message of the field. Write each list field in the form of a list that shacl-form edits."""
+    marked with the message of the field. Write each list field in the form of a list that shacl-form edits. Leave
+    out the read-only fields (dash:readOnly), such as the experimental design of a dataset; a save keeps their values
+    (admin.writes.kept)."""
     found = Graph() + profile_graph() + hierarchy()
+    for field in list(found.subjects(DASH.readOnly, Literal(True))):
+        found.remove((None, SH.property, field))
     lists(found)
     for alternatives in list(found.objects(None, SH["or"])):
         listed = Collection(found, alternatives)

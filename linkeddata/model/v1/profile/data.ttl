@@ -54,7 +54,7 @@ form:Dataset a sh:NodeShape ;
         sh:description "As given by the source." ] ;
     sh:property [ sh:path schema:funding ; sh:order 17 ; sh:name "Funding" ; sh:class schema:MonetaryGrant ;
         sh:description "The grants that funded the data." ] ;
-    sh:property [ sh:path schema:hasPart ; sh:order 18 ; sh:name "Experimental design" ; sh:class bioschemas_draft:LabProtocol ;
+    sh:property [ sh:path schema:hasPart ; sh:order 18 ; sh:name "Experimental design" ; sh:class bioschemas_draft:LabProtocol ; dash:readOnly true ;
         sh:node form:StudyProtocol ; sh:nodeKind sh:BlankNodeOrIRI ;
         sh:description "The design of the study, as in its BioStudies record: the biological models, the chemicals, and the other sections, such as exposures and endpoint readouts." ] .
 
