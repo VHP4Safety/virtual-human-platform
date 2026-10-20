@@ -15,7 +15,6 @@ from datetime import datetime
 
 from linkeddata.parsers import licence, link, present, slug, term
 
-PROFILE = "https://bioschemas.org/profiles/Course/1.0-RELEASE"
 DATE = "http://www.w3.org/2001/XMLSchema#date"
 MATERIALS = (".pptx", ".ipynb", ".Rmd", ".xlsx", ".csv")
 LEFT_OUT = ("literature/", "old_archive/", "~$")
@@ -122,7 +121,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         files = "/".join([repository["html_url"], "blob", repository["default_branch"]]) + "/"
         readme = contents.get(name + "/README.md", b"").decode("utf-8")
         row = {"@id": "training/" + slug(name), "@type": "Course", "url": link(repository["html_url"]),
-               "learningResourceType": "course", "conformsTo": link(PROFILE)}
+               "learningResourceType": "course"}
         path = agenda_of(tree)
         if path is not None and name + "/" + path in contents:
             agenda(row, contents[name + "/" + path].decode("utf-8"), others)

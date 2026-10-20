@@ -114,9 +114,4 @@ form:SoftwareApplication a sh:NodeShape ;
         sh:description "Address of the release notes, or a short note on the latest release." ] ;
     sh:property [
         sh:path schema:sameAs ; sh:group form:elsewhere ; sh:order 1 ; sh:name "Other addresses" ; sh:nodeKind sh:IRI ;
-        sh:description "Such as bio.tools, FAIRsharing, Wikipedia or the Research Software Directory. Earlier platform addresses are kept here, so old links still work." ] ;
-    sh:property [
-        sh:path dct:conformsTo ; sh:group form:elsewhere ; sh:order 2 ; sh:name "Bioschemas profile" ; sh:nodeKind sh:IRI ;
-        sh:hasValue <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE> ;
-        sh:description "Bioschemas ComputationalTool 1.0, read by search engines and registries." ;
-        sh:message "ComputationalTool 1.0-RELEASE expected." ] .
+        sh:description "Such as bio.tools, FAIRsharing, Wikipedia or the Research Software Directory. Earlier platform addresses are kept here, so old links still work." ] .

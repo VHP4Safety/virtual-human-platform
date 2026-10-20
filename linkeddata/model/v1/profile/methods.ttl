@@ -70,8 +70,4 @@ form:LabProtocol a sh:NodeShape ;
         sh:description "The protocol the lab follows." ] ;
     sh:property [
         sh:path schema:isBasedOn ; sh:group form:elsewhere ; sh:order 1 ; sh:name "Catalogue request" ; sh:nodeKind sh:IRI ;
-        sh:description "The cloud catalogue request the record was made from." ] ;
-    sh:property [
-        sh:path dct:conformsTo ; sh:group form:elsewhere ; sh:order 2 ; sh:name "Bioschemas profile" ; sh:nodeKind sh:IRI ;
-        sh:hasValue <https://bioschemas.org/profiles/LabProtocol/0.9-DRAFT> ;
-        sh:message "LabProtocol 0.9-DRAFT expected." ] .
+        sh:description "The cloud catalogue request the record was made from." ] .

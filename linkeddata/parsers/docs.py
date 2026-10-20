@@ -24,7 +24,6 @@ LEFT_OUT = {"peertube"}
 # The sections of the documentation's format (tutorials/documentation_format.md), in order.
 FORMAT = ["Introduction", "Accessing the Tool", "Tool Functionalities", "Interpreting the Output", "Summary"]
 FORMAT_PAGE = SITE + "tutorials/documentation_format.html"
-PROFILE = "https://bioschemas.org/profiles/TrainingMaterial/1.0-RELEASE"
 DATE = "http://www.w3.org/2001/XMLSchema#date"
 # The files beside a tutorial that are its parts.
 FILES = (".ipynb", ".r", ".R", ".py", ".Rmd")
@@ -185,10 +184,10 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         page = SITE + re.sub(r"\.(md|rst)$", ".html", path)
         row = {"@id": "training/" + slug(name), "@type": "Tutorial", "name": found[0][1] if found else name,
                "description": description, "url": link(page), "mentions": link("tools/" + name),
-               "learningResourceType": "tutorial", "conformsTo": [link(PROFILE)],
+               "learningResourceType": "tutorial",
                "author": [author(given, others) for given in authors]}
         if follows(found):
-            row["conformsTo"].append(link(FORMAT_PAGE))
+            row["conformsTo"] = link(FORMAT_PAGE)
         changes = json.loads(contents.get(path + "#changes", b"[]"))
         if changes:
             row["dateModified"] = {"@value": changes[0]["commit"]["committer"]["date"][:10], "@type": DATE}

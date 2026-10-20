@@ -20,7 +20,6 @@ rules:
     - {predicate: "https://schema.org/keywords", object: keywords}
     - {predicate: "https://schema.org/author", object: author}
     - {predicate: "https://schema.org/video", object: video}
-    - {predicate: "http://purl.org/dc/terms/conformsTo", object: conformsTo}
   Player:
     - {predicate: a, value: "https://schema.org/VideoObject"}
     - {predicate: "https://schema.org/name", object: name}

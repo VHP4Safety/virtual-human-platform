@@ -15,15 +15,6 @@ CREATE TABLE IF NOT EXISTS "bioschemas_draft_lab_protocol" (
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "bioschemas_draft_lab_protocol__record" ON "bioschemas_draft_lab_protocol" ("record");
-CREATE TABLE IF NOT EXISTS "bioschemas_draft_lab_protocol__dct_conforms_to" (
-  "record" TEXT NOT NULL,
-  "iri" TEXT NOT NULL,
-  "value" TEXT NOT NULL,
-  "term" TEXT NOT NULL,
-  PRIMARY KEY ("iri", "value", "term"),
-  FOREIGN KEY ("iri") REFERENCES "bioschemas_draft_lab_protocol" ("iri")
-);
-CREATE INDEX IF NOT EXISTS "bioschemas_draft_lab_protocol__dct_conforms_to__record" ON "bioschemas_draft_lab_protocol__dct_conforms_to" ("record");
 CREATE TABLE IF NOT EXISTS "bioschemas_draft_lab_protocol__glossary_vhp0000151" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -1498,15 +1489,6 @@ CREATE TABLE IF NOT EXISTS "schema_software_application" (
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_software_application__record" ON "schema_software_application" ("record");
-CREATE TABLE IF NOT EXISTS "schema_software_application__dct_conforms_to" (
-  "record" TEXT NOT NULL,
-  "iri" TEXT NOT NULL,
-  "value" TEXT NOT NULL,
-  "term" TEXT NOT NULL,
-  PRIMARY KEY ("iri", "value", "term"),
-  FOREIGN KEY ("iri") REFERENCES "schema_software_application" ("iri")
-);
-CREATE INDEX IF NOT EXISTS "schema_software_application__dct_conforms_to__record" ON "schema_software_application__dct_conforms_to" ("record");
 CREATE TABLE IF NOT EXISTS "schema_software_application__glossary_vhp0000151" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,

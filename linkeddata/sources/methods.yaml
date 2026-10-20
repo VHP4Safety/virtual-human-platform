@@ -23,7 +23,6 @@ rules:
     - {predicate: "https://schema.org/citation", object: citation}
     - {predicate: "https://schema.org/subjectOf", object: sop}
     - {predicate: "https://schema.org/isBasedOn", object: issue}
-    - {predicate: "http://purl.org/dc/terms/conformsTo", value: "https://bioschemas.org/profiles/LabProtocol/0.9-DRAFT"}
   Organization:
     - {predicate: a, value: "https://schema.org/Organization"}
     - {predicate: "https://schema.org/name", object: name}

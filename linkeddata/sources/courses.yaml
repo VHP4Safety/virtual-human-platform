@@ -27,7 +27,6 @@ rules:
     - {predicate: "https://schema.org/learningResourceType", object: learningResourceType}
     - {predicate: "https://schema.org/hasCourseInstance", object: hasCourseInstance}
     - {predicate: "https://schema.org/hasPart", object: hasPart}
-    - {predicate: "http://purl.org/dc/terms/conformsTo", object: conformsTo}
   Given:
     - {predicate: a, value: "https://schema.org/CourseInstance"}
     - {predicate: "https://schema.org/startDate", object: startDate}

@@ -32,7 +32,6 @@ rules:
     - {predicate: "https://schema.org/creativeWorkStatus", object: trl}
     - {predicate: "https://schema.org/releaseNotes", object: release_notes}
     - {predicate: "https://schema.org/sameAs", object: same_as}
-    - {predicate: "http://purl.org/dc/terms/conformsTo", value: "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"}
   Organization:
     - {predicate: a, value: "https://schema.org/Organization"}
     - {predicate: "https://schema.org/name", object: name}

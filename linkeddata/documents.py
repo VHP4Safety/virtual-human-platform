@@ -7,13 +7,13 @@ from functools import cache
 
 from pyld import jsonld
 from rdflib import RDF, Graph, Literal, URIRef
-from rdflib.namespace import SDO, SH, VOID
+from rdflib.namespace import DCTERMS, SDO, SH, VOID
 
 import database
 from database import records
 from database.tables import Record
 from linkeddata import patches, storage
-from linkeddata.model import profile, settings
+from linkeddata.model import profile, required, settings
 
 
 def context(config: dict) -> dict:
@@ -153,11 +153,17 @@ def published_as() -> dict[URIRef, URIRef]:
 
 
 def typed(found: Graph) -> Graph:
-    """The statements with the values of fields published as another class having that class too."""
+    """The statements as published: the values of fields published as another class are given that class too; and
+    the official profile of the class of a node is stated (dct:conformsTo) only when every field required by that
+    profile is given."""
     for predicate, of_class in published_as().items():
         for value in list(found.objects(None, predicate)):
             if isinstance(value, URIRef):
                 found.add((value, RDF.type, of_class))
+    for of_class, (official, fields) in required().items():
+        for node in set(found.subjects(RDF.type, of_class)):
+            if fields <= set(found.predicates(node, None)):
+                found.add((node, DCTERMS.conformsTo, official))
     return found
 
 
