@@ -600,18 +600,4 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
   for (const button of document.querySelectorAll("[data-action]")) {
     button.addEventListener("click", actions[button.dataset.action]);
   }
-
-  const image = document.getElementById("image");
-  if (image) {
-    image.addEventListener("change", async function () {
-      const body = new FormData();
-      body.append("image", image.files[0]);
-      const working = busy(image.parentElement, "Uploading…", column);
-      const answer = await send("POST", "/api/images", body);
-      working.done();
-      if (answer) {
-        show("Image address, for the image field: " + answer["@id"], true);
-      }
-    });
-  }
 })();

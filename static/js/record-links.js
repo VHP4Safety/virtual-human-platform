@@ -832,6 +832,44 @@ for (const form of document.querySelectorAll("shacl-form")) {
   watch(form);
 }
 
+// An image given by its address, such as the icon of a case study, can be uploaded to the platform; its address
+// is then filled in.
+class ImageAddress extends Plugin {
+  createEditor(template, value) {
+    const field = Text.prototype.createEditor.call(this, template, value);
+    const shown = field.querySelector(".shown");
+    const text = field.querySelector("input.editor");
+    const pick = document.createElement("input");
+    pick.type = "file";
+    pick.accept = "image/png,image/jpeg,image/webp,image/gif";
+    pick.hidden = true;
+    const upload = document.createElement("button");
+    upload.type = "button";
+    upload.className = "text-edit";
+    upload.textContent = "Upload image";
+    upload.addEventListener("click", function () { pick.click(); });
+    pick.addEventListener("change", async function () {
+      const body = new FormData();
+      body.append("image", pick.files[0]);
+      upload.textContent = "Uploading…";
+      const answer = await fetch("/api/images", { method: "POST", credentials: "same-origin", headers: { "X-Form-Token": editor.token }, body: body });
+      const given = await answer.json().catch(function () { return {}; });
+      upload.textContent = "Upload image";
+      if (!answer.ok) {
+        window.alert(given.message || "The image was not uploaded.");
+        return;
+      }
+      shown.value = given["@id"];
+      text.dataset.nodeKind = IRI;
+      text.value = given["@id"];
+      text.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+    });
+    field.append(upload, pick);
+    return field;
+  }
+}
+
+registerPlugin(new ImageAddress({ predicate: "https://schema.org/image" }, STYLE));
 for (const predicate of Object.keys(editor.links)) {
   registerPlugin(new RecordLink({ predicate: predicate }, STYLE));
 }

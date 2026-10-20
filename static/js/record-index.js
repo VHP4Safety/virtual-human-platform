@@ -15,6 +15,9 @@ const QUESTIONS = "https://vhp4safety.github.io/glossary#VHP0000151";
 // The fields of a case study page that are used at one level only, by that level: the heading of a question page,
 // and the process flow step of a step of a question. At other levels they are left out of the form.
 const ONE_LEVEL = { "https://schema.org/headline": 1, "https://schema.org/additionalType": 2 };
+// The fields of a section that are used on the pages of the site only: its figures after the text (images go in the
+// text of a case study), the record it presents, the fields of that record it shows, and its address elsewhere.
+const SITE_ONLY = ["https://schema.org/image", "https://schema.org/about", "https://platform.vhp4safety.nl/model/v1/form#shows", "https://schema.org/url"];
 // The colours of the stages, as the case study pages give them.
 const COLOURS = ["--bs-vhppink-distinct", "--bs-vhpdarkpurple", "--bs-vhpdarkteal", "--bs-vhplightteal", "--bs-vhpblue"];
 // The stages of the process flow, as the case study pages name them.
@@ -200,13 +203,13 @@ export function select(target) {
     element.classList.toggle("focus-hidden", !around && element !== target && !ownField);
   }
   root.classList.toggle("focus-chrome", root !== target);
-  if (caseStudy && !isSection(target)) {
+  if (caseStudy) {
     const level = way(target).length - 1;
-    for (const [path, only] of Object.entries(ONE_LEVEL)) {
-      for (const field of target.querySelectorAll('.property-instance[data-path="' + path + '"]')) {
-        if (field.closest("shacl-node") === target && only !== level) {
-          field.closest("shacl-property").classList.add("focus-hidden");
-        }
+    const hidden = isSection(target) ? SITE_ONLY : Object.keys(ONE_LEVEL).filter(function (path) { return ONE_LEVEL[path] !== level; });
+    for (const path of hidden) {
+      const field = property(target, path);
+      if (field) {
+        field.classList.add("focus-hidden");
       }
     }
   }
@@ -257,15 +260,20 @@ function place(part, at) {
   }
 }
 
-// The add button of the form for a field of a node, found by the label of the field.
-function addButton(node, path) {
-  const names = editor.ordered[path] || [];
-  for (const button of node.querySelectorAll(".add-button-wrapper rokit-button.add-button")) {
-    if (button.closest("shacl-node") === node && names.includes(button.textContent.trim())) {
-      return button;
+// The field of a node with the path, as shacl-form draws it (shacl-property), also when it has no value.
+function property(node, path) {
+  for (const found of node.querySelectorAll("shacl-property")) {
+    if (found.template && found.template.path === path && found.closest("shacl-node") === node) {
+      return found;
     }
   }
   return null;
+}
+
+// The add button of the form for a field of a node.
+function addButton(node, path) {
+  const field = property(node, path);
+  return field ? field.querySelector(".add-button-wrapper rokit-button.add-button") : null;
 }
 
 export function outline(givenForm, nav) {
