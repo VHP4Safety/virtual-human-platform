@@ -2,7 +2,6 @@
 
 import json
 
-import pytest
 from sqlalchemy import select
 
 import database
@@ -19,11 +18,10 @@ STEP = "https://vhp4safety.github.io/glossary#VHP0000156"
 
 def test_rdf():
     fitting = writes.document(TOOL, BASE + "tools/t", {"name": "T", "description": "Does T.", "url": {"@id": "https://t.org/"}})
-    found = checks.check(fitting)
-    assert documents.document(found, BASE + "tools/t")["url"] == {"@id": "https://t.org/"}
-    with pytest.raises(checks.NotFitting) as problem:
-        checks.check(writes.document(TOOL, BASE + "tools/t", {"name": "T", "installUrl": "not a link"}))
-    assert set(problem.value.problems) == {"installUrl", "description"}
+    found, problems, _ = checks.checked(fitting)
+    assert not problems and documents.document(found, BASE + "tools/t")["url"] == {"@id": "https://t.org/"}
+    _, problems, _ = checks.checked(writes.document(TOOL, BASE + "tools/t", {"name": "T", "installUrl": "not a link"}))
+    assert set(problems) == {"installUrl", "description"}
 
 
 def test_fields():

@@ -8,7 +8,7 @@ from flask import Blueprint, Response, abort, redirect, render_template, request
 from admin import editor, writes
 from database import records
 from database.tables import PLATFORM
-from linkeddata import fields, quality
+from linkeddata import checks, fields
 from linkeddata.model import settings
 from routes.account import current_editor, form_token
 
@@ -35,7 +35,7 @@ def data_quality():
     """Record completeness, and the checks' notes on imported and written records."""
     if logged_in() is None:
         return redirect(url_for("account.login", next=request.path))
-    return render_template("records/quality.html", **quality.report(), written=PLATFORM, page_title="Data quality — VHP4Safety editor")
+    return render_template("records/quality.html", **checks.report(), written=PLATFORM, page_title="Data quality — VHP4Safety editor")
 
 
 @blueprint.get("/admin/<kind>/")
