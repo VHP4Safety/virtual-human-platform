@@ -4,12 +4,14 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix dash: <http://datashapes.org/dash#> .
+@prefix dct: <http://purl.org/dc/terms/> .
 @prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
 @prefix glossary: <https://vhp4safety.github.io/glossary#> .
 
 form:Dataset a sh:NodeShape ;
     form:path "data" ; sh:order 5 ;
     sh:targetClass schema:Dataset ;
+    dct:conformsTo <https://bioschemas.org/profiles/Dataset/1.0-RELEASE> ;
     rdfs:label "Dataset" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One title needed." ] ;
     sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] ;

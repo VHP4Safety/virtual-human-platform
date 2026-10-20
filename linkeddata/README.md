@@ -106,11 +106,16 @@ header), `text.ttl`, and one file per kind of record with the shapes of its part
 
 - what each field takes (`sh:datatype`, `sh:nodeKind`, `sh:in`, `sh:class`, `sh:or`);
 - required fields (`sh:minCount`) and single-valued ones (`sh:maxCount`);
-- values set by the platform (`sh:hasValue`, such as the Bioschemas profile of tools);
 - values that only warn when they do not fit (`sh:severity sh:Warning`).
 
 Each write is checked against it with pyshacl, with rdfsolve's type checks from the vocabularies. A refused
 write lists each field's problems, in the words of the profile's `sh:message`.
+
+The records are also checked against the official Bioschemas shapes (`sh:shapesGraph` in the header, pinned as
+the vocabularies are). The Bioschemas profile of a class is named on its node shape (`dct:conformsTo`); that
+profile is stated on a record only when every field required by it is given, and the missing fields are noted on
+the quality page. These results never refuse a write. The official schema.org shapes are not used: they are
+recursive, so pyshacl stops on nested records, and any text is accepted by them for most fields.
 
 The classes of the profile's node shapes with `form:path` are record classes (kinds); each record has its own
 address and page. A node
@@ -147,7 +152,6 @@ The form is changed by changing the profile. The profile's own terms:
 - `form:shows` (data, on a page section): the fields of the record the section presents (`schema:about`)
   that it shows.
 
-The required fields of tools are the minimum of the Bioschemas ComputationalTool profile.
 
 ## The parts of an import
 

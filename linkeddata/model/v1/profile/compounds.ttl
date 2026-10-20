@@ -2,18 +2,19 @@
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
 @prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
 
 form:Compound a sh:NodeShape ;
     form:path "compound" ; sh:order 15 ;
     sh:targetClass schema:MolecularEntity ;
+    dct:conformsTo <https://bioschemas.org/profiles/MolecularEntity/0.5-RELEASE> ;
     rdfs:label "Compound" ;
-    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:severity sh:Warning ; sh:message "Add the name, as Bioschemas asks." ] ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:alternateName ; sh:order 2 ; sh:name "Other names" ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:description ; sh:order 3 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
-    sh:property [ sh:path schema:identifier ; sh:order 4 ; sh:name "Identifiers" ; sh:minCount 1 ;
-        sh:class schema:PropertyValue ; sh:node form:Identifier ; sh:nodeKind sh:BlankNode ; sh:severity sh:Warning ; sh:message "Add an identifier, as Bioschemas asks." ] ;
+    sh:property [ sh:path schema:identifier ; sh:order 4 ; sh:name "Identifiers" ;
+        sh:class schema:PropertyValue ; sh:node form:Identifier ; sh:nodeKind sh:BlankNode ] ;
     sh:property [ sh:path schema:inChI ; sh:order 5 ; sh:name "InChI" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:inChIKey ; sh:order 6 ; sh:name "InChIKey" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:smiles ; sh:order 7 ; sh:name "SMILES" ; sh:datatype xsd:string ] ;

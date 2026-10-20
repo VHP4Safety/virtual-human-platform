@@ -21,6 +21,7 @@ form:elsewhere a sh:PropertyGroup ; sh:order 5 ; rdfs:label "Elsewhere on the we
 form:SoftwareApplication a sh:NodeShape ;
     form:path "tools" ; sh:order 1 ;
     sh:targetClass schema:SoftwareApplication ;
+    dct:conformsTo <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE> ;
     rdfs:label "Tool" ;
     rdfs:comment "Tools state their Bioschemas profile (ComputationalTool)." ;
     sh:property [

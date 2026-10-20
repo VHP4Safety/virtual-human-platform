@@ -3,11 +3,13 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix dash: <http://datashapes.org/dash#> .
+@prefix dct: <http://purl.org/dc/terms/> .
 @prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
 
 form:Organization a sh:NodeShape ;
     form:path "organizations" ; sh:order 6 ;
     sh:targetClass schema:Organization ;
+    dct:conformsTo <https://bioschemas.org/profiles/Organization/0.3-DRAFT> ;
     rdfs:label "Organisation" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
     sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Website" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;

@@ -4,11 +4,13 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix dash: <http://datashapes.org/dash#> .
+@prefix dct: <http://purl.org/dc/terms/> .
 @prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
 
 form:DefinedTerm a sh:NodeShape ;
     form:path "terms" ; sh:order 9 ;
     sh:targetClass schema:DefinedTerm ;
+    dct:conformsTo <https://bioschemas.org/profiles/DefinedTerm/0.1-DRAFT> ;
     rdfs:label "Term" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Label" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One label needed." ] ;
     sh:property [ sh:path schema:inDefinedTermSet ; sh:order 2 ; sh:name "Vocabulary" ; sh:minCount 1 ; sh:maxCount 1 ; sh:class schema:DefinedTermSet ;

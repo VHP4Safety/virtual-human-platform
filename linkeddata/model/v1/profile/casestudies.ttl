@@ -5,6 +5,7 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix dash: <http://datashapes.org/dash#> .
+@prefix dct: <http://purl.org/dc/terms/> .
 @prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
 @prefix glossary: <https://vhp4safety.github.io/glossary#> .
 
@@ -17,6 +18,7 @@ form:parts a sh:PropertyGroup ; sh:order 2 ; rdfs:label "Parts" .
 form:Study a sh:NodeShape ;
     form:path "casestudies" ; sh:order 3 ;
     sh:targetClass bioschemas_draft:Study ;
+    dct:conformsTo <https://bioschemas.org/profiles/Study/0.3-DRAFT> ;
     rdfs:label "Case study" ;
     sh:property [ sh:path schema:creator ; sh:group form:casestudy ; sh:order 0 ; sh:name "Authors" ; form:shown false ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ;
@@ -96,6 +98,7 @@ form:WorkflowStep a sh:NodeShape ;
 
 form:FormalParameter a sh:NodeShape ;
     sh:targetClass bioschemas:FormalParameter ;
+    dct:conformsTo <https://bioschemas.org/profiles/FormalParameter/1.0-RELEASE> ;
     rdfs:label "Input or output" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
     sh:property [ sh:path schema:description ; sh:order 2 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] .

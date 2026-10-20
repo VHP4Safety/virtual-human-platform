@@ -7,7 +7,7 @@ from rdflib import RDF, Graph, URIRef
 from rdflib.namespace import SH
 
 from linkeddata import documents, fields, storage
-from linkeddata.model import hierarchy, shapes
+from linkeddata.model import hierarchy, official_fields, shapes
 
 # Messages by SHACL constraint.
 CONSTRAINTS = {
@@ -39,6 +39,18 @@ def meaning(component: str | None) -> str:
     return CONSTRAINTS.get(name, "Does not fit the model.")
 
 
+def official(result, results: Graph) -> tuple | None:
+    """The property and reason of a result of an official shape, which is a note or a recommendation and never a
+    refusal, such as "Required by Bioschemas Person 0.3-DRAFT."; None for a result of the shapes of the model."""
+    if results.value(result, SH.sourceShape) not in official_fields():
+        return None
+    shape, path, needs = official_fields()[results.value(result, SH.sourceShape)]
+    named = "Bioschemas " + " ".join(str(shape).split("/")[-2:]) if "bioschemas.org/profiles/" in str(shape) else "schema.org"
+    if "MinCount" not in str(results.value(result, SH.sourceConstraintComponent)):
+        return path, f"{meaning(str(results.value(result, SH.sourceConstraintComponent)))[:-1]} for {named}."
+    return path, f"{'Required' if needs else 'Recommended'} by {named}."
+
+
 def validate(found: Graph) -> Graph:
     """The model's check results for some statements, with the class and name of the records they link to,
     so a link is checked against its record's class, and the classes their values are published as."""
@@ -64,11 +76,12 @@ def notes(found: Graph) -> list[dict]:
         messages = []
         for message in results.objects(result, SH.resultMessage):
             messages.append(str(message))
+        path, reason = official(result, results) or (results.value(result, SH.resultPath), " ".join(messages))
         note = {
             "iri": str(focus),
-            "field": str(results.value(result, SH.resultPath) or ""),
+            "field": str(path or ""),
             "value": str(results.value(result, SH.value) or ""),
-            "reason": " ".join(messages),
+            "reason": reason,
             "component": str(results.value(result, SH.sourceConstraintComponent)),
         }
         key = (note["iri"], note["field"], note["value"])
@@ -104,10 +117,13 @@ def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]
         form = {}
         for field in fields.of(str(found.value(focus, RDF.type))):
             form[field["iri"]] = field
-        path = str(results.value(result, SH.resultPath))
+        given = official(result, results)
+        path = str(given[0] if given else results.value(result, SH.resultPath))
         field = " > ".join(trail + [documents.term(path)])
         message = form[path]["message"] if path in form and form[path]["message"] else meaning(str(results.value(result, SH.sourceConstraintComponent)))
         warning = form[path]["warning"] if path in form else results.value(result, SH.resultSeverity) != SH.Violation
+        if given:
+            message, warning = given[1], True
         found_in = warnings if warning else problems
         if message not in found_in.setdefault(field, []):
             found_in[field].append(message)

@@ -8,6 +8,7 @@ from pathlib import Path
 import requests
 import yaml
 from rdflib import RDF, Graph, Namespace, URIRef
+from rdflib.collection import Collection
 from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SH, VOID
 from rdfsolve.client.sql_tables import layout
 from rdfsolve.schema_models import MinedSchema
@@ -36,7 +37,8 @@ def settings() -> dict:
     graph = profile()
     header = graph.value(None, RDF.type, OWL.Ontology)
     files = {}
-    for imported in graph.objects(header, OWL.imports):
+    # The official shapes the records are checked with (sh:shapesGraph) are pinned as the vocabularies are.
+    for imported in [*graph.objects(header, OWL.imports), *graph.objects(header, SH.shapesGraph)]:
         files[str(graph.value(imported, FORM.file))] = {"url": str(imported), "sha256": str(graph.value(imported, FORM.sha256))}
     for path in sorted(SOURCES_DIR.glob("*.yaml")):
         spec = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -55,15 +57,16 @@ def settings() -> dict:
             "kinds": {path: of_class for _, path, of_class in sorted(kinds)}, "prefixes": prefixes, "terms": dict(sorted(terms.items()))}
 
 
-def vocabularies(config: dict) -> list[Path]:
-    """The RDF vocabulary files of the model folder; a missing file is downloaded from its pinned address. A
-    pinned file of another format, such as a JSON licence list, is read by its source only."""
+def vocabularies(config: dict, endings: tuple = (".ttl", ".jsonld")) -> list[Path]:
+    """The RDF vocabulary files of the model folder, or with endings (".shacl",) the official shapes; a missing
+    file is downloaded from its pinned address. A pinned file of another format, such as a JSON licence list, is
+    read by its source only."""
     files = []
     for name in config["vocabularies"]:
         path = MODEL_DIR / "vocabularies" / name
         if not path.exists():
             download_vocabularies()
-        if path.suffix in (".ttl", ".jsonld"):
+        if path.suffix in endings:
             files.append(path)
     return files
 
@@ -150,10 +153,54 @@ def profile() -> Graph:
 
 
 @cache
+def official() -> Graph:
+    """The official shapes (sh:shapesGraph). An official shape named by a node shape (dct:conformsTo) is given the
+    class of that node shape as a target too, as other addresses are targeted for the Bioschemas types, such as
+    LabProtocol, in the Bioschemas file."""
+    found = Graph()
+    for path in vocabularies(settings(), (".shacl",)):
+        found.parse(path, format="turtle")
+    for shape, conformed in profile().subject_objects(DCTERMS.conformsTo):
+        for of_class in profile().objects(shape, SH.targetClass):
+            found.add((conformed, SH.targetClass, of_class))
+    return found
+
+
+@cache
+def official_fields() -> dict:
+    """The fields of the official shapes, by property shape: the shape, the property (of alternative paths, the
+    last) and whether a value is required (a minimum count at Violation severity)."""
+    graph = official()
+    found = {}
+    for shape, field in graph.subject_objects(SH.property):
+        path = graph.value(field, SH.path)
+        if graph.value(path, SH.alternativePath) is not None:
+            path = list(Collection(graph, graph.value(path, SH.alternativePath)))[-1]
+        found[field] = (shape, path, graph.value(field, SH.minCount) is not None and graph.value(field, SH.severity) == SH.Violation)
+    return found
+
+
+@cache
+def required() -> dict[URIRef, tuple[URIRef, set]]:
+    """By class, the official shape named by the node shape of the class (dct:conformsTo), and the properties
+    required by that shape; dct:conformsTo is left out."""
+    found = {}
+    for shape, conformed in profile().subject_objects(DCTERMS.conformsTo):
+        needed = set()
+        for official_shape, path, needs in official_fields().values():
+            if official_shape == conformed and needs and path != DCTERMS.conformsTo:
+                needed.add(path)
+        for of_class in profile().objects(shape, SH.targetClass):
+            found[of_class] = (conformed, needed)
+    return found
+
+
+@cache
 def shapes() -> Graph:
-    """The model's checks: the approved schema's value types of the profile's fields, with its rules."""
+    """The model's checks: the approved schema's value types of the profile's fields, with its rules, and the
+    official shapes."""
     schema = MinedSchema.from_json(MODEL_DIR / "schema.json")
-    return Graph().parse(data=schema.to_shacl(properties="profile"), format="turtle")
+    return Graph().parse(data=schema.to_shacl(properties="profile"), format="turtle") + official()
 
 
 @cache

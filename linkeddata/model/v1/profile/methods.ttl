@@ -15,6 +15,7 @@ form:assay a sh:PropertyGroup ; sh:order 2 ; rdfs:label "Assay" .
 form:LabProtocol a sh:NodeShape ;
     form:path "methods" ; sh:order 2 ;
     sh:targetClass bioschemas_draft:LabProtocol ;
+    dct:conformsTo <https://bioschemas.org/profiles/LabProtocol/0.8-DRAFT> ;
     rdfs:label "Method" ;
     rdfs:comment "Methods state their Bioschemas profile (LabProtocol)." ;
     sh:property [

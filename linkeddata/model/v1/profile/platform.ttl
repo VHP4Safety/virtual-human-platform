@@ -4,11 +4,13 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix dash: <http://datashapes.org/dash#> .
+@prefix dct: <http://purl.org/dc/terms/> .
 @prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
 
 form:DataCatalog a sh:NodeShape ;
     form:path "platform" ; sh:order 12 ;
     sh:targetClass schema:DataCatalog ;
+    dct:conformsTo <https://bioschemas.org/profiles/DataCatalog/0.3-RELEASE-2019_07_01> ;
     rdfs:label "Platform" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
     sh:property [ sh:path schema:alternateName ; sh:order 2 ; sh:name "Heading" ; sh:maxCount 1 ; sh:datatype xsd:string ;

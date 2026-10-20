@@ -2,6 +2,7 @@
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
 @prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
 
 form:Periodical a sh:NodeShape ;
@@ -13,6 +14,7 @@ form:Periodical a sh:NodeShape ;
 form:ScholarlyArticle a sh:NodeShape ;
     form:path "publications" ; sh:order 4 ;
     sh:targetClass schema:ScholarlyArticle ;
+    dct:conformsTo <https://bioschemas.org/profiles/ScholarlyArticle/0.3-DRAFT> ;
     rdfs:label "Publication" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Title" ; sh:maxCount 1 ; sh:or ( form:PlainText form:HTMLText ) ] ;
     sh:property [ sh:path schema:author ; sh:order 2 ; sh:name "Authors" ;
