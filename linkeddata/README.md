@@ -5,7 +5,7 @@ The records are stored in SQLite, in the tables of the release of the model:
 - one table for each class of the application profile;
 - one table for each field with several values.
 
-The tables are written to `database/v1/tables.sql` with `python -m linkeddata model`. Each row names its record.
+The tables are written to `database/v1/tables.sql` with `python -m linkeddata model`. Each row has the address of its record.
 The records are checked against the SHACL shapes of the model with pyshacl. The sources are converted to the model,
 and the statements to rows and back, with [rdfsolve](https://github.com/jmillanacosta/rdfsolve).
 
@@ -93,7 +93,7 @@ The code is in four packages, with one concern each. A package uses only the pac
 | `notes` | the values that do not fit the model, as found by the checks; the records keep these values as given |
 
 The tables and the columns are named from the CURIEs of the profile (`schema_software_application`, `schema_name`,
-`dct_conforms_to`), so a term that is kept between releases keeps its table or column. A value is kept as given in
+`dct_conforms_to`), so the table or column of a term stays the same between releases. A value is kept as given in
 the source, also if its kind does not fit, and it is noted by the checks. The JSON-LD is compacted with the context
 of the platform: schema.org terms have no prefix (`name`), and other vocabularies keep their prefixes
 (`dct:conformsTo`).
@@ -107,7 +107,7 @@ shapes are the fields of its records. The profile sets:
 
 - the values of each field (`sh:datatype`, `sh:nodeKind`, `sh:in`, `sh:class`, `sh:or`);
 - the required fields (`sh:minCount`) and the single-valued fields (`sh:maxCount`);
-- the values that only give a warning if they do not fit (`sh:severity sh:Warning`).
+- the values that are only warned about if they do not fit (`sh:severity sh:Warning`).
 
 Each write is checked against the profile with pyshacl, with the type checks of rdfsolve from the vocabularies. A
 write is not stopped by problems. The problems are returned as warnings for each field, with the `sh:message` of
@@ -172,15 +172,15 @@ To change the form, change the profile. The terms of the profile:
   address of the identifiers (`void:uriSpace`, replaced by `PLATFORM_BASE` if it is set), the vocabularies of the
   model (`owl:imports`: schema.org, the Bioschemas types, VoID and the VHP4Safety glossary, each pinned by
   `form:file` and `form:sha256` and downloaded into `vocabularies/` if missing; this folder is not committed), and
-  the prefixes of the JSON-LD (`sh:declare`). Its shapes give the classes by kind (`form:path`), and the additions
-  of the platform to the vocabularies, such as its own PBPK terms.
+  the prefixes of the JSON-LD (`sh:declare`). The classes by kind (`form:path`) are set in its shapes, with the
+  additions of the platform to the vocabularies, such as the PBPK terms.
 
 At an import:
 
 - the earlier records of a source are replaced with its current records. Records written on the platform are kept,
   also at the same address, and so are the records of another source, such as a person named in two sources;
 - the sources of terms are imported after the other sources, and the sources that enrich records last;
-- an enrichment is merged into the records of the other sources. A single-valued field keeps its value, and a
+- an enrichment is merged into the records of the other sources. The value of a single-valued field is kept, and a
   different value is noted. The first enrichment of a record is its first revision;
 - the records of each source are checked against the model once all sources are stored, with their linked records
   as stored. Misfits are noted, and kept as given.
