@@ -50,7 +50,7 @@ PUBLISHED = {RDF.type, SDO.url, SDO.mainEntityOfPage, DCTERMS.conformsTo}
 
 
 def record_of(found: Graph, node):
-    """Return the record of a node: the node itself or the record above it."""
+    """Return the record of a node, which is the node itself or the record above it."""
     match = records.PART.match(str(node)) if isinstance(node, URIRef) else None
     if match:
         return URIRef(match["record"])

@@ -1,10 +1,10 @@
 name: compounds
 title: Compounds
 parser: compounds
-# The glossary's table of chemicals at a pinned commit: the compounds it lists, by their Compound Wiki items.
+# The table of chemicals of the glossary at a pinned commit, with the Compound Wiki item of each compound.
 files:
   chemicals: https://raw.githubusercontent.com/VHP4Safety/glossary/2c25a72f087c07bacfc5681d4e7185f3c499d593/templates/chemicals.tsv
-# Compound Wiki, read by rdfsolve: the glossary's compounds and the items that are part of VHP4Safety (P21).
+# Compound Wiki items of the compounds of the glossary and of VHP4Safety (P21), read with rdfsolve.
 wikibase:
   endpoint: https://compoundcloud.wikibase.cloud/query/sparql
   entity: https://compoundcloud.wikibase.cloud/entity/

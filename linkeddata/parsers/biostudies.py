@@ -220,7 +220,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 row["sameAs"] = link("https://doi.org/" + attribute["value"])
                 row["identifier"] = link("https://doi.org/" + attribute["value"])
             elif name == "Regulatory Question":
-                # The question is identified by the code; the address next to the code is sometimes that of the case study.
+                # The question is identified by the code. The address next to the code is sometimes that of the case study.
                 code = attribute["value"]
                 row.setdefault("regulatoryQuestion", []).append(link(QUESTIONS[code]) if code in QUESTIONS else value_of(attribute))
             elif name == "Case study":

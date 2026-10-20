@@ -1,6 +1,6 @@
 name: methods
 title: Method catalogue
 url: https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/methods_index.json
-# Each method's detail file, by its key in the index.
+# The detail file of each method, by its key in the index.
 entries: https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/docs/methods/{key}.json
 parser: methods

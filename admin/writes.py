@@ -17,7 +17,7 @@ from linkeddata.profile import fields, jsonld_name, settings
 
 
 def version() -> str:
-    """Return the version of a record: the time of the write, to the microsecond."""
+    """Return the time of a write, to the microsecond, as the version of a record."""
     return datetime.now(timezone.utc).isoformat()
 
 

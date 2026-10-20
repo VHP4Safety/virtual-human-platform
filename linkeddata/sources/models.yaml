@@ -1,6 +1,6 @@
 name: models
 title: Zenodo community vhp4safety, models
 url: https://zenodo.org/api/records?communities=vhp4safety&type=model&size=25&sort=newest
-# From each model's RO-Crate zip, only these files are read (linkeddata/parsers/models.py).
+# Only these files are read from the RO-Crate zip of each model (linkeddata/parsers/models.py).
 members: [ro-crate-metadata.json, pbpk-model-metadata.json]
 parser: models

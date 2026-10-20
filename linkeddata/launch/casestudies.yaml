@@ -1,7 +1,7 @@
 name: casestudies
 title: Case studies
 parser: casestudies
-# The case studies' RO-Crate, and each one's content file, by identifier.
+# The RO-Crate of the case studies, and the content file of each case study, by identifier.
 files:
   crate: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/ro-crate-metadata.json
   kidney: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/kidney_content.json

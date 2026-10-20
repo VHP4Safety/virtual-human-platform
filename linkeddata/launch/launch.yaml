@@ -1,5 +1,5 @@
-# Corrections made once by python -m linkeddata launch, after its import of every source.
-# Each is saved as a revision named with its reason (why). Fields are named as in JSON-LD; values as stored.
+# Corrections made once by python -m linkeddata launch, after the import of every source.
+# Each correction is saved as a revision with its reason (why). Fields are named as in JSON-LD, and values as stored.
 # With "to", the record is moved to that address, and merged with the record there, if there is one. "as" is the
 # class of a new record at that address. Links to the old address are changed to the new address.
 corrections:

@@ -1,7 +1,7 @@
 name: courses
 title: VHP4Safety courses on GitHub
-# Each course's repository tree at one commit; the parser names the repository, README and agenda to read, under
-# these addresses (linkeddata/launch/courses.py).
+# The repository tree of each course at one commit. The repository, README and agenda to read are listed by the
+# parser, under these addresses (linkeddata/launch/courses.py).
 files:
   modelling_hazard_assessment: https://api.github.com/repos/VHP4Safety/modelling_hazard_assessment/git/trees/145b2a0a339b3ca02d1acccfb9ab4591194317fe?recursive=1
   github_intro_training: https://api.github.com/repos/VHP4Safety/github_intro_training/git/trees/018b9d23e8c0ae6756d572ff34aafd5d791a69a8?recursive=1

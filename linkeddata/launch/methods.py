@@ -66,7 +66,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 types.append(web_link(detail[given]))
         if types:
             row["additionalType"] = types
-        # The question is linked at its page's address.
+        # The question is linked at the address of its page.
         if present(detail.get("case_study_content")) and present(detail.get("regulatory_question_content")):
             row["regulatoryQuestion"] = link(f"casestudies/{detail['case_study_content']}/{detail['regulatory_question_content']}")
         if about:
