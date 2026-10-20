@@ -91,9 +91,17 @@ def form_graph() -> Graph:
             found.add((address, RDFS.label, Literal("Address")))
             found.add((address, SH["in"], RDF.nil))
             listed.append(address)
+    # shacl-form matches a link with a choice of classes (sh:or) by the class of the record only, not by its
+    # superclasses. So each record is also given the linked classes above its class, such as Organization for a
+    # research project.
+    linked = set(found.objects(None, SH["class"]))
+    above = {}
     with database.session() as db:
         for iri, kind, name in db.execute(select(Record.iri, Record.type, Record.name).where(Record.removed_at.is_(None), Record.moved_to.is_(None))):
-            found.add((URIRef(iri), RDF.type, URIRef(kind)))
+            if kind not in above:
+                above[kind] = linked & set(found.transitive_objects(URIRef(kind), RDFS.subClassOf))
+            for of_class in above[kind] | {URIRef(kind)}:
+                found.add((URIRef(iri), RDF.type, of_class))
             found.add((URIRef(iri), RDFS.label, Literal(name or iri)))
     # The vocabulary of each term is added, so that each term is listed under its vocabulary.
     for iri, vocabulary in records.values(str(SDO.DefinedTerm), str(SDO.inDefinedTermSet)):
