@@ -1,5 +1,5 @@
-// The index beside the form shows one page at a time, as the website does: the way down to the page, the page
-// with its number in the process flow, the pages below it and its sections of text. A click on a page or a
+// The index beside the form of a case study shows one page at a time, as the website does: the way down to the
+// page, the page with its number in the process flow, the pages below it and its sections of text. A click on a page or a
 // section below goes down to it and shows its form only; a section shows its subsections. A click on the way
 // goes up.
 // Pages and sections are dragged up or down to change their order, which sets their positions, and they are
@@ -182,14 +182,16 @@ let form = null;
 let shown = null;
 // The list of the parts of a field, as the index draws it; set by outline().
 let partsList = null;
-let caseStudy = false;
+// Only a case study is edited a page at a time, with the index and the colours of its stages; other records are
+// edited in one form.
+const caseStudy = editor.caseStudy;
 const listeners = [];
 
 // Only the fields of *target* are shown. The fields of the parts in the index below it are hidden; they are
 // reached through the index.
 export function select(target) {
   const root = form.shadowRoot.querySelector("shacl-node");
-  if (!root || !target) {
+  if (!root || !target || !caseStudy) {
     return;
   }
   if (!form.shadowRoot.getElementById("focus-style")) {
@@ -204,8 +206,7 @@ export function select(target) {
   while (isSection(page) && above(page)) {
     page = above(page);
   }
-  caseStudy = Boolean(own(root, QUESTIONS)) || Boolean(addButton(root, QUESTIONS));
-  document.documentElement.style.setProperty("--stage", caseStudy ? "var(" + COLOURS[stage(page) - 1] + ")" : "var(--bs-vhppurple)");
+  document.documentElement.style.setProperty("--stage", "var(" + COLOURS[stage(page) - 1] + ")");
   for (const element of root.querySelectorAll("rokit-collapsible, shacl-property, .property-instance, shacl-node")) {
     const around = element !== target && element.contains(target);
     const inside = target.contains(element) && element !== target;
@@ -307,6 +308,9 @@ function addButton(node, path) {
 
 export function outline(givenForm, nav) {
   form = givenForm;
+  if (!caseStudy || !nav) {
+    return;
+  }
   // The field a part is added to; once the form has drawn the new part, it is placed last and shown.
   let adding = null;
 
@@ -433,7 +437,6 @@ export function outline(givenForm, nav) {
     if (!root) {
       return;
     }
-    caseStudy = Boolean(own(root, QUESTIONS)) || Boolean(addButton(root, QUESTIONS));
     const page = shown || root;
     const view = make("div", "record-index-view");
     // The pages above, from the record down to the page being edited, each one level further in; a click goes

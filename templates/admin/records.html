@@ -16,10 +16,10 @@
   </div>
 
   <div class="editor-layout" id="layout">
-    <aside class="editor-side card" id="side" data-pane="{{ 'sections' if selected else 'records' }}">
+    <aside class="editor-side card" id="side" data-pane="{{ 'sections' if selected and kind == 'casestudies' else 'records' }}">
       <div class="editor-side-tabs" role="tablist">
         <button type="button" role="tab" data-pane="records">Records</button>
-        <button type="button" role="tab" data-pane="sections"{% if not selected %} disabled{% endif %}>Sections</button>
+        {% if kind == "casestudies" %}<button type="button" role="tab" data-pane="sections"{% if not selected %} disabled{% endif %}>Sections</button>{% endif %}
       </div>
       <div class="editor-side-panes">
         <section class="editor-side-pane" id="records-pane" aria-label="Records">
@@ -38,12 +38,14 @@
             {% endfor %}
           </div>
         </section>
+        {% if kind == "casestudies" %}
         <section class="editor-side-pane" id="sections-pane" aria-label="Sections">
           <h2 class="editor-side-title">Sections</h2>
           <nav class="record-index small" id="record-index">
             <p class="text-secondary mb-0">{% if selected %}Loading…{% else %}Choose a record.{% endif %}</p>
           </nav>
         </section>
+        {% endif %}
       </div>
     </aside>
 
@@ -115,7 +117,7 @@
 <link href="{{ url_for('static', filename='css/casestudies.css') }}" rel="stylesheet">
 <link href="{{ url_for('static', filename='css/case-study.css') }}" rel="stylesheet">
 {% endif %}
-<script type="application/json" id="editor">{{ {"graph": selected, "base": base, "version": record.updated_at if record else none, "token": form_token, "links": links, "mixed": mixed, "ordered": ordered, "classes": classes}|tojson }}</script>
+<script type="application/json" id="editor">{{ {"graph": selected, "base": base, "version": record.updated_at if record else none, "token": form_token, "links": links, "mixed": mixed, "ordered": ordered, "classes": classes, "caseStudy": kind == "casestudies"}|tojson }}</script>
 <script src="https://cdn.jsdelivr.net/npm/jsonld@8.3.3/dist/jsonld.min.js"></script>
 <script type="module" src="https://cdn.jsdelivr.net/npm/@ulb-darmstadt/shacl-form@3.7.3/dist/bundle.js"></script>
 <script type="module" src="{{ url_for('static', filename='js/record-links.js') }}"></script>
