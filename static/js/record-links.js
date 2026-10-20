@@ -8,6 +8,7 @@ const IRI = "http://www.w3.org/ns/shacl#IRI";
 const LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
 const TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 const TARGET = "http://www.w3.org/ns/shacl#targetClass";
+const CLASS = "http://www.w3.org/ns/shacl#class";
 const FIRST = "http://www.w3.org/1999/02/22-rdf-syntax-ns#first";
 const REST = "http://www.w3.org/1999/02/22-rdf-syntax-ns#rest";
 const NAME = "https://schema.org/name";
@@ -339,6 +340,26 @@ function choice(template, value) {
   return template.config.theme.createListEditor(template.label, value || null, false, entries, template);
 }
 
+// The classes a link field takes, by name, from its own shape: its sh:class, or the classes of its sh:or with
+// their labels. Two fields with the same property, such as the tool and the data of a step, then find
+// different records. The names of the profile (editor.links) are used where the shape gives none.
+function linkClasses(template) {
+  const store = template.config.store;
+  const named = editor.links[template.path] || {};
+  const found = {};
+  if (template.class) {
+    found[template.class.value] = named[template.class.value] || template.class.value.split(/[/#]/).pop();
+  }
+  for (const alternative of template.or || []) {
+    const given = store.getObjects(alternative, CLASS, null)[0];
+    if (given) {
+      const label = store.getObjects(alternative, LABEL, null)[0];
+      found[given.value] = label ? label.value : named[given.value] || given.value.split(/[/#]/).pop();
+    }
+  }
+  return Object.keys(found).length ? found : named;
+}
+
 class RecordLink extends Plugin {
   createEditor(template, value) {
     if (template.in) {
@@ -347,7 +368,7 @@ class RecordLink extends Plugin {
     // The field's link classes by name, from the profile; text fields, such as tool keywords, have none.
     // A field that offers a link or another value shows the other value, such as an address, as text.
     const linking = template.class || (template.or && !editor.mixed.includes(template.path));
-    const classes = linking ? editor.links[template.path] || {} : {};
+    const classes = linking ? linkClasses(template) : {};
     const names = Object.values(classes);
     if (!names.length) {
       return Text.prototype.createEditor.call(this, template, value);
