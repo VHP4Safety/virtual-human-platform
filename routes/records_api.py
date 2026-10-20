@@ -24,7 +24,9 @@ Markdown. Write records in JSON-LD or Turtle with a write token.
 The records conform to schema.org and Bioschemas. The field names are defined in the JSON-LD context
 (`x-jsonld-context` of the Record schema), and the fields of each kind are described in the SHACL shapes at
 `/api/shapes.ttl`. To get the data of a page of the website, add a file extension to the page address, such as
-`/tools/aopwiki.ttl`."""
+`/tools/aopwiki.ttl`.
+
+[The platform](/) · [Write tokens](/account/tokens/) · [Record editor](/admin/)"""
 
 # In the documentation, the operations of the blueprint are grouped under its name, and the others under TAGS.
 blueprint = Blueprint("records", __name__, url_prefix="/api", description="Read, list, filter and search records.")
@@ -370,7 +372,8 @@ class FacetValue(Schema):
 
 
 class Query(Schema):
-    search = fields.String(load_default="", metadata={"description": "Text in the name or the address of the record. The case is ignored.", "example": "aop"})
+    # No example, as Swagger UI fills in an example, and an optional filter then changes the list.
+    search = fields.String(load_default="", metadata={"description": "Text in the name or the address of the record, such as aop. The case is ignored."})
 
     class Meta:
         unknown = INCLUDE
@@ -385,7 +388,8 @@ class Query(Schema):
 
 
 KIND = "/<any({}):kind>".format(", ".join(settings()["kinds"]))
-OF_KIND = [{"in": "path", "name": "kind", "description": "The kind of the records.", "example": "tools"}]
+OF_KIND = [{"in": "path", "name": "kind", "description": "The kind of the records.", "example": "tools",
+            "schema": {"type": "string", "enum": list(settings()["kinds"])}}]
 AT_PATH = [{"in": "path", "name": "path", "description": "The page address of the record, without the base address.", "example": "tools/aopwikiapi"}]
 LISTED = "One page of records, in the format requested in the Accept header."
 
@@ -653,8 +657,12 @@ def register(app) -> None:
         OPENAPI_URL_PREFIX="/api/docs",
         OPENAPI_JSON_PATH="openapi.json",
         OPENAPI_SWAGGER_UI_PATH="/",
-        OPENAPI_SWAGGER_UI_URL="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/",
-        API_SPEC_OPTIONS={"info": {"description": DESCRIPTION}},
+        OPENAPI_SWAGGER_UI_URL="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.20.1/",
+        # The server is this copy of the platform. (Swagger UI 5.17 showed the default server in each operation of an
+        # OpenAPI 3.1 document.)
+        API_SPEC_OPTIONS={"info": {"description": DESCRIPTION}, "servers": [{"url": "/", "description": "This platform"}]},
+        # GET operations are run at once, an operation has its own link, and the token is kept after a reload.
+        OPENAPI_SWAGGER_UI_CONFIG={"tryItOutEnabled": True, "deepLinking": True, "persistAuthorization": True, "displayRequestDuration": True},
     )
     api = Api(app)
 
