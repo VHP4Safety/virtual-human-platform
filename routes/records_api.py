@@ -2,7 +2,7 @@
 
 import json
 
-from flask import Response, current_app, g, jsonify, redirect, request, url_for
+from flask import Response, g, jsonify, redirect, render_template, request, url_for
 from flask_smorest import Api, Blueprint, abort
 from marshmallow import INCLUDE, Schema, fields, pre_load
 from rdflib import RDF, Graph, URIRef
@@ -12,7 +12,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 
 import database
 from admin import changes, tokens, writes
-from database import images, records
+from database import images, records, tables
 from linkeddata import checks, documents, pages
 from linkeddata.profile import RELEASE, jsonld_name, settings, shapes
 from routes import account, limiter
@@ -171,14 +171,30 @@ def saved(address: str, found: Graph, kind: str, who):
     return writes.save(documents.document(found, address), kind, who.name, who.orcid)
 
 
-def rendered(address: str, found: Graph, kind: str, who) -> Response:
-    """The page of the record is made as it will be after the save, from a copy of the database."""
-    with database.copied():
-        saved(address, found, kind, who)
-        path = "/" + records.path(address)
-        with current_app.app_context(), current_app.test_request_context(path, base_url=request.host_url):
-            answer = current_app.full_dispatch_request()
-    return Response(answer.get_data(), status=answer.status_code, mimetype="text/html")
+def rendered(address: str, found: Graph, kind: str) -> Response:
+    """The page of the record is drawn from the posted statements, with the same template as its page. The names of
+    the linked records and the records that link to it are read from the stored records. Nothing is saved."""
+    for _, _, own in writes.separate(found):
+        found += own
+    shown = documents.public(records.with_names(found))
+    node = URIRef(address)
+    if kind in records.within(str(SDO.WebPage)):
+        listed = pages.sections(shown, node)
+        about = shown.value(node, SDO.about)
+        page = {"name": str(shown.value(node, SDO.name) or ""), "description": str(shown.value(node, SDO.description) or ""), "sections": listed,
+                "tabbed": any(section["heading"] for section in listed), "kinds": pages.kinds(str(about)) if about is not None else []}
+        return Response(render_template("records/page.html", page=page), mimetype="text/html")
+    names = {}
+    for value in shown.objects():
+        if isinstance(value, URIRef) and shown.value(value, SDO.name) is not None:
+            names[str(value)] = str(shown.value(value, SDO.name))
+    outline = pages.node_outline(shown, node, names)
+    outline["named_on"] = pages.named_on(tables.Record(iri=address))
+    first = {}
+    for field in outline["fields"]:
+        first[field["name"]] = field["values"][0]
+    record = {"iri": address, "name": outline["name"], "description": first.get("description", {}).get("text"), "image": first.get("image", {}).get("link")}
+    return Response(render_template("records/record.html", record=record, outline=outline), mimetype="text/html")
 
 
 def store(address: str, body: dict, preview: bool = False, page: bool = False):
@@ -204,7 +220,7 @@ def store(address: str, body: dict, preview: bool = False, page: bool = False):
     for path, messages in recommended.items():
         warnings.setdefault(path, []).extend(messages)
     if preview and page:
-        return rendered(address, found, kind, who)
+        return rendered(address, found, kind)
     if preview:
         before = changes.statements(documents.document_of(address))
         labels = {}
