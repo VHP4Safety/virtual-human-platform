@@ -65,7 +65,9 @@ def validate(found: Graph) -> Graph:
 
 def notes(found: Graph) -> list[dict]:
     """The notes of the checks are made for the records in *found*, one note for each record, field and value.
-    Linked records that are given with their class only are not reported."""
+    Linked records that are given with their class only are not reported. Of the results for the same record, field
+    and value, the most severe result is kept. Next, a result with a message in the profile is kept. Last, the
+    constraint and the reason decide. Thus the same notes are made on each run."""
     described = set()
     for subject, predicate in found.subject_predicates():
         if predicate != RDF.type:
@@ -89,10 +91,14 @@ def notes(found: Graph) -> list[dict]:
             "component": str(results.value(result, SH.sourceConstraintComponent)),
         }
         key = (note["iri"], note["field"], note["value"])
-        # The profile's message is kept over a vocabulary's.
-        if key not in noted or every.value(results.value(result, SH.sourceShape), SH.message) is not None:
-            noted[key] = note
-    return list(noted.values())
+        severity = [SH.Violation, SH.Warning, SH.Info].index(results.value(result, SH.resultSeverity))
+        rank = (severity, every.value(results.value(result, SH.sourceShape), SH.message) is None, note["component"], reason)
+        if key not in noted or rank < noted[key][0]:
+            noted[key] = (rank, note)
+    kept = []
+    for key in sorted(noted):
+        kept.append(noted[key][1])
+    return kept
 
 
 def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]]]:
