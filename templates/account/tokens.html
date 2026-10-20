@@ -23,10 +23,11 @@
         <div class="card-body">
           <input type="hidden" name="form_token" value="{{ form_token }}">
           <p class="mb-2">Kinds it writes:</p>
+          {% set names = kind_names() %}
           {% for kind in kinds %}
           <div class="form-check">
             <input class="form-check-input" type="checkbox" name="kinds" value="{{ kind }}" id="kind-{{ kind }}" checked>
-            <label class="form-check-label" for="kind-{{ kind }}">{{ kind|capitalize }}</label>
+            <label class="form-check-label" for="kind-{{ kind }}">{{ names[kind] }}</label>
           </div>
           {% endfor %}
           <label class="form-label mt-3" for="days">Valid for (days)</label>

@@ -272,6 +272,17 @@ def kind(of_class: str) -> dict:
     return {"name": "", "description": ""}
 
 
+def kind_names() -> dict[str, str]:
+    """The names of the kinds of records, as the catalogue record gives them, such as "Case Studies" for casestudies.
+    A kind without a name is named by its path."""
+    base = URIRef(settings()["base"])
+    found = documents.public(records.graph([str(base)]))
+    named = {}
+    for part in found.objects(base, VOID.classPartition):
+        named[str(found.value(part, VOID["class"]))] = str(found.value(part, SDO.name) or "")
+    return {path: named.get(of_class) or path.capitalize() for path, of_class in settings()["kinds"].items()}
+
+
 def listing(path: str, arguments) -> dict:
     """One page of the records of a kind is made here. The records are found by name and filtered by the browsed
     fields. The values of these fields are given with their counts."""

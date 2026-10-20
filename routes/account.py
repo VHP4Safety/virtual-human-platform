@@ -18,9 +18,16 @@ import requests
 from flask import Blueprint, abort, redirect, render_template, request, session, url_for
 
 from admin import tokens
+from linkeddata import pages
 from linkeddata.profile import settings
 
 blueprint = Blueprint("account", __name__)
+
+
+@blueprint.context_processor
+def named_kinds() -> dict:
+    """The names of the kinds of records are given to the pages of the editor, such as "Case Studies"."""
+    return {"kind_names": pages.kind_names}
 
 
 def callback_address() -> str:

@@ -10,12 +10,18 @@ import database
 from admin import editor, writes
 from database import records
 from database.tables import PLATFORM, Note, Record, Source
-from linkeddata import checks
+from linkeddata import checks, pages
 from linkeddata.imports import files_of, specs
 from linkeddata.profile import settings, shape_of
 from routes.account import current_editor, form_token
 
 blueprint = Blueprint("admin", __name__)
+
+
+@blueprint.context_processor
+def named_kinds() -> dict:
+    """The names of the kinds of records are given to the pages of the editor, such as "Case Studies"."""
+    return {"kind_names": pages.kind_names}
 sources_blueprint = Blueprint("sources", __name__)
 
 
@@ -68,7 +74,7 @@ def edit(kind: str):
         ordered=editor.ordered(),
         classes={of_class: name for name, of_class in settings()["kinds"].items()},
         form_token=form_token(),
-        page_title=f"{kind.capitalize()} — VHP4Safety editor",
+        page_title=f"{pages.kind_names()[kind]} — VHP4Safety editor",
     ))
     response.headers["X-Robots-Tag"] = "noindex"
     return response

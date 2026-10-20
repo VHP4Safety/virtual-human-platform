@@ -1,11 +1,12 @@
 {% extends "editor/base.html" %}
 {% block content %}
+{% set names = kind_names() %}
 <div class="container-fluid px-lg-4 py-4">
   <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
-    <h1 class="h3 text-vhppurple mb-0">{{ kind|capitalize }}</h1>
+    <h1 class="h3 text-vhppurple mb-0">{{ names[kind] }}</h1>
     <ul class="nav nav-pills">
       {% for other in kinds %}
-      <li class="nav-item"><a class="nav-link{% if other == kind %} active bg-vhppurple{% else %} link-vhppurple{% endif %}" href="{{ url_for('admin.edit', kind=other) }}">{{ other|capitalize }}</a></li>
+      <li class="nav-item"><a class="nav-link{% if other == kind %} active bg-vhppurple{% else %} link-vhppurple{% endif %}" href="{{ url_for('admin.edit', kind=other) }}">{{ names[other] }}</a></li>
       {% endfor %}
     </ul>
     <span class="flex-grow-1"></span>
