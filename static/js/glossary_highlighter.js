@@ -191,7 +191,6 @@
 
   function setGlossaryVisible(visible) {
     glossaryActive = visible;
-    localStorage.setItem('vhp-glossary-active', visible ? '1' : '0');
     document.querySelectorAll('[data-vhp-glossary]').forEach(span => {
       span.classList.toggle('bg-vhplight-blue', visible);
       span.classList.toggle('bg-opacity-50', visible);
@@ -210,8 +209,9 @@
     if (visible) initTooltips();
   }
 
+  // The hint is shown until the switch is used once.
   function showHint(toggle) {
-    if (localStorage.getItem('vhp-glossary-hint-seen')) return;
+    if (localStorage.getItem('vhp-glossary-active') !== null) return;
     const wrapper = toggle.closest('.form-check') || toggle;
     const hint = new bootstrap.Popover(wrapper, {
       content:   'Toggle to highlight glossary terms on the page',
@@ -221,7 +221,6 @@
       container: wrapper.closest('.navbar') || 'body',
     });
     hint.show();
-    localStorage.setItem('vhp-glossary-hint-seen', '1');
     const dismiss = () => { hint.dispose(); toggle.removeEventListener('change', dismiss); };
     toggle.addEventListener('change', dismiss);
     setTimeout(dismiss, 4000);
@@ -247,6 +246,7 @@
       const toggle = document.getElementById('glossary-toggle');
       if (toggle) {
         toggle.addEventListener('change', () => {
+          localStorage.setItem('vhp-glossary-active', toggle.checked ? '1' : '0');
           setGlossaryVisible(toggle.checked);
         });
         showHint(toggle);

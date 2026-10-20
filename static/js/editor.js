@@ -384,8 +384,8 @@ import { outline, reveal as showPart } from "./record-index.js";
     }
   }
 
-  // The preview is shown on its page or its linked data, or hidden; the choice is remembered. A record
-  // elsewhere, such as an ontology term, has no page here.
+  // The preview is shown on its page or its linked data, or hidden. A record elsewhere, such as an ontology
+  // term, has no page here.
   function choose(next, shown) {
     view = panel.querySelector("[data-view=page]").disabled ? "data" : next;
     panel.classList.toggle("d-none", !shown);
@@ -397,16 +397,21 @@ import { outline, reveal as showPart } from "./record-index.js";
     }
     pageView.classList.toggle("d-none", view !== "page");
     document.getElementById("rdf-view").classList.toggle("d-none", view !== "data");
-    remember("editor-preview", shown ? view : "hidden");
     schedulePreview();
+  }
+
+  // A choice made with a click is remembered.
+  function chooseByClick(next, shown) {
+    choose(next, shown);
+    remember("editor-preview", shown ? view : "hidden");
   }
 
   if (panel) {
     for (const button of panel.querySelectorAll("[data-view]")) {
-      button.addEventListener("click", function () { choose(button.dataset.view, true); });
+      button.addEventListener("click", function () { chooseByClick(button.dataset.view, true); });
     }
-    document.getElementById("hide-preview").addEventListener("click", function () { choose(view, false); });
-    document.getElementById("show-preview").addEventListener("click", function () { choose(view, true); });
+    document.getElementById("hide-preview").addEventListener("click", function () { chooseByClick(view, false); });
+    document.getElementById("show-preview").addEventListener("click", function () { chooseByClick(view, true); });
     const kept = recall("editor-preview");
     choose(kept === "data" ? "data" : "page", kept !== "hidden");
   }
