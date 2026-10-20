@@ -11,7 +11,8 @@
     owl:imports <https://schema.org/version/30.1/schemaorg-current-https.ttl>,
         <https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/e5c27dbd2b1269a79fbe8f26e0173a9dc390aff0/pages/_types/bioschemas_draft_types.jsonld>,
         <https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/e5c27dbd2b1269a79fbe8f26e0173a9dc390aff0/pages/_types/bioschemas_types.jsonld>,
-        <https://raw.githubusercontent.com/VHP4Safety/glossary/34f9389a7f1f0073b67161e1ca6e6a6cf95c7371/glossary.owl> ;
+        <https://raw.githubusercontent.com/VHP4Safety/glossary/34f9389a7f1f0073b67161e1ca6e6a6cf95c7371/glossary.owl>,
+        <https://raw.githubusercontent.com/cygri/void/5b2ca68b7897c2613d4269fd725f1812dce21267/rdfs/void.ttl> ;
     sh:shapesGraph <https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/99beab94c4da4de3ea092b799356a8d05a74a926/pages/_profiles/bioschemas_profiles_shacl.ttl> ;
     sh:declare [ sh:prefix "schema" ; sh:namespace "https://schema.org/"^^xsd:anyURI ],
         [ sh:prefix "bioschemas_draft" ; sh:namespace "https://bioschemas.org/draft_terms/"^^xsd:anyURI ],
@@ -34,3 +35,5 @@
 <https://vhp4safety.github.io/glossary#VHP0000151> form:term "regulatoryQuestion" .
 
 <https://raw.githubusercontent.com/BioSchemas/bioschemas.github.io/99beab94c4da4de3ea092b799356a8d05a74a926/pages/_profiles/bioschemas_profiles_shacl.ttl> form:file "bioschemas-profiles-99beab9.shacl" ; form:sha256 "06497103ed13dce25e6b630088d7b1f0f469d73b2177a6e6e3ca6805b97df5a3" .
+
+<https://raw.githubusercontent.com/cygri/void/5b2ca68b7897c2613d4269fd725f1812dce21267/rdfs/void.ttl> form:file "void-5b2ca68.ttl" ; form:sha256 "52f249226d826b1731e9b46a1943afeda48186fcf8f37a0c819c217c031f8064" .

@@ -27,7 +27,7 @@ def test_rdf():
 
 
 def test_fields():
-    assert model.download_vocabularies() + model.schema_problems() + model.tables_problems() == []
+    assert model.download_vocabularies() + model.terms_problems() + model.tables_problems() == []
     for kind in settings()["kinds"].values():
         for field in fields.of(kind):
             assert field["label"], (kind, field["name"])

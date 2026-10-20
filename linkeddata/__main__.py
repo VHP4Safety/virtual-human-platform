@@ -19,7 +19,7 @@ from admin import tokens
 from database import export
 from linkeddata.imports import import_all
 from linkeddata.launch import launch
-from linkeddata.model import RELEASE, download_vocabularies, schema_problems, tables_problems, write_schema, write_tables
+from linkeddata.model import RELEASE, download_vocabularies, tables_problems, terms_problems, write_tables
 
 
 def main() -> None:
@@ -34,12 +34,11 @@ def main() -> None:
             print(problem, file=sys.stderr)
         if problems:
             sys.exit(1)
-        print(f"Wrote {write_schema()}")
         print(f"Wrote {write_tables()}")
     elif args.command == "check":
         problems = download_vocabularies()
         if not problems:
-            problems = schema_problems() + tables_problems()
+            problems = terms_problems() + tables_problems()
         if not problems and (database.STATE_DIR / "platform.sqlite").exists():
             problems = database.differences(database.STATE_DIR / "platform.sqlite")
         for problem in problems:

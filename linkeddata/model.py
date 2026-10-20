@@ -1,7 +1,6 @@
 """The data model: the vocabularies, classes and application profile of one model version."""
 
 import hashlib
-import json
 from functools import cache
 from pathlib import Path
 
@@ -11,7 +10,6 @@ from rdflib import RDF, Graph, Namespace, URIRef
 from rdflib.collection import Collection
 from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SH, VOID
 from rdfsolve.client.sql_tables import layout
-from rdfsolve.schema_models import MinedSchema
 
 
 # The served release: its model is in model/<release>, its tables in database/<release>.
@@ -96,25 +94,13 @@ def download_vocabularies() -> list[str]:
     return pinned_problems()
 
 
-def approved_schema() -> dict:
-    """The approved schema of the profile's classes, from the vocabularies and the profile."""
-    config = settings()
-    classes = sorted({str(kind) for kind in profile().objects(None, SH.targetClass)})
-    # The profile is a vocabulary too: it declares the platform's own terms, such as its PBPK ones.
-    return MinedSchema.from_vocabulary(vocabularies(config) + profile_files(), classes, profile=profile_text()).to_dict()
-
-
-def write_schema() -> Path:
-    path = MODEL_DIR / "schema.json"
-    path.write_text(json.dumps(approved_schema(), indent=1) + "\n", encoding="utf-8")
-    return path
-
-
-def schema_problems() -> list[str]:
-    """Whether schema.json is the approved schema."""
-    if (MODEL_DIR / "schema.json").read_text(encoding="utf-8") != json.dumps(approved_schema(), indent=1) + "\n":
-        return [f"{MODEL_DIR / 'schema.json'} is out of date: run python -m linkeddata model, review and commit it."]
-    return []
+def terms_problems() -> list[str]:
+    """The classes and properties used in the profile and defined in no pinned vocabulary."""
+    defined = set(profile().subjects())
+    for path in vocabularies(settings()):
+        defined |= set(vocabulary(path).subjects())
+    used = set(profile().objects(None, SH.targetClass)) | set(profile().objects(None, SH.path)) | set(profile().objects(None, SH["class"]))
+    return [f"{term} is used in the profile and defined in no pinned vocabulary." for term in sorted(used - defined) if isinstance(term, URIRef)]
 
 
 def tables_sql() -> str:
@@ -196,10 +182,8 @@ def required() -> dict[URIRef, tuple[URIRef, set]]:
 
 @cache
 def shapes() -> Graph:
-    """The model's checks: the approved schema's value types of the profile's fields, with its rules, and the
-    official shapes."""
-    schema = MinedSchema.from_json(MODEL_DIR / "schema.json")
-    return Graph().parse(data=schema.to_shacl(properties="profile"), format="turtle") + official()
+    """The shapes the records are checked with: those of the profile and the official ones."""
+    return profile() + official()
 
 
 @cache
