@@ -42,7 +42,7 @@ form:LearningResource a sh:NodeShape ;
     sh:property [ sh:path schema:dateModified ; sh:order 16 ; sh:name "Last changed" ; sh:maxCount 1 ; sh:datatype xsd:date ] ;
     sh:property [ sh:path schema:mainEntityOfPage ; sh:order 17 ; sh:name "Web page" ;
         sh:or ( [ sh:class schema:WebPage ; sh:node form:WebPage ; sh:nodeKind sh:BlankNode ; rdfs:label "Web page" ] [ sh:nodeKind sh:IRI ; rdfs:label "Address" ] ) ;
-        sh:description "The web page where it is read, with the page's sections, each at its address. The platform's page of the record is added when the record is published." ] ;
+        sh:description "The web page where it is read, with the sections of the page, each at its address. The platform page of the record is added when the record is published." ] ;
     sh:property [ sh:path schema:hasPart ; sh:order 18 ; sh:name "Files" ; sh:class schema:DigitalDocument ; sh:node form:DigitalDocument ; sh:nodeKind sh:BlankNode ;
         sh:description "Its files, such as slides, notebooks and scripts." ] ;
     sh:property [ sh:path schema:video ; sh:order 19 ; sh:name "Video" ; sh:maxCount 1 ; sh:class schema:VideoObject ; sh:node form:VideoObject ; sh:nodeKind sh:BlankNode ] ;
@@ -74,4 +74,4 @@ form:DigitalDocument a sh:NodeShape ;
     sh:targetClass schema:DigitalDocument ;
     rdfs:label "File" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
-    sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Address" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:message "The file's address needed." ] .
+    sh:property [ sh:path schema:url ; sh:order 2 ; sh:name "Address" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:message "The address of the file needed." ] .

@@ -30,44 +30,44 @@ form:LabProtocol a sh:NodeShape ;
         sh:path glossary:VHP0000152 ; sh:group form:method ; sh:order 3 ; sh:name "Assessment steps" ;
         sh:severity sh:Warning ; sh:nodeKind sh:IRI ; sh:in ( glossary:VHP0000153 glossary:VHP0000154 glossary:VHP0000155 glossary:VHP0000156 glossary:VHP0000158 ) ;
         sh:message "Choose from the list; other values are not in the filters." ;
-        sh:description "Process flow steps the method informs." ] ;
+        sh:description "The process flow steps for which the method is used." ] ;
     sh:property [
         sh:path glossary:VHP0000151 ; sh:group form:method ; sh:order 4 ; sh:name "Case-study questions" ;
         sh:class schema:HowTo ;
-        sh:description "Case study questions the method informs." ] ;
+        sh:description "The case study questions for which the method is used." ] ;
     sh:property [
         sh:path schema:about ; sh:group form:method ; sh:order 5 ; sh:name "Key events, pathways and topics" ;
         sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
         sh:message "Choose a term, such as an AOP-Wiki key event, or register it." ;
-        sh:description "AOP-Wiki key events and pathways the method measures, and glossary terms." ] ;
+        sh:description "The AOP-Wiki key events and pathways that are measured with the method, and glossary terms." ] ;
     sh:property [
         sh:path schema:additionalType ; sh:group form:method ; sh:order 6 ; sh:name "Kind of assay" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
         sh:message "Choose a term, such as from BAO or OBI, or register it." ;
         sh:description "The kind of assay, as OBI or BAO terms." ] ;
     sh:property [
         sh:path schema:alternateName ; sh:group form:assay ; sh:order 1 ; sh:name "Assay name" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "The assay or kit name, as its vendor gives it." ] ;
+        sh:description "The name of the assay or kit at the vendor." ] ;
     sh:property [
         sh:path schema:provider ; sh:group form:assay ; sh:order 2 ; sh:name "Vendor" ;
         sh:class schema:Organization ;
         sh:description "The company that sells the assay or kit." ] ;
     sh:property [
         sh:path schema:identifier ; sh:group form:assay ; sh:order 3 ; sh:name "Catalogue number" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "The vendor's catalogue number." ] ;
+        sh:description "The catalogue number at the vendor." ] ;
     sh:property [
         sh:path schema:url ; sh:group form:assay ; sh:order 4 ; sh:name "Product page" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
-        sh:description "The vendor's page." ] ;
+        sh:description "The page of the product at the vendor." ] ;
     sh:property [
         sh:path schema:creator ; sh:group form:people ; sh:order 1 ; sh:name "Data producer" ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ;
-        sh:description "Who produces data with the method in VHP4Safety." ] ;
+        sh:description "The producers of data with the method in VHP4Safety." ] ;
     sh:property [
         sh:path schema:citation ; sh:group form:documentation ; sh:order 1 ; sh:name "Publications" ;
         sh:class schema:ScholarlyArticle ;
-        sh:description "Publications on the method; their pages link to their DOIs." ] ;
+        sh:description "Publications on the method, with links to their DOIs on their pages." ] ;
     sh:property [
         sh:path schema:subjectOf ; sh:group form:documentation ; sh:order 2 ; sh:name "Standard operating procedure" ; sh:nodeKind sh:IRI ;
-        sh:description "The protocol the lab follows." ] ;
+        sh:description "The protocol of the lab." ] ;
     sh:property [
         sh:path schema:isBasedOn ; sh:group form:elsewhere ; sh:order 1 ; sh:name "Catalogue request" ; sh:nodeKind sh:IRI ;
-        sh:description "The cloud catalogue request the record was made from." ] .
+        sh:description "The cloud catalogue request from which the record was made." ] .

@@ -20,7 +20,7 @@ form:DefinedTerm a sh:NodeShape ;
         sh:description "Such as a short name." ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 6 ; sh:name "Other addresses" ;
         sh:or ( [ sh:class schema:DefinedTerm ; rdfs:label "Term" ] [ sh:nodeKind sh:IRI ; rdfs:label "Address" ] ) ;
-        sh:description "The same term in another vocabulary, or another address, such as a license's text." ] ;
+        sh:description "The same term in another vocabulary, or another address, such as the text of a license." ] ;
     sh:property [ sh:path schema:description ; sh:order 4 ; sh:name "Definition" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] .
 
 form:DefinedTermSet a sh:NodeShape ;
@@ -30,11 +30,11 @@ form:DefinedTermSet a sh:NodeShape ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
     sh:property [ sh:path void:uriSpace ; sh:order 2 ; sh:name "Namespace" ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:pattern "^https?://" ;
         sh:message "One web address start, such as http://purl.obolibrary.org/obo/NCBITaxon_." ;
-        sh:description "The start of its terms' addresses, when they share one." ] ;
+        sh:description "The common start of the addresses of its terms, if there is one." ] ;
     sh:property [ sh:path schema:url ; sh:order 3 ; sh:name "Home page" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 4 ; sh:name "Same as" ; sh:nodeKind sh:IRI ;
         sh:description "Its own address elsewhere, such as its Wikidata item." ] ;
     sh:property [ sh:path schema:description ; sh:order 5 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:license ; sh:order 6 ; sh:name "License" ; sh:minCount 1 ; sh:maxCount 1 ; sh:severity sh:Warning ; sh:nodeKind sh:IRI ;
         sh:message "Add the license of its terms: an SPDX license, or the address of its terms of use." ;
-        sh:description "The terms that records link to are published with it, under this license." ] .
+        sh:description "The linked terms of the records are published with the vocabulary, under this license." ] .

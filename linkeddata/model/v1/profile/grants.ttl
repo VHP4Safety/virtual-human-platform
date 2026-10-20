@@ -15,7 +15,7 @@ form:MonetaryGrant a sh:NodeShape ;
         sh:message "Add the funder." ] ;
     sh:property [ sh:path schema:amount ; sh:order 4 ; sh:name "Amount" ; sh:maxCount 1 ; sh:class schema:MonetaryAmount ; sh:node form:MonetaryAmount ; sh:nodeKind sh:BlankNode ] ;
     sh:property [ sh:path schema:url ; sh:order 5 ; sh:name "Page" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
-        sh:description "The funder's page of the grant." ] ;
+        sh:description "The page of the grant at the funder." ] ;
     sh:property [ sh:path schema:description ; sh:order 6 ; sh:name "Description" ; sh:maxCount 1 ; dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ] .
 
 form:MonetaryAmount a sh:NodeShape ;

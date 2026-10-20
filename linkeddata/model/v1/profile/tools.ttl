@@ -26,12 +26,12 @@ form:SoftwareApplication a sh:NodeShape ;
     rdfs:comment "Tools state their Bioschemas profile (ComputationalTool)." ;
     sh:property [
         sh:path schema:name ; sh:group form:about ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "As its developers write it." ;
+        sh:description "As written by the developers." ;
         sh:message "One name needed." ] ;
     sh:property [
         sh:path schema:description ; sh:group form:about ; sh:order 2 ; sh:name "Description" ; sh:minCount 1 ; sh:maxCount 1 ;
         dash:singleLine false ; sh:or ( form:PlainText form:HTMLText ) ;
-        sh:description "What the tool does, in two or three sentences. Shown in the catalogue and on the tool's page." ;
+        sh:description "The function of the tool, in two or three sentences. Shown in the catalogue and on the page of the tool." ;
         sh:message "One description needed." ] ;
     sh:property [
         sh:path schema:url ; sh:group form:about ; sh:order 3 ; sh:name "Website" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
@@ -43,33 +43,33 @@ form:SoftwareApplication a sh:NodeShape ;
         sh:description "Where the tool runs, if not its website. Linked as \"Run the tool\"." ] ;
     sh:property [
         sh:path schema:image ; sh:group form:about ; sh:order 5 ; sh:name "Logo or screenshot" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
-        sh:description "Shown on the tool's card in the catalogue." ] ;
+        sh:description "Shown on the card of the tool in the catalogue." ] ;
     sh:property [
         sh:path glossary:VHP0000152 ; sh:group form:about ; sh:order 6 ; sh:name "Assessment steps" ;
         sh:severity sh:Warning ; sh:nodeKind sh:IRI ; sh:in ( glossary:VHP0000153 glossary:VHP0000154 glossary:VHP0000155 glossary:VHP0000156 glossary:VHP0000158 ) ;
         sh:message "Choose from the list; other values are not in the filters." ;
-        sh:description "Process flow steps the tool supports; the catalogue is filtered by them." ] ;
+        sh:description "The process flow steps that are supported by the tool; the catalogue is filtered by them." ] ;
     sh:property [
         sh:path glossary:VHP0000151 ; sh:group form:about ; sh:order 7 ; sh:name "Case-study questions" ;
         sh:class schema:HowTo ;
-        sh:description "Case study questions the tool helps answer; the catalogue is filtered by them." ] ;
+        sh:description "The case study questions for which the tool is used; the catalogue is filtered by them." ] ;
     sh:property [
         sh:path schema:about ; sh:group form:about ; sh:order 8 ; sh:name "Topics" ;
         sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
         sh:message "Choose a vocabulary term, or register it." ;
-        sh:description "What the tool deals with, such as Model or Adverse Outcome Pathway." ] ;
+        sh:description "The topics of the tool, such as Model or Adverse Outcome Pathway." ] ;
     sh:property [
         sh:path schema:provider ; sh:group form:people ; sh:order 1 ; sh:name "Provided by" ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ;
-        sh:description "Who offers the tool. VHP4Safety, when it runs on the platform's servers, is shown as its host." ] ;
+        sh:description "The providers of the tool. If the tool runs on the servers of the platform, VHP4Safety is shown as its host." ] ;
     sh:property [
         sh:path schema:creator ; sh:group form:people ; sh:order 2 ; sh:name "Developed by" ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ;
-        sh:description "Who developed the tool; VHP4Safety when the project did." ] ;
+        sh:description "The developers of the tool; VHP4Safety if the tool was developed in the project." ] ;
     sh:property [
         sh:path schema:maintainer ; sh:group form:people ; sh:order 3 ; sh:name "Contact people" ;
         sh:or ( [ sh:class schema:Person ; rdfs:label "Person" ] [ sh:class schema:Organization ; rdfs:label "Organisation" ] ) ;
-        sh:description "Who to contact. Names and email addresses are shown on the support tab." ] ;
+        sh:description "The contact people. Names and email addresses are shown on the support tab." ] ;
     sh:property [
         sh:path schema:softwareHelp ; sh:group form:documentation ; sh:order 1 ; sh:name "Guides and demos" ;
         sh:class schema:WebPage ; sh:node form:WebPage ; sh:nodeKind sh:BlankNode ;
@@ -85,18 +85,18 @@ form:SoftwareApplication a sh:NodeShape ;
     sh:property [
         sh:path schema:citation ; sh:group form:documentation ; sh:order 4 ; sh:name "Publication to cite" ; sh:maxCount 1 ;
         sh:class schema:ScholarlyArticle ;
-        sh:description "The publication to cite when the tool is used; its page links to its DOI." ] ;
+        sh:description "The publication to cite when the tool is used, with a link to its DOI on its page." ] ;
     sh:property [
         sh:path schema:keywords ; sh:group form:documentation ; sh:order 5 ; sh:name "Training search term" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "Searched on ELIXIR TeSS and Taxila; the results are shown on the tool's page." ] ;
+        sh:description "Searched on ELIXIR TeSS and Taxila; the results are shown on the page of the tool." ] ;
     sh:property [
         sh:path schema:softwareVersion ; sh:group form:technical ; sh:order 1 ; sh:name "Version" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "As its developers number it." ] ;
+        sh:description "As numbered by the developers." ] ;
     sh:property [
         sh:path schema:license ; sh:group form:technical ; sh:order 2 ; sh:name "License" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:severity sh:Warning ; sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ; form:publishedAs schema:CreativeWork ;
         sh:message "Add the license, chosen from SPDX; other values are kept." ;
-        sh:description "The tool's license." ] ;
+        sh:description "The license of the tool." ] ;
     sh:property [
         sh:path schema:isBasedOn ; sh:group form:technical ; sh:order 3 ; sh:name "Source code" ; sh:nodeKind sh:IRI ;
         sh:description "Its repository, such as on GitHub." ] ;
@@ -114,4 +114,4 @@ form:SoftwareApplication a sh:NodeShape ;
         sh:description "Address of the release notes, or a short note on the latest release." ] ;
     sh:property [
         sh:path schema:sameAs ; sh:group form:elsewhere ; sh:order 1 ; sh:name "Other addresses" ; sh:nodeKind sh:IRI ;
-        sh:description "Such as bio.tools, FAIRsharing, Wikipedia or the Research Software Directory. Earlier platform addresses are kept here, so old links still work." ] .
+        sh:description "Such as bio.tools, FAIRsharing, Wikipedia or the Research Software Directory. Earlier platform addresses are kept here, so that old links are still valid." ] .
