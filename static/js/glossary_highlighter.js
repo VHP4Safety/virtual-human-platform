@@ -104,8 +104,13 @@
         }
       }
     }
-    matches.sort((a, b) => a.start - b.start);
-    return matches.filter((m, i) => i === 0 || m.start >= matches[i - 1].end);
+    // Of overlapping matches, the longest match that starts first is kept, such as "AOP-Wiki RDF" over "RDF".
+    matches.sort((a, b) => a.start - b.start || b.end - a.end);
+    const kept = [];
+    for (const m of matches) {
+      if (!kept.length || m.start >= kept[kept.length - 1].end) kept.push(m);
+    }
+    return kept;
   }
 
   function tooltipHtml(term) {
