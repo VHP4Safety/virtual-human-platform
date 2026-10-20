@@ -262,42 +262,20 @@ def methods():
 
 @app.route("/methods/<methodid>")
 def method_page(methodid):
-    """Render a method page (templates/methods/method.html) from its record, with the profile's field names."""
+    """A method's page, from its record."""
     record = records.get(records.address(f"methods/{methodid}"))
     if record is None:
         abort(404)
-    method = documents.view(record)
-    method_name = record.name or methodid
-    descriptions = documents.stored_values(storage.graph([record.iri]), record.iri, "description")
-    return render_template(
-        "methods/method.html",
-        method=method,
-        updated=record.updated_at,
-        page_title=f"{method_name} — VHP4Safety",
-        meta_description=clip(descriptions[0] if descriptions else "")
-        or f"{method_name}, a method in the VHP4Safety Virtual Human Platform.",
-    )
+    return record_page(record)
 
 
 @app.route("/tools/<toolname>")
 def tool_page(toolname):
-    """Render a tool page (templates/tools/tool.html) from its record, with the profile's field names."""
+    """A tool's page, from its record."""
     record = records.get(records.address(f"tools/{toolname}"))
     if record is None:
         abort(404)
-    tool = documents.view(record)
-    tool_name = record.name or toolname
-    description = tool.get("description")
-    if isinstance(description, dict):
-        description = description.get("@value")
-    return render_template(
-        "tools/tool.html",
-        tool_details=tool,
-        process_flow_steps=get_process_flow_steps(),
-        page_title=f"{tool_name} — VHP4Safety",
-        meta_description=clip(description)
-        or f"{tool_name}, a tool in the VHP4Safety Virtual Human Platform.",
-    )
+    return record_page(record)
 
 
 ################################################################################
