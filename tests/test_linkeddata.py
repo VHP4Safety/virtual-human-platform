@@ -8,7 +8,7 @@ import database
 from admin import writes
 from database import records
 from database.tables import Note, Source
-from linkeddata import checks, documents, imports, storage
+from linkeddata import checks, documents, imports
 from linkeddata.profile import download_vocabularies, fields, settings, tables_problems, terms_problems
 
 BASE = "https://platform.vhp4safety.nl/"
@@ -49,7 +49,7 @@ def test_imports(monkeypatch, tmp_path):
     monkeypatch.setattr(imports, "fetch", lambda url: json.dumps(files[url]).encode())
     assert imports.import_all(once=True) == []
     tool = records.get(BASE + "tools/aop-builder")
-    found = storage.graph([BASE + "tools/aop-builder", BASE + "tools/x"])
+    found = records.graph([BASE + "tools/aop-builder", BASE + "tools/x"])
     assert (tool.name, documents.stored_values(found, tool.iri, "processFlowStep")) == ("AOP-Builder", [STEP])
     assert records.get(BASE + "people/test-author").name == "Test Author"
     with database.session() as db:

@@ -56,17 +56,15 @@ line (`linkeddata/__main__.py`) and by `app.py`.
 | Package | Module | Concern |
 |---|---|---|
 | `database/` | `__init__.py`, `tables.py` | the database file and its tables (SQLAlchemy) |
-| | `records.py` | reading records |
+| | `records.py` | records read and written as rows of the release tables (rdfsolve), listing pages and facets |
 | | `images.py` | uploaded images, checked and saved as WebP |
 | | `export.py` | export of the platform's records to a git repository |
 | `linkeddata/` | `profile.py`, `model/v1/` | the model, the application profile and the fields of each class |
 | | `parsers/`, `sources/` | how each source becomes the model |
 | | `launch/` | the sources read once when the platform goes live, and the corrections made then |
-| | `storage.py` | statements as rows of the release's tables, with rdfsolve |
 | | `documents.py` | records as JSON-LD documents, and as the dictionaries of page templates |
 | | `checks.py` | checks of records against the model's shapes |
 | | `imports.py` | sources fetched, converted and checked with rdfsolve, and stored as records |
-| | `catalogue.py` | the records of a kind in SQL: filtered pages, and counts of each value |
 | | `quality.py` | completeness, the checks' notes, and how each source becomes the model |
 | `admin/` | `accounts.py`, `tokens.py` | editors and their write tokens |
 | | `writes.py` | records written on the platform, each change with its revision |
@@ -223,7 +221,7 @@ are set by the shapes at `/api/shapes.ttl`. `{kind}` is one of the kinds of the 
   Markdown, by the Accept header.
 - `GET /api/{kind}/facets` counts the found records per value of those fields; the filter of a field is
   not used for its own counts. The queries are made in SQL from the rdfsolve layout of the profile
-  (`catalogue.py`).
+  (`database/records.py`).
 - `POST /api/{kind}` adds a record, at an address made from its name (a vocabulary term is at its own
   address, given as `@id`).
 - `GET`, `PUT` and `DELETE /api/<address of its page>` (`/api/tools/aop-builder`,

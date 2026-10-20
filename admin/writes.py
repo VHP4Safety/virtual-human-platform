@@ -14,7 +14,7 @@ from sqlalchemy import delete, insert, select
 import database
 from database import records
 from database.tables import PLATFORM, Record, Revision, now
-from linkeddata import catalogue, documents, storage
+from linkeddata import documents
 from linkeddata.documents import context
 from linkeddata.profile import fields, jsonld_name, settings
 
@@ -32,7 +32,7 @@ def class_of(kind: str, body: dict) -> str:
         if not isinstance(name, str):
             continue
         of_class = name if name.startswith(("http://", "https://")) else documents.expand(name)
-        if of_class in catalogue.within(kind):
+        if of_class in records.within(kind):
             return of_class
     return kind
 
@@ -119,7 +119,7 @@ def separate(found: Graph) -> list[tuple[str, str, Graph]]:
         name = found.value(node, SDO.name)
         iri = free(records.address(f"{kinds[kind]}/{slug(str(name or kinds[kind]))}"), taken)
         own = Graph()
-        for subject, predicate, value in storage.described(found, node):
+        for subject, predicate, value in records.described(found, node):
             found.remove((subject, predicate, value))
             own.add((URIRef(iri) if subject == node else subject, predicate, value))
         for subject, predicate in list(found.subject_predicates(node)):
@@ -137,8 +137,8 @@ def save(document: dict, kind: str, name: str, orcid: str) -> Revision:
         created = db.get(Record, iri) is None
         db.execute(delete(Record).where((Record.iri == iri) | (Record.part_of == iri)))
         found = documents.statements(document)
-        storage.save(db, found, iri)
-        db.execute(insert(Record), [{**row, "updated_at": version()} for row in storage.rows(found, iri, kind, PLATFORM)])
+        records.save(db, found, iri)
+        db.execute(insert(Record), [{**row, "updated_at": version()} for row in records.rows(found, iri, kind, PLATFORM)])
         revision = Revision(
             record_iri=iri,
             action="Added" if created else "Changed",
@@ -177,14 +177,14 @@ def move(old: str, new: str, name: str, orcid: str) -> Revision:
     with database.session() as db, db.begin():
         record = db.get(Record, old)
         found = Graph()
-        for subject, prop, value in storage.read([old]):
+        for subject, prop, value in records.read([old]):
             found.add((moved(subject), prop, moved(value)))
         found.add((URIRef(new), SDO.sameAs, URIRef(old)))
         found.remove((URIRef(new), SDO.sameAs, URIRef(new)))
         # A record can move back to one of its earlier addresses; that address then stops forwarding.
         db.execute(delete(Record).where(((Record.iri == new) | Record.iri.startswith(new + "/")), ((Record.moved_to == old) | Record.moved_to.startswith(old + "/"))))
-        storage.save(db, found, new)
-        db.execute(insert(Record), [{**row, "updated_at": version()} for row in storage.rows(found, new, record.type, PLATFORM)])
+        records.save(db, found, new)
+        db.execute(insert(Record), [{**row, "updated_at": version()} for row in records.rows(found, new, record.type, PLATFORM)])
         for kept in db.scalars(select(Record).where((Record.iri == old) | (Record.part_of == old))):
             kept.removed_at = now()
             kept.moved_to = str(moved(URIRef(kept.iri)))
@@ -216,7 +216,7 @@ def remove(iri: str, name: str, orcid: str) -> Revision:
     """The record and its address are removed; its revisions are kept."""
     previous = documents.document_of(iri)
     with database.session() as db, db.begin():
-        storage.delete(db, iri)
+        records.delete(db, iri)
         db.execute(delete(Record).where((Record.iri == iri) | (Record.part_of == iri)))
         revision = Revision(record_iri=iri, action="Removed permanently", previous=previous, name=name, orcid=orcid)
         db.add(revision)

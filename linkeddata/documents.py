@@ -12,7 +12,6 @@ from rdflib.namespace import DCTERMS, SDO, SH, VOID
 import database
 from database import records
 from database.tables import Record
-from linkeddata import storage
 from linkeddata.profile import profile_graph, required, settings
 
 
@@ -75,7 +74,7 @@ def document(found: Graph, iri: str | None = None, named: bool = False) -> dict:
     if iri is None:
         expanded = jsonld.from_rdf(found.serialize(format="nt"), {"format": "application/n-quads"})
         return jsonld.compact(expanded, context(settings()))
-    own = storage.described(found, iri)
+    own = records.described(found, iri)
     if named:
         for value in set(own.objects()):
             if isinstance(value, URIRef) and (value, None, None) not in own:
@@ -95,7 +94,7 @@ def document_of(iri: str) -> str | None:
         record = db.get(Record, iri)
     if record is None or record.removed_at:
         return None
-    return json.dumps(document(storage.read([iri])), indent=2)
+    return json.dumps(document(records.read([iri])), indent=2)
 
 
 @cache
@@ -153,7 +152,7 @@ def linked(record: Record) -> Graph:
     """A record's data as its page gives it: the record with its parts, and the class and name of each record it
     links to, and the dataset it is part of (void:inDataset, the platform's address); private fields are taken
     out."""
-    found = public(storage.with_names(storage.graph([record.iri])))
+    found = public(records.with_names(records.graph([record.iri])))
     if record.iri != settings()["base"]:
         found.add((URIRef(record.iri), VOID.inDataset, URIRef(settings()["base"])))
     return found
@@ -171,12 +170,12 @@ def published_all() -> dict:
         own = []
         for iri, _ in records.with_pages():
             own.append(iri)
-        found = storage.graph(own)
+        found = records.graph(own)
         linked = set()
         for value in found.objects():
             if isinstance(value, URIRef) and not str(value).startswith(settings()["base"]):
                 linked.add(str(value))
-        PUBLISHED.update(latest=latest, records=public(found), terms=public(storage.graph(sorted(linked))))
+        PUBLISHED.update(latest=latest, records=public(found), terms=public(records.graph(sorted(linked))))
     return PUBLISHED
 
 

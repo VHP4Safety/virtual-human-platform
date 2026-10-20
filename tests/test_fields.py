@@ -23,7 +23,7 @@ from rdflib.compare import graph_diff, to_isomorphic
 
 from admin import editor, tokens, writes
 from database import records
-from linkeddata import documents, storage
+from linkeddata import documents
 from linkeddata.profile import fields, hierarchy, jsonld_name, settings
 
 ORCID = "0000-0002-1825-0097"
@@ -205,7 +205,7 @@ def test_fields(state, site):
         count = int(os.environ.get("FIELDS_RECORDS", "3"))
         picked = [chosen[round(step * (len(chosen) - 1) / max(count - 1, 1))] for step in range(count)] if chosen else []
         for iri in sorted({item["record"].iri for item in picked}):
-            original = documents.document(storage.graph([iri]), iri)
+            original = documents.document(records.graph([iri]), iri)
             path = "/api/" + quote(iri.removeprefix(settings()["base"]), safe="/:")
             baseline = None
             for operation in OPERATIONS:
@@ -227,7 +227,7 @@ def test_fields(state, site):
                     if saved.status_code not in (200, 201):
                         row["issues"].append(f"saving answered {saved.status_code}: {saved.get_data(as_text=True)[:300]}")
                     else:
-                        row.update(difference(intended, storage.graph([iri])))
+                        row.update(difference(intended, records.graph([iri])))
                     writes.save(original, of_class, "Test Editor", ORCID)
                 report.append(row)
     chrome = os.environ.get("FIELDS_CHROME")

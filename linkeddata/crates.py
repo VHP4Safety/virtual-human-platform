@@ -15,7 +15,7 @@ from rocrate.rocrate import ROCrate
 
 from database import records
 from database.tables import Record
-from linkeddata import documents, storage, void
+from linkeddata import documents, void
 from linkeddata.profile import settings
 
 PROFILE = "https://w3id.org/ro/crate/1.2"
@@ -28,7 +28,7 @@ def crate(record: Record) -> dict:
     for value in found.objects():
         if isinstance(value, URIRef) and (value, SDO.name, None) in found and value != node:
             linked.add(str(value))
-    found += documents.public(storage.with_names(storage.graph(sorted(linked))))
+    found += documents.public(records.with_names(records.graph(sorted(linked))))
     publisher = records.get(void.platform()["publisher"]["@id"]) if void.platform()["publisher"] else None
     if publisher is not None:
         # A project is an organisation; RO-Crate asks for the publisher's type to say so.

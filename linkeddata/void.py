@@ -25,8 +25,8 @@ from sqlalchemy import select
 import database
 from database import records
 from database.tables import Record
-from linkeddata import documents, storage
-from linkeddata.profile import jsonld_name, settings
+from linkeddata import documents
+from linkeddata.profile import jsonld_name, profile_text, settings
 
 DESCRIPTION = ".well-known/void"
 # The catalogue's fields, as VoID's general metadata names them.
@@ -44,7 +44,7 @@ def platform() -> dict:
     empty until it has one."""
     latest = records.latest_change()
     if PLATFORM.get("latest") != latest:
-        found = storage.graph([settings()["base"]])
+        found = records.graph([settings()["base"]])
         node = URIRef(settings()["base"])
         publisher = records.get(str(found.value(node, SDO.publisher) or ""))
         PLATFORM.update(latest=latest, name=str(found.value(node, SDO.name) or ""), abstract=str(found.value(node, SDO.abstract) or ""),
@@ -65,7 +65,7 @@ def general(void: Graph, dataset: URIRef) -> None:
         for value in own.objects(dataset, field):
             void.add((dataset, term, value))
     for publisher in own.objects(dataset, SDO.publisher):
-        held = storage.graph([str(publisher)])
+        held = records.graph([str(publisher)])
         for role in held.objects(publisher, SDO.member):
             for organisation in held.objects(role, SDO.member):
                 void.add((dataset, DCTERMS.contributor, organisation))
@@ -89,7 +89,7 @@ def partitions(void: Graph, dataset: URIRef, base: str) -> None:
     published = select(Record.iri).where(Record.iri.startswith(base), Record.part_of.is_(None), Record.removed_at.is_(None), Record.moved_to.is_(None))
     left_out = {str(field) for field in documents.private()}
     with database.engine().connect() as connection:
-        found = layout(storage.profile()).void(connection, published, name=lambda *iris: str(name(*iris)), left_out=left_out)
+        found = layout(profile_text()).void(connection, published, name=lambda *iris: str(name(*iris)), left_out=left_out)
     for partition in found:
         void.add((dataset, VOID.classPartition, partition.to_rdf(void)))
         given = named.pop(URIRef(partition.class_uri), None)
@@ -132,7 +132,7 @@ def terms(void: Graph, dataset: URIRef) -> None:
     void.add((subset, VOID.triples, Literal(len(found))))
     void.add((subset, VOID.entities, Literal(len(set(found.subjects(RDF.type, None))))))
     counted = Counter(found.objects(None, SDO.inDefinedTermSet))
-    held = storage.graph(sorted(str(vocabulary) for vocabulary in counted))
+    held = records.graph(sorted(str(vocabulary) for vocabulary in counted))
     for vocabulary, count in sorted(counted.items()):
         part = URIRef(records.address(DESCRIPTION) + "#terms-" + local_name(str(vocabulary)))
         void.add((subset, VOID.subset, part))

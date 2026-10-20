@@ -17,7 +17,7 @@ from werkzeug.routing import BaseConverter
 
 # Import BioStudies extractor
 from database import records
-from linkeddata import documents, pages, storage, void
+from linkeddata import documents, pages, void
 from linkeddata.profile import hierarchy, settings
 from routes.account import blueprint as account_blueprint
 from routes import limiter, records_api
@@ -287,7 +287,7 @@ def tool_page(toolname):
 def workflows():
     """The case studies, from their records: each one's name, aim and icon."""
     listed = [record for record in records.of_kind("casestudies") if record.part_of is None]
-    statements = storage.graph([record.iri for record in listed])
+    statements = records.graph([record.iri for record in listed])
     case_studies = []
     for record in listed:
         aims = documents.stored_values(statements, record.iri, "description")

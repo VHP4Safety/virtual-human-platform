@@ -13,7 +13,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 import database
 from admin import changes, tokens, writes
 from database import images, records
-from linkeddata import catalogue, checks, documents, pages, storage
+from linkeddata import checks, documents, pages
 from linkeddata.profile import RELEASE, jsonld_name, settings, shapes
 from routes import account, limiter
 from routes.record_pages import SERIALIZATIONS, data, markdown_of
@@ -86,7 +86,7 @@ def kind_of(address: str | None, body: dict) -> str | None:
     given = record.type if record is not None else body.get("@type")
     names = {}
     for name, kind in settings()["kinds"].items():
-        for of_class in catalogue.within(kind):
+        for of_class in records.within(kind):
             names[of_class] = name
     for value in given if isinstance(given, list) else [given]:
         if isinstance(value, str):
@@ -203,7 +203,7 @@ def store(address: str, body: dict, preview: bool = False, page: bool = False):
         for path in list(problems) + list(warnings):
             labels[path] = checks.named(kind, path)
         return jsonify({**changes.edges(before, found, URIRef(address)), "fields": problems, "warnings": warnings, "labels": labels,
-                        "document": documents.document(storage.with_names(found), address)})
+                        "document": documents.document(records.with_names(found), address)})
     unchanged(address)
     if problems:
         abort(422, message=str(checks.NotFitting(problems)), errors=problems)
@@ -290,7 +290,7 @@ def search(given):
     """Records, parts and vocabulary terms are found by name or address. The address, class and name of each
     are given in JSON-LD."""
     found = []
-    among = catalogue.holders(str(SDO.DefinedTerm), str(SDO.inDefinedTermSet), [given["vocabulary"]]) if given["vocabulary"] else None
+    among = records.nodes_with(str(SDO.DefinedTerm), str(SDO.inDefinedTermSet), [given["vocabulary"]]) if given["vocabulary"] else None
     for record in records.search(given["text"], given["of_class"] or list(settings()["kinds"].values()), given["within"], limit=given["limit"], among=among):
         found.append({"@id": record.iri, "@type": jsonld_name(record.type), "name": record.name or record.iri})
     return jsonify({"@context": documents.context(settings()), "@graph": found})
@@ -336,9 +336,9 @@ def listed(given, kind, pagination_parameters):
     /api/tools?processFlowStep=https://vhp4safety.github.io/glossary%23VHP0000156. Several values of one field
     match any. Several fields match all."""
     of_class = settings()["kinds"][kind]
-    total, iris = catalogue.page(of_class, catalogue.filters(of_class, given), given["search"], pagination_parameters.first_item, pagination_parameters.page_size)
+    total, iris = records.page(of_class, records.filters(of_class, given), given["search"], pagination_parameters.first_item, pagination_parameters.page_size)
     pagination_parameters.item_count = total
-    found = readable(storage.graph(iris), kind)
+    found = readable(records.graph(iris), kind)
     # The format asked for at the page of a kind (/tools) is used, also when it is asked by an ending (/tools.ttl).
     media = g.get("media") or request.accept_mimetypes.best_match(["application/ld+json", *SERIALIZATIONS, "text/markdown"], "application/ld+json")
     if media == "text/markdown":
@@ -364,7 +364,7 @@ def counted(given, kind):
     """The found records are counted per value of each field that can be browsed, with the query of the list.
 
     The filter of a field is not used for the counts of that field, so each count is what that value finds."""
-    return jsonify(catalogue.counted(settings()["kinds"][kind], given))
+    return jsonify(records.counted(settings()["kinds"][kind], given))
 
 
 @blueprint.post(KIND)
@@ -405,7 +405,7 @@ def read(path):
         return markdown_of(record)
     # A part, such as a case study question, is read as its record is.
     kind = kind_of(record.part_of or record.iri, {})
-    answer = data(readable(storage.with_names(storage.graph([record.iri])), kind), media, record.iri)
+    answer = data(readable(records.with_names(records.graph([record.iri])), kind), media, record.iri)
     answer.headers["ETag"] = f'"{record.updated_at}"'
     return answer
 

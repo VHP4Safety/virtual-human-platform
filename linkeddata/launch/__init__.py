@@ -9,7 +9,7 @@ from rdflib import RDF, BNode, Graph, Literal, URIRef
 
 from admin import writes
 from database import records
-from linkeddata import checks, documents, storage
+from linkeddata import checks, documents
 from linkeddata.imports import import_all
 
 CORRECTIONS = Path(__file__).parent / "launch.yaml"
@@ -51,7 +51,7 @@ def launch() -> list[str]:
         if record is None:
             problems.append(f"{correction['record']}: no such record.")
             continue
-        found = storage.graph([iri])
+        found = records.graph([iri])
         if not corrected(found, correction):
             problems.append(f"{correction['record']}: nothing to correct ({correction['why']})")
             continue

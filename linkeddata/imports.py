@@ -24,9 +24,10 @@ from rdflib.namespace import SDO, SH
 from sqlalchemy import delete, func, insert, select
 
 import database
+from database import records
 from database.tables import PLATFORM, Note, Record, Revision, Source, now
-from linkeddata import catalogue, checks, documents, storage
-from linkeddata.profile import MODEL_DIR, fields, profile_graph, settings
+from linkeddata import checks, documents
+from linkeddata.profile import MODEL_DIR, fields, profile_graph, profile_text, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
 LAUNCH_DIR = Path(__file__).parent / "launch"
@@ -112,8 +113,8 @@ def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[tuple[
         for subject in sorted(set(graph.subjects(RDF.type, URIRef(kind)))):
             if not isinstance(subject, URIRef):
                 continue
-            own = storage.described(graph, str(subject))
-            found.append((storage.rows(own, str(subject), kind, source), own))
+            own = records.described(graph, str(subject))
+            found.append((records.rows(own, str(subject), kind, source), own))
     return found
 
 
@@ -132,19 +133,19 @@ def store(source: Source, found: list[tuple[list[dict], Graph]]) -> None:
         written = set(db.scalars(select(Record.iri).where(Record.source != source.name)))
         given = set(db.scalars(select(Record.iri).where(Record.source.not_in([source.name, PLATFORM]), Record.part_of.is_(None))))
         for iri in db.scalars(select(Record.iri).where(Record.source == source.name, Record.part_of.is_(None))):
-            storage.delete(db, iri)
+            records.delete(db, iri)
         db.execute(delete(Record).where(Record.source == source.name))
         kept = {}
         for listed, statements in found:
             iri = listed[0]["iri"]
             if iri in given:
-                merged = merge(storage.read([iri]), statements, storage.profile())
+                merged = merge(records.read([iri]), statements, profile_text())
                 if merged.added:
-                    storage.save(db, merged.graph, iri)
+                    records.save(db, merged.graph, iri)
             elif iri not in written:
                 for row in listed:
                     kept[row["iri"]] = row
-                storage.save(db, statements, iri)
+                records.save(db, statements, iri)
         if kept:
             db.execute(insert(Record), list(kept.values()))
         db.merge(source)
@@ -174,7 +175,7 @@ def linked_terms() -> list[str]:
     with database.session() as db:
         iris = list(db.scalars(select(Record.iri).where(Record.part_of.is_(None), Record.removed_at.is_(None), Record.source.not_in(vocabularies))))
         given = set(db.scalars(select(Record.iri).where(Record.source.in_(vocabularies))))
-    found = storage.graph(iris)
+    found = records.graph(iris)
     terms = set()
     for node, of_class in found.subject_objects(RDF.type):
         for field in fields(str(of_class)):
@@ -192,8 +193,8 @@ def identified(spec: dict) -> list[tuple[str, str]]:
     source that finds records by name (by: name), the name of each record without such an address."""
     with database.session() as db:
         iris = list(db.scalars(select(Record.iri).where(
-            Record.type.in_(catalogue.within(settings()["kinds"][spec["enriches"]])), Record.part_of.is_(None), Record.removed_at.is_(None), Record.source != PLATFORM)))
-    found = storage.read(iris)
+            Record.type.in_(records.within(settings()["kinds"][spec["enriches"]])), Record.part_of.is_(None), Record.removed_at.is_(None), Record.source != PLATFORM)))
+    found = records.read(iris)
     keys = []
     for iri in iris:
         addresses = []
@@ -311,7 +312,7 @@ def import_source(spec: dict) -> None:
     # One file is given as is; several are given by name.
     parsed = parser.parse(contents if "files" in spec or "entries" in spec or "terms" in spec or "members" in spec or "documents" in spec else contents[spec["name"]])
     data = convert(parsed, config["base"])
-    found = records_of(data, [of_class for kind in config["kinds"].values() for of_class in catalogue.within(kind)], spec["name"])
+    found = records_of(data, [of_class for kind in config["kinds"].values() for of_class in records.within(kind)], spec["name"])
     checksum = hashlib.sha256()
     for name in sorted(contents):
         checksum.update(contents[name])
@@ -337,14 +338,14 @@ def enrich(spec: dict) -> None:
     with database.session() as db, db.begin():
         for iri in sorted(contents):
             record = db.get(Record, iri)
-            current = storage.read([iri])
-            merged = merge(current, storage.described(given, iri), storage.profile())
+            current = records.read([iri])
+            merged = merge(current, records.described(given, iri), profile_text())
             for subject, predicate, kept, offered in merged.conflicts:
                 notes.append(Note(source=spec["name"], iri=subject, field=predicate, value=offered, component="enrichment",
                                   reason=f"{spec['title']} gives {offered}; the record keeps {kept}."))
             if not merged.added:
                 continue
-            storage.save(db, merged.graph, iri)
+            records.save(db, merged.graph, iri)
             if merged.graph.value(URIRef(iri), SDO.name) is not None:
                 record.name = str(merged.graph.value(URIRef(iri), SDO.name))
             record.updated_at = now()
@@ -406,7 +407,7 @@ def check(source: str, spec: dict | None = None) -> None:
     upstream also notes the profile's terms it dropped or renamed."""
     with database.session() as db:
         iris = list(db.scalars(select(Record.iri).where(Record.source == source, Record.removed_at.is_(None), Record.part_of.is_(None))))
-    notes = checks.notes(storage.graph(iris))
+    notes = checks.notes(records.graph(iris))
     if spec is not None and "url" in spec and "vocabulary" in spec:
         notes += drifted(spec)
     with database.session() as db, db.begin():

@@ -18,7 +18,7 @@ from rdflib.namespace import SDO
 
 from database import records
 from database.tables import Record
-from linkeddata import catalogue, crates, documents, pages, void
+from linkeddata import crates, documents, pages, void
 from linkeddata.profile import jsonld_name, settings
 
 FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "application/n-triples"}
@@ -222,7 +222,7 @@ def page_link(iri: str) -> str:
 
 def record_page(record: Record):
     """A record's page: a platform page's own (templates/records/page.html), or the general record page."""
-    if record.type in catalogue.within(str(SDO.WebPage)):
+    if record.type in records.within(str(SDO.WebPage)):
         found = pages.page(record)
         return render_template("records/page.html", page=found, page_title=f"{found['name']} — VHP4Safety",
                                meta_description=found["description"][:160] or f"{found['name']}, a page of the VHP4Safety Virtual Human Platform.")

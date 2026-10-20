@@ -7,7 +7,7 @@ from rdflib.namespace import SDO, VOID
 
 from database import records
 from database.tables import Record
-from linkeddata import catalogue, documents, storage
+from linkeddata import documents
 from linkeddata.profile import fields, jsonld_name, profile_graph, settings, shape_of
 
 # The name is the heading of a node, and the position sets its order. They are not listed with the fields.
@@ -77,7 +77,7 @@ def node_outline(found: Graph, node, names: dict) -> dict:
 def named_on(record: Record) -> dict[str, list[dict]]:
     """The records that link to a record are found here. They are grouped by the label of the field with the link."""
     paths = {}
-    for iri, path in catalogue.naming(record.iri):
+    for iri, path in records.naming(record.iri):
         paths.setdefault(iri, []).append(path)
     found = {}
     for other in records.kept(list(paths)):
@@ -96,7 +96,7 @@ def named_on(record: Record) -> dict[str, list[dict]]:
 
 def outline(record: Record) -> dict:
     """The outline of a record is made from its public statements. Private fields are left out."""
-    found = documents.public(storage.graph([record.iri]))
+    found = documents.public(records.graph([record.iri]))
     links = []
     for value in found.objects():
         if isinstance(value, URIRef):
@@ -166,10 +166,10 @@ def outputs(grant) -> list[dict]:
     if grant is None:
         return []
     funded = set()
-    for iri, path in catalogue.naming(str(grant)):
+    for iri, path in records.naming(str(grant)):
         if path == str(SDO.funding):
             funded.add(iri)
-    organisations = catalogue.within(str(SDO.Organization))
+    organisations = records.within(str(SDO.Organization))
     listed = []
     for record in records.kept(sorted(funded)):
         if record.type in organisations:
@@ -186,7 +186,7 @@ def shown(found: Graph, part) -> list[dict]:
     properties = list(found.objects(part, URIRef(settings()["prefixes"]["form"] + "shows")))
     if presented is None or not properties:
         return []
-    held = documents.public(storage.with_names(storage.graph([str(presented)])))
+    held = documents.public(records.with_names(records.graph([str(presented)])))
     node = URIRef(str(presented))
     positions = {}
     for field in fields(str(held.value(node, RDF.type) or "")):
@@ -238,7 +238,7 @@ def kinds(term: str) -> list[dict]:
     """The kinds of a glossary term are listed with a label, an anchor and a definition. The name of the term is
     removed from each label."""
     found = records.kinds_of(term)
-    statements = storage.graph([kind.iri for kind in found])
+    statements = records.graph([kind.iri for kind in found])
     listed = []
     for kind in found:
         label = kind.name.rsplit(" (", 1)[0]
@@ -250,7 +250,7 @@ def kinds(term: str) -> list[dict]:
 
 def page(record: Record) -> dict:
     """The content of a platform page is made from its record."""
-    found = documents.public(storage.graph([record.iri]))
+    found = documents.public(records.graph([record.iri]))
     node = URIRef(record.iri)
     listed = sections(found, node)
     about = found.value(node, SDO.about)
@@ -262,7 +262,7 @@ def page(record: Record) -> dict:
 def kind(of_class: str) -> dict:
     """The name and the description of a kind of records are read from the catalogue record."""
     base = URIRef(settings()["base"])
-    found = documents.public(storage.graph([str(base)]))
+    found = documents.public(records.graph([str(base)]))
     for part in found.objects(base, VOID.classPartition):
         if str(found.value(part, VOID["class"])) == of_class:
             return {"name": str(found.value(part, SDO.name) or ""), "description": text(found.value(part, SDO.description))}
@@ -276,16 +276,16 @@ def listing(path: str, arguments) -> dict:
     given = {"search": arguments.get("search", "").strip()}
     browsed = []
     for field in fields(of_class):
-        if catalogue.browsed(field):
+        if records.browsed(field):
             browsed.append(field)
             given[field["name"]] = arguments.getlist(field["name"])
     number = max(arguments.get("page", 1, type=int), 1)
-    total, iris = catalogue.page(of_class, catalogue.filters(of_class, given), given["search"], (number - 1) * LISTED, LISTED)
-    found = documents.public(storage.graph(iris))
+    total, iris = records.page(of_class, records.filters(of_class, given), given["search"], (number - 1) * LISTED, LISTED)
+    found = documents.public(records.graph(iris))
     listed = []
     for iri in iris:
         listed.append({"address": iri, "name": str(found.value(URIRef(iri), SDO.name) or iri), "description": text(found.value(URIRef(iri), SDO.description))})
-    counts = catalogue.counted(of_class, given)
+    counts = records.counted(of_class, given)
     filters = []
     for field in browsed:
         values = [value for value in counts[field["name"]] if value["count"] or value["value"] in given[field["name"]]]
@@ -302,7 +302,7 @@ def partners(found: Graph, node) -> list[dict]:
     for role in found.objects(node, SDO.member):
         held.append((str(found.value(role, SDO.roleName) or ""), str(found.value(role, SDO.member) or "")))
     funders = sorted(str(funder) for funder in found.objects(node, SDO.funder))
-    organisations = documents.public(storage.graph([iri for _, iri in held] + funders))
+    organisations = documents.public(records.graph([iri for _, iri in held] + funders))
     listed = []
     for role, iri in held + [("", funder) for funder in funders]:
         organisation = URIRef(iri)
@@ -314,7 +314,7 @@ def partners(found: Graph, node) -> list[dict]:
 
 def catalogue_of(record: Record) -> dict:
     """The content of the home page is made from the catalogue record of the platform."""
-    found = documents.public(storage.graph([record.iri]))
+    found = documents.public(records.graph([record.iri]))
     node = URIRef(record.iri)
     paths = {}
     for name, of_class in settings()["kinds"].items():
@@ -323,11 +323,11 @@ def catalogue_of(record: Record) -> dict:
     for part in in_order(found, found.objects(node, VOID.classPartition)):
         of_class = str(found.value(part, VOID["class"]) or "")
         kinds.append({"name": str(found.value(part, SDO.name) or ""), "description": text(found.value(part, SDO.description)),
-                      "address": "/" + paths.get(of_class, ""), "count": catalogue.page(of_class, {}, "", 0, 1)[0] if of_class in paths else 0})
+                      "address": "/" + paths.get(of_class, ""), "count": records.page(of_class, {}, "", 0, 1)[0] if of_class in paths else 0})
     listed = sorted(str(page) for page in found.objects(node, SDO.subjectOf))
     names = records.names(listed)
     publisher = found.value(node, SDO.publisher)
-    held = documents.public(storage.graph([str(publisher)])) if publisher is not None else Graph()
+    held = documents.public(records.graph([str(publisher)])) if publisher is not None else Graph()
     return {"name": str(found.value(node, SDO.name) or ""), "heading": str(found.value(node, SDO.alternateName) or ""),
             "abstract": str(found.value(node, SDO.abstract) or ""), "description": text(found.value(node, SDO.description)), "kinds": kinds,
             "pages": [{"address": page, "name": names.get(page, page)} for page in listed],

@@ -9,7 +9,7 @@ from sqlalchemy import select
 import database
 from database import records
 from database.tables import Note, Record
-from linkeddata import documents, storage
+from linkeddata import documents
 from linkeddata.profile import fields, hierarchy, jsonld_name, official_fields, settings, shapes
 
 # Messages by SHACL constraint.
@@ -58,7 +58,7 @@ def official(result, results: Graph) -> tuple | None:
 def validate(found: Graph) -> Graph:
     """Statements are checked with the shapes of the model. The class and the name of each linked record are added
     first, so that a link is checked against the class of that record."""
-    validated = documents.typed(storage.with_names(found))
+    validated = documents.typed(records.with_names(found))
     _, results, _ = pyshacl.validate(validated, shacl_graph=shapes(), ont_graph=hierarchy())
     return results
 
@@ -173,7 +173,7 @@ def report() -> dict:
     for record in kept:
         types[record.iri] = record.type
         of_class.setdefault(record.type, []).append(record)
-    statements = storage.read(list(types))
+    statements = records.read(list(types))
     classes = []
     for kind in sorted(of_class):
         completeness = []

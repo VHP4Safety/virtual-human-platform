@@ -7,8 +7,8 @@ from rdflib.namespace import SDO, SH
 from sqlalchemy import func, select
 
 import database
+from database import records
 from database.tables import PLATFORM, Note, Record
-from linkeddata import catalogue, storage
 from linkeddata.profile import fields, hierarchy, jsonld_name, profile_graph, settings, shape_of, terms
 
 
@@ -18,7 +18,7 @@ def counts() -> list[dict]:
     found = []
     with database.session() as db:
         for name, kind in settings()["kinds"].items():
-            records_of_kind = select(Record.iri).where(Record.type.in_(catalogue.within(kind)))
+            records_of_kind = select(Record.iri).where(Record.type.in_(records.within(kind)))
             of_kind = select(Record.iri).where(Record.iri.in_(records_of_kind) | Record.part_of.in_(records_of_kind))
             listed = listing(name)
             filled = 0
@@ -26,9 +26,9 @@ def counts() -> list[dict]:
                 filled += item["filled"]
             found.append({
                 "kind": name,
-                "records": db.scalar(select(func.count()).select_from(Record).where(Record.type.in_(catalogue.within(kind)), Record.removed_at.is_(None))),
-                "edited": db.scalar(select(func.count()).select_from(Record).where(Record.type.in_(catalogue.within(kind)), Record.source == PLATFORM)),
-                "removed": db.scalar(select(func.count()).select_from(Record).where(Record.type.in_(catalogue.within(kind)), Record.removed_at.is_not(None))),
+                "records": db.scalar(select(func.count()).select_from(Record).where(Record.type.in_(records.within(kind)), Record.removed_at.is_(None))),
+                "edited": db.scalar(select(func.count()).select_from(Record).where(Record.type.in_(records.within(kind)), Record.source == PLATFORM)),
+                "removed": db.scalar(select(func.count()).select_from(Record).where(Record.type.in_(records.within(kind)), Record.removed_at.is_not(None))),
                 "notes": db.scalar(select(func.count()).select_from(Note).where(Note.iri.in_(of_kind))),
                 "complete": round(100 * filled / (len(listed) * len(fields(kind)))) if listed else 0,
             })
@@ -40,11 +40,11 @@ def listing(kind: str) -> list[dict]:
     included)."""
     of_kind = fields(settings()["kinds"][kind])
     with database.session() as db:
-        statement = select(Record).where(Record.type.in_(catalogue.within(settings()["kinds"][kind])), Record.moved_to.is_(None))
+        statement = select(Record).where(Record.type.in_(records.within(settings()["kinds"][kind])), Record.moved_to.is_(None))
         listed = list(db.scalars(statement.order_by(func.lower(Record.name), Record.iri)))
         holder = func.coalesce(Record.part_of, Record.iri)
         noted = dict(db.execute(select(holder, func.count()).select_from(Note).join(Record, Record.iri == Note.iri).where(holder.in_([record.iri for record in listed])).group_by(holder)).all())
-    found = storage.read([record.iri for record in listed])
+    found = records.read([record.iri for record in listed])
     rows = []
     for record in listed:
         given = set()
@@ -91,7 +91,7 @@ def form_graph() -> Graph:
             found.add((URIRef(iri), RDF.type, URIRef(kind)))
             found.add((URIRef(iri), RDFS.label, Literal(name or iri)))
     # Each term's vocabulary, so a term is shown in its own.
-    for iri, vocabulary in catalogue.values(str(SDO.DefinedTerm), str(SDO.inDefinedTermSet)):
+    for iri, vocabulary in records.values(str(SDO.DefinedTerm), str(SDO.inDefinedTermSet)):
         found.add((URIRef(iri), SDO.inDefinedTermSet, URIRef(vocabulary)))
     listed = []
     for collection in profile_graph().objects(None, SH["in"]):
