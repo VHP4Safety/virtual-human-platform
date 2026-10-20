@@ -10,8 +10,7 @@ record. Records are checked against the model's SHACL shapes with pyshacl. Sourc
 model, and statements into rows and back, by [rdfsolve](https://github.com/jmillanacosta/rdfsolve).
 
 ```
-source file ──parser──► clean rows ──lift──► RDF in the source's vocabulary
-            ──rdfsolve rules──► RDF in the model ──pyshacl checks──► notes
+source file ──parser──► rows in the terms of the model ──JSON-LD──► RDF ──pyshacl checks──► notes
             ──rdfsolve tables──► rows of the release's tables              python -m linkeddata import
 
 API request ──JSON-LD──pyshacl checks──► rows and revision                 PUT, POST, DELETE /api/...
@@ -162,16 +161,12 @@ The form is changed by changing the profile. The profile's own terms:
   text, codes for addresses, placeholders). One parser per file cleans it, and nothing else. The parsers
   are removed once the sources publish clean data. What a parser returns is described in
   `parsers/__init__.py`.
-- **`sources/<name>.yaml`**: a source's origin, title, parser and rules. The origin is one of:
+- **`sources/<name>.yaml`**: a source's origin, title and parser. The origin is one of:
   - a `url`, with `entries` for the file of each index key, or `terms` for one answer per term the records
     are about;
   - several named `files`;
   - a pinned `vocabulary` of the model;
   - for a source that `enriches` the records of a kind, the `answer` for each record's `identifier`.
-
-  The rules are the arguments of rdfsolve's `Rule.between`, one list per kind of row; rdfsolve finds the
-  fields by name and writes the CONSTRUCT queries. A source whose rows are shaped like other sources' names
-  them (`uses`), and takes their rules.
 - **`launch/`**: the sources read once, by `python -m linkeddata launch`, with their parsers, and the
   corrections of `launch.yaml`. The pinned vocabularies change only with a new pin, so they are read then too.
 - **`model/v1/`**: the model. `profile/` holds the one model, in modules: its header (`ontology.ttl`) gives the base address of
@@ -207,13 +202,10 @@ The sources:
 2. Write `sources/<name>.yaml`:
 
 ```yaml
-name: tools
-url: https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/service_index.json
-parser: tools
-rules:
-  Tool:                                                    # the "@type" of the parsed rows
-    - {predicate: a, value: "https://schema.org/SoftwareApplication"}
-    - {predicate: "https://schema.org/name", object: service}   # the rows' "service" field
+name: zenodo
+title: Zenodo community vhp4safety
+url: https://zenodo.org/api/records?communities=vhp4safety&type=dataset&size=25&sort=newest
+parser: zenodo
 ```
 
 3. Run the import; its records and notes are shown on `/sources` and on the data quality page (`/admin/quality`).

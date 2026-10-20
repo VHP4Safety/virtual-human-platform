@@ -1,17 +1,8 @@
-"""Parsers: a temporary workaround for upstream files that are not clean linked data.
-
-Upstream files hold several values in one text, codes for addresses, yes/no flags for links, and
-placeholders for missing values. One parser per file cleans them, and nothing else; how the rows become
-the model is set by the source's rules (sources/<name>.yaml).
-
-A parser takes the downloaded file and returns rows:
-- each row keeps the upstream field names, with its address ("@id", under the platform's base when it
-  has no scheme) and its kind ("@type");
-- addresses are written as {"@id": ...}, and placeholders are left out;
-- a text that is exactly a label or code of a model vocabulary's term, such as "pharmacovigilance" in
-  the glossary, is written as the term's address (term);
-- unreadable values are passed on as text, for the checks to report.
-"""
+"""Helpers of the parsers. A parser is a temporary workaround for an upstream file that is not clean linked data.
+It reads the file and gives rows in the terms of the model, which are read with the JSON-LD context of the platform.
+An address is written as {"@id": ...}, under the base of the platform when it has no scheme. A text that is a label
+or code of a term of a model vocabulary is written as the address of the term (term). Placeholders are left out, and
+unreadable values are given as text, for the checks to report."""
 
 import importlib
 import re
