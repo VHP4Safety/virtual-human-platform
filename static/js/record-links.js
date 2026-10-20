@@ -311,6 +311,10 @@ async function addVocabulary(platform, added) {
   registry.append(new Option("By hand", ""));
   const text = make("input", "form-control form-control-sm");
   text.placeholder = "Name, such as assay or BAO";
+  const searchButton = make("button", "btn btn-outline-secondary btn-sm", "Search");
+  searchButton.type = "button";
+  const asking = make("div", "input-group input-group-sm");
+  asking.append(text, searchButton);
   const results = make("div", "list-group list-group-flush border rounded small record-dialog-results");
   const name = make("input", "form-control form-control-sm");
   name.placeholder = "Name, such as NCBI Taxonomy";
@@ -319,7 +323,7 @@ async function addVocabulary(platform, added) {
   const add = make("button", "btn btn-success btn-sm mt-2", "Add the vocabulary");
   add.type = "button";
   const finding = make("div", "");
-  finding.append(labelled("Name", text), results);
+  finding.append(labelled("Name", asking), results);
   const writing = make("div", "d-none");
   writing.append(labelled("Name", name), labelled("Namespace", namespace), add);
   shown.body.append(labelled("Registry", registry), finding, writing);
@@ -350,12 +354,15 @@ async function addVocabulary(platform, added) {
     }
   }
 
-  let timer = null;
   let asked = 0;
-  async function find() {
+  function shownPart() {
     finding.classList.toggle("d-none", !registry.value);
     writing.classList.toggle("d-none", Boolean(registry.value));
     results.replaceChildren();
+  }
+  // The registry is searched once for each click of Search or Enter.
+  async function find() {
+    shownPart();
     if (!registry.value) {
       return;
     }
@@ -386,15 +393,18 @@ async function addVocabulary(platform, added) {
       shown.refuse(error.message);
     }
   }
-  registry.addEventListener("change", find);
-  text.addEventListener("input", function () {
-    window.clearTimeout(timer);
-    timer = window.setTimeout(find, 300);
+  registry.addEventListener("change", shownPart);
+  searchButton.addEventListener("click", find);
+  text.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      find();
+    }
   });
   add.addEventListener("click", function () {
     keep({ title: name.value.trim(), namespace: namespace.value.trim() }, add);
   });
-  find();
+  shownPart();
 }
 
 // Register a term by hand, with label and address, in a platform vocabulary.
@@ -682,6 +692,41 @@ class RecordLink extends Plugin {
       }, 200);
     });
 
+    // List the registry terms with the text that are not yet on the platform. A chosen term is registered with
+    // label, definition and code.
+    async function registryTerms(text, space, seen, asked) {
+      const searching = make("div", "record-link-busy", "Searching the registry…");
+      asked.replaceWith(searching);
+      const matched = await api("GET", "/api/registries/terms?" + query({ text: text, namespace: space }));
+      const fresh = matched.terms.filter(function (found) { return !seen.has(found["@id"]); });
+      for (const found of fresh) {
+        option([make("span", "record-link-kind text", "＋ " + matched.title), found.name + (found.code ? " · " + found.code : "")], function () {
+          attempt(async function () {
+            options.replaceChildren(make("div", "record-link-busy", "Registering “" + found.name + "”…"));
+            const body = { "@id": found["@id"], name: found.name, termCode: found.code, inDefinedTermSet: { "@id": vocabulary["@id"] } };
+            if (found.description) {
+              body.description = found.description;
+            }
+            const added = await api("POST", "/api/terms", body);
+            await known(added["@id"], found.name, TERM);
+          });
+        });
+      }
+      if (fresh.length) {
+        searching.remove();
+      } else {
+        searching.replaceWith(make("div", "record-link-problem text-secondary", "No other terms in the registry."));
+      }
+    }
+
+    search.addEventListener("keydown", function (event) {
+      const asked = options.querySelector(".record-link-registry");
+      if (event.key === "Enter" && asked) {
+        event.preventDefault();
+        asked.click();
+      }
+    });
+
     let timer = null;
     search.addEventListener("input", function () {
       window.clearTimeout(timer);
@@ -712,25 +757,12 @@ class RecordLink extends Plugin {
               option([make("span", "record-link-kind", classes[of_class]), record.name], function () { choose(record["@id"], record.name); });
             }
           }
-          // Registry terms that are not yet on the platform. A chosen term is registered with label, definition and code.
+          // The registry of the vocabulary is searched only on request (this option, or Enter), with one request.
           if (classes[TERM] && space) {
-            const matched = await api("GET", "/api/registries/terms?" + query({ text: text, namespace: space }));
-            for (const found of matched.terms) {
-              if (seen.has(found["@id"])) {
-                continue;
-              }
-              option([make("span", "record-link-kind text", "＋ " + matched.title), found.name + (found.code ? " · " + found.code : "")], function () {
-                attempt(async function () {
-                  options.replaceChildren(make("div", "record-link-busy", "Registering “" + found.name + "”…"));
-                  const body = { "@id": found["@id"], name: found.name, termCode: found.code, inDefinedTermSet: { "@id": vocabulary["@id"] } };
-                  if (found.description) {
-                    body.description = found.description;
-                  }
-                  const added = await api("POST", "/api/terms", body);
-                  await known(added["@id"], found.name, TERM);
-                });
-              });
-            }
+            option(["Search " + vocabulary.name + " in its registry for “" + text + "”"], function (event) {
+              const asked = event.currentTarget;
+              attempt(function () { return registryTerms(text, space, seen, asked); });
+            }, "record-link-new record-link-registry");
           }
           for (const of_class of Object.keys(classes)) {
             if (of_class === TERM && vocabulary) {
