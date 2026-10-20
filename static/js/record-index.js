@@ -224,6 +224,11 @@ export function reveal(target) {
   });
 }
 
+// The part shown in the form.
+export function current() {
+  return shown;
+}
+
 // *listener* is called with each part that is shown.
 export function whenSelected(listener) {
   listeners.push(listener);

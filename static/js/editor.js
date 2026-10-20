@@ -2,7 +2,7 @@
 // API (Graph Store Protocol) with the record's version. The preview beside it shows what is published: the
 // record's page, or its linked data.
 import { busy } from "./busy.js";
-import { outline, reveal as showPart, select, whenSelected } from "./record-index.js";
+import { current, outline, reveal as showPart, select, whenSelected } from "./record-index.js";
 
 (function () {
   const editor = JSON.parse(document.getElementById("editor").textContent);
@@ -160,7 +160,7 @@ import { outline, reveal as showPart, select, whenSelected } from "./record-inde
       onNavigate: function (address) {
         pageView.scrollTop = 0;
         const node = Array.from(form.shadowRoot.querySelectorAll("shacl-node")).find(function (found) {
-          return found.dataset.nodeId === address;
+          return previewId(found.dataset.nodeId) === address;
         });
         if (node) {
           select(node);
@@ -249,8 +249,19 @@ import { outline, reveal as showPart, select, whenSelected } from "./record-inde
   // platform gives an address from its name. Nodes without an address are labelled with letters and digits
   // only, as jsonld reads them. A node stands first on a line (subject) or last before " ." (object); a text in
   // quotes is not changed.
+  function label(given) {
+    return "_:b" + given.replace(/[^A-Za-z0-9]/g, "");
+  }
+
+  // The identifier of a node of the form in the preview: its address, or its label as statements() writes it.
+  function previewId(nodeId) {
+    if (nodeId.startsWith("_:")) {
+      return label(nodeId.slice(2));
+    }
+    return nodeId.includes(":") ? nodeId : label(nodeId);
+  }
+
   function statements() {
-    const label = function (given) { return "_:b" + given.replace(/[^A-Za-z0-9]/g, ""); };
     return form.serialize("application/n-quads")
       .replace(/^(?:<([^>:]*)>|_:(\S+)) /gm, function (all, bare, blank) { return label(bare || blank) + " "; })
       .replace(/ (?:<([^>:]*)>|_:(\S+)) \.$/gm, function (all, bare, blank) { return " " + label(bare || blank) + " ."; });
@@ -283,7 +294,11 @@ import { outline, reveal as showPart, select, whenSelected } from "./record-inde
       return;
     }
     const rest = nodes.filter(function (node) { return node !== root; });
-    showCaseStudy(Object.assign({}, root, { "@context": published["@context"], "@included": rest.concat([published]) }));
+    await showCaseStudy(Object.assign({}, root, { "@context": published["@context"], "@included": rest.concat([published]) }));
+    // A page added in the form is in the preview now, so the preview goes to the part being edited.
+    if (current()) {
+      markSelected(current());
+    }
   }
 
   // Any other record's page is shown in a frame: the published page, or the one made from the form. Its
@@ -458,20 +473,25 @@ import { outline, reveal as showPart, select, whenSelected } from "./record-inde
 
   if (form) {
     outline(form, document.getElementById("record-index"));
-    // A part shown in the form is shown in the preview: its page, or the section on the page that holds it.
-    whenSelected(function (node) {
-      if (!caseStudyComponent || !caseStudy) {
-        return;
+    whenSelected(markSelected);
+  }
+
+  // A part shown in the form is shown in the preview: its page, or the section on the page that holds it.
+  function markSelected(node) {
+    if (!caseStudyComponent || !caseStudy) {
+      return;
+    }
+    if (node.dataset.nodeId.startsWith("_:")) {
+      const page = node.parentElement.closest("shacl-node:not([data-node-id^='_:'])");
+      if (page) {
+        caseStudyComponent.markField(caseStudy, previewId(page.dataset.nodeId), "", { position: valueOf(node, SCHEMA + "position"), name: valueOf(node, SCHEMA + "name") });
       }
-      if (node.dataset.nodeId.startsWith("_:")) {
-        const page = node.parentElement.closest("shacl-node:not([data-node-id^='_:'])");
-        if (page) {
-          caseStudyComponent.markField(caseStudy, page.dataset.nodeId, "", { position: valueOf(node, SCHEMA + "position"), name: valueOf(node, SCHEMA + "name") });
-        }
-      } else {
-        caseStudyComponent.markField(caseStudy, node.dataset.nodeId, "", null);
-      }
-    });
+    } else {
+      caseStudyComponent.markField(caseStudy, previewId(node.dataset.nodeId), "", null);
+    }
+  }
+
+  if (form) {
     // A change that leaves the record as loaded, such as an empty field drawn, is no edit.
     let loaded = null;
     form.addEventListener("ready", function () {
