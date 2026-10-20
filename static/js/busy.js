@@ -1,5 +1,4 @@
-// While the platform answers, an area is locked and dimmed, and the button pressed turns and says what is
-// done.
+// Lock and dim an area while a request runs, and show the pressed button turning, with a text of what is done.
 export function busy(button, text, area) {
   const shown = Array.from(button.childNodes);
   const turning = document.createElement("span");

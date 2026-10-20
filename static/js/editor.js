@@ -1,13 +1,13 @@
-// The record editor: the form is built by shacl-form from the model's shapes and saved through the records
-// API (Graph Store Protocol) with the record's version. The preview beside it shows what is published: the
-// record's page, or its linked data.
+// Record editor. The form is built by shacl-form from the shapes of the model, and it is saved through the records
+// API (Graph Store Protocol) with the version of the record. Next to the form, the published page or the linked data
+// of the record is previewed.
 import { busy } from "./busy.js";
 import { current, outline, reveal as showPart, select, whenSelected } from "./record-index.js";
 
 (function () {
   const editor = JSON.parse(document.getElementById("editor").textContent);
   const message = document.getElementById("message");
-  // A record elsewhere, such as an ontology term, is under /api/ at its whole address.
+  // A record outside the platform, such as an ontology term, is read at /api/ with its full address.
   const path = editor.graph.startsWith(editor.base) ? editor.graph.slice(editor.base.length) : editor.graph;
   const graph = "/api/" + encodeURI(path).replace(/#/g, "%23");
   const form = document.querySelector("shacl-form");
@@ -25,7 +25,7 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     return node;
   }
 
-  // Platform addresses are opened on this server, so they work on every copy.
+  // Open platform addresses on this server, so that the links are valid on each copy.
   function pageLink(address) {
     return address.startsWith(editor.base) ? "/" + address.slice(editor.base.length) : address;
   }
@@ -35,7 +35,7 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     message.textContent = text;
   }
 
-  // A refusal is shown by *refuse*, else above the form.
+  // Send a request to the API. Show a refusal with *refuse*, else above the form.
   async function send(method, address, body, type, refuse) {
     const headers = { "X-Form-Token": editor.token };
     if (editor.version) {
@@ -65,7 +65,7 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     window.location.search = "?record=" + encodeURIComponent(address);
   }
 
-  // The values that saving removes, by label path, from the preview.
+  // Return the values that a save removes, by label path, from the preview.
   function removals(edges, trail, found) {
     for (const edge of edges) {
       if (edge.status === "removed") {
@@ -76,8 +76,8 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     return found;
   }
 
-  // The record's statements as a diagram: an arrow per value, green when added, red when removed. Parts
-  // (sections, listed tools) have their own arrows.
+  // Draw the statements of the record as a diagram: an arrow for each value, green if added, red if removed.
+  // Draw the arrows of parts (sections, listed tools) in the same way.
   function renderEdges(found) {
     const edges = make("ul", "graph-edges");
     for (const edge of found) {
@@ -115,7 +115,7 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     box.append(node, renderEdges(found.edges));
   }
 
-  // The messages of each field are listed with the label of the field in the form, if it is known.
+  // List the messages of each field with the label of the field in the form, if it is known.
   function listMessages(id, messages, labels) {
     const list = document.getElementById(id);
     list.replaceChildren();
@@ -125,8 +125,8 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     list.parentElement.classList.toggle("d-none", !list.children.length);
   }
 
-  // What saving publishes, previewed without saving; only the latest answer is drawn. Until the form is
-  // edited, the published record is shown, as shacl-form sends no change on load.
+  // The preview of what a save publishes, made without a save. Only the latest response is drawn. Until the form is
+  // edited, the published record is shown, as no change is sent by shacl-form on load.
   let edited = false;
   const panel = document.getElementById("preview-column");
   const caption = document.getElementById("preview-caption");
@@ -142,7 +142,7 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     caption.append(document.createTextNode(text));
   }
 
-  // The case study's page (static/js/case-study.js): the published record, then each preview.
+  // The page of the case study (static/js/case-study.js), drawn from the published record, then from each preview.
   const caseStudy = document.getElementById("case-study");
   let caseStudyComponent = null;
 
@@ -171,8 +171,8 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     });
   }
 
-  // What is clicked in the case study's page is shown in the form: the part at the page's address, its
-  // section by position and name, and the field, at the value clicked when there is one.
+  // Show in the form what is clicked on the page of the case study: the part at the address of the page, its section
+  // by position and name, and the field, at the clicked value if there is one.
   function showEditing(address, field, section, value) {
     const own = function (element, node) { return element.closest("shacl-node") === node; };
     let node = Array.from(form.shadowRoot.querySelectorAll("shacl-node")).find(function (found) {
@@ -210,8 +210,8 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     showPart(target);
   }
 
-  // The focused field is marked on the page of the nearest node with an address. A node without one,
-  // reached by schema:hasPart, is a section, known by position and name.
+  // Mark the focused field on the page of the nearest node with an address. A node without an address, reached by
+  // schema:hasPart, is a section, found by position and name.
   function term(path) {
     return path.split(/[/#]/).pop();
   }
@@ -245,16 +245,16 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     }
   }
 
-  // The statements of the form, as N-Triples. A new part with an address of its own, such as a new step, is
-  // given a bare identifier by shacl-form (<8f2c-...>); it is written as a node without an address, which the
-  // platform gives an address from its name. Nodes without an address are labelled with letters and digits
-  // only, as jsonld reads them. A node stands first on a line (subject) or last before " ." (object); a text in
-  // quotes is not changed.
+  // Return the statements of the form as N-Triples. A new part that requires an address, such as a new step, gets a
+  // bare identifier from shacl-form (<8f2c-...>). Write it as a node without an address, so that the platform makes
+  // its address from its name. Label the nodes without an address with letters and digits only, as jsonld requires.
+  // A node is the first term of a line (subject) or the last term before " ." (object). Texts in quotes are not
+  // changed.
   function label(given) {
     return "_:b" + given.replace(/[^A-Za-z0-9]/g, "");
   }
 
-  // The identifier of a node of the form in the preview: its address, or its label as statements() writes it.
+  // Return the identifier of a node of the form in the preview: its address, or its label as written by statements().
   function previewId(nodeId) {
     if (nodeId.startsWith("_:")) {
       return label(nodeId.slice(2));
@@ -268,7 +268,7 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
       .replace(/ (?:<([^>:]*)>|_:(\S+)) \.$/gm, function (all, bare, blank) { return " " + label(bare || blank) + " ."; });
   }
 
-  // The published case study gives the JSON-LD context and the names of the linked records.
+  // The published case study, for the JSON-LD context and the names of the linked records.
   let published = null;
 
   async function showPublishedCaseStudy() {
@@ -281,9 +281,9 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     }
   }
 
-  // The case study is drawn from the form in the browser, with no call to the platform. The statements of
-  // the form are compacted with the context of the published case study, and the linked records keep the
-  // names that the published case study gives.
+  // Draw the case study from the form in the browser, without a request to the platform. Compact the statements of
+  // the form with the context of the published case study, and keep the names of the linked records from the
+  // published case study.
   async function showLiveCaseStudy() {
     if (!published) {
       await showPublishedCaseStudy();
@@ -296,14 +296,14 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     }
     const rest = nodes.filter(function (node) { return node !== root; });
     await showCaseStudy(Object.assign({}, root, { "@context": published["@context"], "@included": rest.concat([published]) }));
-    // A page added in the form is in the preview now, so the preview goes to the part being edited.
+    // A page added in the form is now in the preview, so go to the part that is edited.
     if (current()) {
       markSelected(current());
     }
   }
 
-  // Any other record's page is shown in a frame: the published page, or the one made from the form. Its
-  // links open in a new tab, and its scroll is kept.
+  // Show the page of another record in a frame: the published page, or the page made from the form. Open its links
+  // in a new tab, and keep its scroll position.
   function showPage(html) {
     const top = frame.contentWindow ? frame.contentWindow.scrollY : 0;
     frame.addEventListener("load", function () {
@@ -402,7 +402,7 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     try {
       window.localStorage.setItem(name, value);
     } catch (error) {
-      // Not remembered where the browser keeps no storage.
+      // The choice is not remembered if the browser has no storage.
     }
   }
 
@@ -414,8 +414,8 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     }
   }
 
-  // The preview is shown on its page or its linked data, or hidden. A record elsewhere, such as an ontology
-  // term, has no page here.
+  // Show the preview of the page or of the linked data, or hide it. A record outside the platform, such as an
+  // ontology term, has no page here.
   function choose(next, shown) {
     view = panel.querySelector("[data-view=page]").disabled ? "data" : next;
     panel.classList.toggle("d-none", !shown);
@@ -430,13 +430,13 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     schedulePreview();
   }
 
-  // A choice made with a click is remembered.
+  // Remember a choice made with a click.
   function chooseByClick(next, shown) {
     choose(next, shown);
     remember("editor-preview", shown ? view : "hidden");
   }
 
-  // The field being typed in is left, so that its value is taken, and the preview is drawn at once.
+  // Leave the field that is typed in, so that its value is taken, and draw the preview at once.
   function updateView() {
     let typing = form ? form.shadowRoot.activeElement : null;
     while (typing && typing.shadowRoot && typing.shadowRoot.activeElement) {
@@ -460,7 +460,7 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     choose(kept === "data" ? "data" : "page", kept !== "hidden");
   }
 
-  // Records and sections share the side box on narrower screens.
+  // On narrow screens, the records and the sections are in one side box.
   const side = document.getElementById("side");
   for (const tab of side.querySelectorAll(".editor-side-tabs [data-pane]")) {
     tab.setAttribute("aria-selected", String(tab.dataset.pane === side.dataset.pane));
@@ -477,7 +477,7 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     whenSelected(markSelected);
   }
 
-  // A part shown in the form is shown in the preview: its page, or the section on the page that holds it.
+  // Mark the part that is shown in the form in the preview: its page, or the section of the page with the part.
   function markSelected(node) {
     if (!caseStudyComponent || !caseStudy) {
       return;
@@ -493,7 +493,7 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
   }
 
   if (form) {
-    // A change that leaves the record as loaded, such as an empty field drawn, is no edit.
+    // A change after which the record is as loaded, such as a new empty field, is not an edit.
     let loaded = null;
     form.addEventListener("ready", function () {
       loaded = form.serialize("text/turtle");
@@ -524,7 +524,7 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
         reopen(editor.graph);
       }
     });
-    // Focus within the form reaches its shadow root, not the form.
+    // Focus events within the form are sent to its shadow root, not to the form.
     if (caseStudy) {
       form.addEventListener("focusin", function (event) {
         form.shadowRoot.addEventListener("focusin", markCaseStudy);
@@ -572,7 +572,7 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     });
   }
 
-  // The pressed button turns until the record reopens or the platform refuses.
+  // Send a change. The pressed button turns until the record is opened again or the request is refused.
   async function act(button, text, method, address, body, reopened) {
     const working = busy(button, text, column);
     if (await send(method, address, body, body ? "application/json" : undefined)) {

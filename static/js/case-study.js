@@ -1,32 +1,34 @@
-// A case study is drawn here from its JSON-LD document, as the website shows it. The document comes from
+// Drawing of a case study from its JSON-LD document, in the form of the website. The document is read from
 // GET /api/casestudies/<case>, or from the editor preview of unsaved changes. One page is shown at a time.
-// The case study page shows the questions. A question page shows the process flow steps, and each step page
-// shows the steps below it. Each page has a heading, a summary, buttons and text in sections. The buttons
-// open the pages one level down, and the tools, methods and data. Empty steps are not shown on the website.
-// Buttons, breadcrumbs and the process flow navigate in place. A container that is drawn again with a new
-// document stays on its page.
+// - Case study page: the questions.
+// - Question page: the process flow steps.
+// - Step page: the steps below the step.
+// Each page has a heading, a summary, buttons and text in sections. The pages one level down, and the tools, methods
+// and data, are opened with the buttons. Empty steps are not shown on the website. Pages are opened in place with the
+// buttons, the breadcrumbs and the process flow. A container that is drawn again with a new document stays on its
+// page.
 //
 //   import { renderCaseStudy, stageOf } from "/static/js/case-study.js";
 //   renderCaseStudy(container, caseStudy, options);
 //
 // Options, all optional:
-//   base         the platform's base address; platform links are made on this server, so they work on
-//                every copy of the platform
+//   base         the base address of the platform; platform links are made on this server, so that they are
+//                valid on each copy of the platform
 //   at           the address of the page to show; without it, the container stays on its page
-//   linkTarget   where links open, such as "_blank" in the editor
-//   openDisabled true opens the pages that are greyed out on the website, and shows empty steps greyed, so
-//                that they can be previewed
-//   onNavigate   called with the address of the page in view, after a click opens another
-//   arrive       true draws the case study page first, then slides to the page at *at*, as on page load
-//   onPick       called with the page in view, the field, the section ({position, name}) and the value of
-//                what is clicked, such as the text of a section. Links are then not opened by a click. A
-//                button to a page opens that page, and onPick is called for the opened page. An icon beside
-//                each tool, method and data button opens the link in a new tab.
+//   linkTarget   the target of links, such as "_blank" in the editor
+//   openDisabled if true, open the pages that are greyed out on the website, and show empty steps greyed, for a
+//                preview
+//   onNavigate   called with the address of the page in view, after another page is opened with a click
+//   arrive       if true, draw the case study page first, then slide to the page at *at*, as on page load
+//   onPick       called with the page in view, the field, the section ({position, name}) and the value of the
+//                clicked element, such as the text of a section. Links are then not opened with a click. A page
+//                is opened with its button, and onPick is called for the opened page. A link is opened in a new
+//                tab with the icon next to each tool, method and data button.
 //
-// markField(container, address, field, section) marks what shows a field of a page, such as the one an
-// editor's form is on, and opens that page.
+// markField(container, address, field, section) marks the elements of a field of a page, such as the field that
+// is edited in the form, and opens that page.
 //
-// stageOf(page, level) gives the stage of a page in the process flow, from 1 to 5.
+// stageOf(page, level) returns the stage of a page in the process flow, from 1 to 5.
 
 // Heading colours by level: case study, question, process flow step, its steps, and deeper steps.
 const HEADINGS = ["text-vhppink-distinct", "text-vhpdarkpurple", "text-vhpdarkteal", "text-vhplightteal", "text-vhpblue", "text-vhplightteal"];
@@ -35,14 +37,14 @@ const HEADINGS = ["text-vhppink-distinct", "text-vhpdarkpurple", "text-vhpdarkte
 const BUTTONS = ["btn-vhppink-distinct", "btn-vhpdarkpurple", "btn-vhpdarkteal", "btn-vhplightteal"];
 const ITEMS = "btn-vhpblue";
 const PROCESS_FLOW = ["Regulatory Question", "Safety Assessment Workflow Step", "Case Study Step", "Case Study Substep", "Tools, Models and Data"];
-// The fields that give a step content to show.
+// The fields with content for a step.
 const CONTENT = ["tool", "supply", "bioschemas:input", "bioschemas:output", "hasPart", "text", "description"];
-// Elements left out of a text, as they run code or change the page around it.
+// The elements that are removed from a text, so that no code is run and the page around the text is not changed.
 const UNSAFE = "script, style, iframe, frame, frameset, object, embed, link, meta, base, form";
-// The deepest level searched; only steps that hold their own page go deeper.
+// The deepest level that is searched. Only steps with their own page are searched deeper.
 const DEEPEST = 20;
 
-// Each container's state: the document, the path to the page in view, the open sections and the marked field.
+// The state of each container: the document, the path to the page in view, the open sections and the marked field.
 const states = new WeakMap();
 let containers = 0;
 
@@ -55,7 +57,7 @@ function make(tag, className, text) {
   return node;
 }
 
-// A field's values: one is given as itself, several as a list.
+// Return the values of a field as a list, also if the document has one value without a list.
 function all(node, name) {
   const given = node ? node[name] : undefined;
   if (given === undefined || given === null) {
@@ -64,7 +66,7 @@ function all(node, name) {
   return Array.isArray(given) ? given : [given];
 }
 
-// A field's first value as a text: a typed value's value ({"@value": "1"}), or a link's address.
+// Return the first value of a field as a text: the value of a typed value ({"@value": "1"}), or the address of a link.
 function first(node, name) {
   const value = all(node, name)[0];
   if (value === undefined) {
@@ -79,8 +81,8 @@ function first(node, name) {
   return String(value);
 }
 
-// A document's nodes by address, so a node given by address only ({"@id": ...}) is found where it is held:
-// at its first link only, such as a tool that two steps use.
+// Index the nodes of a document by address, so that a node given by address only ({"@id": ...}) is found at its first
+// link, such as a tool that is used in two steps.
 function index(node, found) {
   if (Array.isArray(node)) {
     for (const item of node) {
@@ -105,7 +107,7 @@ function number(node) {
   return isNaN(position) ? Infinity : position;
 }
 
-// Pages, sections and items are ordered by position, then by name.
+// Order pages, sections and items by position, then by name.
 function byPosition(one, other) {
   if (number(one) !== number(other)) {
     return number(one) < number(other) ? -1 : 1;
@@ -113,7 +115,7 @@ function byPosition(one, other) {
   return first(one, "name").localeCompare(first(other, "name"), undefined, { numeric: true });
 }
 
-// The nodes of a page's field, such as steps or sections, in order.
+// Return the nodes of a field of a page, such as steps or sections, in order.
 function parts(state, page, name) {
   const found = [];
   for (const value of all(page, name)) {
@@ -125,7 +127,7 @@ function parts(state, page, name) {
   return found;
 }
 
-// The label of a page on its button: its name, else the name of the kind of step it is, a vocabulary term without
+// Return the label of a page for its button: its name, else the name of its kind of step, a vocabulary term without
 // the kind of term in brackets ("Exposure" for "Exposure (Process Flow Step)").
 function label(state, node) {
   if (first(node, "name")) {
@@ -141,12 +143,12 @@ function label(state, node) {
   return first(node, "name");
 }
 
-// The pages one level down: the case study's questions, or a page's steps.
+// Return the pages one level down: the questions of the case study, or the steps of a page.
 function children(state, page, level) {
   return parts(state, page, level === 0 ? "regulatoryQuestion" : "step");
 }
 
-// A step is empty when it has no content and no steps with content.
+// Return true if a step is empty: without content and without steps with content.
 function empty(step) {
   for (const name of CONTENT) {
     if (all(step, name).length) {
@@ -161,11 +163,11 @@ function empty(step) {
   return true;
 }
 
-// The stage of a page in the process flow, from 1 to 5. The page is a node of the case study document, with
+// Return the stage of a page in the process flow, from 1 to 5. The page is a node of the case study document, with
 // its steps in it. The level is 0 for the case study, 1 for a question, and one more for each step below.
-// A page with steps that are not empty has the stage of its level. This is 1 for the case study, 2 for a
-// question, 3 for a process flow step and 4 for the steps below. A page without such steps has stage 5 when
-// it has tools, methods, models or data. Other pages also have the stage of their level.
+// A page with steps that are not empty has the stage of its level: 1 for the case study, 2 for a question, 3 for a
+// process flow step and 4 for the steps below. A page without such steps has stage 5 if it has tools, methods,
+// models or data. Other pages also have the stage of their level.
 //
 //   stageOf(caseStudy, 0);  // 1
 //   stageOf(step, 2);       // 3 for a step with steps, 5 for a step with only tools and data
@@ -180,8 +182,8 @@ export function stageOf(page, level) {
   return Math.min(level + 1, 4);
 }
 
-// The pages from the case study to the one in view. The path ends at an address the document no longer
-// has, such as a removed or moved step.
+// Return the pages from the case study to the page in view. The path ends at an address that is no longer in the
+// document, such as a removed or moved step.
 function pages(state) {
   const found = [state.document];
   for (const address of state.path) {
@@ -201,7 +203,7 @@ function pages(state) {
   return found;
 }
 
-// The addresses from the case study down to a page; null when it is not found.
+// Return the addresses from the case study down to a page, or null if the page is not found.
 function pathTo(state, page, level, address) {
   if (level > DEEPEST) {
     return null;
@@ -218,7 +220,7 @@ function pathTo(state, page, level, address) {
   return null;
 }
 
-// Platform addresses are linked on this server, so they work on every copy of the platform.
+// Return a platform address as an address on this server, so that the link is valid on each copy of the platform.
 function local(address, options) {
   return options.base && address.startsWith(options.base) ? "/" + address.slice(options.base.length) : address;
 }
@@ -230,8 +232,8 @@ function opens(link, options) {
   }
 }
 
-// A text's HTML without what could run code or change the page around it: scripts and the like, event
-// attributes (onclick), and javascript: addresses.
+// Return the HTML of a text without scripts and similar elements, event attributes (onclick) and javascript:
+// addresses, so that no code is run and the page around the text is not changed.
 function safeHtml(text, options) {
   const parsed = new DOMParser().parseFromString(text, "text/html");
   for (const element of parsed.body.querySelectorAll(UNSAFE)) {
@@ -263,7 +265,7 @@ function safeHtml(text, options) {
   return fragment;
 }
 
-// Breadcrumbs: the case studies, the case study, and the pages down to the one in view.
+// Draw the breadcrumbs: the case studies, the case study, and the pages down to the page in view.
 function breadcrumbs(container, state, found) {
   const nav = make("nav", "navbar navbar-expand-lg bg-body-tertiary");
   nav.setAttribute("aria-label", "breadcrumb");
@@ -298,8 +300,8 @@ function breadcrumbs(container, state, found) {
   return nav;
 }
 
-// The process flow. The stage of the page in view is active. The stages of the pages above it are completed,
-// and a click on one of them opens that page. The other stages before the active one are skipped.
+// Draw the process flow. The stage of the page in view is active. The stages of the pages above it are completed, and
+// each of these opens its page with a click. The other stages before the active stage are marked as skipped.
 function processFlow(container, state, found, header) {
   const level = found.length - 1;
   const active = stageOf(found[level], level);
@@ -308,8 +310,8 @@ function processFlow(container, state, found, header) {
   for (let at = 0; at < level; at += 1) {
     above[stageOf(found[at], at)] = at;
   }
-  // The header is drawn once and then only marked, as on the platform, so marks made in it, such as the
-  // glossary's, stay.
+  // The header is drawn once and then only marked, as on the platform, so that marks in it, such as the glossary
+  // marks, are kept.
   if (!header) {
     header = make("div", "workflow-header");
     header.append(make("h5", "", "Process Flow"));
@@ -336,8 +338,8 @@ function processFlow(container, state, found, header) {
   return header;
 }
 
-// A page's tools and methods, then its data, by name: each a link to its record, or a name without one. Each use
-// is a part (HowToTool, HowToSupply) whose item is the record.
+// Return the tools and methods of a page, then its data, by name: each as a link to its record, or as a name without
+// a link. Each use is a part (HowToTool, HowToSupply) with the record as its item.
 function items(state, page) {
   const found = [];
   for (const name of ["tool", "supply"]) {
@@ -345,7 +347,7 @@ function items(state, page) {
       // A use given by address only, as in flat JSON-LD, is found by its address.
       const part = given && typeof given === "object" && given.item === undefined && given["@id"] ? state.nodes.get(given["@id"]) || given : given;
       const value = part && typeof part === "object" && part.item !== undefined ? all(part, "item")[0] : part;
-      // A use has a label and a description of its own in the case study; else the record names it.
+      // A use has its own label and description in the case study; else the name of the record is used.
       const use = part && typeof part === "object" && part.item !== undefined ? part : {};
       const item = { name: first(use, "name"), description: first(use, "description"), position: number(use), address: "", field: name };
       if (value && typeof value === "object" && value["@id"]) {
@@ -360,7 +362,7 @@ function items(state, page) {
       found.push(item);
     }
   }
-  // The uses are in their order in the case study; uses without a position follow, by name.
+  // The uses are in their order in the case study, and uses without a position are listed after them, by name.
   found.sort(function (one, other) {
     if (one.position !== other.position) {
       return one.position < other.position ? -1 : 1;
@@ -376,8 +378,8 @@ function column(button) {
   return cell;
 }
 
-// The buttons of a page. The pages one level down come first, in order. Then the tools, methods and data come,
-// each linked to its page. Empty steps are left out, or greyed in the preview.
+// Draw the buttons of a page: first the pages one level down, in order, then the tools, methods and data, each linked
+// to its page. Leave out empty steps, or grey them out in the preview.
 function buttons(container, state, page, level) {
   const row = make("div", "row py-3");
   for (const child of children(state, page, level)) {
@@ -389,7 +391,7 @@ function buttons(container, state, page, level) {
     const button = make("button", "btn w-100 text-white " + BUTTONS[Math.min(level, BUTTONS.length - 1)]);
     button.type = "button";
     button.append(make("b", "", label(state, child) || child["@id"] || "(no name)"));
-    // A question's button has the question under its title; another button has its description.
+    // The button of a question has the question under its title; other buttons have their description.
     if (level === 0 && first(child, "text")) {
       button.append(make("br"), document.createTextNode(first(child, "text")));
     } else if (first(child, "disambiguatingDescription")) {
@@ -414,7 +416,7 @@ function buttons(container, state, page, level) {
     row.append(column(button));
   }
   for (const item of items(state, page)) {
-    // A box shows its label and, below it, its description, in its middle, as a button does.
+    // The label of a box is in its middle, with the description below the label, as on a button.
     const button = make(item.address ? "a" : "button", "btn w-100 text-white d-flex flex-column justify-content-center " + ITEMS);
     button.dataset.field = item.field;
     button.dataset.value = item.address || item.name || "";
@@ -431,7 +433,7 @@ function buttons(container, state, page, level) {
       button.append(description);
     }
     const cell = column(button);
-    // When onPick is set, the button is picked, and the link is opened by an icon beside it.
+    // With onPick, a click picks the button, and the link is opened with the icon next to the button.
     if (item.address && state.options.onPick) {
       const open = make("a", "case-study-open align-self-center", "↗");
       open.href = local(item.address, state.options);
@@ -445,7 +447,7 @@ function buttons(container, state, page, level) {
   return row;
 }
 
-// A section of the accordion of a page: its title, and its content when opened.
+// Draw a section of the accordion of a page: its title, and its content when it is opened.
 function accordionItem(state, accordion, key, title, content, open) {
   const id = accordion.id + "-" + accordion.children.length;
   const item = make("div", "accordion-item");
@@ -469,12 +471,12 @@ function accordionItem(state, accordion, key, title, content, open) {
   return item;
 }
 
-// A page's sections as an accordion, in order: the first open on a new page, else those open before. The inputs
-// and outputs are the last section, closed, as on the platform's case study pages.
+// Draw the sections of a page as an accordion, in order: the first section open on a new page, else the sections that
+// were open before. The inputs and outputs are the last section, closed, as on the case study pages of the platform.
 function sections(state, page) {
   const accordion = make("div", "accordion");
   accordion.id = state.id + "-sections";
-  // A hidden section is not shown on the website; the preview shows it greyed.
+  // A hidden section is not shown on the website, and it is greyed out in the preview.
   const found = parts(state, page, "hasPart").filter(function (section) {
     return first(section, "creativeWorkStatus") !== "hidden" || state.options.openDisabled;
   });
@@ -496,17 +498,16 @@ function sections(state, page) {
   return accordion;
 }
 
-// A step's inputs and outputs, by name, in a box of their own.
-// The inputs and outputs of a page, as a list for its last section: a dataset links to its page, a named parameter
-// is its name. Null when the page has none.
+// Return the inputs and outputs of a page, by name, as a list for its last section: a dataset as a link to its page,
+// and a named parameter as its name. Return null if the page has none.
 function parameters(state, page) {
   const list = make("ul", "");
   for (const [name, label] of [["bioschemas:input", "Input"], ["bioschemas:output", "Output"]]) {
     let found = all(page, name).map(function (value) {
       return value && typeof value === "object" && value["@id"] ? state.nodes.get(value["@id"]) || value : value;
     });
-    // A parameter that keeps the HTML of the case study shows it, with its links; the datasets it links are not
-    // listed again.
+    // A parameter with the HTML of the case study is shown with that HTML and its links, and its linked datasets are
+    // not listed again.
     const written = found.map(function (value) { return first(value, "description"); }).filter(Boolean).join(" ");
     found = found.filter(function (value) {
       const address = value && value["@id"] && !value["@id"].startsWith("_:") ? value["@id"] : "";
@@ -539,12 +540,12 @@ function parameters(state, page) {
   return list.children.length ? list : null;
 }
 
-// A page: heading, summary, buttons, text, inputs and outputs, and sections. It slides in from its side, as
+// Draw a page: heading, summary, buttons, text, inputs and outputs, and sections. Slide the page in from its side, as
 // on the website.
 function view(container, state, page, level) {
   const shown = make("div", "case-study-page");
   const top = make("div", "container");
-  // A page has a heading of its own, else its name; the case study's summary is its introduction.
+  // The heading is the headline of the page, else its name. The summary of the case study is its introduction.
   const heading = first(page, "headline") || first(page, "name");
   let summary = first(page, "description");
   if (level === 0) {
@@ -574,14 +575,14 @@ function view(container, state, page, level) {
   return shown;
 }
 
-// The open sections, read before the container is drawn again.
+// Read the open sections before the container is drawn again.
 function rememberOpen(container, state) {
   for (const body of container.querySelectorAll(".accordion-collapse[data-key]")) {
     state.open.set(body.dataset.key, body.classList.contains("show"));
   }
 }
 
-// The form's section on the page in view: by position and name, else by position, else by name.
+// Return the section of the form on the page in view: by position and name, else by position, else by name.
 function sectionOf(container, section) {
   let found = null;
   let fit = 0;
@@ -595,8 +596,8 @@ function sectionOf(container, section) {
   return found;
 }
 
-// The elements that show the marked field on the page in view. A section's field is marked in its opened
-// section; a field the page does not show marks the whole section.
+// Mark the elements of the marked field on the page in view. A field of a section is marked in the opened section.
+// For a field that is not shown on the page, the whole section is marked.
 function mark(container, state) {
   for (const marked of container.querySelectorAll(".case-study-mark")) {
     marked.classList.remove("case-study-mark");
@@ -605,7 +606,7 @@ function mark(container, state) {
   if (!state.mark || state.mark.address !== here) {
     return;
   }
-  // The page in view is the panel of its address.
+  // The page in view is the panel with its address.
   const panel = container.querySelector('.case-study-panel[data-address="' + CSS.escape(here || "") + '"]') || container;
   let section = null;
   if (state.mark.section) {
@@ -631,7 +632,7 @@ function mark(container, state) {
   }
 }
 
-// The container scrolls to the mark when it is out of view; the window does not move.
+// Scroll the container to the mark if the mark is out of view. The window is not moved.
 function reveal(container) {
   const marked = container.querySelector(".case-study-mark");
   if (!marked) {
@@ -644,8 +645,8 @@ function reveal(container) {
   }
 }
 
-// The panels are scrolled sideways to *target* in one second, as on the case study pages of the platform; *done* is
-// called at the end. Without motion (prefers-reduced-motion), they are placed at once.
+// Scroll the panels sideways to *target* in one second, as on the case study pages of the platform, and call *done* at
+// the end. Without motion (prefers-reduced-motion), place the panels at once.
 function slide(strip, target, done) {
   if (strip.sliding) {
     window.cancelAnimationFrame(strip.sliding);
@@ -670,9 +671,9 @@ function slide(strip, target, done) {
   strip.sliding = window.requestAnimationFrame(step);
 }
 
-// The breadcrumbs and the process flow are drawn above the pages. The pages from the case study down to the one in
-// view are panels side by side; the panel in view is reached by scrolling them sideways. Panels below the page in
-// view are taken away once it is reached.
+// Draw the breadcrumbs and the process flow above the pages. The pages from the case study down to the page in view
+// are panels side by side, and the panel in view is reached with a sideways scroll. Remove the panels below the page
+// in view once it is reached.
 function draw(container, sliding) {
   const state = states.get(container);
   rememberOpen(container, state);
@@ -683,7 +684,7 @@ function draw(container, sliding) {
     shown = make("div", "case-study");
     shown.append(make("nav"), make("div"), make("div", "case-study-strip overflow-x-hidden d-flex flex-row py-md-5 py-3"));
     container.replaceChildren(shown);
-    // The panel in view stays in view when the width changes.
+    // The panel in view is kept in view when the width changes.
     new ResizeObserver(function () {
       const strip = shown.lastElementChild;
       if (!strip.sliding) {
@@ -732,16 +733,16 @@ function navigate(container, path) {
   }
 }
 
-// Draws a case study's document in a container. Drawn again with a new document, such as one with an
-// editor's changes, it stays on its page and keeps its sections open.
+// Draw the document of a case study in a container. If it is drawn again with a new document, such as a document with
+// the changes of an editor, keep its page and its open sections.
 export function renderCaseStudy(container, caseStudy, options) {
   let state = states.get(container);
   if (!state) {
     containers += 1;
     state = { id: "case-study-" + containers, path: [], open: new Map() };
     states.set(container, state);
-    // Told after the buttons of the page have done their part, such as opening another page. The icon that
-    // opens a link in a new tab is not picked.
+    // onPick is called after the action of the buttons of the page, such as the opening of another page. A click on
+    // the icon for a new tab is not picked.
     container.addEventListener("click", function (event) {
       const picked = states.get(container);
       if (!picked.options.onPick || event.target.closest(".case-study-open")) {
@@ -763,7 +764,7 @@ export function renderCaseStudy(container, caseStudy, options) {
   if (state.options.at) {
     state.path = pathTo(state, state.document, 0, state.options.at) || [];
   }
-  // With arrive, the case study page is drawn first, and the page asked for slides into place.
+  // With arrive, draw the case study page first, then slide the requested page into place.
   if (state.options.arrive && state.path.length) {
     const path = state.path;
     state.path = [];
@@ -777,8 +778,8 @@ export function renderCaseStudy(container, caseStudy, options) {
   draw(container, false);
 }
 
-// Marks what shows a field of the page at an address, or of its section ({position, name}), and opens that
-// page. The mark stays when the container is drawn again.
+// Mark the elements of a field of the page at an address, or of its section ({position, name}), and open that page.
+// The mark is kept when the container is drawn again.
 export function markField(container, address, field, section) {
   const state = states.get(container);
   if (!state) {

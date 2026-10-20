@@ -1,6 +1,7 @@
-// shacl-form plugins of the record editor. Link fields (sh:class, or sh:or of classes) show the kind of what
-// they link to and find records by name (/api/search); missing records are added in a dialog, and terms are
-// registered with their vocabulary. Text fields give shacl-form literals, so HTML is not read as an address.
+// shacl-form plugins of the record editor.
+// - Link fields (sh:class, or sh:or of classes): the kind of the linked record is shown, and records are found by name
+//   (/api/search). Missing records are added in a dialog, and terms are registered with their vocabulary.
+// - Text fields: values are passed to shacl-form as literals, so that HTML is not read as an address.
 import { Plugin, registerPlugin, findLabel, loadRDF } from "https://cdn.jsdelivr.net/npm/@ulb-darmstadt/shacl-form@3.7.3/dist/bundle.js";
 import { busy } from "./busy.js";
 
@@ -14,14 +15,15 @@ const REST = "http://www.w3.org/1999/02/22-rdf-syntax-ns#rest";
 const NAME = "https://schema.org/name";
 const TERM = "https://schema.org/DefinedTerm";
 const IN_SET = "https://schema.org/inDefinedTermSet";
-// A vocabulary's namespace, as the API names it.
+// The namespace of a vocabulary, with its name in the API.
 const SPACE = "void:uriSpace";
 const STRING = "http://www.w3.org/2001/XMLSchema#string";
 const HTML = "http://www.w3.org/1999/02/22-rdf-syntax-ns#HTML";
 const editor = JSON.parse(document.getElementById("editor").textContent);
 let vocabularyList = null;
 
-// The form's shadow root is not reached by the page's styles. Shown inputs are as wide as .editor ones.
+// The style of the plugins. The page styles are not applied in the shadow root of the form. Shown inputs are as wide
+// as the .editor inputs.
 const STYLE = `
 .shown:not([type='checkbox']) { flex-grow: 1; }
 textarea.shown { resize: vertical; }
@@ -71,12 +73,12 @@ function make(tag, className, text) {
   return node;
 }
 
-// Platform addresses are opened on this server, so they work on every copy.
+// Return a platform address as an address on this server, so that the link is valid on each copy.
 function local(iri) {
   return iri.startsWith(editor.base) ? "/" + iri.slice(editor.base.length) : iri;
 }
 
-// A text as shacl-form reads a literal: quoted, with its datatype unless plain (such as rdf:HTML).
+// Return a text as a literal for shacl-form: quoted, with its datatype unless it is plain (such as rdf:HTML).
 function literal(text, datatype) {
   return '"' + text + '"' + (datatype && datatype !== STRING ? "^^" + datatype : "");
 }
@@ -85,9 +87,9 @@ function query(fields) {
   return Object.entries(fields).map(function (entry) { return entry[0] + "=" + encodeURIComponent(entry[1]); }).join("&");
 }
 
-// A text field of the theme, given to shacl-form as a literal of the field's datatype. An address where a
-// text belongs is kept until the text is edited.
-// TinyMCE, loaded the first time a text is edited.
+// A text field of the theme, with the value as a literal of the datatype of the field for shacl-form. An address in a
+// text field is kept until the text is edited.
+// TinyMCE, loaded when a text is edited for the first time.
 const TINYMCE = "https://cdn.jsdelivr.net/npm/tinymce@6.8.5";
 let tinymceLoaded = null;
 
@@ -102,8 +104,8 @@ function loadTinymce() {
   return tinymceLoaded;
 }
 
-// A text in HTML is edited in a dialog over the page, with headings, lists, links, tables and images. An image is
-// uploaded to the platform and placed where the cursor is, with a caption. *done* is called with the new HTML.
+// Edit a text in HTML in a dialog over the page, with headings, lists, links, tables and images. Upload an image to
+// the platform and place it at the cursor, with a caption. Call *done* with the new HTML.
 async function editText(label, html, done) {
   // A box over the page, not a modal <dialog>: the dialogs of TinyMCE, such as for an image, are drawn above it.
   const overlay = document.createElement("div");
@@ -116,8 +118,8 @@ async function editText(label, html, done) {
   const head = document.createElement("div");
   head.className = "text-dialog-head";
   head.textContent = "Edit text: " + label;
-  // Platform addresses, such as of uploaded images, are opened on this server while the text is edited, so they
-  // work on every copy of the platform; they are kept as platform addresses in the text.
+  // While the text is edited, platform addresses, such as the addresses of uploaded images, are opened on this
+  // server, so that they are valid on each copy of the platform. In the text, they are kept as platform addresses.
   const here = window.location.origin + "/";
   const area = document.createElement("textarea");
   area.value = (html || "").split(editor.base).join(here);
@@ -197,14 +199,14 @@ class Text extends Plugin {
       delete text.dataset.nodeKind;
       text.value = shown.value ? literal(shown.value, datatype) : "";
     });
-    // A text in HTML is edited in the text editor; the box below shows its HTML.
+    // A text in HTML is edited in the text editor, and its HTML is shown in the box below.
     if (datatype === HTML) {
       const edit = document.createElement("button");
       edit.type = "button";
       edit.className = "text-edit";
       edit.textContent = "Edit text";
       edit.addEventListener("click", function () {
-        // The dialog is named by the part the text belongs to, such as the heading of a section.
+        // The title of the dialog is the name of the part of the text, such as the heading of a section.
         const node = field.closest("shacl-node");
         let named = "";
         for (const found of node ? node.querySelectorAll('.property-instance[data-path="' + NAME + '"]') : []) {
@@ -226,7 +228,7 @@ class Text extends Plugin {
   }
 }
 
-// A dialog with a title, a place for refusals and a body; it is removed when closed.
+// Open a dialog with a title, a place for refusals and a body. Remove it when it is closed.
 function opened(title) {
   const dialog = make("dialog", "record-dialog");
   const top = make("div", "d-flex align-items-center gap-2 border-bottom px-3 py-2");
@@ -257,7 +259,7 @@ function labelled(text, input) {
   return label;
 }
 
-// A new record, in a dialog form made from its class's shape; once added, it is given to *added*.
+// Add a new record in a dialog form made from the shape of its class, and pass it to *added*.
 function addRecord(of_class, label, name, store, added) {
   const shape = store.getSubjects(TARGET, of_class, null)[0];
   const subject = "urn:uuid:" + crypto.randomUUID();
@@ -269,7 +271,7 @@ function addRecord(of_class, label, name, store, added) {
   form.dataset.values = "<" + subject + "> a <" + of_class + "> ; <" + NAME + "> " + JSON.stringify(name) + " .";
   form.dataset.generateNodeShapeReference = "";
   form.dataset.collapse = "open";
-  // Adding is decided by the platform's checks, as in the editor's form.
+  // The record is added if the checks of the platform accept it, as in the form of the editor.
   const add = make("button", "btn btn-success", "Add the " + label.toLowerCase());
   add.type = "button";
   add.addEventListener("click", async function () {
@@ -298,8 +300,8 @@ function addRecord(of_class, label, name, store, added) {
   shown.body.append(form, bar);
 }
 
-// A vocabulary added from a registry (OLS, Ontobee, Wikidata), found by name, or given by hand. One the
-// platform has at the same namespace is chosen instead.
+// Add a vocabulary from a registry (OLS, Ontobee, Wikidata), found by name, or entered by hand. If the platform has a
+// vocabulary with the same namespace, choose that vocabulary instead.
 async function addVocabulary(platform, added) {
   const shown = opened("Add a vocabulary");
   const registry = make("select", "form-select form-select-sm");
@@ -357,7 +359,7 @@ async function addVocabulary(platform, added) {
     if (!registry.value) {
       return;
     }
-    // Only the latest answer is shown.
+    // Only the latest response is shown.
     asked += 1;
     const question = asked;
     const searching = make("div", "list-group-item text-secondary");
@@ -395,7 +397,7 @@ async function addVocabulary(platform, added) {
   find();
 }
 
-// A term registered by hand, with label and address, in a platform vocabulary.
+// Register a term by hand, with label and address, in a platform vocabulary.
 function registerTerm(text, vocabulary, added) {
   const shown = opened("Register a term of " + vocabulary.name);
   const label = make("input", "form-control form-control-sm");
@@ -418,8 +420,8 @@ function registerTerm(text, vocabulary, added) {
   shown.body.append(labelled("Label", label), labelled("Address", address), add);
 }
 
-// The values each link field has held while the form is open, by its node and property, so that a removed
-// one is put back as it was: a text as a text, a link with its name.
+// The earlier values of each link field while the form is open, by node and property, so that a removed value is put
+// back as it was: a text as a text, a link with its name.
 const held = new Map();
 
 function hold(field, path, entry) {
@@ -432,12 +434,12 @@ function hold(field, path, entry) {
   return scope;
 }
 
-// A field with a list of values (sh:in), such as the process flow step of a page, is a choice from the list, by
-// the labels of the values, as shacl-form draws it.
+// Draw a field with a list of values (sh:in), such as the process flow step of a page, as a choice from the list by
+// the labels of the values, in the style of shacl-form.
 function choice(template, value) {
   const store = template.config.store;
   const entries = [];
-  // The list is given by the identifier of its first node; a node without an address is named "_:..." in the store.
+  // The list is identified by its first node. In the store, a node without an address is named "_:...".
   const start = String(template.in);
   for (let node = start.includes(":") ? start : "_:" + start; node; ) {
     const item = store.getObjects(node, FIRST, null)[0];
@@ -453,9 +455,9 @@ function choice(template, value) {
   return template.config.theme.createListEditor(template.label, value || null, false, entries, template);
 }
 
-// The classes a link field takes, by name, from its own shape: its sh:class, or the classes of its sh:or with
-// their labels. Two fields with the same property, such as the tool and the data of a step, then find
-// different records. The names of the profile (editor.links) are used where the shape gives none.
+// Return the classes of a link field by name, from its own shape: its sh:class, or the classes of its sh:or with their
+// labels. So two fields with the same property, such as the tool and the data of a step, find different records. Use
+// the names of the profile (editor.links) if the shape has none.
 function linkClasses(template) {
   const store = template.config.store;
   const named = editor.links[template.path] || {};
@@ -478,8 +480,8 @@ class RecordLink extends Plugin {
     if (template.in) {
       return choice(template, value);
     }
-    // The field's link classes by name, from the profile; text fields, such as tool keywords, have none.
-    // A field that offers a link or another value shows the other value, such as an address, as text.
+    // The link classes of the field by name, from the profile. Text fields, such as tool keywords, have none.
+    // In a field with a choice of a link or another value, the other value, such as an address, is shown as text.
     const linking = template.class || (template.or && !editor.mixed.includes(template.path));
     const classes = linking ? linkClasses(template) : {};
     const names = Object.values(classes);
@@ -497,7 +499,7 @@ class RecordLink extends Plugin {
     open.target = "_blank";
     open.rel = "noopener";
     open.title = "Open page";
-    // The link, read by shacl-form as the value. A text where a link belongs is kept until a record is chosen.
+    // The link, read by shacl-form as the value. A text in a link field is kept until a record is chosen.
     const chosen = document.createElement("input");
     chosen.type = "hidden";
     chosen.className = "editor";
@@ -509,7 +511,7 @@ class RecordLink extends Plugin {
       chosen.value = value.value;
       search.value = findLabel(store.getQuads(value.value, null, null, null), template.config.languages) || value.value;
     }
-    // Held once the field is in the form, where its node is known.
+    // The value is kept once the field is in the form, where its node is known.
     if (value) {
       const loaded = { text: value.termType === "Literal", value: value.value, name: search.value };
       window.requestAnimationFrame(function () { hold(field, template.path, loaded); });
@@ -522,7 +524,7 @@ class RecordLink extends Plugin {
     box.append(row, options);
     field.append(chosen);
 
-    // The linked record's kind and page. Texts, records of other classes and unknown addresses are marked.
+    // Show the kind and the page of the linked record. Mark texts, records of other classes and unknown addresses.
     function show() {
       kind.className = "record-link-kind";
       kind.textContent = "";
@@ -579,7 +581,7 @@ class RecordLink extends Plugin {
       chosen.dispatchEvent(new Event("change", { bubbles: true }));
     }
 
-    // The values this field has held that it no longer has, with the text in their name.
+    // Return the earlier values of this field that it no longer has, with the text in their name.
     function heldOptions(text) {
       const present = new Set();
       const property = field.closest("shacl-property");
@@ -604,7 +606,7 @@ class RecordLink extends Plugin {
       options.insertBefore(button, options.querySelector(".record-link-busy"));
     }
 
-    // Added records and terms are put in the form's graph too, for the form's checks.
+    // Add the new records and terms also to the graph of the form, for the checks of the form.
     async function known(iri, name, of_class) {
       store.addQuads(await loadRDF({ rdf: "<" + iri + "> a <" + of_class + "> ; <" + LABEL + "> " + JSON.stringify(name) + " ." }));
       choose(iri, name);
@@ -618,14 +620,14 @@ class RecordLink extends Plugin {
       }
     }
 
-    // Term fields choose a vocabulary first; terms are found in its namespace.
+    // In a term field, a vocabulary is chosen first, and terms are found in its namespace.
     let vocabulary = null;
     if (classes[TERM]) {
       const vocabularies = make("select", "record-link-vocabulary");
       box.prepend(vocabularies);
       let listed = [];
       const fill = async function (selected) {
-        // The vocabularies are asked for once, for all the term fields of the page.
+        // The vocabularies are requested once, for all the term fields of the page.
         vocabularyList = vocabularyList || api("GET", "/api/vocabularies?page_size=200");
         listed = (await vocabularyList)["@graph"];
         vocabularies.replaceChildren();
@@ -633,8 +635,8 @@ class RecordLink extends Plugin {
           vocabularies.append(new Option(found.name, found["@id"], false, found["@id"] === selected));
         }
         vocabularies.append(new Option("Add a vocabulary…", ""));
-        // A held term is shown in its own vocabulary, else in the one whose namespace starts its address; a
-        // field of one vocabulary (sh:pattern ^<namespace>) shows only that one.
+        // A kept term is shown in its own vocabulary, else in the vocabulary whose namespace starts its address. For
+        // a field of one vocabulary (sh:pattern ^<namespace>), only that vocabulary is shown.
         const only = template.pattern && template.pattern.startsWith("^") ? template.pattern.slice(1).replace(/\\(.)/g, "$1") : "";
         const own = value ? store.getObjects(value.value, IN_SET, null).map(function (found) { return found.value; }) : [];
         const current = listed.find(function (found) {
@@ -663,9 +665,9 @@ class RecordLink extends Plugin {
       attempt(function () { return fill(null); });
     }
 
-    // Records of the field's classes whose name has the text, then a new record or term. An emptied field
-    // links to nothing.
-    // An empty field offers the values it held, while it has the focus.
+    // Search the records of the classes of the field with the text in their name, then offer a new record or term. An
+    // emptied field has no link.
+    // While an empty field has the focus, its earlier values are offered.
     search.addEventListener("focusin", function () {
       if (!search.value.trim()) {
         options.replaceChildren();
@@ -710,7 +712,7 @@ class RecordLink extends Plugin {
               option([make("span", "record-link-kind", classes[of_class]), record.name], function () { choose(record["@id"], record.name); });
             }
           }
-          // Registry terms not on the platform yet; registered with label, definition and code when chosen.
+          // Registry terms that are not yet on the platform. A chosen term is registered with label, definition and code.
           if (classes[TERM] && space) {
             const matched = await api("GET", "/api/registries/terms?" + query({ text: text, namespace: space }));
             for (const found of matched.terms) {
@@ -756,8 +758,8 @@ class RecordLink extends Plugin {
   }
 }
 
-// A link field searches all its classes, so shacl-form's sh:or choice is made at once, unless it offers
-// another value too, such as an address.
+// The search of a link field covers all its classes, so the sh:or choice of shacl-form is made at once, unless the
+// field also has another kind of value, such as an address.
 const watched = new WeakSet();
 
 function pick(within) {
@@ -765,7 +767,7 @@ function pick(within) {
   for (const constraint of found) {
     const choice = constraint.querySelector(".editor");
     if (editor.links[constraint.dataset.path] && !editor.mixed.includes(constraint.dataset.path) && choice && choice.onchange) {
-      // Made once the form has drawn it.
+      // Made once the form is drawn.
       window.requestAnimationFrame(function () {
         choice.value = "0";
         choice.onchange();
@@ -774,7 +776,7 @@ function pick(within) {
   }
 }
 
-// A field's value kind from its shape: IRI (sh:class, sh:nodeKind sh:IRI), else its sh:datatype.
+// Return the kind of value of a field from its shape: IRI (sh:class, sh:nodeKind sh:IRI), else its sh:datatype.
 function typeOf(instance) {
   const editors = instance.querySelectorAll(".editor, .shown");
   for (const element of editors) {
@@ -790,7 +792,7 @@ function typeOf(instance) {
   return null;
 }
 
-// Value fields, not parts, are marked with their value kind.
+// Mark value fields, not parts, with their kind of value.
 function tag(within) {
   const found = within.matches && within.matches(".property-instance") ? [within] : within.querySelectorAll(".property-instance");
   for (const instance of found) {
@@ -832,8 +834,8 @@ for (const form of document.querySelectorAll("shacl-form")) {
   watch(form);
 }
 
-// An image given by its address, such as the icon of a case study, can be uploaded to the platform; its address
-// is then filled in.
+// A field with the address of an image, such as the icon of a case study, with a button to upload the image to the
+// platform. The address of the uploaded image is then filled in.
 class ImageAddress extends Plugin {
   createEditor(template, value) {
     const field = Text.prototype.createEditor.call(this, template, value);

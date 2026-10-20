@@ -1,9 +1,9 @@
-// The index beside the form of a case study shows one page at a time, as the website does: the way down to the
-// page, the page with its number in the process flow, the pages below it and its sections of text. A click on a page or a
-// section below goes down to it and shows its form only; a section shows its subsections. A click on the way
-// goes up.
-// Pages and sections are dragged up or down to change their order, which sets their positions, and they are
-// added at the end of their list. A part with values to check gets a dot.
+// Index of the pages and sections of a case study, next to the form. One page is shown at a time, as on the website:
+// the way down to the page, the page with its number in the process flow, the pages below it and its sections of
+// text. A click on a page or a section below opens its form only, and a section is shown with its subsections. A click
+// on the way goes up.
+// Pages and sections are dragged up or down to change their order, which sets their positions. New parts are added at
+// the end of their list. A part with values to check is marked with a dot.
 import Sortable from "https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/modular/sortable.esm.js";
 
 const NAME = "https://schema.org/name";
@@ -16,18 +16,19 @@ const QUESTIONS = "https://vhp4safety.github.io/glossary#VHP0000151";
 // and the process flow step of a step of a question. At other levels they are left out of the form.
 const ONE_LEVEL = { "https://schema.org/headline": 1, "https://schema.org/additionalType": 2 };
 // The fields of a section that are used on the pages of the site only: its figures after the text (images go in the
-// text of a case study), the record it presents, the fields of that record it shows, and its address elsewhere.
+// text of a case study), the presented record, the shown fields of that record, and its address elsewhere.
 const SITE_ONLY = ["https://schema.org/image", "https://schema.org/about", "https://platform.vhp4safety.nl/model/v1/form#shows", "https://schema.org/url"];
-// The colours of the stages, as the case study pages give them.
+// The colours of the stages, as on the case study pages.
 const COLOURS = ["--bs-vhppink-distinct", "--bs-vhpdarkpurple", "--bs-vhpdarkteal", "--bs-vhplightteal", "--bs-vhpblue"];
-// The stages of the process flow, as the case study pages name them.
+// The names of the stages of the process flow, as on the case study pages.
 const STAGES = ["Regulatory Question", "Safety Assessment Workflow Step", "Case Study Step", "Case Study Substep", "Tools, Models and Data"];
-// The fields that give a step something to show; a step without them, and without such steps, is empty.
+// The fields with content for a step. A step without these fields, and without steps with them, is empty.
 const CONTENT = [TOOL, SUPPLY, "https://bioschemas.org/terms/input", "https://bioschemas.org/terms/output", HAS_PART, "https://schema.org/text", "https://schema.org/description"];
 const editor = JSON.parse(document.getElementById("editor").textContent);
 
-// The form is drawn in a shadow root, which the page styles do not reach. The groups of a form are cards. While
-// a part is shown, the other parts and fields are hidden, and the groups around it lose their headers.
+// The style of the form. The form is drawn in a shadow root, so the page styles are not applied to it. The groups of
+// a form are cards. While a part is shown, the other parts and fields are hidden, and the headers of the groups around
+// it are removed.
 const STYLE = `
 .focus-hidden { display: none !important; }
 .focus-chrome { padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; }
@@ -66,7 +67,7 @@ function make(tag, className, text) {
   return node;
 }
 
-// The field of a node with the path, not a field of one of its parts.
+// Return the field of a node with the path, not a field of one of its parts.
 function own(node, path) {
   for (const field of node.querySelectorAll('.property-instance[data-path="' + path + '"]')) {
     if (field.closest("shacl-node") === node) {
@@ -91,7 +92,7 @@ function parentNode(node) {
   return node.parentElement ? node.parentElement.closest("shacl-node") : null;
 }
 
-// The record, or a part with a position: a node of the index.
+// Return true for a node of the index: the record, or a part with a position.
 function indexed(node) {
   const field = node.parentElement ? node.parentElement.closest(".property-instance") : null;
   return !field || field.dataset.path in editor.ordered;
@@ -101,7 +102,7 @@ function isSection(node) {
   return node.dataset.nodeId.startsWith("_:");
 }
 
-// The nearest node of the index above an element.
+// Return the nearest node of the index above an element.
 function above(element) {
   for (let node = parentNode(element); node; node = parentNode(node)) {
     if (indexed(node)) {
@@ -111,7 +112,7 @@ function above(element) {
   return null;
 }
 
-// The parts of a node in the index, by field, in order of position.
+// Return the parts of a node in the index, by field, in order of position.
 function partsOf(node) {
   const found = new Map();
   for (const part of node.querySelectorAll("shacl-node")) {
@@ -129,7 +130,7 @@ function partsOf(node) {
   return found;
 }
 
-// Whether the field of a node has a value or a part.
+// Return true if the field of a node has a value or a part.
 function filled(node, path) {
   for (const field of node.querySelectorAll('.property-instance[data-path="' + path + '"]')) {
     if (field.closest("shacl-node") !== node) {
@@ -143,7 +144,7 @@ function filled(node, path) {
   return false;
 }
 
-// The pages below a node: its questions or steps, not its sections of text.
+// Return the pages below a node: its questions or steps, not its sections of text.
 function pagesBelow(node) {
   const found = [];
   for (const [path, list] of partsOf(node)) {
@@ -158,7 +159,7 @@ function empty(node) {
   return !CONTENT.some(function (path) { return filled(node, path); }) && pagesBelow(node).every(empty);
 }
 
-// The way from the record down to a page: the record, then each page in between.
+// Return the way from the record down to a page: the record, then each page in between.
 function way(page) {
   const found = [];
   for (let node = page; node; node = above(node)) {
@@ -167,8 +168,8 @@ function way(page) {
   return found;
 }
 
-// The stage of a page, as the process flow of the website shows it (stageOf in case-study.js): the stage of
-// its level, or 5 when it has tools or data and no pages below it.
+// Return the stage of a page, as in the process flow of the website (stageOf in case-study.js): the stage of its
+// level, or 5 if it has tools or data and no pages below it.
 function stage(node) {
   const level = way(node).length - 1;
   const steps = pagesBelow(node).some(function (step) { return !empty(step); });
@@ -180,15 +181,15 @@ function stage(node) {
 
 let form = null;
 let shown = null;
-// The list of the parts of a field, as the index draws it; set by outline().
+// The function that draws the list of the parts of a field, as in the index; set by outline().
 let partsList = null;
 // Only a case study is edited a page at a time, with the index and the colours of its stages; other records are
 // edited in one form.
 const caseStudy = editor.caseStudy;
 const listeners = [];
 
-// Only the fields of *target* are shown. The fields of the parts in the index below it are hidden; they are
-// reached through the index.
+// Show only the fields of *target*. Hide the fields of the parts in the index below it; they are opened through the
+// index.
 export function select(target) {
   const root = form.shadowRoot.querySelector("shacl-node");
   if (!root || !target || !caseStudy) {
@@ -201,7 +202,7 @@ export function select(target) {
     form.shadowRoot.append(style);
   }
   shown = target;
-  // The cards of the form take the colour of the stage of the page being edited, or of the page of a section.
+  // Give the cards of the form the colour of the stage of the edited page, or of the page of a section.
   let page = target;
   while (isSection(page) && above(page)) {
     page = above(page);
@@ -233,8 +234,8 @@ export function select(target) {
       }
     }
   }
-  // The card of a field of parts with a position, such as the questions of a case study, lists them as the index
-  // does: a click opens one, they are dragged to order them, and they are added at the end.
+  // List the parts with a position in the card of their field, such as the questions of a case study, as in the
+  // index: a click opens a part, parts are dragged to change their order, and new parts are added at the end.
   for (const path of Object.keys(editor.ordered)) {
     const field = property(target, path);
     const card = field ? field.querySelector("rokit-collapsible") : null;
@@ -256,7 +257,7 @@ export function select(target) {
   }
 }
 
-// A part of the form is shown with its node, and its first field takes the focus.
+// Show a part of the form with its node, and focus its first field.
 export function reveal(target) {
   const node = target.tagName === "SHACL-NODE" && indexed(target) ? target : above(target);
   select(node || target);
@@ -270,17 +271,17 @@ export function reveal(target) {
   });
 }
 
-// The part shown in the form.
+// Return the part that is shown in the form.
 export function current() {
   return shown;
 }
 
-// *listener* is called with each part that is shown.
+// Call *listener* with each part that is shown.
 export function whenSelected(listener) {
   listeners.push(listener);
 }
 
-// The position of a part is set, when the part has a position field.
+// Set the position of a part, if the part has a position field.
 function place(part, at) {
   const field = own(part, POSITION);
   const input = field && field.querySelector(".editor");
@@ -290,7 +291,7 @@ function place(part, at) {
   }
 }
 
-// The field of a node with the path, as shacl-form draws it (shacl-property), also when it has no value.
+// Return the field of a node with the path, as drawn by shacl-form (shacl-property), also if it has no value.
 function property(node, path) {
   for (const found of node.querySelectorAll("shacl-property")) {
     if (found.template && found.template.path === path && found.closest("shacl-node") === node) {
@@ -300,7 +301,7 @@ function property(node, path) {
   return null;
 }
 
-// The add button of the form for a field of a node.
+// Return the add button of the form for a field of a node.
 function addButton(node, path) {
   const field = property(node, path);
   return field ? field.querySelector(".add-button-wrapper rokit-button.add-button") : null;
@@ -311,7 +312,7 @@ export function outline(givenForm, nav) {
   if (!caseStudy || !nav) {
     return;
   }
-  // The field a part is added to; once the form has drawn the new part, it is placed last and shown.
+  // The field to which a part is added. When the new part is drawn in the form, it is placed last and shown.
   let adding = null;
 
   function badge(node) {
@@ -329,8 +330,8 @@ export function outline(givenForm, nav) {
     }
   }
 
-  // A list of parts of the page that can be dragged and removed, with buttons to add one at its end. Each button
-  // says what it adds; for a case study, the number in the process flow of the page it adds.
+  // Return a list of parts of the page that can be dragged and removed, with buttons to add a part at the end. The
+  // text of a button names the kind of part, and for a case study the number of its stage in the process flow.
   function list(title, page, path, parts, adds) {
     const box = make("section", "record-index-list");
     box.append(make("div", "record-index-list-head", title));
@@ -376,7 +377,7 @@ export function outline(givenForm, nav) {
     if (!parts.length) {
       items.append(make("li", "record-index-none", "None yet."));
     }
-    // A part is dragged among the parts beside it; their positions follow, 1, 2, 3 and so on.
+    // A part is dragged among the parts next to it, and the positions are set again: 1, 2, 3 and so on.
     Sortable.create(items, {
       handle: ".record-index-handle",
       draggable: ".record-index-row",
@@ -412,7 +413,7 @@ export function outline(givenForm, nav) {
     return box;
   }
 
-  // The add buttons of a field of a page: what they add, with the number of its stage for a case study.
+  // Return the add buttons of a field of a page: the kind of part, with the number of its stage for a case study.
   function addsFor(page, field) {
     if (field === HAS_PART) {
       return [{ text: isSection(page) ? "§ Subsection" : "§ Text section" }];
@@ -439,8 +440,8 @@ export function outline(givenForm, nav) {
     }
     const page = shown || root;
     const view = make("div", "record-index-view");
-    // The pages above, from the record down to the page being edited, each one level further in; a click goes
-    // back to that page.
+    // The pages above, from the record down to the edited page, each indented one more level. A click opens that page
+    // again.
     const trail = way(page);
     const path = make("ol", "record-index-path");
     const section = isSection(page);
@@ -466,7 +467,7 @@ export function outline(givenForm, nav) {
     view.append(path);
     const below = make("div", "record-index-below");
     below.style.marginLeft = (trail.length - 1) * 0.85 + 1.3 + "rem";
-    // Its pages below, then its sections of text, as the website shows them.
+    // The pages below, then the sections of text, as on the website.
     const parts = partsOf(page);
     for (const field of Object.keys(editor.ordered)) {
       if (field === HAS_PART || !(parts.has(field) || addButton(page, field))) {
@@ -489,7 +490,7 @@ export function outline(givenForm, nav) {
     }
     select(form.shadowRoot.querySelector("shacl-node"));
   });
-  // The part that was added is the one not seen before; it goes last in its list and is shown.
+  // Return the added part: the part not seen before. Place it last in its list and show it.
   function added() {
     if (!adding) {
       return false;
