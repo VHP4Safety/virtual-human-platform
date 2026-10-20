@@ -4,6 +4,7 @@ Source: the dataset search, with the metadata of each record.
 
 - Creators: write "Last, First" as "First Last", as in other sources.
 - Links: DOIs, ORCID iDs, licences, and affiliations as organisations.
+- DOI: the address of the record elsewhere if Zenodo registered it, and else a cited publication.
 - Files: the downloads of the record, with names and sizes, in the form of the Zenodo JSON-LD export."""
 
 import json
@@ -33,6 +34,23 @@ def download(given: dict) -> dict:
     return found
 
 
+def doi_of(row: dict, hit: dict, others: dict) -> None:
+    """Add the DOI of a Zenodo record to its row: as its address elsewhere if Zenodo registered the DOI
+    (10.5281/zenodo.*), and else as a cited publication. A depositor can give the DOI of an article in place of a
+    DOI of the record."""
+    if not present(hit.get("doi")):
+        return
+    if str(hit["doi"]).startswith("10.5281/"):
+        row["sameAs"] = link("https://doi.org/" + hit["doi"])
+        row["identifier"] = link("https://doi.org/" + hit["doi"])
+        return
+    cited = publication(hit["doi"])
+    if cited:
+        others.setdefault(cited["@id"], cited)
+        if link(cited["@id"]) not in row.setdefault("citation", []):
+            row["citation"].append(link(cited["@id"]))
+
+
 def parse(content: bytes) -> list[dict]:
     found = json.loads(content)["hits"]
     if found["total"] > len(found["hits"]):
@@ -46,9 +64,7 @@ def parse(content: bytes) -> list[dict]:
             row["description"] = marked(metadata["description"])
         if present(metadata.get("publication_date")):
             row["datePublished"] = {"@value": metadata["publication_date"], "@type": DATE}
-        if present(hit.get("doi")):
-            row["sameAs"] = link("https://doi.org/" + hit["doi"])
-            row["identifier"] = link("https://doi.org/" + hit["doi"])
+        doi_of(row, hit, others)
         for keyword in metadata.get("keywords") or []:
             if present(keyword):
                 row.setdefault("keywords", []).append(term(keyword, "glossary"))

@@ -29,7 +29,7 @@ from pyld import jsonld
 from rdfsolve.iris import local_name
 
 from linkeddata.parsers import licence, link, present, publication, slug, term
-from linkeddata.parsers.zenodo import download
+from linkeddata.parsers.zenodo import doi_of, download
 
 DATE = "http://www.w3.org/2001/XMLSchema#date"
 DECIMAL = "http://www.w3.org/2001/XMLSchema#decimal"
@@ -495,8 +495,7 @@ def zenodo(row: dict, hit: dict, nodes: dict, others: dict) -> None:
         keywords.append(term(keyword, "glossary") if isinstance(keyword, str) else keyword)
     row["keywords"] = keywords
     row["isBasedOn"] = link(hit["links"]["self_html"])
-    if present(hit.get("doi")):
-        row["sameAs"] = link("https://doi.org/" + hit["doi"])
+    doi_of(row, hit, others)
     if present(metadata.get("publication_date")):
         row["datePublished"] = {"@value": metadata["publication_date"], "@type": DATE}
     for given in hit.get("files") or []:
