@@ -1,8 +1,9 @@
 """Launch of the platform.
 
 Import all sources once, including the sources of this folder. Then make the corrections of launch.yaml. Each
-correction moves or replaces values of a field. Store it as a revision with its reason. After a correction, the
-record belongs to the platform, and later imports keep it unchanged."""
+correction moves or replaces values of a field, or moves the record to another address (to), where it is merged with
+the record at that address, if there is one. Store it as a revision with its reason. After a correction, the record
+belongs to the platform, and later imports keep it unchanged."""
 
 from pathlib import Path
 
@@ -29,6 +30,9 @@ def corrected(found: Graph, correction: dict) -> int:
             held = [str(given) for predicate, given in found.predicate_objects(value) if predicate != RDF.type] if isinstance(value, BNode) else [str(value)]
             if set(held) & set(move["values"]):
                 found.remove((subject, field, value))
+                # A text that is an address, such as a website in an email field.
+                if move.get("address") and isinstance(value, Literal):
+                    value = URIRef(str(value))
                 found.add((subject, to, value))
                 if "as" in move:
                     found.set((value, RDF.type, URIRef(documents.expand(move["as"]))))
@@ -54,11 +58,20 @@ def launch() -> list[str]:
             problems.append(f"{correction['record']}: no such record.")
             continue
         found = records.graph([iri])
-        if not corrected(found, correction):
+        changed = corrected(found, correction)
+        name = f"{NAME}: {correction['why']}"
+        if "to" in correction:
+            new = records.address(correction["to"])
+            kept = records.get(new)
+            kind = kept.type if kept is not None else documents.expand(correction["as"]) if "as" in correction else record.type
+            writes.merge(found, iri, new, kind, name, "")
+            print(f"{correction['record']}: moved to {correction['to']} ({correction['why']})")
+            continue
+        if not changed:
             problems.append(f"{correction['record']}: nothing to correct ({correction['why']})")
             continue
         document = documents.document(found, iri)
-        writes.save(document, record.type, f"{NAME}: {correction['why']}", "")
+        writes.save(document, record.type, name, "")
         _, wrong, _ = checks.checked(document)
         print(f"{correction['record']}: corrected ({correction['why']}); {len(wrong)} fields still do not fit")
     return problems

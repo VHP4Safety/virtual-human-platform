@@ -268,24 +268,43 @@ def values(of_class: str, path: str) -> list[tuple[str, str]]:
         return list(connection.execute(selects[0] if len(selects) == 1 else union_all(*selects)).all())
 
 
-def naming(iri: str) -> set[tuple[str, str]]:
-    """Return the nodes with *iri* as a value of a field, each with the property of the field. Make one select of
-    each table and column with values in the rdfsolve layout."""
-    rest = tables()[sql_tables.STATEMENTS]
-    selects = [select(rest.c.iri, rest.c.property).where(rest.c.value == iri)]
+def places() -> list[tuple]:
+    """Return each table and column with values in the rdfsolve layout, with the property of the column (None for the
+    statements table, which has a property column)."""
+    found = [(tables()[sql_tables.STATEMENTS], "value", None)]
     for of_layout in sql_tables.layout(profile_text()).classes.values():
         own = tables()[of_layout.name]
         for path, name in of_layout.single.items():
-            selects.append(select(own.c.iri, literal(path)).where(own.c[name] == iri))
+            found.append((own, name, path))
         for path, name in of_layout.several.items():
-            listed = tables()[of_layout.field_table(name)]
-            selects.append(select(listed.c.iri, literal(path)).where(listed.c.value == iri))
+            found.append((tables()[of_layout.field_table(name)], "value", path))
+    return found
+
+
+def united(selects: list) -> set[tuple]:
+    """Return the rows of the union of *selects*. Up to 500 selects are allowed in one SQLite union."""
     found = set()
     with database.engine().connect() as connection:
-        # Up to 500 selects are allowed in one SQLite union.
         for first in range(0, len(selects), 400):
             found.update(connection.execute(union_all(*selects[first:first + 400])).all())
     return found
+
+
+def naming(iri: str) -> set[tuple[str, str]]:
+    """Return the nodes with *iri* as a value of a field, each with the property of the field."""
+    selects = []
+    for of_table, name, path in places():
+        property_of = of_table.c.property if path is None else literal(path)
+        selects.append(select(of_table.c.iri, property_of).where(of_table.c[name] == iri))
+    return united(selects)
+
+
+def linking(iri: str) -> set[str]:
+    """Return the addresses of the records with a link to *iri*, in their own fields or in the fields of their parts."""
+    selects = []
+    for of_table, name, _ in places():
+        selects.append(select(of_table.c.record).where(of_table.c[name] == iri))
+    return {row[0] for row in united(selects)} - {iri}
 
 
 def nodes_with(of_class: str, path: str, wanted: list[str]):

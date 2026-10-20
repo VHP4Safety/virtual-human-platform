@@ -205,6 +205,55 @@ def move(old: str, new: str, name: str, orcid: str) -> Revision:
     return revision
 
 
+def merge(found: Graph, old: str, new: str, kind: str, name: str, orcid: str) -> Revision:
+    """Store the record at *old*, with the statements *found*, at the address *new*, as a record of class *kind*.
+
+    - If a record is at *new*, keep its class and its values, and add the other values of the old record. In a field
+      with one value, keep the value of the record at *new*.
+    - Link the records that link to the old address to the new address.
+    - Redirect the old address to the new address, and store the old address in sameAs."""
+    previous = documents.document_of(old)
+    target = URIRef(new)
+    single = {field["iri"] for field in fields(kind) if field["single"]}
+
+    def moved(node):
+        if isinstance(node, URIRef) and (str(node) == old or str(node).startswith(old + "/")):
+            return URIRef(new + str(node).removeprefix(old))
+        return node
+
+    own = records.described(found, old)
+    merged = records.graph([new])
+    if not len(merged):
+        merged.add((target, RDF.type, URIRef(kind)))
+    for predicate, value in own.predicate_objects(URIRef(old)):
+        if predicate == RDF.type or (str(predicate) in single and merged.value(target, predicate) is not None):
+            continue
+        merged.add((target, predicate, moved(value)))
+        if isinstance(value, BNode) or moved(value) != value:
+            for subject, prop, given in records.described(own, value):
+                merged.add((moved(subject), prop, moved(given)))
+    merged.add((target, SDO.sameAs, URIRef(old)))
+    save(documents.document(merged, new), kind, name, orcid)
+    for linking in records.kept(sorted(records.linking(old) - {new})):
+        if linking.part_of is not None:
+            continue
+        relinked = Graph()
+        for subject, predicate, value in records.graph([linking.iri]):
+            relinked.add((subject, predicate, moved(value)))
+        save(documents.document(relinked, linking.iri), linking.type, name, orcid)
+    with database.session() as db, db.begin():
+        for kept in db.scalars(select(Record).where((Record.iri == old) | (Record.part_of == old))):
+            kept.removed_at = now()
+            kept.moved_to = str(moved(URIRef(kept.iri)))
+            kept.source = PLATFORM
+            kept.updated_at = version()
+        for earlier in db.scalars(select(Record).where(Record.moved_to == old)):
+            earlier.moved_to = new
+        revision = Revision(record_iri=old, action="Merged", previous=previous, name=name, orcid=orcid)
+        db.add(revision)
+    return revision
+
+
 def restore(iri: str, name: str, orcid: str) -> Revision:
     """Restore a removed record as it was before the removal."""
     with database.session() as db, db.begin():
