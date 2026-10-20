@@ -42,4 +42,16 @@ form:Dataset a sh:NodeShape ;
     sh:property [ sh:path schema:keywords ; sh:order 14 ; sh:name "Keywords" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
         sh:message "Choose a vocabulary term, or register it; text is kept until then." ] ;
     sh:property [ sh:path schema:identifier ; sh:order 15 ; sh:name "DOI" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
-        sh:description "The DOI, as a web address." ] .
+        sh:description "The DOI, as a web address." ] ;
+    sh:property [ sh:path schema:distribution ; sh:order 16 ; sh:name "Files" ; sh:class schema:DataDownload ; sh:node form:DataDownload ; sh:nodeKind sh:BlankNode ;
+        sh:description "Its files, each at its download address, as its source record lists them." ] .
+
+form:DataDownload a sh:NodeShape ;
+    sh:targetClass schema:DataDownload ;
+    rdfs:label "File" ;
+    sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "One name needed." ] ;
+    sh:property [ sh:path schema:contentUrl ; sh:order 2 ; sh:name "Download address" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:message "The file's address needed." ] ;
+    sh:property [ sh:path schema:encodingFormat ; sh:order 3 ; sh:name "Format" ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:description "A media type, such as text/csv." ] ;
+    sh:property [ sh:path schema:contentSize ; sh:order 4 ; sh:name "Size" ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:description "Such as 3.1 MB." ] .

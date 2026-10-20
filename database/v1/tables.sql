@@ -728,6 +728,21 @@ CREATE TABLE IF NOT EXISTS "schema_data_catalog__void_class_partition" (
   FOREIGN KEY ("iri") REFERENCES "schema_data_catalog" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_data_catalog__void_class_partition__record" ON "schema_data_catalog__void_class_partition" ("record");
+CREATE TABLE IF NOT EXISTS "schema_data_download" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "type" TEXT,
+  "schema_content_size" TEXT,
+  "schema_content_size__term" TEXT,
+  "schema_content_url" TEXT,
+  "schema_content_url__term" TEXT,
+  "schema_encoding_format" TEXT,
+  "schema_encoding_format__term" TEXT,
+  "schema_name" TEXT,
+  "schema_name__term" TEXT,
+  PRIMARY KEY ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_data_download__record" ON "schema_data_download" ("record");
 CREATE TABLE IF NOT EXISTS "schema_dataset" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -792,6 +807,15 @@ CREATE TABLE IF NOT EXISTS "schema_dataset__schema_creator" (
   FOREIGN KEY ("iri") REFERENCES "schema_dataset" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_dataset__schema_creator__record" ON "schema_dataset__schema_creator" ("record");
+CREATE TABLE IF NOT EXISTS "schema_dataset__schema_distribution" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_dataset" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_dataset__schema_distribution__record" ON "schema_dataset__schema_distribution" ("record");
 CREATE TABLE IF NOT EXISTS "schema_dataset__schema_is_part_of" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,

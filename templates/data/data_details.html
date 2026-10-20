@@ -39,6 +39,9 @@
     {% if record.description %}
       <p class="text-secondary">{{ record.description | sanitize_html }}</p>
     {% endif %}
+    {% if record.url %}
+      <a href="{{ record.url }}" class="btn btn-outline-vhpblue mb-2" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right pe-1"></i>{{ "Zenodo" if "zenodo.org" in record.url else "BioStudies" if "biostudies" in record.url else "Source record" }}</a>
+    {% endif %}
   </div>
   
   <div class="card">
@@ -289,7 +292,7 @@
                           {% else %}
                             {{ val(f.name) }}
                           {% endif %}
-                          {% if f.size %} <span class="text-muted">({{ bytes_mb(f.size) }})</span>{% endif %}
+                          {% if f.size %} <span class="text-muted">({{ bytes_mb(f.size, f.size) }})</span>{% endif %}
                           {% if f.checksum %}<br><span class="d-lg-block d-none text-muted">{{ f.checksum }}</span>{% endif %}
                           </span>
                         </li>

@@ -477,4 +477,6 @@ form:MediaObject a sh:NodeShape ;
     sh:property [ sh:path schema:encodingFormat ; sh:order 3 ; sh:name "Artifact format" ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the artifact format, as ROBOT asks." ] ;
     sh:property [ sh:path pbpk:artifactLocation ; sh:order 4 ; sh:name "Artifact location" ; sh:minCount 1 ; sh:maxCount 1 ;
-        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the artifact location, as ROBOT asks." ] .
+        sh:datatype xsd:string ; sh:severity sh:Warning ; sh:message "Add the artifact location, as ROBOT asks." ] ;
+    sh:property [ sh:path schema:contentSize ; sh:order 5 ; sh:name "Size" ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:description "Such as 3.1 MB." ] .

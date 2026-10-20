@@ -26,6 +26,7 @@ from pyld import jsonld
 from rdfsolve.iris import local_name
 
 from linkeddata.parsers import licence, link, present, publication, slug, term
+from linkeddata.parsers.zenodo import download
 
 DATE = "http://www.w3.org/2001/XMLSchema#date"
 DECIMAL = "http://www.w3.org/2001/XMLSchema#decimal"
@@ -470,8 +471,8 @@ def model_row(nodes: dict, root: dict, main: dict, address: str, others: dict) -
 
 
 def zenodo(row: dict, hit: dict, nodes: dict, others: dict) -> None:
-    """The fields of the model's Zenodo record: its page, DOI and date; its name, license, keywords and
-    creators where the crate has none."""
+    """The fields of the model's Zenodo record: its page, DOI, date and files (its digital artifacts, at their
+    download addresses); its name, license, keywords and creators where the crate has none."""
     metadata = hit["metadata"]
     fill(row, "name", [metadata["title"]])
     licences = [licence(value["@id"]) for value in row.get("license", []) if isinstance(value, dict) and "@id" in value]
@@ -488,6 +489,12 @@ def zenodo(row: dict, hit: dict, nodes: dict, others: dict) -> None:
         row["sameAs"] = link("https://doi.org/" + hit["doi"])
     if present(metadata.get("publication_date")):
         row["datePublished"] = {"@value": metadata["publication_date"], "@type": DATE}
+    for given in hit.get("files") or []:
+        found = download(given)
+        artifact = {"@type": "MediaObject", "name": found["name"], "pbpk:artifactLocation": given["links"]["self"], "contentSize": found["contentSize"]}
+        if "encodingFormat" in found:
+            artifact["encodingFormat"] = found["encodingFormat"]
+        row.setdefault("hasPart", []).append(artifact)
     if "creator" in row or "author" in row:
         return
     for creator in metadata.get("creators") or []:

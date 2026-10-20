@@ -1,13 +1,33 @@
 """Parser of the Zenodo community vhp4safety (a workaround, see linkeddata/parsers): the dataset search
 gives each record's metadata. "Last, First" creators are written "First Last", as in other sources; DOIs,
-ORCID iDs, licenses and affiliations (as organisations) are linked at their addresses."""
+ORCID iDs, licenses and affiliations (as organisations) are linked at their addresses. A record's files are its
+downloads, as Zenodo's JSON-LD export gives them, with their names and sizes."""
 
 import json
+import mimetypes
 
 from linkeddata.parsers import licence, link, marked, present, publication, slug, term
 
 DATE = "http://www.w3.org/2001/XMLSchema#date"
 LICENSES = "https://zenodo.org/api/vocabularies/licenses/"
+
+
+def size(given: int) -> str:
+    """A file's size as Zenodo shows it, such as 3.1 MB."""
+    for unit, scale in (("GB", 1e9), ("MB", 1e6), ("kB", 1e3)):
+        if given >= scale:
+            return f"{given / scale:.1f} {unit}"
+    return f"{given} bytes"
+
+
+def download(given: dict) -> dict:
+    """A file of a Zenodo record at its download address. Its format is found from its name, as Zenodo's JSON-LD
+    export gives it."""
+    found = {"@type": "DataDownload", "name": given["key"], "contentUrl": link(given["links"]["self"]), "contentSize": size(given["size"])}
+    media, _ = mimetypes.guess_type(given["key"])
+    if media:
+        found["encodingFormat"] = media
+    return found
 
 
 def parse(content: bytes) -> list[dict]:
@@ -52,5 +72,7 @@ def parse(content: bytes) -> list[dict]:
                 if cited:
                     others.setdefault(cited["@id"], cited)
                     row.setdefault("citation", []).append(link(cited["@id"]))
+        for given in hit.get("files") or []:
+            row.setdefault("distribution", []).append(download(given))
         rows.append(row)
     return rows + list(others.values())

@@ -667,8 +667,20 @@ def catalogue_details(record: Record) -> dict:
                               "license": after(addresses(found, node, SDO.license), SPDX) or ", ".join(named(found, node, SDO.license)),
                               "url": shown["url"], "doi": shown["doi"], "doi_url": shown["doi_url"], "title": shown["title"],
                               "description": str(description) if description is not None else "", "publications": [{"doi": doi} for doi in dois(found, node)],
-                              "files": [], "authors": authors, "funding": funding}
+                              "files": files(found, node), "authors": authors, "funding": funding}
     return shown
+
+
+def files(found: Graph, node) -> list[dict]:
+    """The files of a dataset (its downloads) or of a model (its digital artifacts), with their addresses and
+    sizes, by name."""
+    listed = []
+    for part in [*found.objects(node, SDO.distribution), *found.objects(node, SDO.hasPart)]:
+        address = found.value(part, SDO.contentUrl) or found.value(part, URIRef(documents.expand("pbpk:artifactLocation")))
+        if address is None:
+            continue
+        listed.append({"name": str(found.value(part, SDO.name) or address), "url": str(address), "size": str(found.value(part, SDO.contentSize) or "")})
+    return sorted(listed, key=by_name)
 
 
 def uses(iris: list[str]) -> dict[str, dict]:
