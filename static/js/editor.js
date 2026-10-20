@@ -591,6 +591,12 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     restore: function (event) {
       act(event.currentTarget, "Restoring…", "POST", "/api/restore", JSON.stringify({ record: path }), editor.graph);
     },
+    // An imported model is saved unchanged, so that it is a platform record, with a draft RO-Crate.
+    own: function () {
+      if (window.confirm("Make this model a platform record? Imports from Zenodo then leave it unchanged, and its RO-Crate is a draft made from the record.")) {
+        document.getElementById("save").click();
+      }
+    },
     move: function (event) {
       const to = window.prompt("New address (the old one forwards to it):", path);
       if (to && to !== path) {

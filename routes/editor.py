@@ -8,7 +8,7 @@ from flask import Blueprint, Response, abort, redirect, render_template, request
 from admin import editor, writes
 from database import records
 from database.tables import PLATFORM
-from linkeddata import checks, pages
+from linkeddata import checks, crates, pages
 from linkeddata.profile import settings, shape_of
 from routes.account import current_editor, form_token
 
@@ -70,6 +70,8 @@ def edit(kind: str):
         ordered=editor.ordered(),
         classes={of_class: name for name, of_class in settings()["kinds"].items()},
         form_token=form_token(),
+        # A model has the RO-Crate in Zenodo while it is an imported record, and else a draft crate.
+        crate=("zenodo" if crates.zenodo(record) is not None else "draft") if crates.of_models(record) else None,
         page_title=f"{pages.kind_names()[kind]} — VHP4Safety editor",
     ))
     response.headers["X-Robots-Tag"] = "noindex"
