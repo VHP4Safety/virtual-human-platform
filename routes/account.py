@@ -17,7 +17,7 @@ from urllib.parse import urlencode
 import requests
 from flask import Blueprint, abort, redirect, render_template, request, session, url_for
 
-from admin import accounts, tokens
+from admin import tokens
 from linkeddata.model import settings
 
 blueprint = Blueprint("account", __name__)
@@ -46,12 +46,12 @@ def local_path(address: str | None) -> str | None:
     return None
 
 
-def current_editor() -> accounts.Editor | None:
+def current_editor() -> tokens.Editor | None:
     """The session's editor, logged in with ORCID or a valid write token."""
-    return accounts.editor(session.get("orcid"), session.get("name"), session.get("token_id"))
+    return tokens.editor(session.get("orcid"), session.get("name"), session.get("token_id"))
 
 
-def editor_of_request(kind: str) -> accounts.Editor | None:
+def editor_of_request(kind: str) -> tokens.Editor | None:
     """The editor of an editor page request, when allowed to write *kind*."""
     editor = current_editor()
     if editor is None or kind not in editor.kinds or "form_token" not in session:
@@ -78,7 +78,7 @@ def login():
 def token_login():
     check_form()
     token = tokens.find(request.form.get("token", "").strip())
-    if token is None or token.orcid not in accounts.editors():
+    if token is None or token.orcid not in tokens.editors():
         return render_template(
             "account/login.html",
             next=local_path(request.form.get("next")) or "",
@@ -106,7 +106,7 @@ def orcid_login():
         "redirect_uri": callback_address(),
         "state": session["orcid_state"],
     })
-    return redirect(f"{accounts.orcid_base()}/oauth/authorize?{query}")
+    return redirect(f"{tokens.orcid_base()}/oauth/authorize?{query}")
 
 
 @blueprint.get("/orcid/callback/")
@@ -119,7 +119,7 @@ def orcid_callback():
     if not code:
         return "No code provided.", 400
     response = requests.post(
-        f"{accounts.orcid_base()}/oauth/token",
+        f"{tokens.orcid_base()}/oauth/token",
         data={
             "client_id": os.environ.get("ORCID_CLIENT_ID", ""),
             "client_secret": os.environ.get("ORCID_CLIENT_SECRET", ""),

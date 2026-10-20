@@ -3,7 +3,7 @@
 from sqlalchemy import select
 
 import database
-from admin import accounts, tokens, writes
+from admin import tokens, writes
 from database import records
 from database.tables import Revision
 
@@ -17,9 +17,9 @@ def test_tokens():
     assert tokens.check(secret, "tools").orcid == ORCID
     assert tokens.check(secret, "methods") is None
     token = tokens.tokens_of(ORCID)[0]
-    assert accounts.editor(ORCID, "Test Editor", token.id).kinds == ["tools"]
+    assert tokens.editor(ORCID, "Test Editor", token.id).kinds == ["tools"]
     assert tokens.revoke(token.id, ORCID)
-    assert tokens.find(secret) is None and accounts.editor(ORCID, "Test Editor", token.id) is None
+    assert tokens.find(secret) is None and tokens.editor(ORCID, "Test Editor", token.id) is None
 
 
 def test_writes():
