@@ -66,23 +66,23 @@ form:HowTo a sh:NodeShape ;
         sh:description "Each a page under this page's address; a question's are its process flow steps." ] ;
     sh:property [ sh:path schema:tool ; sh:group form:parts ; sh:order 3 ; sh:name "Tools and methods" ;
         sh:class schema:HowToTool ; sh:node form:HowToTool ; sh:nodeKind sh:BlankNode ;
-        sh:description "Each use of a tool or method on the page; names and descriptions come from their records." ] ;
+        sh:description "Each tool, method or model that is used on the page. The names and descriptions are read from the records." ] ;
     sh:property [ sh:path schema:supply ; sh:group form:parts ; sh:order 4 ; sh:name "Data" ;
         sh:class schema:HowToSupply ; sh:node form:HowToSupply ; sh:nodeKind sh:BlankNode ;
         sh:description "Each use of a dataset on the page; names and descriptions come from their records." ] ;
     sh:property [ sh:path bioschemas:input ; sh:group form:parts ; sh:order 5 ; sh:name "Input" ;
-        sh:class bioschemas:FormalParameter ; sh:node form:FormalParameter ; sh:nodeKind sh:BlankNode ;
-        sh:description "What a step takes, such as an estimated daily intake." ] ;
+        sh:or ( [ sh:class schema:Dataset ; rdfs:label "Data" ] [ sh:node form:FormalParameter ; rdfs:label "Name only" ] ) ;
+        sh:description "What a step takes, such as an estimated daily intake. A dataset is linked, or a name is given when no record of it exists yet." ] ;
     sh:property [ sh:path bioschemas:output ; sh:group form:parts ; sh:order 6 ; sh:name "Output" ;
-        sh:class bioschemas:FormalParameter ; sh:node form:FormalParameter ; sh:nodeKind sh:BlankNode ;
-        sh:description "What a step gives, such as an exposure calculation." ] .
+        sh:or ( [ sh:class schema:Dataset ; rdfs:label "Data" ] [ sh:node form:FormalParameter ; rdfs:label "Name only" ] ) ;
+        sh:description "What a step gives, such as an exposure calculation. A dataset is linked, or a name is given when no record of it exists yet." ] .
 
 form:HowToTool a sh:NodeShape ;
     sh:targetClass schema:HowToTool ;
-    rdfs:label "Tool or method used" ;
-    sh:property [ sh:path schema:item ; sh:order 1 ; sh:name "Tool or method" ; sh:minCount 1 ; sh:maxCount 1 ; sh:severity sh:Warning ; sh:nodeKind sh:IRI ;
-        sh:or ( [ sh:class schema:SoftwareApplication ; rdfs:label "Tool" ] [ sh:class bioschemas_draft:LabProtocol ; rdfs:label "Method" ] ) ;
-        sh:message "Link a tool or method." ] .
+    rdfs:label "Tool, method or model used" ;
+    sh:property [ sh:path schema:item ; sh:order 1 ; sh:name "Tool, method or model" ; sh:minCount 1 ; sh:maxCount 1 ; sh:severity sh:Warning ; sh:nodeKind sh:IRI ;
+        sh:or ( [ sh:class schema:SoftwareApplication ; rdfs:label "Tool" ] [ sh:class bioschemas_draft:LabProtocol ; rdfs:label "Method" ] [ sh:class schema:SoftwareSourceCode ; rdfs:label "Model" ] ) ;
+        sh:message "Link a tool, method or model." ] .
 
 form:HowToSupply a sh:NodeShape ;
     sh:targetClass schema:HowToSupply ;
