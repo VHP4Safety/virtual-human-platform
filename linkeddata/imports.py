@@ -2,7 +2,9 @@
 
 - Fetch each source, and read it with its parser as rows in the terms of the model.
 - Replace the earlier records of the source with the rows. Keep the records written on the platform.
-- Store the people and organisations with the same ORCID iD or ROR ID as one record.
+- Store the people and organisations with the same ORCID iD or ROR ID as one record, at import and again after the
+  enrichments, as a ROR ID can be added by an enrichment.
+- Give the address of a moved or merged record its new address, so that an import does not bring it back.
 - Import the sources of records first, then the sources of terms, then the sources that enrich records.
 - Last, check the records of each source against the model.
 
@@ -132,17 +134,34 @@ def words(name) -> set[str]:
     return set(re.findall(r"\w{4,}", plain.casefold()))
 
 
+def forwards() -> dict[str, str]:
+    """Return the new address of each moved or merged address, at the end of its chain of moves."""
+    with database.session() as db:
+        moved = dict(db.execute(select(Record.iri, Record.moved_to).where(Record.moved_to.is_not(None))).all())
+    found = {}
+    for iri, target in moved.items():
+        seen = {iri}
+        while target in moved and target not in seen:
+            seen.add(target)
+            target = moved[target]
+        found[iri] = target
+    return found
+
+
 def one_per_identifier(found: list[tuple[list[dict], Graph]]) -> list[tuple[list[dict], Graph]]:
     """Store the records of one class with the same registry address in sameAs (REGISTRIES) as one record.
 
+    - Give a moved or merged address its new address.
     - Use the address of the stored record with that registry address, or else the first address in *found*.
     - Merge their statements as in an enrichment. Change the links of the other records to that address.
     - Keep records apart if their names have no common word. The registry address of one of them is then wrong in
       its source. Report them."""
     names = {listed[0]["iri"]: listed[0]["name"] for listed, _ in found}
-    first, renamed = {}, {}
+    first, renamed = {}, forwards()
     for listed, statements in found:
         iri, of_class = listed[0]["iri"], listed[0]["type"]
+        if iri in renamed:
+            continue
         given = sorted(str(value) for value in statements.objects(URIRef(iri), SDO.sameAs) if str(value).startswith(REGISTRIES))
         if not given:
             continue
@@ -174,6 +193,71 @@ def one_per_identifier(found: list[tuple[list[dict], Graph]]) -> list[tuple[list
         else:
             joined[iri] = ([{**row, "iri": iri} if row["iri"] == listed[0]["iri"] else row for row in listed], own)
     return list(joined.values())
+
+
+def one_record_each(order: list[str]) -> None:
+    """Merge the stored records of one kind with the same registry address in sameAs (REGISTRIES), such as a ROR ID
+    added by an enrichment.
+
+    - Keep a platform record, or else the record of the source imported first (*order*). Add the names of the others
+      to its other names, if its class has that field. Merge their other values as in an enrichment.
+    - Give the links of other records the kept address. Rewrite them in place, so that they keep their source.
+    - Forward the other addresses to the kept address.
+    - Keep records apart if their names have no common word, as in one_per_identifier."""
+    rank = {PLATFORM: -1}
+    for number, name in enumerate(order):
+        rank[name] = number
+    groups = {}
+    for kind in settings()["kinds"].values():
+        for of_class in records.within(kind):
+            for iri, value in records.values(of_class, str(SDO.sameAs)):
+                if str(value).startswith(REGISTRIES):
+                    groups.setdefault((kind, str(value)), set()).add(iri)
+    for (_, value), iris in sorted(groups.items()):
+        listed = sorted((record for record in records.kept(sorted(iris)) if record.part_of is None),
+                        key=lambda record: (rank.get(record.source, len(rank)), record.iri))
+        for other in listed[1:]:
+            if words(other.name) & words(listed[0].name):
+                merge_into(other, listed[0], value)
+            else:
+                print(f"{other.iri} and {listed[0].iri} have the same address {value} but other names; they are kept apart")
+
+
+def merge_into(other: Record, kept: Record, value: str) -> None:
+    """Merge the record *other* into the record *kept*, for one_record_each. Store the change as a revision of the
+    other record."""
+    target = URIRef(kept.iri)
+
+    def moved(node):
+        return target if node == URIRef(other.iri) else node
+
+    statements = Graph()
+    for subject, predicate, given in records.read([other.iri]):
+        statements.add((moved(subject), predicate, moved(given)))
+    joined = merge(records.read([kept.iri]), records.described(statements, kept.iri), profile_text()).graph
+    if other.name and other.name != kept.name and str(SDO.alternateName) in {field["iri"] for field in fields(kept.type)}:
+        joined.add((target, SDO.alternateName, Literal(other.name)))
+    joined.add((target, SDO.sameAs, URIRef(other.iri)))
+    relinked = {}
+    for linked in records.kept(sorted(records.linking(other.iri) - {kept.iri})):
+        if linked.part_of is None:
+            relinked[linked.iri] = Graph()
+            for subject, predicate, given in records.read([linked.iri]):
+                relinked[linked.iri].add((subject, predicate, moved(given)))
+    previous = documents.document_of(other.iri)
+    with database.session() as db, db.begin():
+        records.save(db, joined, kept.iri)
+        records.delete(db, other.iri)
+        for iri, found in relinked.items():
+            records.save(db, found, iri)
+            db.get(Record, iri).updated_at = now()
+        db.get(Record, kept.iri).updated_at = now()
+        row = db.get(Record, other.iri)
+        row.removed_at, row.moved_to, row.source, row.updated_at = now(), kept.iri, PLATFORM, now()
+        for earlier in db.scalars(select(Record).where(Record.moved_to == other.iri)):
+            earlier.moved_to = kept.iri
+        db.add(Revision(record_iri=other.iri, action="Merged", previous=previous, name=f"Import: same address {value} as {kept.iri}", orcid=""))
+    print(f"{other.iri}: merged into {kept.iri} (same address {value})")
 
 
 class Refused(Exception):
@@ -537,6 +621,7 @@ def import_all(once: bool = False) -> list[str]:
         except (Refused, requests.RequestException, OSError, ValueError, KeyError, TypeError) as problem:
             note_problem(spec, problem)
             problems.append(f"{spec['name']}: {problem}")
+    one_record_each([spec["name"] for spec in every])
     # Records are checked after the enrichments. An enriching source has no records, and its notes are the
     # conflicting values.
     for spec in specs():
