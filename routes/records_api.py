@@ -13,7 +13,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 import database
 from admin import changes, tokens, writes
 from database import images, records
-from linkeddata import catalogue, checks, documents, markdown, storage
+from linkeddata import catalogue, checks, documents, pages, storage
 from linkeddata.model import RELEASE, settings, shapes
 from routes import account, limiter
 from routes.record_pages import SERIALIZATIONS, data, markdown_of
@@ -342,10 +342,10 @@ def listed(given, kind, pagination_parameters):
     # The format asked for at the page of a kind (/tools) is used, also when it is asked by an ending (/tools.ttl).
     media = g.get("media") or request.accept_mimetypes.best_match(["application/ld+json", *SERIALIZATIONS, "text/markdown"], "application/ld+json")
     if media == "text/markdown":
-        pages = []
+        texts = []
         for iri in iris:
-            pages.append(markdown_of(records.get(iri)).get_data(as_text=True))
-        return Response("\n".join(pages), content_type=markdown.MEDIA, headers={"Vary": "Accept"})
+            texts.append(markdown_of(records.get(iri)).get_data(as_text=True))
+        return Response("\n".join(texts), content_type=pages.MEDIA, headers={"Vary": "Accept"})
     if media in SERIALIZATIONS:
         return data(found, media)
     documented = []

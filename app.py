@@ -17,7 +17,6 @@ from werkzeug.routing import BaseConverter
 # Import BioStudies extractor
 from database import records
 from linkeddata import documents, pages, storage, void
-from linkeddata import pages as outline
 from linkeddata.model import hierarchy, settings
 from routes.account import blueprint as account_blueprint
 from routes import limiter, records_api
@@ -318,7 +317,7 @@ def casestudy(case: str = "", question: str = "", step: str = "",
     record = records.get(records.address(f"casestudies/{case}"))
     if record is None:
         abort(404)
-    found = outline.outline(record)
+    found = pages.outline(record)
     descriptions = [field["values"][0] for field in found["fields"] if field["name"] == "description"]
     return render_template(
         "case_studies/casestudy.html",
