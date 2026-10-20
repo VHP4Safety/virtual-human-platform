@@ -1,6 +1,5 @@
-"""Records are checked against the model here with pyshacl. A record written on the platform is refused when it
-does not fit. Values from the sources that do not fit are kept and noted, and the data quality page is made from
-these notes."""
+"""Records are checked against the model here with pyshacl. The data quality page is also made here from the notes
+of the checks."""
 
 import pyshacl
 from rdflib import RDF, Graph, URIRef
