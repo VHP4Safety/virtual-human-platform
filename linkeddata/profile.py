@@ -10,7 +10,7 @@ import requests
 import yaml
 from rdflib import RDF, Graph, Literal, Namespace, URIRef
 from rdflib.collection import Collection
-from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SH, VOID
+from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SDO, SH, VOID
 from rdfsolve.client.sql_tables import layout
 from rdfsolve.iris import curie
 
@@ -139,29 +139,56 @@ def profile_graph() -> Graph:
 
 @cache
 def official() -> Graph:
-    """Return the official shapes (sh:shapesGraph), with their targets.
+    """Return the official shapes (sh:shapesGraph), with targets from the profile.
 
-    Give an official shape that is named by a node shape (dct:conformsTo) the class of that node shape as a target.
-    Also add the other addresses of the Bioschemas types, such as LabProtocol, as targets."""
+    Remove the targets of the official shapes. Give an official shape that is named by a node shape
+    (dct:conformsTo) the class of that node shape as its target, so that an official profile is checked only where
+    the profile declares it. Correct the upstream property addresses of discovery.biothings.io with corrected()."""
     found = Graph()
     for path in vocabularies((".shacl",)):
         found.parse(path, format="turtle")
+    for target in (SH.targetClass, SH.targetNode, SH.targetSubjectsOf, SH.targetObjectsOf):
+        found.remove((None, target, None))
     for shape, conformed in profile_graph().subject_objects(DCTERMS.conformsTo):
         for of_class in profile_graph().objects(shape, SH.targetClass):
             found.add((conformed, SH.targetClass, of_class))
+    properties = set()
+    for path in vocabularies():
+        properties.update(str(term) for term in vocabulary(path).subjects(RDF.type, RDF.Property))
+    for field, path in list(found.subject_objects(SH.path)):
+        if isinstance(path, URIRef) and corrected(path, properties) != path:
+            found.set((field, SH.path, corrected(path, properties)))
     return found
+
+
+# Change against upstream: in the official shapes, some properties have addresses at discovery.biothings.io, such as
+# https://discovery.biothings.io/view/bioschemasdrafts/keywords, which are not used in markup.
+BIOTHINGS = {"https://discovery.biothings.io/view/bioschemas/": "https://bioschemas.org/terms/",
+             "https://discovery.biothings.io/view/bioschemasdrafts/": "https://bioschemas.org/draft_terms/"}
+
+
+def corrected(path: URIRef, properties: set[str]) -> URIRef:
+    """Return the property for a discovery.biothings.io address: the schema.org property with the same name if a
+    pinned vocabulary defines it, else the Bioschemas term. Return other addresses as they are."""
+    for prefix, namespace in BIOTHINGS.items():
+        if str(path).startswith(prefix):
+            name = str(path).removeprefix(prefix)
+            return URIRef(str(SDO) + name) if str(SDO) + name in properties else URIRef(namespace + name)
+    return path
 
 
 @cache
 def official_fields() -> dict:
-    """Return the fields of the official shapes, by property shape, each as (shape, property, required). Use the last
-    path of alternative paths. A value is required if a minimum count is set at Violation severity."""
+    """Return the fields of the official shapes, by property shape, each as (shape, property, required). Of
+    alternative paths, use the schema.org path (https), else the last path. A value is required if a minimum count is
+    set at Violation severity."""
     graph = official()
     found = {}
     for shape, field in graph.subject_objects(SH.property):
         path = graph.value(field, SH.path)
         if graph.value(path, SH.alternativePath) is not None:
-            path = list(Collection(graph, graph.value(path, SH.alternativePath)))[-1]
+            paths = list(Collection(graph, graph.value(path, SH.alternativePath)))
+            path = next((given for given in paths if str(given).startswith(str(SDO))), paths[-1])
         found[field] = (shape, path, graph.value(field, SH.minCount) is not None and graph.value(field, SH.severity) == SH.Violation)
     return found
 
