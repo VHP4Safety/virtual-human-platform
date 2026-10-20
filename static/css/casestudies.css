@@ -104,6 +104,20 @@ nav.navbar[aria-label="breadcrumb"] {
   color: #cfd4db;
 }
 
+/* Skipped steps are greyed, with dashed lines */
+.step-item.skipped .step-icon {
+  border-style: dashed;
+}
+
+.step-item.skipped .step-text {
+  color: #9aa0a6;
+}
+
+.step-item.skipped + .step-line,
+.step-line:has(+ .step-item.skipped) {
+  background: repeating-linear-gradient(90deg, #d0d4da 0 6px, transparent 6px 10px);
+}
+
 /* Active & completed steps keep their step color */
 .step-item.active .step-icon,
 .step-item.completed .step-icon {

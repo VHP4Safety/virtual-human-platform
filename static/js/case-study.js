@@ -1,11 +1,12 @@
-// A case study as the website shows it, drawn from its JSON-LD document (GET /api/casestudies/<case>, or
-// the editor's preview of unsaved changes). Its pages are levels, one in view at a time: the case study
-// with its questions, a question's page with its process flow steps, then the steps and their own steps.
-// Each page has a heading, a summary, buttons to the pages one level down and to the tools, methods and
-// data it uses, and its text in sections. Buttons, breadcrumbs and the process flow navigate in place; a
-// container drawn again with a new document stays on its page.
+// A case study is drawn here from its JSON-LD document, as the website shows it. The document comes from
+// GET /api/casestudies/<case>, or from the editor preview of unsaved changes. One page is shown at a time.
+// The case study page shows the questions. A question page shows the process flow steps, and each step page
+// shows the steps below it. Each page has a heading, a summary, buttons and text in sections. The buttons
+// open the pages one level down, and the tools, methods and data. Empty steps are not shown on the website.
+// Buttons, breadcrumbs and the process flow navigate in place. A container that is drawn again with a new
+// document stays on its page.
 //
-//   import { renderCaseStudy } from "/static/js/case-study.js";
+//   import { renderCaseStudy, stageOf } from "/static/js/case-study.js";
 //   renderCaseStudy(container, caseStudy, options);
 //
 // Options, all optional:
@@ -13,13 +14,16 @@
 //                every copy of the platform
 //   at           the address of the page to show; without it, the container stays on its page
 //   linkTarget   where links open, such as "_blank" in the editor
-//   openDisabled true opens pages whose buttons the website greys out, to preview them
+//   openDisabled true opens the pages that are greyed out on the website, and shows empty steps greyed, so
+//                that they can be previewed
 //   onNavigate   called with the address of the page in view, after a click opens another
 //   onPick       called with the page in view, the field, the section ({position, name}) and the value of
 //                what is clicked, such as a section's text; links then open only with Ctrl or Cmd
 //
 // markField(container, address, field, section) marks what shows a field of a page, such as the one an
 // editor's form is on, and opens that page.
+//
+// stageOf(page, level) gives the stage of a page in the process flow, from 1 to 5.
 
 // Heading colours by level: case study, question, process flow step, its steps, and deeper steps.
 const HEADINGS = ["text-vhppink-distinct", "text-vhpdarkpurple", "text-vhpdarkteal", "text-vhplightteal", "text-vhpblue", "text-vhplightteal"];
@@ -28,6 +32,8 @@ const HEADINGS = ["text-vhppink-distinct", "text-vhpdarkpurple", "text-vhpdarkte
 const BUTTONS = ["btn-vhppink-distinct", "btn-vhpdarkpurple", "btn-vhpdarkteal", "btn-vhplightteal"];
 const ITEMS = "btn-vhpblue";
 const PROCESS_FLOW = ["Regulatory Question", "Safety Assessment Workflow Step", "Case Study Step", "Case Study Substep", "Tools, Models and Data"];
+// The fields that give a step content to show.
+const CONTENT = ["tool", "supply", "bioschemas:input", "bioschemas:output", "hasPart", "text", "description"];
 // Elements left out of a text, as they run code or change the page around it.
 const UNSAFE = "script, style, iframe, frame, frameset, object, embed, link, meta, base, form";
 // The deepest level searched; only steps that hold their own page go deeper.
@@ -132,6 +138,40 @@ function label(state, node) {
 // The pages one level down: the case study's questions, or a page's steps.
 function children(state, page, level) {
   return parts(state, page, level === 0 ? "regulatoryQuestion" : "step");
+}
+
+// A step is empty when it has no content and no steps with content.
+function empty(step) {
+  for (const name of CONTENT) {
+    if (all(step, name).length) {
+      return false;
+    }
+  }
+  for (const child of all(step, "step")) {
+    if (!empty(child)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// The stage of a page in the process flow, from 1 to 5. The page is a node of the case study document, with
+// its steps in it. The level is 0 for the case study, 1 for a question, and one more for each step below.
+// A page with steps that are not empty has the stage of its level. This is 1 for the case study, 2 for a
+// question, 3 for a process flow step and 4 for the steps below. A page without such steps has stage 5 when
+// it has tools, methods, models or data. Other pages also have the stage of their level.
+//
+//   stageOf(caseStudy, 0);  // 1
+//   stageOf(step, 2);       // 3 for a step with steps, 5 for a step with only tools and data
+export function stageOf(page, level) {
+  let steps = false;
+  for (const child of all(page, level === 0 ? "regulatoryQuestion" : "step")) {
+    steps = steps || !empty(child);
+  }
+  if (!steps && (all(page, "tool").length || all(page, "supply").length)) {
+    return 5;
+  }
+  return Math.min(level + 1, 4);
 }
 
 // The pages from the case study to the one in view. The path ends at an address the document no longer
@@ -244,8 +284,16 @@ function breadcrumbs(container, state, found) {
   return nav;
 }
 
-// The process flow: the page's place in the workflow; earlier levels lead back.
-function processFlow(container, state, level) {
+// The process flow. The stage of the page in view is active. The stages of the pages above it are completed,
+// and a click on one of them opens that page. The other stages before the active one are skipped.
+function processFlow(container, state, found) {
+  const level = found.length - 1;
+  const active = stageOf(found[level], level);
+  // The level of the page above at each stage; the lowest page is kept.
+  const above = [];
+  for (let at = 0; at < level; at += 1) {
+    above[stageOf(found[at], at)] = at;
+  }
   const header = make("div", "workflow-header");
   header.append(make("h5", "", "Process Flow"));
   const tracker = make("div", "step-tracker");
@@ -255,17 +303,18 @@ function processFlow(container, state, level) {
     }
     const item = make("div", "step-item");
     item.dataset.step = step;
-    if (step < level + 1) {
-      item.classList.add("completed");
-    } else if (step === level + 1) {
+    if (step === active) {
       item.classList.add("active");
+    } else if (above[step] !== undefined) {
+      item.classList.add("completed");
+      item.addEventListener("click", function () {
+        navigate(container, state.path.slice(0, above[step]));
+      });
+    } else if (step < active) {
+      item.classList.add("skipped");
+      item.title = "Skipped: not used on this path";
     }
     item.append(make("div", "step-icon", String(step)), make("span", "step-text", PROCESS_FLOW[step - 1]));
-    if (step <= level) {
-      item.addEventListener("click", function () {
-        navigate(container, state.path.slice(0, step - 1));
-      });
-    }
     tracker.append(item);
   }
   header.append(tracker);
@@ -305,10 +354,15 @@ function column(button) {
   return cell;
 }
 
-// A page's buttons: the pages one level down, in order, and its tools, methods and data, linked to their pages.
+// The buttons of a page. The pages one level down come first, in order. Then the tools, methods and data come,
+// each linked to its page. Empty steps are left out, or greyed in the preview.
 function buttons(container, state, page, level) {
   const row = make("div", "row py-3");
   for (const child of children(state, page, level)) {
+    const hidden = empty(child);
+    if (hidden && !state.options.openDisabled) {
+      continue;
+    }
     const button = make("button", "btn w-100 text-white " + BUTTONS[Math.min(level, BUTTONS.length - 1)]);
     button.type = "button";
     button.append(make("b", "", label(state, child) || child["@id"] || "(no name)"));
@@ -317,14 +371,16 @@ function buttons(container, state, page, level) {
       button.append(make("br"), document.createTextNode(first(child, "text")));
     }
     const disabled = first(child, "creativeWorkStatus") === "disabled";
-    if (disabled) {
+    if (disabled || hidden) {
       button.classList.add("opacity-25");
     }
     if (disabled && !state.options.openDisabled) {
       button.classList.add("disabled");
       button.disabled = true;
     } else if (child["@id"]) {
-      if (disabled) {
+      if (hidden) {
+        button.title = "Empty: hidden on the website";
+      } else if (disabled) {
         button.title = "Greyed out on the website, and not opened there";
       }
       button.addEventListener("click", function () {
@@ -517,7 +573,7 @@ function draw(container, direction) {
   const found = pages(state);
   const level = found.length - 1;
   const shown = make("div", "case-study");
-  shown.append(breadcrumbs(container, state, found), processFlow(container, state, level), view(container, state, found[level], level, direction));
+  shown.append(breadcrumbs(container, state, found), processFlow(container, state, found), view(container, state, found[level], level, direction));
   container.replaceChildren(shown);
   mark(container, state);
 }
