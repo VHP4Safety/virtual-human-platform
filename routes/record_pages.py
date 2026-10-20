@@ -117,7 +117,10 @@ def negotiate():
         return markdown_of(record)
     # The platform's address is its dataset's: its data is the VoID description.
     if media != "text/html":
-        return data(void.described() if record.iri == settings()["base"] else documents.linked(record), media)
+        # The platform record is its dataset's VoID description; another record is one document, its parts in it.
+        if record.iri == settings()["base"]:
+            return data(void.described(), media)
+        return data(documents.linked(record), media, record.iri)
     # A record with no page of its own is shown on the general record page.
     if request.url_rule is None:
         return record_page(record)
