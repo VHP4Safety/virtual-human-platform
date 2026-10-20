@@ -127,14 +127,15 @@ def published_as() -> dict[URIRef, URIRef]:
 def typed(found: Graph) -> Graph:
     """Prepare the statements for publication. Give the values of the fields with form:publishedAs that class.
     State each record as the main entity of its page, and use the page as its web address (schema:url) if none is
-    given. State the official profile of the class of a node (dct:conformsTo) only if all the fields required by
+    given, but not for a part. State the official profile of the class of a node (dct:conformsTo) only if all the fields required by
     that profile are given."""
     for predicate, of_class in published_as().items():
         for value in list(found.objects(None, predicate)):
             if isinstance(value, URIRef):
                 found.add((value, RDF.type, of_class))
+    # A part address (<record>#<field>-<n>) has no page of its own.
     for node in set(found.subjects(RDF.type, None)):
-        if isinstance(node, URIRef) and str(node).startswith(settings()["base"]):
+        if isinstance(node, URIRef) and str(node).startswith(settings()["base"]) and not records.PART.match(str(node)):
             found.add((node, SDO.mainEntityOfPage, node))
             if found.value(node, SDO.url) is None:
                 found.add((node, SDO.url, node))
