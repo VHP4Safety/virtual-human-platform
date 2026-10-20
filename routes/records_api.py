@@ -8,7 +8,7 @@ from marshmallow import INCLUDE, Schema, fields, pre_load
 from rdflib import RDF, Graph, URIRef
 from rdflib.namespace import SDO
 from rdfsolve.ontology.service import PROVIDERS, Ontologies, serving
-from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.exceptions import HTTPException, RequestEntityTooLarge
 
 import database
 from admin import changes, tokens, writes
@@ -543,7 +543,7 @@ def model_shapes():
 
 
 def register(app) -> None:
-    """The API is added to the app, with the OpenAPI document at /api/docs/."""
+    """The API is added to the app, with the OpenAPI document at /api/docs/, and the error pages of the app."""
     app.config.update(
         API_TITLE=settings()["title"],
         API_VERSION=RELEASE,
@@ -555,6 +555,15 @@ def register(app) -> None:
         API_SPEC_OPTIONS={"info": {"description": DESCRIPTION}},
     )
     api = Api(app)
+
+    # flask-smorest answers every error of the app in JSON. An error of the API, or of a client that does not ask for
+    # HTML, keeps that answer; a browser is given an error page with the same status code.
+    @app.errorhandler(HTTPException)
+    def error_page(problem: HTTPException):
+        if request.path.startswith("/api/") or not any(media == "text/html" for media, _ in request.accept_mimetypes):
+            return api.handle_http_exception(problem)
+        return render_template("error.html", error=problem, page_title=f"{problem.code} {problem.name} — VHP4Safety",
+                               meta_description=problem.description or problem.name), problem.code
     api.spec.components.security_scheme("token", {"type": "http", "scheme": "bearer", "description": "A write token, sent as Authorization: Bearer <token>. A token is made at /account/tokens/ and gives the kinds that it can write. It expires after 90 days by default."})
     api.spec.components.schema("Record", component={"x-jsonld-context": documents.context(settings())}, schema=Record)
     api.spec.components.schema("FacetValue", schema=FacetValue)
