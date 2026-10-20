@@ -1,7 +1,6 @@
-"""Parser of the platform pages in the website templates, from before the pages were records, a workaround (see
-linkeddata/parsers).
+"""Parser of the platform pages in the website templates, a workaround (see linkeddata/parsers).
 
-Source: the templates of the main branch at one commit, and the partner list.
+Source: the website templates (files of site.yaml), and the partner list.
 
 - Page: the heading is the name, and the line under it is the description. Each tab is a section, with its first
   paragraph as text and each item as a separate section. A tab with a commented-out link is a hidden section.
@@ -243,7 +242,7 @@ def home(content: bytes, kinds: dict) -> tuple[dict, dict]:
     """Return the catalogue of the platform from the home page, and the email and other addresses of its publisher."""
     soup = BeautifulSoup(content, "html.parser")
     hero = soup.find("h1")
-    # The heading keeps its line break, as on main ("The Virtual" above "Human Platform").
+    # The heading keeps its line break ("The Virtual" above "Human Platform").
     lines = [" ".join(line.split()) for line in hero.get_text("\n").split("\n") if line.strip()]
     row = {"@id": "", "@type": "DataCatalog", "alternateName": "\n".join(lines),
            "abstract": " ".join(soup.select_one("p.lead").get_text(" ").split()), "publisher": link(PROJECT), "license": link(LICENSE)}

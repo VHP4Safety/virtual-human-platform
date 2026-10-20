@@ -1,7 +1,6 @@
 name: site
 title: Website pages
-# The platform's own pages as the website's templates had them, from the main branch at one commit or from the
-# repository, and its partner list; read once, when the platform first goes live (linkeddata/launch/site.py).
+# Templates of the website pages, and the partner list. They are read once, at launch (linkeddata/launch/site.py).
 files:
   home: https://raw.githubusercontent.com/VHP4Safety/virtual-human-platform/36575d738685a90303a78e7e315aac5235873669/templates/home.html
   base: https://raw.githubusercontent.com/VHP4Safety/virtual-human-platform/36575d738685a90303a78e7e315aac5235873669/templates/base.html

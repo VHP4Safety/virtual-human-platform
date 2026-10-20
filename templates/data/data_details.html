@@ -139,7 +139,7 @@
             {% set ont = namespace(url=None) %}
             {% if 'NCBITaxon_' in a.term %}
               {% set ont.url = 'https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=' ~ a.term.rsplit('NCBITaxon_', 1)[-1] %}
-            {% endif %}
+              {% endif %}
             {% set _ = ns_bio.organisms.append({'value': a.value, 'url': ont.url}) %}
 
           {% elif a.name == 'Organ' %}
@@ -694,7 +694,7 @@
                 {# nested per-regimen subsections (shared-parent + regimen-deltas form) #}
                 {% set regimens = [] %}
                 {% for s in ex.subsections or [] %}
-                  {% if s.type and s.type|lower == 'exposure regimen' %}{% set _ = regimens.append(s) %}{% endif %}
+                    {% if s.type and s.type|lower == 'exposure regimen' %}{% set _ = regimens.append(s) %}{% endif %}
                 {% endfor %}
 
                 {% if regimens %}

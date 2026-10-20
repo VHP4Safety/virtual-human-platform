@@ -43,7 +43,6 @@ def clip(text, limit=160):
     text = " ".join((text or "").split())
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
 
-
 ################################################################################
 class RegexConverter(BaseConverter):
     """Converter for regular expression routes.
@@ -269,7 +268,7 @@ def method_page(methodid):
     """A method's page, from its record."""
     record = records.get(records.address(f"methods/{methodid}"))
     if record is None:
-        abort(404)
+            abort(404)
     return record_page(record)
 
 

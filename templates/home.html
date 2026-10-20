@@ -27,24 +27,28 @@
         style="max-height:45vh"
       />
     </div>
+
     <div class="col-md-8">
       <h1 class="display-3 fw-bold text-uppercase text-vhppurple mb-4">
         {% for line in (platform.heading or platform.name).split("\n") %}{{ line }}{% if not loop.last %} <br />
         {% endif %}{% endfor %}
       </h1>
+
       {% if platform.abstract %}
       <p class="lead text-secondary" style="letter-spacing: 0.05em;">{{ platform.abstract }}</p>
       {% endif %}
     </div>
   </div>
-</section>
 
-<!-- The kinds of records, each with its count -->
+</section>
+<!-- Tab section: navigation to Tools, Case Studies, Data -->
 <section class="bg-vhplight-blue img-fluid py-5">
   <div class="container">
     <div class="py-4">
       <div class="row gy-4">
-        {# The words after the counts, as on main. #}
+
+      
+        {# The words after the counts. #}
         {% set units = {"casestudies": "case studies", "tools": "tools", "methods": "methods", "data": "datasets"} %}
         {% for kind in platform.kinds %}
         {% set colour = "vhppink-distinct" if loop.first else "vhpblue" %}
@@ -60,13 +64,12 @@
           </div>
         </div>
         {% endfor %}
-      </div>
-    </div>
-  </div>
+            </div>
+          </div>
+        </div>
 </section>
 
-<!-- About section: project description and mission, from the platform record (the line under the heading, the
-     text, and its parts), in the layout of main -->
+<!-- About section: project description and mission -->
 {% set about = platform.about %}
 <section class="container py-5">
   <h1 id="main-text-section" class="" >{{ platform.name }}</h1>
@@ -136,7 +139,7 @@
 	{{ part.html|sanitize_html }}
 	{% endfor %}
 
-	{# The pages about the platform, with the icons and in the order of main; other pages after them. #}
+	{# The pages about the platform, with their icons, in this order; other pages after them. #}
 	{% set icons = {"explore_our_work": "diagram-3", "training": "mortarboard", "impact": "graph-up-arrow"} %}
 	{% set ordered = [] %}
 	{% for path in icons %}{% for page in platform.pages if (page.address|page_link).strip("/") == path %}{% set _ = ordered.append(page) %}{% endfor %}{% endfor %}
@@ -151,7 +154,7 @@
 	    </a>
 	  </div>
 	  {% endfor %}
-	</div>
+	  </div>
 	{% endif %}
 </section>
 <section class="bg-vhplight-blue img-fluid" id="partners-section">
@@ -183,16 +186,16 @@
 <section class="container py-5" id="contact-section">
   <div>
     <div class="row">
-
+      
       <!-- Left column: text and icons -->
       <div class="col-md-6">
         <div class="content">
           <h1 class="">Connect with us</h1>
           <p class="text-secondary fs-5">
-            Got questions, need support or just want to chat?
+            Got questions, need support or just want to chat? 
           </p>
           <div>
-            Use the form below, or contact us on LinkedIn, GitHub, or via email
+            Use the form below, or contact us on LinkedIn, GitHub, or via email 
             and we’ll get back to you as soon as possible.
             </div>
 
@@ -202,7 +205,7 @@
               <i class="bi bi-envelope-fill"></i>
             </a>
             {% endif %}
-            {# As on main: LinkedIn and GitHub, one icon each. #}
+            {# LinkedIn and GitHub, one icon each. #}
             {% for site, icon in [("linkedin.com", "linkedin"), ("github.com", "github")] %}
             {% for address in platform.elsewhere if site in address %}{% if loop.first %}
             <a href="{{ address }}" class="contact-icon fs-3 link-vhppink" aria-label="{{ icon }}">

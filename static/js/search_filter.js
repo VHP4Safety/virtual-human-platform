@@ -369,7 +369,7 @@
       
       const label = this.config.filterLabels[type] || type;
       tag.textContent = `${label}: ${value}`;
-
+      
       // type="button" is critical: the badge sits inside the search form, and
       // <button> defaults to type="submit", which would submit the form with
       // the *old* hidden-input values (before applyFilters has written the

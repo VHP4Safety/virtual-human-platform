@@ -367,7 +367,7 @@ def partners(found: Graph, node) -> list[dict]:
     return partnered + sorted([one for one in listed if not one["role"]], key=by_name)
 
 
-# The partners on the home page and their order, as on main: the logo files listed in this file.
+# The partners on the home page and their order: the logo files listed in this file.
 PARTNERS = Path(__file__).parent.parent / "static" / "images" / "partners" / "partners.txt"
 
 
@@ -381,8 +381,8 @@ def partner_order() -> dict[str, int]:
 
 
 def home_text(value) -> dict:
-    """Split the description of the platform into the parts of the home page, as on main: the line under the heading
-    (the first paragraph), the text up to the first heading, and the parts under each other heading."""
+    """Split the description of the platform into the parts of the home page: the line under the heading (the first
+    paragraph), the text up to the first heading, and the parts under each other heading."""
     soup = BeautifulSoup(value["@value"] if isinstance(value, dict) else f"<p>{value}</p>", "html.parser")
     lead = soup.find("p")
     found = {"lead": lead.decode_contents() if lead else "", "text": "", "parts": []}
@@ -425,8 +425,8 @@ def catalogue_of(record: Record) -> dict:
             "about": home_text(text(found.value(node, SDO.description))),
             "pages": [{"address": page, "name": names.get(page, page)} for page in listed],
             "elsewhere": sorted(str(address) for address in held.objects(publisher, SDO.sameAs)) if publisher is not None else [],
-            # The email of the publisher is the contact address of the platform, shown as on main, although the
-            # email field of organisations is private.
+            # The email of the publisher is the contact address of the platform, shown although the email field of
+            # organisations is private.
             "email": str(records.graph([str(publisher)]).value(publisher, SDO.email) or "") if publisher is not None else "",
             "partners": [placed[place] for place in sorted(placed)]}
 
