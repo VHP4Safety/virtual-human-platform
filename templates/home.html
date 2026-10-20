@@ -28,7 +28,10 @@
       />
     </div>
     <div class="col-md-8">
-      <h1 class="display-3 fw-bold text-uppercase text-vhppurple mb-4">{{ platform.heading or platform.name }}</h1>
+      <h1 class="display-3 fw-bold text-uppercase text-vhppurple mb-4">
+        {% for line in (platform.heading or platform.name).split("\n") %}{{ line }}{% if not loop.last %} <br />
+        {% endif %}{% endfor %}
+      </h1>
       {% if platform.abstract %}
       <p class="lead text-secondary" style="letter-spacing: 0.05em;">{{ platform.abstract }}</p>
       {% endif %}
@@ -41,16 +44,18 @@
   <div class="container">
     <div class="py-4">
       <div class="row gy-4">
+        {# The words after the counts, as on main. #}
+        {% set units = {"casestudies": "case studies", "tools": "tools", "methods": "methods", "data": "datasets"} %}
         {% for kind in platform.kinds %}
         {% set colour = "vhppink-distinct" if loop.first else "vhpblue" %}
         <div class="col-md-3">
           <div class="card text-center border-2 rounded-2 card-button card-button-{{ colour }} h-100 shadow-sm" onclick="location.href='{{ kind.address }}'">
             <div class="card-header btn rounded-top-1 bg-{{ colour }}">
-              <h5 class="card-title text-white m-0"><a class="text-white text-decoration-none" href="{{ kind.address }}">{{ kind.name }}</a></h5>
+              <h5 class="card-title text-white m-0">{{ kind.name }}</h5>
             </div>
             <div class="card-body btn">{{ html(kind.description) }}</div>
             <div class="card-footer btn text-body-secondary">
-              <span class="badge rounded-pill bg-{{ colour }} text-white">{{ kind.count }}</span>
+              <span class="badge rounded-pill bg-{{ colour }} text-white">{{ kind.count }}</span> {{ units.get(kind.address.strip("/"), kind.name|lower) }}
             </div>
           </div>
         </div>
@@ -60,60 +65,95 @@
   </div>
 </section>
 
-<!-- About section: the platform's description, and the pages about it -->
-<section class="container py-5" id="about-section">
-  <h1 id="main-text-section">{{ platform.name }}</h1>
-  <div class="home-description">{{ html(platform.description) }}</div>
-  {% if platform.pages %}
-  <div class="row row-cols-1 row-cols-md-3 g-4 mt-1">
-    {% for page in platform.pages %}
-    <div class="col">
-      <a href="{{ page.address|page_link }}" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2">
-        <i class="bi bi-arrow-right-circle" aria-hidden="true"></i>{{ page.name }}
-      </a>
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
+<!-- About section: project description and mission, from the platform record (the line under the heading, the
+     text, and its parts), in the layout of main -->
+{% set about = platform.about %}
+<section class="container py-5">
+  <h1 id="main-text-section" class="" >{{ platform.name }}</h1>
+  {% if about.lead %}<p class="text-secondary fs-5">{{ about.lead|sanitize_html }}</p>{% endif %}
+	<div>
+	{{ about.text|sanitize_html }}
 
-  {% if workflow %}
-  <hr class="my-4">
-  <p class="text-secondary fs-5">{{ workflow.name }}</p>
-  <div id="workflowTeaser">
-    {% if workflow.description %}<p>{{ workflow.description }}</p>{% endif %}
-    <div class="row align-items-stretch g-3">
-      <!-- Regulatory question (input) -->
-      <div class="col-12 col-md-3 d-flex">
-        <div class="bg-vhppink-distinct text-white rounded-pill px-3 py-2 text-center w-100 small fw-semibold align-self-center">
-          Regulatory question
-        </div>
-      </div>
-      <!-- Arrow connector -->
-      <div class="col-12 col-md-1 d-flex align-items-center justify-content-center text-secondary fs-4 lh-1">
-        <i class="bi bi-caret-right-fill d-none d-md-inline" aria-hidden="true"></i>
-        <i class="bi bi-caret-down-fill d-md-none" aria-hidden="true"></i>
-      </div>
-      <!-- Risk Characterisation frame: the process flow steps -->
-      <div class="col-12 col-md-8 mt-0">
-        <div class="border border-2 border-vhppurple rounded-3 p-3 pt-4 position-relative my-4">
-          <span class="position-absolute top-0 start-50 translate-middle bg-white px-2 text-vhppurple small fw-semibold">Risk Characterisation</span>
-          <div class="row row-cols-1 row-cols-md-2 g-2">
-            {% set is_odd = (process_flow_steps | length) % 2 == 1 %}
-            {% for k, v in process_flow_steps.items() %}
-            <div class="col d-grid{% if loop.first and is_odd %} col-md-12{% endif %}">
-              <a href="/safety_assessment_workflow#definition-{{ v.slug }}" class="text-decoration-none">
-                <div class="bg-vhppurple text-white rounded-pill px-3 py-2 text-center small fw-semibold">{{ v.label }}</div>
-              </a>
+	{% if workflow %}
+	<hr class="my-3">
+
+	<!-- Workflow teaser: heading is the toggle -->
+	<p class="text-secondary fs-5">
+	    {{ workflow.name }}
+  </p>
+
+	<div id="workflowTeaser">
+	    {% if workflow.description %}
+	    <p class="">
+	      {{ workflow.description }}
+	    </p>
+	    {% endif %}
+
+	    <div class="row align-items-stretch g-3">
+
+	      <!-- Regulatory question (input) -->
+	      <div class="col-12 col-md-3 d-flex">
+	        <div class="bg-vhppink-distinct text-white rounded-pill px-3 py-2 text-center w-100 small fw-semibold align-self-center">
+	          Regulatory question
+	        </div>
+	      </div>
+
+	      <!-- Arrow connector -->
+	      <div class="col-12 col-md-1 d-flex align-items-center justify-content-center text-secondary fs-4 lh-1">
+	        <i class="bi bi-caret-right-fill d-none d-md-inline" aria-hidden="true"></i>
+	        <i class="bi bi-caret-down-fill d-md-none" aria-hidden="true"></i>
+	      </div>
+
+	      <!-- Risk Characterisation frame: 5 workflow steps -->
+	      <div class="col-12 col-md-8 mt-0 ">
+	            <!-- Risk Characterisation visualization -->
+          <div class="border border-2 border-vhppurple rounded-3 p-3 pt-4 position-relative my-4">
+            <span class="position-absolute top-0 start-50 translate-middle bg-white px-2 text-vhppurple small fw-semibold">Risk Characterisation</span>
+            <div class="row row-cols-1 row-cols-md-2 g-2">
+              {% set is_odd = (process_flow_steps | length) % 2 == 1 %}
+              {% for k, v in process_flow_steps.items() %}
+                <div class="col d-grid{% if loop.first and is_odd %} col-md-12{% endif %}">
+                  <a href="/safety_assessment_workflow#definition-{{ v.slug }}" class="text-decoration-none">
+                    <div class="bg-vhppurple text-white rounded-pill px-3 py-2 text-center small fw-semibold">{{ v.label }}</div>
+                  </a>
+                </div>
+              {% endfor %}
             </div>
-            {% endfor %}
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-</section>
+	      </div>
 
+	    </div>
+
+	  </div>
+	{% endif %}
+	</div>
+
+	{# The last part, about the project, has the anchor of the About buttons of the header and the footer. #}
+	{% for part in about.parts %}
+	<hr class="my-3">
+
+	<p class="text-secondary fs-5"{% if loop.last %} id="about-section"{% endif %}>{{ part.title }}</p>
+	{{ part.html|sanitize_html }}
+	{% endfor %}
+
+	{# The pages about the platform, with the icons and in the order of main; other pages after them. #}
+	{% set icons = {"explore_our_work": "diagram-3", "training": "mortarboard", "impact": "graph-up-arrow"} %}
+	{% set ordered = [] %}
+	{% for path in icons %}{% for page in platform.pages if (page.address|page_link).strip("/") == path %}{% set _ = ordered.append(page) %}{% endfor %}{% endfor %}
+	{% for page in platform.pages if page not in ordered %}{% set _ = ordered.append(page) %}{% endfor %}
+	{% if ordered %}
+	<div class="row row-cols-1 row-cols-md-3 g-4">
+	  {% for page in ordered %}
+	  <div class="col">
+	    <a href="{{ page.address|page_link }}"
+	       class="btn btn-outline-secondary w-100  d-flex align-items-center justify-content-center gap-2">
+	      <i class="bi bi-{{ icons.get((page.address|page_link).strip('/'), 'arrow-right-circle') }}" aria-hidden="true"></i>{{ page.name }}
+	    </a>
+	  </div>
+	  {% endfor %}
+	</div>
+	{% endif %}
+</section>
 <section class="bg-vhplight-blue img-fluid" id="partners-section">
   <div class="container py-5">
     <h1 class="">
@@ -162,11 +202,13 @@
               <i class="bi bi-envelope-fill"></i>
             </a>
             {% endif %}
-            {% for address in platform.elsewhere %}
-            {% set icon = "linkedin" if "linkedin.com" in address else ("github" if "github.com" in address else "link-45deg") %}
+            {# As on main: LinkedIn and GitHub, one icon each. #}
+            {% for site, icon in [("linkedin.com", "linkedin"), ("github.com", "github")] %}
+            {% for address in platform.elsewhere if site in address %}{% if loop.first %}
             <a href="{{ address }}" class="contact-icon fs-3 link-vhppink" aria-label="{{ icon }}">
               <i class="bi bi-{{ icon }}"></i>
             </a>
+            {% endif %}{% endfor %}
             {% endfor %}
           </div>
         </div>

@@ -1,0 +1,41 @@
+# Ownership, copyright of logos, names, and trademarks belong to the respective organisations.
+#
+# Partner registry for the home-page logo grid: display order, names and links.
+# Format:  filename | Organization name | https://link   (name and link optional)
+# Only entries listed below are displayed. Images present in
+# static/images/partners/ but not listed here (or commented out with '#') are
+# ignored. Blank lines and lines starting with '#' are ignored.
+# See get_partner_logos() in app.py.
+
+# Coordination
+UU.png | Utrecht University | https://www.uu.nl/en
+RIVM.png | National Institute for Public Health and the Environment | https://www.rivm.nl/en
+HU.png | University of Applied Sciences Utrecht | https://www.internationalhu.com/
+
+# Co-applicants
+UM.png | Maastricht University | https://www.maastrichtuniversity.nl
+VU.svg | Vrije Universiteit Amsterdam | https://vu.nl/en
+UL.png | Leiden University | https://universiteitleiden.nl/en
+WUR.png | Wageningen University & Research | https://wur.nl/en
+AUMC.png | Amsterdam University Medical Center | https://www.amsterdamumc.org/en
+UMC.svg | Utrecht Medical Center | https://www.umcutrecht.nl/en
+TNO.svg | TNO | https://tno.nl/en
+EMC.svg | Erasmus MC | https://erasmusmc.nl/en
+
+# Co-funders
+ORTEC.png | ORTEC | https://logiqcare.com/
+Unilever.svg | Unilever | https://unilever.com
+Bayer.svg | Bayer | https://bayer.com
+Certara.svg | Certara | https://certara.com
+LNV.png | Ministry of Agriculture, Nature and Food Quality | https://www.rijksoverheid.nl/ministeries/ministerie-van-landbouw-visserij-voedselzekerheid-en-natuur
+DKF.svg | Dutch Kidney Foundation | https://prime-ckd.com
+CRL.jpg | Charles River Laboratories | https://criver.com/
+Shell.svg | Shell | https://shell.com
+KWR.png | KWR Water Research Institute | https://www.kwrwater.nl/en/
+NBS.jpg | Dutch Burns Foundation | https://brandwondenstichting.nl/
+CE.svg | Cosmetics Europe | https://cosmeticseurope.eu
+PDV.png | Stichting Proefdiervrij | https://proefdiervrij.nl/
+Lakefront.svg | Lakefront Biotherapeutics | https://lakefrontbio.com/
+
+# Funder
+# NWO.png | Dutch Research Council | https://nwo.nl/en

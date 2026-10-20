@@ -3,7 +3,9 @@ record (RFC 7763, GitHub variant)."""
 
 from functools import lru_cache
 from operator import itemgetter
+from pathlib import Path
 
+from bs4 import BeautifulSoup
 from markdownify import markdownify
 from markupsafe import Markup
 from rdflib import RDF, RDFS, Graph, Literal, URIRef
@@ -354,6 +356,37 @@ def partners(found: Graph, node) -> list[dict]:
     return partnered + sorted([one for one in listed if not one["role"]], key=by_name)
 
 
+# The partners on the home page and their order, as on main: the logo files listed in this file.
+PARTNERS = Path(__file__).parent.parent / "static" / "images" / "partners" / "partners.txt"
+
+
+def partner_order() -> dict[str, int]:
+    """Return the place of each listed partner logo file, in the order of partners.txt."""
+    order = {}
+    for line in PARTNERS.read_text(encoding="utf-8").splitlines():
+        if line.strip() and not line.strip().startswith("#"):
+            order[line.split("|")[0].strip()] = len(order)
+    return order
+
+
+def home_text(value) -> dict:
+    """Split the description of the platform into the parts of the home page, as on main: the line under the heading
+    (the first paragraph), the text up to the first heading, and the parts under each other heading."""
+    soup = BeautifulSoup(value["@value"] if isinstance(value, dict) else f"<p>{value}</p>", "html.parser")
+    lead = soup.find("p")
+    found = {"lead": lead.decode_contents() if lead else "", "text": "", "parts": []}
+    if lead:
+        lead.extract()
+    for block in soup.contents:
+        if getattr(block, "name", None) in ("h2", "h3", "h4", "h5", "h6"):
+            found["parts"].append({"title": block.get_text(" ", strip=True), "html": ""})
+        elif found["parts"]:
+            found["parts"][-1]["html"] += str(block)
+        else:
+            found["text"] += str(block)
+    return found
+
+
 def catalogue_of(record: Record) -> dict:
     """Return the content of the home page from the catalogue record of the platform."""
     found = documents.public(records.graph([record.iri]))
@@ -370,12 +403,21 @@ def catalogue_of(record: Record) -> dict:
     names = records.names(listed)
     publisher = found.value(node, SDO.publisher)
     held = documents.public(records.graph([str(publisher)])) if publisher is not None else Graph()
+    order = partner_order()
+    placed = {}
+    for partner in partners(held, publisher) if publisher is not None else []:
+        logo = partner["logo"].rsplit("/", 1)[-1]
+        if logo in order:
+            placed[order[logo]] = partner
     return {"name": str(found.value(node, SDO.name) or ""), "heading": str(found.value(node, SDO.alternateName) or ""),
             "abstract": str(found.value(node, SDO.abstract) or ""), "description": text(found.value(node, SDO.description)), "kinds": kinds,
+            "about": home_text(text(found.value(node, SDO.description))),
             "pages": [{"address": page, "name": names.get(page, page)} for page in listed],
             "elsewhere": sorted(str(address) for address in held.objects(publisher, SDO.sameAs)) if publisher is not None else [],
-            "email": str(held.value(publisher, SDO.email) or "") if publisher is not None else "",
-            "partners": partners(held, publisher) if publisher is not None else []}
+            # The email of the publisher is the contact address of the platform, shown as on main, although the
+            # email field of organisations is private.
+            "email": str(records.graph([str(publisher)]).value(publisher, SDO.email) or "") if publisher is not None else "",
+            "partners": [placed[place] for place in sorted(placed)]}
 
 
 # For the pages and listings of the tools, methods, data and models (templates/tools, templates/methods,

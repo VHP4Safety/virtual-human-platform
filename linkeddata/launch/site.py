@@ -243,7 +243,9 @@ def home(content: bytes, kinds: dict) -> tuple[dict, dict]:
     """Return the catalogue of the platform from the home page, and the email and other addresses of its publisher."""
     soup = BeautifulSoup(content, "html.parser")
     hero = soup.find("h1")
-    row = {"@id": "", "@type": "DataCatalog", "alternateName": " ".join(hero.get_text(" ").split()),
+    # The heading keeps its line break, as on main ("The Virtual" above "Human Platform").
+    lines = [" ".join(line.split()) for line in hero.get_text("\n").split("\n") if line.strip()]
+    row = {"@id": "", "@type": "DataCatalog", "alternateName": "\n".join(lines),
            "abstract": " ".join(soup.select_one("p.lead").get_text(" ").split()), "publisher": link(PROJECT), "license": link(LICENSE)}
     row["void:classPartition"] = []
     for card in soup.select("div.card[onclick]"):
