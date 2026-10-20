@@ -72,6 +72,26 @@ def kept(found: Graph, iri: str, kind: str) -> None:
             found += records.described(stored, value)
 
 
+def classed(found: Graph, iri: str) -> None:
+    """Give each part that *found* leaves without a class its stored class, or else the class of its field if the
+    field has one class. shacl-form writes the class of a part only from the target class of its shape
+    (sh:targetClass), and part shapes such as the files of a model have none."""
+    stored = records.graph([iri])
+    pending = True
+    while pending:
+        pending = False
+        for holder, predicate, part in list(found):
+            if predicate == RDF.type or not records.is_part(found, part) or found.value(part, RDF.type) is not None:
+                continue
+            given = list(stored.objects(part, RDF.type))
+            for field in fields(str(found.value(holder, RDF.type))):
+                if not given and field["iri"] == str(predicate) and len(field["classes"]) == 1:
+                    given = [URIRef(field["classes"][0])]
+            for of_class in given:
+                found.add((part, RDF.type, of_class))
+                pending = True
+
+
 def slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:60] or "record"
 

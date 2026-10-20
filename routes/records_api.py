@@ -236,6 +236,7 @@ def store(address: str, body: dict, preview: bool = False, page: bool = False):
     except ValueError as problem:
         abort(422, message=str(problem))
     writes.kept(found, address, kind)
+    writes.classed(found, address)
     # Only http and https addresses are accepted, so that no script (javascript:) or file address is stored as a link.
     for _, predicate, value in found:
         if isinstance(value, URIRef) and predicate != RDF.type and not str(value).startswith(("https://", "http://")):
