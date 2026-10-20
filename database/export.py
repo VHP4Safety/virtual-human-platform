@@ -1,7 +1,7 @@
 """The platform's records, exported to a git repository (PLATFORM_RECORDS) so they outlive the server:
 one JSON-LD file per record at its page's path (tools/aop-builder.jsonld), from its latest revision, and
 the images they use (images/<sha256>.webp). They are committed by `python -m linkeddata export` and
-pushed by `python -m linkeddata push`, both nightly.
+pushed by `python -m linkeddata push`, both weekly.
 """
 
 import json

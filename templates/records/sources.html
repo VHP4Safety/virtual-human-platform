@@ -4,7 +4,7 @@
   <div class="pb-2">
     <h1><span class="text-vhpblue">Sources</span></h1>
     <p class="text-secondary fs-5">Where the platform's records come from.</p>
-    <p>Most records are imported nightly from the sources below: each source is read, mapped to the platform's model, and checked (see the <a class="link-vhpblue" href="{{ url_for('admin.data_quality') }}">data quality</a>). {{ written }} records are written by editors on the platform, each change kept with the editor's name; such a record replaces a source's record at the same address.</p>
+    <p>Records are imported weekly from the sources below, or once at launch: each source is read, mapped to the platform's model, and checked (see the <a class="link-vhpblue" href="{{ url_for('admin.data_quality') }}">data quality</a>). {{ written }} records are written by editors on the platform, each change kept with the editor's name; such a record replaces a source's record at the same address.</p>
   </div>
 
   {% for source in sources %}

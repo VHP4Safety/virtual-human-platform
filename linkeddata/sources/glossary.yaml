@@ -1,6 +1,6 @@
 name: glossary
 title: VHP4Safety glossary
-# The glossary's main branch, read nightly; the profile and the parsers use the pinned file (vocabulary).
+# The glossary's main branch, read weekly; the profile and the parsers use the pinned file (vocabulary).
 # The profile's terms that main drops or renames are noted.
 url: https://raw.githubusercontent.com/VHP4Safety/glossary/main/glossary.owl
 vocabulary: vhp4safety-glossary-34f9389.ttl

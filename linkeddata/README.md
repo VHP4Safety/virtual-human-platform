@@ -41,11 +41,11 @@ python -m pytest tests          # the parts are checked on small inputs, offline
 
 It is run by the Docker build, and by the container before the platform starts.
 
-`import`, then `export` and `push`, are run nightly, such as with cron on the host:
+`import`, then `export` and `push`, are run weekly, such as with cron on the host:
 
 ```
-0 3 * * *  docker exec platform python -m linkeddata import
-30 3 * * * docker exec platform sh -c "python -m linkeddata export && python -m linkeddata push"
+0 3 * * 1  docker exec platform python -m linkeddata import
+30 3 * * 1 docker exec platform sh -c "python -m linkeddata export && python -m linkeddata push"
 ```
 
 ## The modules
