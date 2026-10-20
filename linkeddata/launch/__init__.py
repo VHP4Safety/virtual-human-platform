@@ -1,6 +1,6 @@
-"""The import made once when the platform goes live, of every source, those of this folder too, and the corrections of
-launch.yaml. A correction moves or replaces values of a field. It is saved as a revision named with its reason;
-the record then belongs to the platform and is not changed by imports."""
+"""The launch of the platform. Every source is imported once, those of this folder too, and then the corrections of
+launch.yaml are made. A correction moves or replaces values of a field. It is saved as a revision named with its
+reason. The record then belongs to the platform and is not changed by imports."""
 
 from pathlib import Path
 
@@ -43,7 +43,7 @@ def corrected(found: Graph, correction: dict) -> int:
 
 def launch() -> list[str]:
     """Every source is imported, then every correction of launch.yaml is made and saved; what could not be
-    imported or made is given back."""
+    imported or made is given back. A database that holds imported records is refused."""
     problems = import_all(once=True)
     for correction in yaml.safe_load(CORRECTIONS.read_text(encoding="utf-8"))["corrections"]:
         iri = records.address(correction["record"])

@@ -17,7 +17,7 @@ import sys
 import database
 from admin import tokens
 from database import export
-from linkeddata.imports import import_all
+from linkeddata.imports import Refused, import_all
 from linkeddata.launch import launch
 from linkeddata.model import RELEASE, download_vocabularies, tables_problems, terms_problems, write_tables
 
@@ -53,7 +53,10 @@ def main() -> None:
         if problems:
             sys.exit(1)
     elif args.command == "launch":
-        problems = launch()
+        try:
+            problems = launch()
+        except Refused as refusal:
+            sys.exit(f"Not launched: {refusal}")
         for problem in problems:
             print(f"Not imported or corrected: {problem}", file=sys.stderr)
         if problems:

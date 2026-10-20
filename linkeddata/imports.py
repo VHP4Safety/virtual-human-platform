@@ -118,7 +118,7 @@ def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[tuple[
 
 
 class Refused(Exception):
-    """An import that would remove most of a source's records, usually after an upstream fault."""
+    """An import that is refused, such as one that would remove most of the records of a source, or a second launch."""
 
 
 def store(source: Source, found: list[tuple[list[dict], Graph]]) -> None:
@@ -363,7 +363,7 @@ def enrich(spec: dict) -> None:
 
 def specs() -> list[dict]:
     """The sources that are fetched (url, files), read (a model vocabulary) or enrich records (enriches), by name.
-    A source of sources/ is read weekly, except a pinned vocabulary (no url); a source of launch/ is read once."""
+    A source in sources/ is read weekly. A source in launch/ and a pinned vocabulary (no url) are read once, at launch."""
     found = []
     for path in sorted([*SOURCES_DIR.glob("*.yaml"), *LAUNCH_DIR.glob("*.yaml")], key=lambda path: path.name):
         spec = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -427,16 +427,16 @@ def note_problem(spec: dict, problem: Exception) -> None:
 
 
 def import_all(once: bool = False) -> list[str]:
-    """The weekly sources are imported, at launch (once) after the others; then every source is checked. The
-    problems of failed sources are given back; their records are kept."""
+    """The weekly sources are imported. At launch (once), the sources that are read once are imported first, and a
+    database that holds imported records is refused. Then every source is checked. The problems of failed sources
+    are given back; their records are kept."""
     problems = []
     every = []
     if once:
-        # A record given by a source read once then belongs to it, and a weekly import keeps its values.
-        with database.session() as db, db.begin():
-            for iri in db.scalars(select(Record.iri).where(Record.source != PLATFORM, Record.part_of.is_(None))):
-                storage.delete(db, iri)
-            db.execute(delete(Record).where(Record.source != PLATFORM))
+        with database.session() as db:
+            if db.scalar(select(Record.iri).where(Record.source != PLATFORM).limit(1)):
+                raise Refused("The database holds imported records. Launch is run once, on a database without them.")
+        # The sources read once own the records that they share with weekly sources, so weekly imports keep them.
         for spec in specs():
             if not spec["weekly"]:
                 every.append(spec)

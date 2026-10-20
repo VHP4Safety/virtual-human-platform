@@ -169,6 +169,7 @@ The form is changed by changing the profile. The profile's own terms:
   - for a source that `enriches` the records of a kind, the `answer` for each record's `identifier`.
 - **`launch/`**: the sources read once, by `python -m linkeddata launch`, with their parsers, and the
   corrections of `launch.yaml`. The pinned vocabularies change only with a new pin, so they are read then too.
+  Launch is refused on a database that holds imported records.
 - **`model/v1/`**: the model. `profile/` holds the one model, in modules: its header (`ontology.ttl`) gives the base address of
   identifiers (`void:uriSpace`), the vocabularies it is built from (`owl:imports`: schema.org, the Bioschemas
   types, VoID and the VHP4Safety glossary, each pinned by `form:file` and `form:sha256` and downloaded into `vocabularies/`
