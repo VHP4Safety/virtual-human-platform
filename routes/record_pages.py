@@ -14,7 +14,8 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, Response, abort, current_app, g, redirect, render_template, request, url_for
 from markupsafe import Markup
-from rdflib import Graph
+from rdfsolve._uri import prefix_map
+from rdflib import RDF, Graph
 from rdflib.namespace import SDO
 
 from database import records
@@ -43,6 +44,12 @@ def data(found: Graph, media: str, iri: str | None = None) -> Response:
     if media in ("application/ld+json", "application/json"):
         body = json.dumps(documents.document(found, iri, named=True), indent=2)
     else:
+        # The namespaces of the properties and the classes are named: by the prefixes of the profile, and the others
+        # by rdfsolve (glossary for https://vhp4safety.github.io/glossary#), so that none is written as ns1.
+        # rdfsolve gap: prefix_map is to be imported from rdfsolve.iris when rdfsolve exports it.
+        terms = {str(term) for term in found.predicates()} | {str(term) for term in found.objects(None, RDF.type)}
+        for prefix, namespace in prefix_map(terms, settings()["prefixes"]).items():
+            found.bind(prefix, namespace, override=True, replace=True)
         body = found.serialize(format=SERIALIZATIONS[media])
     return Response(body, mimetype=media, headers={"Vary": "Accept"})
 
