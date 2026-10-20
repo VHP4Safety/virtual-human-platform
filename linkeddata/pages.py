@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 from markdownify import markdownify
 from markupsafe import Markup
 from rdflib import RDF, RDFS, Graph, Literal, URIRef
+from rdflib.collection import Collection
 from rdflib.namespace import SDO, VOID
 from werkzeug.datastructures import MultiDict
 
@@ -48,6 +49,16 @@ def in_order(found: Graph, nodes) -> list:
             number = float("inf")
         return number, str(found.value(node, SDO.name) or ""), sorted(str(value) for value in found.objects(node, None))
     return sorted(nodes, key=place)
+
+
+def members(found: Graph, node, path) -> list:
+    """Return the values of a field in their order: the members of a list (rdf:List) in the order of the list, and
+    other values by position."""
+    values = list(found.objects(node, path))
+    heads = [value for value in values if (value, RDF.first, None) in found]
+    if heads:
+        return [member for head in heads for member in Collection(found, head)]
+    return in_order(found, values)
 
 
 def by_name(item: dict) -> str:
@@ -706,16 +717,20 @@ def catalogue_details(record: Record) -> dict:
     shown = dataset(found, node, steps())
     if record.type != settings()["kinds"]["data"]:
         shown["type"] = kind_of(record.type).lower()
-    people = documents.public(records.with_names(records.graph(addresses(found, node, SDO.creator))))
+    creators = members(found, node, SDO.creator)
+    people = documents.public(records.with_names(records.graph([str(person) for person in creators if isinstance(person, URIRef)])))
     authors = []
-    for person in in_order(found, found.objects(node, SDO.creator)):
+    for person in creators:
         orcid = after(addresses(people, person, SDO.sameAs), "https://orcid.org/")
         authors.append({"name": str(found.value(person, SDO.name) or person), "affiliation": ", ".join(named(people, person, SDO.affiliation)), "orcid": orcid})
     grants = documents.public(records.with_names(records.graph(addresses(found, node, SDO.funding))))
     funding = []
     for grant in in_order(grants, found.objects(node, SDO.funding)):
+        # The page of the project of a grant, if it has one; the page of the grant record itself is not linked.
+        url = str(grants.value(grant, SDO.url) or "")
         funding.append({"funder": ", ".join(named(grants, grant, SDO.funder)) or str(grants.value(grant, SDO.name) or ""),
-                        "code": str(grants.value(grant, SDO.identifier) or ""), "url": local(str(grants.value(grant, SDO.url) or ""))})
+                        "acronym": str(grants.value(grant, SDO.alternateName) or ""),
+                        "code": str(grants.value(grant, SDO.identifier) or ""), "url": local(url) if url != str(grant) else ""})
     description = found.value(node, SDO.description)
     shown["norm_metadata"] = {"type": shown["type"], "id": shown["id"], "ReleaseDate": shown["release_date"],
                               "version": str(found.value(node, SDO.version) or ""),
@@ -723,19 +738,70 @@ def catalogue_details(record: Record) -> dict:
                               "url": shown["url"], "doi": shown["doi"], "doi_url": shown["doi_url"], "title": shown["title"],
                               "description": str(description) if description is not None else "", "publications": [{"doi": doi} for doi in dois(found, node)],
                               "files": files(found, node), "authors": authors, "funding": funding}
+    shown["design"] = design_of(found, node)
     return shown
 
 
-def files(found: Graph, node) -> list[dict]:
-    """Return the files of a dataset (its downloads) or of a model (its digital artifacts), with their addresses and
-    sizes, by name."""
+# The terms of the Bioschemas drafts: the experimental design of a study is a LabProtocol part of the dataset.
+DRAFT = "https://bioschemas.org/draft_terms/"
+SAMPLE_VALUES = URIRef("https://bioschemas.org/terms/additionalProperty")
+
+
+def attributes_of(found: Graph, node, path) -> list[dict]:
+    """Return the values (PropertyValue) of a node as the attributes of a BioStudies section, in their order: name,
+    value, unit, page, ontology term, and other qualifiers."""
     listed = []
-    for part in [*found.objects(node, SDO.distribution), *found.objects(node, SDO.hasPart)]:
+    for item in in_order(found, found.objects(node, path)):
+        references = list(found.objects(item, SDO.valueReference))
+        terms = [str(reference) for reference in references if not records.is_part(found, reference)]
+        qualifiers = []
+        for reference in references:
+            if records.is_part(found, reference):
+                qualifiers.append({"name": str(found.value(reference, SDO.propertyID) or ""), "value": str(found.value(reference, SDO.value) or "")})
+        listed.append({"name": str(found.value(item, SDO.propertyID) or ""), "value": str(found.value(item, SDO.value) or ""),
+                       "unit": str(found.value(item, SDO.unitText) or ""), "url": local(str(found.value(item, SDO.url) or "")),
+                       "term": terms[0] if terms else "", "qualifiers": qualifiers})
+    return listed
+
+
+def section_of(found: Graph, node, kind: str = "") -> dict:
+    """Return a part of the experimental design as a BioStudies section: its type, its attributes and the sections
+    below it. A chemical has its name and identifiers as attributes."""
+    attributes = attributes_of(found, node, URIRef(DRAFT + "additionalProperty")) + attributes_of(found, node, SAMPLE_VALUES)
+    if (node, RDF.type, SDO.ChemicalSubstance) in found:
+        attributes = [{"name": "Chemical", "value": str(found.value(node, SDO.name) or ""), "unit": "", "url": "", "term": "", "qualifiers": []}]
+        attributes += attributes_of(found, node, SDO.identifier)
+    below = members(found, node, SDO.hasPart) + in_order(found, found.objects(node, SDO.subjectOf))
+    return {"type": kind or str(found.value(node, SDO.additionalType) or ""), "attributes": attributes,
+            "subsections": [section_of(found, part) for part in below]}
+
+
+def design_of(found: Graph, node) -> dict | None:
+    """Return the experimental design of a dataset (a LabProtocol part) as the sections of its BioStudies record:
+    the values of the study, the biological models, the chemicals in their order, and the other sections."""
+    for design in found.objects(node, SDO.hasPart):
+        if (design, RDF.type, URIRef(DRAFT + "LabProtocol")) in found:
+            sections = [section_of(found, sample, "Biological model information") for sample in in_order(found, found.objects(design, URIRef(DRAFT + "bioSample")))]
+            sections += [section_of(found, chemical, "Chemical information") for chemical in members(found, design, URIRef(DRAFT + "reagent"))]
+            sections += [section_of(found, part) for part in members(found, design, SDO.hasPart)]
+            return {"attributes": attributes_of(found, design, URIRef(DRAFT + "additionalProperty")), "subsections": sections}
+    return None
+
+
+def files(found: Graph, node) -> list[dict]:
+    """Return the files of a dataset (its downloads) or of a model (its digital artifacts), with their addresses,
+    sizes and checksums, in their order."""
+    listed = []
+    for part in in_order(found, [*found.objects(node, SDO.distribution), *found.objects(node, SDO.hasPart)]):
         address = found.value(part, SDO.contentUrl) or found.value(part, URIRef(documents.expand("pbpk:artifactLocation")))
         if address is None:
             continue
-        listed.append({"name": str(found.value(part, SDO.name) or address), "url": str(address), "size": str(found.value(part, SDO.contentSize) or "")})
-    return sorted(listed, key=by_name)
+        checksum = found.value(part, URIRef(documents.expand("spdx:checksum")))
+        algorithm = str(found.value(checksum, URIRef(documents.expand("spdx:algorithm"))) or "").rsplit("_", 1)[-1] if checksum is not None else ""
+        value = str(found.value(checksum, URIRef(documents.expand("spdx:checksumValue"))) or "") if checksum is not None else ""
+        listed.append({"name": str(found.value(part, SDO.name) or address), "url": str(address), "size": str(found.value(part, SDO.contentSize) or ""),
+                       "checksum": f"{algorithm}:{value}" if value else ""})
+    return listed
 
 
 def uses(iris: list[str]) -> dict[str, dict]:
