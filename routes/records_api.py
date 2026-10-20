@@ -542,7 +542,7 @@ def register(app) -> None:
         API_SPEC_OPTIONS={"info": {"description": DESCRIPTION}},
     )
     api = Api(app)
-    api.spec.components.security_scheme("token", {"type": "http", "scheme": "bearer", "description": tokens.__doc__})
+    api.spec.components.security_scheme("token", {"type": "http", "scheme": "bearer", "description": "A write token, sent as Authorization: Bearer <token>. A token is made at /account/tokens/ and gives the kinds that it can write. It expires after 90 days by default."})
     api.spec.components.schema("Record", component={"x-jsonld-context": documents.context(settings())}, schema=Record)
     api.spec.components.schema("FacetValue", schema=FacetValue)
     api.register_blueprint(blueprint)

@@ -104,5 +104,5 @@ def sources():
         sources=found,
         written=counts.get(PLATFORM, 0),
         page_title="Sources — VHP4Safety",
-        meta_description="Where the VHP4Safety platform's records come from, and how each source becomes its model.",
+        meta_description="The sources of the records of the VHP4Safety platform, and how each source is read into the model.",
     )

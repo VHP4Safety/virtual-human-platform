@@ -1,5 +1,5 @@
-"""Write tokens, like ToxTempAssistant's workspace tokens: the secret is shown once and only its hash is
-kept. A token expires (after 90 days by default), can be revoked, and lists the kinds it may write."""
+"""Write tokens and editor logins are checked here. The secret of a token is shown once, and only its hash is
+kept. A token expires (after 90 days by default), can be revoked, and gives the kinds that it can write."""
 
 import hashlib
 import os
