@@ -94,7 +94,7 @@ def sources():
             "name": spec["name"],
             "title": spec.get("title", spec["name"]),
             "files": files_of(spec),
-            "parser": spec["parser"],
+            "parser": spec["module"].replace(".", "/") + ".py",
             "fetched": fetched.get(spec["name"]),
             "records": counts.get(spec["name"], 0),
             "notes": noted.get(spec["name"], 0),

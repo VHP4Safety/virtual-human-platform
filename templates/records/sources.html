@@ -24,7 +24,7 @@
         <dt class="col-sm-3">Last imported</dt>
         <dd class="col-sm-9">{% if source.fetched %}{{ source.fetched.fetched_at[:16]|replace("T", " ") }} UTC · SHA-256 <code>{{ source.fetched.sha256[:12] }}</code>{% else %}not yet{% endif %}</dd>
         <dt class="col-sm-3">Read by</dt>
-        <dd class="col-sm-9"><code>linkeddata/parsers/{{ source.parser }}.py</code>, into the terms of the model</dd>
+        <dd class="col-sm-9"><code>{{ source.parser }}</code>, into the terms of the model</dd>
       </dl>
 
     </div>
