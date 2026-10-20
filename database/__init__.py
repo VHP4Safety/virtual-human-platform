@@ -41,8 +41,9 @@ def differences(path: Path) -> list[str]:
     for name in Base.metadata.tables:
         found.pop(name, None)
     problems = []
+    # Columns are read by name, so their order in a table does not count, as after columns are added to it.
     for name in sorted(set(expected) | set(found)):
-        if expected.get(name) != found.get(name):
+        if sorted(expected.get(name) or []) != sorted(found.get(name) or []) or (name in expected) != (name in found):
             problems.append(f"{path}, table {name}: columns {found.get(name)}, release {RELEASE} has {expected.get(name)}.")
     return problems
 
