@@ -16,6 +16,7 @@ const SPACE = "void:uriSpace";
 const STRING = "http://www.w3.org/2001/XMLSchema#string";
 const HTML = "http://www.w3.org/1999/02/22-rdf-syntax-ns#HTML";
 const editor = JSON.parse(document.getElementById("editor").textContent);
+let vocabularyList = null;
 
 // The form's shadow root is not reached by the page's styles. Shown inputs are as wide as .editor ones.
 const STYLE = `
@@ -461,7 +462,9 @@ class RecordLink extends Plugin {
       box.prepend(vocabularies);
       let listed = [];
       const fill = async function (selected) {
-        listed = (await api("GET", "/api/vocabularies?page_size=200"))["@graph"];
+        // The vocabularies are asked for once, for all the term fields of the page.
+        vocabularyList = vocabularyList || api("GET", "/api/vocabularies?page_size=200");
+        listed = (await vocabularyList)["@graph"];
         vocabularies.replaceChildren();
         for (const found of listed) {
           vocabularies.append(new Option(found.name, found["@id"], false, found["@id"] === selected));
@@ -491,7 +494,7 @@ class RecordLink extends Plugin {
           return;
         }
         attempt(function () {
-          return addVocabulary(listed, function (iri) { attempt(function () { return fill(iri); }); });
+          return addVocabulary(listed, function (iri) { vocabularyList = null; attempt(function () { return fill(iri); }); });
         });
       });
       attempt(function () { return fill(null); });

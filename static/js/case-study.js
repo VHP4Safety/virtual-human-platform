@@ -329,7 +329,9 @@ function items(state, page) {
   const found = [];
   for (const name of ["tool", "supply"]) {
     const listed = [];
-    for (const part of all(page, name)) {
+    for (const given of all(page, name)) {
+      // A use given by address only, as in flat JSON-LD, is found by its address.
+      const part = given && typeof given === "object" && given.item === undefined && given["@id"] ? state.nodes.get(given["@id"]) || given : given;
       const value = part && typeof part === "object" && part.item !== undefined ? all(part, "item")[0] : part;
       if (value && typeof value === "object" && value["@id"]) {
         const record = state.nodes.get(value["@id"]) || value;

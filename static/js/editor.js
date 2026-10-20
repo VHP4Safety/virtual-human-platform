@@ -271,11 +271,34 @@ import { outline, reveal as showPart } from "./record-index.js";
     }
   }
 
+  // The published case study gives the JSON-LD context and the names of the linked records.
+  let published = null;
+
   async function showPublishedCaseStudy() {
     const response = await fetch(graph, { credentials: "same-origin", headers: { Accept: "application/ld+json" } });
-    if (response.ok && !edited) {
-      showCaseStudy(await response.json());
+    if (response.ok) {
+      published = await response.json();
+      if (!edited) {
+        showCaseStudy(published);
+      }
     }
+  }
+
+  // The case study is drawn from the form in the browser, with no call to the platform. The statements of
+  // the form are compacted with the context of the published case study, and the linked records keep the
+  // names that the published case study gives.
+  async function showLiveCaseStudy() {
+    if (!published) {
+      await showPublishedCaseStudy();
+    }
+    const flat = await jsonld.compact(await jsonld.fromRDF(form.serialize("application/n-quads"), { format: "application/n-quads" }), published["@context"]);
+    const nodes = flat["@graph"] || [flat];
+    const root = nodes.find(function (node) { return node["@id"] === editor.graph; });
+    if (!root) {
+      return;
+    }
+    const rest = nodes.filter(function (node) { return node !== root; });
+    showCaseStudy(Object.assign({}, root, { "@context": published["@context"], "@included": rest.concat([published]) }));
   }
 
   // Any other record's page is shown in a frame: the published page, or the one made from the form. Its
@@ -298,6 +321,12 @@ import { outline, reveal as showPart } from "./record-index.js";
 
   async function renderPreview() {
     if (!form || !panel || panel.classList.contains("d-none")) {
+      return;
+    }
+    // A case study is drawn in the browser, from the form, at once.
+    if (view === "page" && caseStudy) {
+      say(edited ? "With unsaved changes" : "As published");
+      showLiveCaseStudy();
       return;
     }
     if (view === "page" && !edited && editor.version) {
@@ -365,7 +394,7 @@ import { outline, reveal as showPart } from "./record-index.js";
 
   function schedulePreview() {
     window.clearTimeout(previewTimer);
-    previewTimer = window.setTimeout(renderPreview, 500);
+    previewTimer = window.setTimeout(renderPreview, caseStudy && view === "page" ? 150 : 500);
   }
 
   function remember(name, value) {
