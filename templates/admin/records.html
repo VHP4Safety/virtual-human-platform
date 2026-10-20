@@ -87,6 +87,7 @@
           <button type="button" class="btn btn-outline-vhppurple" role="tab" data-view="data"><i class="bi bi-diagram-3"></i> Linked data</button>
         </div>
         <span class="small text-secondary text-truncate me-auto" id="preview-caption"></span>
+        <button type="button" class="btn btn-sm btn-vhppurple text-nowrap" id="update-preview" title="Show the changes typed in the form"><i class="bi bi-arrow-repeat"></i> Update view</button>
         {% if record and selected.startswith(base) %}<a class="link-secondary" href="{{ selected|page_link }}" target="_blank" rel="noopener" title="Published page"><i class="bi bi-box-arrow-up-right"></i></a>{% endif %}
         <button type="button" class="btn-close" id="hide-preview" aria-label="Hide the preview"></button>
       </div>

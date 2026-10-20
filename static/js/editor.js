@@ -435,7 +435,21 @@ import { outline, reveal as showPart } from "./record-index.js";
     remember("editor-preview", shown ? view : "hidden");
   }
 
+  // The field being typed in is left, so that its value is taken, and the preview is drawn at once.
+  function updateView() {
+    let typing = form ? form.shadowRoot.activeElement : null;
+    while (typing && typing.shadowRoot && typing.shadowRoot.activeElement) {
+      typing = typing.shadowRoot.activeElement;
+    }
+    if (typing) {
+      typing.blur();
+    }
+    window.clearTimeout(previewTimer);
+    window.setTimeout(renderPreview, 50);
+  }
+
   if (panel) {
+    document.getElementById("update-preview").addEventListener("click", updateView);
     for (const button of panel.querySelectorAll("[data-view]")) {
       button.addEventListener("click", function () { chooseByClick(button.dataset.view, true); });
     }
