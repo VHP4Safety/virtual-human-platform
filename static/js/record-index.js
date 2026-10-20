@@ -101,8 +101,15 @@ function indexed(node) {
   return !field || field.dataset.path in editor.ordered;
 }
 
+// A part of a record: a node without an address, or a part address under its record (<record>#<field>-<n>).
+const PART = /#[A-Za-z_][A-Za-z0-9_]*-[0-9]+$/;
+
+export function isPart(id) {
+  return id.startsWith("_:") || PART.test(id);
+}
+
 function isSection(node) {
-  return node.dataset.nodeId.startsWith("_:");
+  return isPart(node.dataset.nodeId);
 }
 
 // Return the nearest node of the index above an element.

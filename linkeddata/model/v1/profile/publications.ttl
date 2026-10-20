@@ -23,7 +23,7 @@ form:ScholarlyArticle a sh:NodeShape ;
         sh:or ( [ sh:datatype xsd:date ; rdfs:label "Date" ] [ sh:datatype xsd:gYearMonth ; rdfs:label "Month" ] [ sh:datatype xsd:gYear ; rdfs:label "Year" ] ) ;
         sh:description "A date, a month or a year, as precise as in the source." ] ;
     sh:property [ sh:path schema:isPartOf ; sh:order 4 ; sh:name "Journal" ; sh:maxCount 1 ;
-        sh:class schema:Periodical ; sh:node form:Periodical ; sh:nodeKind sh:BlankNode ] ;
+        sh:class schema:Periodical ; sh:node form:Periodical ; sh:nodeKind sh:BlankNodeOrIRI ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 5 ; sh:name "DOI and other addresses" ; sh:minCount 1 ; sh:nodeKind sh:IRI ;
         sh:message "DOI needed, starting with https://doi.org/10." ;
         sh:description "The DOI as a web address, the Wikidata item, and other addresses." ] ;

@@ -3,7 +3,7 @@
 // of the record is previewed.
 import { busy } from "./busy.js";
 import { GLOSSARY, openRequest, tableChoice } from "./glossary.js";
-import { current, outline, reveal as showPart, select, whenSelected } from "./record-index.js";
+import { current, isPart, outline, reveal as showPart, select, whenSelected } from "./record-index.js";
 
 (function () {
   const editor = JSON.parse(document.getElementById("editor").textContent);
@@ -231,7 +231,7 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
       return node instanceof HTMLElement && (node.tagName === "SHACL-NODE" || node.classList.contains("property-instance"));
     });
     const at = found.findIndex(function (node) {
-      return node.tagName === "SHACL-NODE" && !node.dataset.nodeId.startsWith("_:");
+      return node.tagName === "SHACL-NODE" && !isPart(node.dataset.nodeId);
     });
     if (at < 1) {
       return;
@@ -483,8 +483,11 @@ import { current, outline, reveal as showPart, select, whenSelected } from "./re
     if (!caseStudyComponent || !caseStudy) {
       return;
     }
-    if (node.dataset.nodeId.startsWith("_:")) {
-      const page = node.parentElement.closest("shacl-node:not([data-node-id^='_:'])");
+    if (isPart(node.dataset.nodeId)) {
+      let page = node.parentElement.closest("shacl-node");
+      while (page && isPart(page.dataset.nodeId)) {
+        page = page.parentElement.closest("shacl-node");
+      }
       if (page) {
         caseStudyComponent.markField(caseStudy, previewId(page.dataset.nodeId), "", { position: valueOf(node, SCHEMA + "position"), name: valueOf(node, SCHEMA + "name") });
       }

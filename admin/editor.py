@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 import database
 from database import records
 from database.tables import PLATFORM, Note, Record
-from linkeddata.profile import fields, hierarchy, jsonld_name, profile_graph, settings, shape_of, terms
+from linkeddata.profile import PARTS, fields, hierarchy, jsonld_name, profile_graph, settings, shape_of, terms
 
 
 def counts() -> list[dict]:
@@ -150,7 +150,7 @@ def links() -> dict[str, dict[str, str]]:
     graph = profile_graph()
     found = {}
     for field in graph.objects(None, SH.property):
-        if graph.value(field, SH.node) is not None or graph.value(field, SH.nodeKind) == SH.BlankNode:
+        if graph.value(field, SH.node) is not None or graph.value(field, SH.nodeKind) in PARTS:
             continue
         named = []
         for of_class in graph.objects(field, SH["class"]):

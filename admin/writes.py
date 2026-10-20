@@ -176,7 +176,7 @@ def move(old: str, new: str, name: str, orcid: str) -> Revision:
     previous = documents.document_of(old)
 
     def moved(node):
-        if isinstance(node, URIRef) and (str(node) == old or str(node).startswith(old + "/")):
+        if isinstance(node, URIRef) and (str(node) == old or str(node).startswith((old + "/", old + "#"))):
             return URIRef(new + str(node).removeprefix(old))
         return node
 
@@ -221,7 +221,8 @@ def merge(found: Graph, old: str, new: str, kind: str, name: str, orcid: str) ->
             return URIRef(new + str(node).removeprefix(old))
         return node
 
-    own = records.described(found, old)
+    # The parts of the old record are numbered again under the new record.
+    own = records.blank_parts(records.described(found, old), old)
     merged = records.graph([new])
     if not len(merged):
         merged.add((target, RDF.type, URIRef(kind)))

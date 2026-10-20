@@ -72,15 +72,15 @@ form:SoftwareApplication a sh:NodeShape ;
         sh:description "The contact people. Names and email addresses are shown on the support tab." ] ;
     sh:property [
         sh:path schema:softwareHelp ; sh:group form:documentation ; sh:order 1 ; sh:name "Guides and demos" ;
-        sh:class schema:WebPage ; sh:node form:WebPage ; sh:nodeKind sh:BlankNode ;
+        sh:class schema:WebPage ; sh:node form:WebPage ; sh:nodeKind sh:BlankNodeOrIRI ;
         sh:description "Introductions, tutorials, demos and deployment guides, each with a title." ] ;
     sh:property [
         sh:path schema:subjectOf ; sh:group form:documentation ; sh:order 2 ; sh:name "Used in workflows" ;
-        sh:class schema:WebPage ; sh:node form:WebPage ; sh:nodeKind sh:BlankNode ;
+        sh:class schema:WebPage ; sh:node form:WebPage ; sh:nodeKind sh:BlankNodeOrIRI ;
         sh:description "VHP4Safety workflows and tutorials that use the tool, each with a title." ] ;
     sh:property [
         sh:path schema:video ; sh:group form:documentation ; sh:order 3 ; sh:name "Videos" ;
-        sh:class schema:VideoObject ; sh:node form:VideoObject ; sh:nodeKind sh:BlankNode ;
+        sh:class schema:VideoObject ; sh:node form:VideoObject ; sh:nodeKind sh:BlankNodeOrIRI ;
         sh:description "Videos shown on its page, such as PeerTube ones, each with a title." ] ;
     sh:property [
         sh:path schema:citation ; sh:group form:documentation ; sh:order 4 ; sh:name "Publication to cite" ; sh:maxCount 1 ;

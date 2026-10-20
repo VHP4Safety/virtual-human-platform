@@ -32,10 +32,10 @@ form:ResearchProject a sh:NodeShape ;
         sh:description "Publications and data that name one of its grants are its outputs." ] ;
     sh:property [ sh:path schema:subjectOf ; sh:order 8 ; sh:name "Videos" ; sh:class schema:LearningResource ;
         sh:description "Videos about the project, as training materials." ] ;
-    sh:property [ sh:path schema:image ; sh:order 9 ; sh:name "Figures" ; sh:class schema:ImageObject ; sh:node form:ImageObject ; sh:nodeKind sh:BlankNode ] ;
-    sh:property [ sh:path schema:subOrganization ; sh:order 10 ; sh:name "Research lines" ; sh:class schema:ResearchProject ; sh:node form:ResearchProject ; sh:nodeKind sh:BlankNode ;
+    sh:property [ sh:path schema:image ; sh:order 9 ; sh:name "Figures" ; sh:class schema:ImageObject ; sh:node form:ImageObject ; sh:nodeKind sh:BlankNodeOrIRI ] ;
+    sh:property [ sh:path schema:subOrganization ; sh:order 10 ; sh:name "Research lines" ; sh:class schema:ResearchProject ; sh:node form:ResearchProject ; sh:nodeKind sh:BlankNodeOrIRI ;
         sh:description "Each with its name and what it does." ] ;
-    sh:property [ sh:path schema:member ; sh:order 11 ; sh:name "Partners" ; sh:class schema:OrganizationRole ; sh:node form:OrganizationRole ; sh:nodeKind sh:BlankNode ;
+    sh:property [ sh:path schema:member ; sh:order 11 ; sh:name "Partners" ; sh:class schema:OrganizationRole ; sh:node form:OrganizationRole ; sh:nodeKind sh:BlankNodeOrIRI ;
         sh:description "Each partner organisation with its role, such as coordination." ] ;
     sh:property [ sh:path schema:funder ; sh:order 12 ; sh:name "Co-funders" ; sh:class schema:Organization ] .
 

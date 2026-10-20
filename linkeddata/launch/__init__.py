@@ -8,7 +8,7 @@ belongs to the platform, and later imports keep it unchanged."""
 from pathlib import Path
 
 import yaml
-from rdflib import RDF, BNode, Graph, Literal, URIRef
+from rdflib import RDF, Graph, Literal, URIRef
 
 from admin import writes
 from database import records
@@ -27,7 +27,7 @@ def corrected(found: Graph, correction: dict) -> int:
         to = URIRef(documents.expand(move["to"]))
         for subject, value in list(found.subject_objects(field)):
             # A value, or the part with the value, such as a use of a tool with that text as its item.
-            held = [str(given) for predicate, given in found.predicate_objects(value) if predicate != RDF.type] if isinstance(value, BNode) else [str(value)]
+            held = [str(given) for predicate, given in found.predicate_objects(value) if predicate != RDF.type] if records.is_part(found, value) else [str(value)]
             if set(held) & set(move["values"]):
                 found.remove((subject, field, value))
                 # A text that is an address, such as a website in an email field.

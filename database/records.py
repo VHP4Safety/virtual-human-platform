@@ -148,26 +148,65 @@ def read(records: list[str]) -> Graph:
     return sql_tables.from_tables(found, profile_text())
 
 
+# The address of a part under its record, as rdfsolve gives it (sql_tables.tables with skolem): <record>#<field>-<n>.
+PART = re.compile(r"^(?P<record>[^#]+)#[A-Za-z_][A-Za-z0-9_]*-[0-9]+$")
+
+
+def is_part(found: Graph, node) -> bool:
+    """Return True if a node is a part of a record: a blank node, or a part address with statements in *found*. An
+    outside address of the same form, such as a page section, has no statements."""
+    return isinstance(node, BNode) or (isinstance(node, URIRef) and PART.match(str(node)) is not None and (node, None, None) in found)
+
+
+def blank_parts(found: Graph, record: str) -> Graph:
+    """Return the statements with the part addresses of a record as blank nodes, so that the parts are numbered again
+    under another record, as in a merge."""
+    blanks = {}
+
+    def blank(node):
+        match = PART.match(str(node)) if isinstance(node, URIRef) else None
+        if match and match["record"] == record:
+            return blanks.setdefault(node, BNode())
+        return node
+
+    changed = Graph()
+    for subject, predicate, value in found:
+        changed.add((blank(subject), predicate, blank(value)))
+    return changed
+
+
 def delete(db, record: str) -> None:
     """Delete the rows of a record in the session *db*."""
     for of_table in tables().values():
         db.execute(of_table.delete().where(of_table.c.record == record))
 
 
-def save(db, found: Graph, record: str) -> None:
-    """Replace the rows of a record in the session *db*, with the statements of its parts."""
+def save(db, found: Graph, record: str, before: Graph | None = None) -> None:
+    """Replace the rows of a record in the session *db*, with the statements of its parts.
+
+    Give each part an address under the record (rdfsolve, tables with skolem). A part keeps its address when it is
+    given with it, or when it has the same values as a part of the stored record (*before*, else read here)."""
+    if before is None:
+        before = read([record])
     delete(db, record)
-    for name, frame in sql_tables.tables(found, profile_text(), empty=False).items():
+    for name, frame in sql_tables.tables(found, profile_text(), empty=False, skolem=True, before=before).items():
         frame["record"] = record
         frame.to_sql(name, db.connection(), index=False, if_exists="append")
 
 
 def described(found: Graph, iri: str | BNode) -> Graph:
     """Return the statements of the record at *iri*, or of a node without an address, with the statements of its
-    parts at any depth. Parts are nodes without an address and addresses under the record address
-    (casestudies/kidney/Q1)."""
+    parts at any depth. Parts are nodes without an address, addresses under the record address
+    (casestudies/kidney/Q1), and part addresses (PART)."""
     own = Graph()
     nodes = [iri if isinstance(iri, BNode) else URIRef(iri)]
+    # Part addresses are under the record or under a part with an address, also for parts of parts:
+    # casestudies/kidney#hasPart-1, casestudies/kidney/Q1#hasPart-2.
+    record = str(iri).split("#")[0] if PART.match(str(iri)) else str(iri)
+
+    def owned(value) -> bool:
+        match = PART.match(str(value)) if isinstance(value, URIRef) else None
+        return match is not None and (match["record"] == record or match["record"].startswith(record + "/"))
     seen = set()
     while nodes:
         node = nodes.pop()
@@ -177,7 +216,7 @@ def described(found: Graph, iri: str | BNode) -> Graph:
         for statement in found.triples((node, None, None)):
             own.add(statement)
             value = statement[2]
-            if isinstance(value, BNode) or (isinstance(value, URIRef) and str(value).startswith(str(node) + "/")):
+            if isinstance(value, BNode) or owned(value) or (isinstance(value, URIRef) and str(value).startswith(str(node) + "/")):
                 nodes.append(value)
     return own
 
@@ -186,8 +225,9 @@ def rows(found: Graph, iri: str, kind: str, source: str) -> list[dict]:
     """Return the rows of the records table for a record and its parts with an address, each with a class and a
     name."""
     listed = {iri: kind}
+    # A part address (<record>#<field>-<n>) has no row, as it has no page.
     for subject in described(found, iri).subjects():
-        if isinstance(subject, URIRef) and str(subject) not in listed and found.value(subject, RDF.type) is not None:
+        if isinstance(subject, URIRef) and not PART.match(str(subject)) and str(subject) not in listed and found.value(subject, RDF.type) is not None:
             listed[str(subject)] = str(found.value(subject, RDF.type))
     found_rows = []
     for subject, of_class in listed.items():

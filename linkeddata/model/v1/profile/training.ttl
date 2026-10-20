@@ -41,11 +41,11 @@ form:LearningResource a sh:NodeShape ;
     sh:property [ sh:path schema:datePublished ; sh:order 15 ; sh:name "Published" ; sh:maxCount 1 ; sh:datatype xsd:date ] ;
     sh:property [ sh:path schema:dateModified ; sh:order 16 ; sh:name "Last changed" ; sh:maxCount 1 ; sh:datatype xsd:date ] ;
     sh:property [ sh:path schema:mainEntityOfPage ; sh:order 17 ; sh:name "Web page" ;
-        sh:or ( [ sh:class schema:WebPage ; sh:node form:WebPage ; sh:nodeKind sh:BlankNode ; rdfs:label "Web page" ] [ sh:nodeKind sh:IRI ; rdfs:label "Address" ] ) ;
+        sh:or ( [ sh:class schema:WebPage ; sh:node form:WebPage ; sh:nodeKind sh:BlankNodeOrIRI ; rdfs:label "Web page" ] [ sh:nodeKind sh:IRI ; rdfs:label "Address" ] ) ;
         sh:description "The web page where it is read, with the sections of the page, each at its address. The platform page of the record is added when the record is published." ] ;
-    sh:property [ sh:path schema:hasPart ; sh:order 18 ; sh:name "Files" ; sh:class schema:DigitalDocument ; sh:node form:DigitalDocument ; sh:nodeKind sh:BlankNode ;
+    sh:property [ sh:path schema:hasPart ; sh:order 18 ; sh:name "Files" ; sh:class schema:DigitalDocument ; sh:node form:DigitalDocument ; sh:nodeKind sh:BlankNodeOrIRI ;
         sh:description "Its files, such as slides, notebooks and scripts." ] ;
-    sh:property [ sh:path schema:video ; sh:order 19 ; sh:name "Video" ; sh:maxCount 1 ; sh:class schema:VideoObject ; sh:node form:VideoObject ; sh:nodeKind sh:BlankNode ] ;
+    sh:property [ sh:path schema:video ; sh:order 19 ; sh:name "Video" ; sh:maxCount 1 ; sh:class schema:VideoObject ; sh:node form:VideoObject ; sh:nodeKind sh:BlankNodeOrIRI ] ;
     sh:property [ sh:path schema:isPartOf ; sh:order 20 ; sh:name "Part of" ; sh:class schema:Course ; sh:description "The course it belongs to." ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 21 ; sh:name "DOI and other addresses" ; sh:nodeKind sh:IRI ] ;
     sh:property [ sh:path dct:conformsTo ; sh:order 22 ; sh:name "Conforms to" ; sh:nodeKind sh:IRI ;
@@ -59,7 +59,7 @@ form:Course a sh:NodeShape ;
     sh:property [ sh:path schema:provider ; sh:order 23 ; sh:name "Provider" ;
         sh:or ( [ sh:class schema:Organization ; rdfs:label "Organisation" ] [ sh:class schema:Person ; rdfs:label "Person" ] ) ] ;
     sh:property [ sh:path schema:coursePrerequisites ; sh:order 24 ; sh:name "Prerequisites of the course" ; sh:datatype xsd:string ] ;
-    sh:property [ sh:path schema:hasCourseInstance ; sh:order 25 ; sh:name "Given" ; sh:class schema:CourseInstance ; sh:node form:CourseInstance ; sh:nodeKind sh:BlankNode ;
+    sh:property [ sh:path schema:hasCourseInstance ; sh:order 25 ; sh:name "Given" ; sh:class schema:CourseInstance ; sh:node form:CourseInstance ; sh:nodeKind sh:BlankNodeOrIRI ;
         sh:description "Each time the course was given, with its dates and place." ] .
 
 form:CourseInstance a sh:NodeShape ;

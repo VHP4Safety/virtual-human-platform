@@ -171,6 +171,12 @@ function empty(step) {
 //
 //   stageOf(caseStudy, 0);  // 1
 //   stageOf(step, 2);       // 3 for a step with steps, 5 for a step with only tools and data
+// Return true for a part of a record: a node without an address, or a part address under its record
+// (<record>#<field>-<n>). A part has no page of its own.
+function isPart(id) {
+  return id.startsWith("_:") || /#[A-Za-z_][A-Za-z0-9_]*-[0-9]+$/.test(id);
+}
+
 export function stageOf(page, level) {
   let steps = false;
   for (const child of all(page, level === 0 ? "regulatoryQuestion" : "step")) {
@@ -510,7 +516,7 @@ function parameters(state, page) {
     // not listed again.
     const written = found.map(function (value) { return first(value, "description"); }).filter(Boolean).join(" ");
     found = found.filter(function (value) {
-      const address = value && value["@id"] && !value["@id"].startsWith("_:") ? value["@id"] : "";
+      const address = value && value["@id"] && !isPart(value["@id"]) ? value["@id"] : "";
       return !address || !written.includes("/" + address.split("/").slice(-2).join("/"));
     });
     if (found.length) {
@@ -521,7 +527,7 @@ function parameters(state, page) {
         if (at) {
           line.append(document.createTextNode(", "));
         }
-        const address = value && value["@id"] && !value["@id"].startsWith("_:") ? value["@id"] : "";
+        const address = value && value["@id"] && !isPart(value["@id"]) ? value["@id"] : "";
         const text = first(value, "name") || (address ? address.split("/").pop() : "");
         if (address) {
           const link = make("a", "", text);

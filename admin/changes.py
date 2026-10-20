@@ -54,7 +54,7 @@ def compared(before: Graph, after: Graph, old, new, kind: str | None, names: dic
             "status": status,
             "order": order.get(str(predicate), len(form)),
         }
-        if isinstance(value, BNode) or str(value).startswith(f"{old or new}/"):
+        if records.is_part(graph, value) or str(value).startswith(f"{old or new}/"):
             part = graph.value(value, RDF.type)
             edge["value"] = str(graph.value(value, SDO.name) or "")
             edge["type"] = jsonld_name(str(part)) if part is not None else ""

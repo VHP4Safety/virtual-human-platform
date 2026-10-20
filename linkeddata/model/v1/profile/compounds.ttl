@@ -14,7 +14,7 @@ form:Compound a sh:NodeShape ;
     sh:property [ sh:path schema:alternateName ; sh:order 2 ; sh:name "Other names" ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:description ; sh:order 3 ; sh:name "Description" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:identifier ; sh:order 4 ; sh:name "Identifiers" ;
-        sh:class schema:PropertyValue ; sh:node form:Identifier ; sh:nodeKind sh:BlankNode ] ;
+        sh:class schema:PropertyValue ; sh:node form:Identifier ; sh:nodeKind sh:BlankNodeOrIRI ] ;
     sh:property [ sh:path schema:inChI ; sh:order 5 ; sh:name "InChI" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:inChIKey ; sh:order 6 ; sh:name "InChIKey" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:smiles ; sh:order 7 ; sh:name "SMILES" ; sh:datatype xsd:string ] ;

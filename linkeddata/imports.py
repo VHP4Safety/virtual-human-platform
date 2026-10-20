@@ -218,12 +218,12 @@ def one_record_each(order: list[str]) -> None:
                         key=lambda record: (rank.get(record.source, len(rank)), record.iri))
         for other in listed[1:]:
             if words(other.name) & words(listed[0].name):
-                merge_into(other, listed[0], value)
+                merge_into(other, listed[0], f"same address {value}")
             else:
                 print(f"{other.iri} and {listed[0].iri} have the same address {value} but other names; they are kept apart")
 
 
-def merge_into(other: Record, kept: Record, value: str) -> None:
+def merge_into(other: Record, kept: Record, reason: str) -> None:
     """Merge the record *other* into the record *kept*, for one_record_each. Store the change as a revision of the
     other record."""
     target = URIRef(kept.iri)
@@ -231,8 +231,9 @@ def merge_into(other: Record, kept: Record, value: str) -> None:
     def moved(node):
         return target if node == URIRef(other.iri) else node
 
+    # The parts of the other record are numbered again under the kept record.
     statements = Graph()
-    for subject, predicate, given in records.read([other.iri]):
+    for subject, predicate, given in records.blank_parts(records.read([other.iri]), other.iri):
         statements.add((moved(subject), predicate, moved(given)))
     joined = merge(records.read([kept.iri]), records.described(statements, kept.iri), profile_text()).graph
     if other.name and other.name != kept.name and str(SDO.alternateName) in {field["iri"] for field in fields(kept.type)}:
@@ -256,8 +257,8 @@ def merge_into(other: Record, kept: Record, value: str) -> None:
         row.removed_at, row.moved_to, row.source, row.updated_at = now(), kept.iri, PLATFORM, now()
         for earlier in db.scalars(select(Record).where(Record.moved_to == other.iri)):
             earlier.moved_to = kept.iri
-        db.add(Revision(record_iri=other.iri, action="Merged", previous=previous, name=f"Import: same address {value} as {kept.iri}", orcid=""))
-    print(f"{other.iri}: merged into {kept.iri} (same address {value})")
+        db.add(Revision(record_iri=other.iri, action="Merged", previous=previous, name=f"Import: {reason}", orcid=""))
+    print(f"{other.iri}: merged into {kept.iri} ({reason})")
 
 
 class Refused(Exception):
@@ -275,7 +276,10 @@ def store(source: Source, found: list[tuple[list[dict], Graph]]) -> None:
             raise Refused(f"{len(found)} records given, {before} before; the records are kept")
         written = set(db.scalars(select(Record.iri).where(Record.source != source.name)))
         given = set(db.scalars(select(Record.iri).where(Record.source.not_in([source.name, PLATFORM]), Record.part_of.is_(None))))
-        for iri in db.scalars(select(Record.iri).where(Record.source == source.name, Record.part_of.is_(None))):
+        earlier = list(db.scalars(select(Record.iri).where(Record.source == source.name, Record.part_of.is_(None))))
+        # The parts stored before keep their addresses if they come again with the same values.
+        before = records.read(earlier)
+        for iri in earlier:
             records.delete(db, iri)
         db.execute(delete(Record).where(Record.source == source.name))
         kept = {}
@@ -288,7 +292,7 @@ def store(source: Source, found: list[tuple[list[dict], Graph]]) -> None:
             elif iri not in written:
                 for row in listed:
                     kept[row["iri"]] = row
-                records.save(db, statements, iri)
+                records.save(db, statements, iri, before)
         if kept:
             db.execute(insert(Record), list(kept.values()))
         db.merge(source)

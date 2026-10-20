@@ -6,7 +6,7 @@ from operator import itemgetter
 
 from markdownify import markdownify
 from markupsafe import Markup
-from rdflib import RDF, RDFS, BNode, Graph, Literal, URIRef
+from rdflib import RDF, RDFS, Graph, Literal, URIRef
 from rdflib.namespace import SDO, VOID
 from werkzeug.datastructures import MultiDict
 
@@ -56,14 +56,14 @@ def by_name(item: dict) -> str:
 def node_outline(found: Graph, node, names: dict) -> dict:
     """Return the outline of a node from its statements, with an outline for each part."""
     of_class = str(found.value(node, RDF.type) or "")
-    shown = {"address": None if isinstance(node, BNode) else str(node), "name": str(found.value(node, SDO.name) or ""),
+    shown = {"address": None if records.is_part(found, node) else str(node), "name": str(found.value(node, SDO.name) or ""),
              "kind": kind_of(of_class), "fields": [], "parts": []}
     for field in fields(of_class):
         values = list(found.objects(node, URIRef(field["iri"])))
         if field["iri"] in HEADING or not values or not field["shown"]:
             continue
         # A node without an address is shown as a part, also in a field of links, such as a named input.
-        parts = [value for value in values if field["part"] or isinstance(value, BNode)]
+        parts = [value for value in values if field["part"] or records.is_part(found, value)]
         if parts:
             shown["parts"].append({"label": field["label"], "items": [node_outline(found, part, names) for part in in_order(found, parts)]})
         values = [value for value in values if value not in parts]

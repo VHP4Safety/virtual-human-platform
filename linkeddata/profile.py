@@ -255,6 +255,10 @@ def shape_of(kind: str) -> URIRef | None:
     return profile_graph().value(None, SH.targetClass, URIRef(kind))
 
 
+# The node kinds of a field of parts. A part is stored with an address under its record (database.records.PART).
+PARTS = (SH.BlankNode, SH.BlankNodeOrIRI)
+
+
 @cache
 def fields(kind: str) -> list[dict]:
     """Return the fields of a class.
@@ -297,7 +301,7 @@ def fields(kind: str) -> list[dict]:
                 "classes": classes,
                 "datatype": str(graph.value(field, SH.datatype) or ""),
                 "address": graph.value(field, SH.nodeKind) == SH.IRI,
-                "iris": iris or (bool(classes) and graph.value(field, SH.nodeKind) != SH.BlankNode),
+                "iris": iris or (bool(classes) and graph.value(field, SH.nodeKind) not in PARTS),
                 "pattern": str(graph.value(field, SH.pattern) or ""),
                 "required": graph.value(field, SH.minCount) is not None and graph.value(field, SH.severity) != SH.Warning,
                 "warning": graph.value(field, SH.severity) == SH.Warning,
@@ -305,7 +309,7 @@ def fields(kind: str) -> list[dict]:
                 "recommended": graph.value(field, SH.minCount) is not None and graph.value(field, SH.severity) == SH.Warning,
                 "message": str(graph.value(field, SH.message) or ""),
                 "fixed": fixed,
-                "part": graph.value(field, SH.nodeKind) == SH.BlankNode or (
+                "part": graph.value(field, SH.nodeKind) in PARTS or (
                     graph.value(field, SH.node) is not None and str(graph.value(field, SH["class"])) not in kinds),
                 "addressed": graph.value(field, SH.nodeKind) == SH.IRI,
                 "position": (int(graph.value(group, SH.order) or 0) if group is not None else 0, str(group or ""), int(graph.value(field, SH.order) or 0)),

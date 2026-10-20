@@ -43,7 +43,7 @@ form:Dataset a sh:NodeShape ;
         sh:message "Choose a vocabulary term, or register it; text is kept until then." ] ;
     sh:property [ sh:path schema:identifier ; sh:order 15 ; sh:name "DOI" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
         sh:description "The DOI, as a web address." ] ;
-    sh:property [ sh:path schema:distribution ; sh:order 16 ; sh:name "Files" ; sh:class schema:DataDownload ; sh:node form:DataDownload ; sh:nodeKind sh:BlankNode ;
+    sh:property [ sh:path schema:distribution ; sh:order 16 ; sh:name "Files" ; sh:class schema:DataDownload ; sh:node form:DataDownload ; sh:nodeKind sh:BlankNodeOrIRI ;
         sh:description "Its files, each at its download address, as in the source record." ] .
 
 form:DataDownload a sh:NodeShape ;

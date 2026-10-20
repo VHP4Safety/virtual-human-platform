@@ -24,7 +24,7 @@ form:DataCatalog a sh:NodeShape ;
         sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ; form:publishedAs schema:CreativeWork ;
         sh:message "Choose the licence of the platform records; no licence is stated until then." ] ;
     sh:property [ sh:path schema:subjectOf ; sh:order 7 ; sh:name "Pages about it" ; sh:class schema:WebPage ] ;
-    sh:property [ sh:path void:classPartition ; sh:order 8 ; sh:name "Kinds of records" ; sh:node form:ClassPartition ; sh:nodeKind sh:BlankNode ;
+    sh:property [ sh:path void:classPartition ; sh:order 8 ; sh:name "Kinds of records" ; sh:node form:ClassPartition ; sh:nodeKind sh:BlankNodeOrIRI ;
         sh:description "The name and the description of each kind, as on the home page. The counts are added." ] .
 
 form:ClassPartition a sh:NodeShape ;

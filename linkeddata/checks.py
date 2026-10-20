@@ -52,7 +52,11 @@ PUBLISHED = {RDF.type, SDO.url, SDO.mainEntityOfPage, DCTERMS.conformsTo}
 
 
 def record_of(found: Graph, node):
-    """Return the record of a node: the node if it has an address, else the record above it."""
+    """Return the record of a node: the node if it has an address, else the record above it. A part address
+    (<record>#<field>-<n>) gives its record."""
+    match = records.PART.match(str(node)) if isinstance(node, URIRef) else None
+    if match:
+        return URIRef(match["record"])
     seen = set()
     while isinstance(node, BNode) and node not in seen:
         seen.add(node)
