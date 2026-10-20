@@ -1,27 +1,151 @@
-"""A page of the platform from its record, for its template (templates/records/page.html): its sections by
-position, hidden ones left out, each with its text, figures, videos and items, and the fields it shows of the
-record it presents (form:shows) or, for a grant, the records that name it; and the kinds
-of a term the page explains, named the glossary's way ("Toxicokinetics (Process Flow Step)"). The platform's
-catalogue, for the home page: its kinds of records with their counts, its pages, and its publisher's partners.
-A kind's listing: a page of its records, found by name and filtered by its browsable fields, with counts."""
+"""The content of the record pages, the listings and the home page is made here from the stored records. A record
+is also given in Markdown (RFC 7763, GitHub variant) for readers of plain text."""
 
-from rdflib import RDF, Graph, Literal, URIRef
+from markdownify import markdownify
+from rdflib import RDF, RDFS, BNode, Graph, Literal, URIRef
 from rdflib.namespace import SDO, VOID
 
 from database import records
 from database.tables import Record
-from linkeddata import catalogue, documents, fields, outline, storage
-from linkeddata.model import settings
+from linkeddata import catalogue, documents, fields, storage
+from linkeddata.model import profile, settings
+
+# The name is the heading of a node, and the position sets its order. They are not listed with the fields.
+HEADING = {str(SDO.name), str(SDO.position)}
+# A text in HTML, or a text longer than this, is shown as paragraphs. Other values are shown as a list.
+SHORT = 160
+# Records on one page of a listing.
+LISTED = 12
+MEDIA = "text/markdown; charset=utf-8; variant=GFM"
 
 
 def text(value):
-    """A text for the template: an HTML text as {"@value": ...}, a plain one as it is."""
+    """A text is prepared for a template. An HTML text is given as {"@value": ...}."""
     if isinstance(value, Literal) and value.datatype == RDF.HTML:
         return {"@value": str(value)}
     return str(value) if value is not None else ""
 
 
+def kind_of(of_class: str) -> str:
+    """The label of a class is read from the profile, such as "Workflow page"."""
+    return str(profile().value(fields.shape_of(of_class), RDFS.label) or "")
+
+
+def in_order(found: Graph, nodes) -> list:
+    """Nodes are sorted by position, then by name, then by values. Nodes without a position come last."""
+    def place(node):
+        try:
+            number = float(found.value(node, SDO.position))
+        except (TypeError, ValueError):
+            number = float("inf")
+        return number, str(found.value(node, SDO.name) or ""), sorted(str(value) for value in found.objects(node, None))
+    return sorted(nodes, key=place)
+
+
+def by_name(item: dict) -> str:
+    """Items are sorted by name, without regard to case."""
+    return item["name"].casefold()
+
+
+def node_outline(found: Graph, node, names: dict) -> dict:
+    """The outline of a node is made from its statements. Each part is given as an outline too."""
+    of_class = str(found.value(node, RDF.type) or "")
+    shown = {"address": None if isinstance(node, BNode) else str(node), "name": str(found.value(node, SDO.name) or ""),
+             "kind": kind_of(of_class), "fields": [], "parts": []}
+    for field in fields.of(of_class):
+        values = list(found.objects(node, URIRef(field["iri"])))
+        if field["iri"] in HEADING or not values or not field["shown"]:
+            continue
+        if field["part"]:
+            values = in_order(found, values)
+            shown["parts"].append({"label": field["label"], "items": [node_outline(found, part, names) for part in values]})
+            continue
+        values.sort(key=str)
+        given = []
+        long = False
+        for value in values:
+            if isinstance(value, Literal):
+                given.append({"text": str(value), "html": value.datatype == RDF.HTML})
+                if value.datatype == RDF.HTML or len(str(value)) > SHORT:
+                    long = True
+            else:
+                given.append({"link": str(value), "name": names.get(str(value)) or str(value)})
+        shown["fields"].append({"name": field["name"], "label": field["label"], "values": given, "long": long, "section": field["section"]})
+    return shown
+
+
+def named_on(record: Record) -> dict[str, list[dict]]:
+    """The records that link to a record are found here. They are grouped by the label of the field with the link."""
+    paths = {}
+    for iri, path in catalogue.naming(record.iri):
+        paths.setdefault(iri, []).append(path)
+    found = {}
+    for other in records.kept(list(paths)):
+        if other.iri == record.iri:
+            continue
+        labels = {}
+        for field in fields.of(other.type):
+            labels[field["iri"]] = field["label"]
+        for path in paths[other.iri]:
+            found.setdefault(labels.get(path) or documents.term(path), []).append(
+                {"address": other.iri, "name": other.name or other.iri, "kind": kind_of(other.type)})
+    for listed in found.values():
+        listed.sort(key=by_name)
+    return found
+
+
+def outline(record: Record) -> dict:
+    """The outline of a record is made from its public statements. Private fields are left out."""
+    found = documents.public(storage.graph([record.iri]))
+    links = []
+    for value in found.objects():
+        if isinstance(value, URIRef):
+            links.append(str(value))
+    shown = node_outline(found, URIRef(record.iri), records.names(links))
+    shown["named_on"] = named_on(record)
+    return shown
+
+
+def markdown_lines(found: dict, level: int) -> list[str]:
+    """An outline is written as Markdown blocks. Below the sixth level, a heading is written as a bold line."""
+    title = found["name"] or found["kind"]
+    lines = ["#" * level + " " + title if level <= 6 else f"**{title}**"]
+    if level > 1 and found["kind"]:
+        lines.append(f"_{found['kind']}_" + (f" · <{found['address']}>" if found["address"] else ""))
+    listed = []
+    for field in found["fields"]:
+        values = []
+        for value in field["values"]:
+            if "link" not in value:
+                values.append(markdownify(value["text"], heading_style="ATX", bullets="-").strip() if value["html"] else value["text"].strip())
+            elif value["name"] == value["link"]:
+                values.append(f"<{value['link']}>")
+            else:
+                values.append(f"[{value['name']}]({value['link']})")
+        if field["long"]:
+            lines.append(f"**{field['label']}**\n\n" + "\n\n".join(values))
+        else:
+            listed.append(f"- **{field['label']}:** " + "; ".join(values))
+    if listed:
+        lines.append("\n".join(listed))
+    for group in found["parts"]:
+        for item in group["items"]:
+            lines.extend(markdown_lines(item, level + 1))
+    return lines
+
+
+def markdown(record: Record, formats: dict[str, str], licence: str) -> str:
+    """A record is written in Markdown, with links to its data in other formats and to the licence."""
+    found = outline(record)
+    lines = markdown_lines(found, 1)
+    lines.insert(1, f"<{found['address']}>")
+    data = " · ".join(f"[{name}]({address})" for name, address in formats.items())
+    lines.append(f"---\n\nData: {data}" + (f"  \nLicence: <{licence}>" if licence else ""))
+    return "\n\n".join(lines) + "\n"
+
+
 def figures(found: Graph, node, path) -> list[dict]:
+    """The images of a node are listed with their address and caption."""
     listed = []
     for figure in found.objects(node, path):
         listed.append({"address": str(found.value(figure, SDO.contentUrl) or ""), "caption": str(found.value(figure, SDO.caption) or "")})
@@ -29,6 +153,7 @@ def figures(found: Graph, node, path) -> list[dict]:
 
 
 def videos(found: Graph, node, path) -> list[dict]:
+    """The videos of a node are listed with their name and player address."""
     listed = []
     for video in found.objects(node, path):
         listed.append({"name": str(found.value(video, SDO.name) or ""), "player": str(found.value(video, SDO.embedUrl) or "")})
@@ -36,27 +161,27 @@ def videos(found: Graph, node, path) -> list[dict]:
 
 
 def outputs(grant) -> list[dict]:
-    """The works that name a grant as their funding, such as publications and data, by name, each with its
-    address, name and kind; the projects it funds are left out."""
+    """The works funded by a grant, such as publications and data, are listed by name. Organisations and projects
+    are left out."""
     if grant is None:
         return []
-    holders = set()
+    funded = set()
     for iri, path in catalogue.naming(str(grant)):
         if path == str(SDO.funding):
-            holders.add(iri)
+            funded.add(iri)
     organisations = catalogue.within(str(SDO.Organization))
     listed = []
-    for record in records.kept(sorted(holders)):
+    for record in records.kept(sorted(funded)):
         if record.type in organisations:
             continue
-        listed.append({"address": record.iri, "name": record.name or record.iri, "kind": outline.kind_of(record.type)})
-    listed.sort(key=outline.by_name)
+        listed.append({"address": record.iri, "name": record.name or record.iri, "kind": kind_of(record.type)})
+    listed.sort(key=by_name)
     return listed
 
 
 def shown(found: Graph, part) -> list[dict]:
-    """The fields a section shows (form:shows) of the record it presents, in the order of that record's
-    fields: its texts, its figures and players, its named parts as entries, and its links with their names."""
+    """The fields named by form:shows are read from the record that a section is about. They are given in the field
+    order of the profile."""
     presented = found.value(part, SDO.about)
     properties = list(found.objects(part, URIRef(settings()["prefixes"]["form"] + "shows")))
     if presented is None or not properties:
@@ -74,7 +199,7 @@ def shown(found: Graph, part) -> list[dict]:
     for prop in sorted(properties, key=place):
         entries = []
         links = []
-        for value in outline.in_order(held, held.objects(node, prop)):
+        for value in in_order(held, held.objects(node, prop)):
             if isinstance(value, Literal):
                 blocks.append({"text": text(value)})
             elif isinstance(value, URIRef):
@@ -95,8 +220,8 @@ def shown(found: Graph, part) -> list[dict]:
 
 
 def sections(found: Graph, node) -> list[dict]:
-    """A node's sections by position, hidden ones left out."""
-    parts = outline.in_order(found, found.objects(node, SDO.hasPart))
+    """The sections of a node are listed by position. Hidden sections are left out."""
+    parts = in_order(found, found.objects(node, SDO.hasPart))
     listed = []
     for part in parts:
         if str(found.value(part, SDO.creativeWorkStatus) or "") == "hidden":
@@ -110,8 +235,8 @@ def sections(found: Graph, node) -> list[dict]:
 
 
 def kinds(term: str) -> list[dict]:
-    """The kinds of a term, by address, each with its label without the term's name, an anchor and its
-    definition."""
+    """The kinds of a glossary term are listed with a label, an anchor and a definition. The name of the term is
+    removed from each label."""
     found = records.kinds_of(term)
     statements = storage.graph([kind.iri for kind in found])
     listed = []
@@ -124,6 +249,7 @@ def kinds(term: str) -> list[dict]:
 
 
 def page(record: Record) -> dict:
+    """The content of a platform page is made from its record."""
     found = documents.public(storage.graph([record.iri]))
     node = URIRef(record.iri)
     listed = sections(found, node)
@@ -133,12 +259,8 @@ def page(record: Record) -> dict:
             "kinds": kinds(str(about)) if about is not None else []}
 
 
-# Records on a page of a kind's listing.
-LISTED = 12
-
-
 def kind(of_class: str) -> dict:
-    """A kind's name and description, from the platform's catalogue."""
+    """The name and the description of a kind of records are read from the catalogue record."""
     base = URIRef(settings()["base"])
     found = documents.public(storage.graph([str(base)]))
     for part in found.objects(base, VOID.classPartition):
@@ -148,8 +270,8 @@ def kind(of_class: str) -> dict:
 
 
 def listing(path: str, arguments) -> dict:
-    """A kind's page of records (*arguments*: search, page, and values of browsed fields by their names),
-    with the values of the browsed fields that find records or are chosen, and their counts."""
+    """One page of the records of a kind is made here. The records are found by name and filtered by the browsed
+    fields. The values of these fields are given with their counts."""
     of_class = settings()["kinds"][path]
     given = {"search": arguments.get("search", "").strip()}
     browsed = []
@@ -166,21 +288,16 @@ def listing(path: str, arguments) -> dict:
     counts = catalogue.counted(of_class, given)
     filters = []
     for field in browsed:
-        shown = [value for value in counts[field["name"]] if value["count"] or value["value"] in given[field["name"]]]
-        if shown:
-            filters.append({"name": field["name"], "label": field["label"], "values": shown})
+        values = [value for value in counts[field["name"]] if value["count"] or value["value"] in given[field["name"]]]
+        if values:
+            filters.append({"name": field["name"], "label": field["label"], "values": values})
     query = [(name, value) for name in arguments for value in arguments.getlist(name) if name != "page"]
     return {**kind(of_class), "path": path, "search": given["search"], "chosen": given, "filters": filters, "listed": listed,
             "total": total, "page": number, "pages": (total + LISTED - 1) // LISTED, "query": query}
 
 
-def by_role(partner: dict) -> tuple:
-    """A partner's place: by its role, then by its name."""
-    return partner["role"], outline.by_name(partner)
-
-
 def partners(found: Graph, node) -> list[dict]:
-    """A project's partners by role and name, then its co-funders by name; each with its name, logo and website."""
+    """The partners of an organisation are sorted by role and name. The co-funders follow, sorted by name."""
     held = []
     for role in found.objects(node, SDO.member):
         held.append((str(found.value(role, SDO.roleName) or ""), str(found.value(role, SDO.member) or "")))
@@ -191,20 +308,19 @@ def partners(found: Graph, node) -> list[dict]:
         organisation = URIRef(iri)
         listed.append({"role": role, "name": str(organisations.value(organisation, SDO.name) or iri), "address": iri,
                        "logo": str(organisations.value(organisation, SDO.logo) or ""), "url": str(organisations.value(organisation, SDO.url) or "")})
-    partnered = sorted([one for one in listed if one["role"]], key=by_role)
-    return partnered + sorted([one for one in listed if not one["role"]], key=outline.by_name)
+    partnered = sorted([one for one in listed if one["role"]], key=lambda one: (one["role"], by_name(one)))
+    return partnered + sorted([one for one in listed if not one["role"]], key=by_name)
 
 
 def catalogue_of(record: Record) -> dict:
-    """The platform's catalogue: its names, sentence and description, its kinds of records in order with their
-    counts and addresses, the pages about it, and its publisher's addresses elsewhere and partners."""
+    """The content of the home page is made from the catalogue record of the platform."""
     found = documents.public(storage.graph([record.iri]))
     node = URIRef(record.iri)
     paths = {}
     for name, of_class in settings()["kinds"].items():
         paths[of_class] = name
     kinds = []
-    for part in outline.in_order(found, found.objects(node, VOID.classPartition)):
+    for part in in_order(found, found.objects(node, VOID.classPartition)):
         of_class = str(found.value(part, VOID["class"]) or "")
         kinds.append({"name": str(found.value(part, SDO.name) or ""), "description": text(found.value(part, SDO.description)),
                       "address": "/" + paths.get(of_class, ""), "count": catalogue.page(of_class, {}, "", 0, 1)[0] if of_class in paths else 0})

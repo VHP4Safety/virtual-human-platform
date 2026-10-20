@@ -18,7 +18,7 @@ from rdflib.namespace import SDO
 
 from database import records
 from database.tables import Record
-from linkeddata import catalogue, crates, documents, markdown, outline, pages, void
+from linkeddata import catalogue, crates, documents, pages, void
 from linkeddata.model import settings
 
 FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "application/n-triples"}
@@ -58,8 +58,8 @@ def markdown_of(record: Record) -> Response:
     formats = {}
     for ending, name in FORMAT_NAMES.items():
         formats[name] = record.iri + ending
-    body = markdown.record(outline.outline(record), formats, void.platform()["license"])
-    return Response(body, content_type=markdown.MEDIA, headers={"Vary": "Accept"})
+    body = pages.markdown(record, formats, void.platform()["license"])
+    return Response(body, content_type=pages.MEDIA, headers={"Vary": "Accept"})
 
 
 def listing_page(kind: str):
@@ -226,7 +226,7 @@ def record_page(record: Record):
         found = pages.page(record)
         return render_template("records/page.html", page=found, page_title=f"{found['name']} — VHP4Safety",
                                meta_description=found["description"][:160] or f"{found['name']}, a page of the VHP4Safety Virtual Human Platform.")
-    found = outline.outline(record)
+    found = pages.outline(record)
     first = {}
     for field in found["fields"]:
         first[field["name"]] = field["values"][0]
