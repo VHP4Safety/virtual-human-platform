@@ -107,13 +107,13 @@ header), `text.ttl`, and one file per kind of record with the shapes of its part
 - required fields (`sh:minCount`) and single-valued ones (`sh:maxCount`);
 - values that only warn when they do not fit (`sh:severity sh:Warning`).
 
-Each write is checked against it with pyshacl, with rdfsolve's type checks from the vocabularies. A refused
-write lists each field's problems, in the words of the profile's `sh:message`.
+Each write is checked against it with pyshacl, with rdfsolve's type checks from the vocabularies. The problems
+do not stop a write. They are given as warnings for each field, in the words of the `sh:message` of the profile.
 
 The records are also checked against the official Bioschemas shapes (`sh:shapesGraph` in the header, pinned as
 the vocabularies are). The Bioschemas profile of a class is named on its node shape (`dct:conformsTo`); that
 profile is stated on a record only when every field required by it is given, and the missing fields are noted on
-the quality page. These results never refuse a write. The official schema.org shapes are not used: they are
+the quality page. The official schema.org shapes are not used: they are
 recursive, so pyshacl stops on nested records, and any text is accepted by them for most fields.
 
 The classes of the profile's node shapes with `form:path` are record classes (kinds); each record has its own
@@ -233,7 +233,7 @@ are set by the shapes at `/api/shapes.ttl`. `{kind}` is one of the kinds of the 
 
 Writes:
 
-- are checked against the model's SHACL shapes (`/api/shapes.ttl`);
+- are checked against the model's SHACL shapes (`/api/shapes.ttl`), and are saved with the problems as warnings;
 - need a write token or an editor's login;
 - are refused with `412` when If-Match does not give the record's version (its ETag).
 
@@ -253,9 +253,8 @@ curl -X PUT "https://platform.vhp4safety.nl/api/tools/aop-builder" \
           "url": {"@id": "https://github.com/VHP4Safety/aop-builder"}}'
 ```
 
-- A refused record is answered with `422`, flask-smorest's message, and each field's problems in
-  `errors`.
-- Only web addresses (`https://` or `http://`) are kept as links.
+- A record that does not fit the shapes is saved. The problems of each field are given in `warnings`.
+- A link that is not a web address (`https://` or `http://`) is refused with `422`.
 - An uploaded image (`POST /api/images`, form field `image`) is read in full, scaled to at most 2000
   pixels wide and saved as WebP; other files are refused.
 - A record's changes are at `/changes?record=<address>`.

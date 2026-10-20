@@ -25,17 +25,6 @@ CONSTRAINTS = {
 }
 
 
-class NotFitting(ValueError):
-    """This error is given for a record that does not fit the model. The message tells the problems of each field."""
-
-    def __init__(self, problems: dict[str, list[str]]):
-        messages = []
-        for field, found in problems.items():
-            for message in found:
-                messages.append(f"{field}: {message}")
-        super().__init__(" ".join(messages))
-
-
 def meaning(component: str | None) -> str:
     """The message for a SHACL constraint component is given here."""
     name = (component or "").replace("#", ":").rsplit(":", 1)[-1]
@@ -140,12 +129,6 @@ def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]
         found_in = warnings if warning else problems
         if message not in found_in.setdefault(field, []):
             found_in[field].append(message)
-    # Only web addresses are taken, so a link never runs a script (javascript:) or opens a file.
-    for _, predicate, value in found:
-        if isinstance(value, URIRef) and predicate != RDF.type and not str(value).startswith(("https://", "http://")):
-            field = jsonld_name(str(predicate))
-            if field not in problems:
-                problems[field] = ["Only https:// or http:// addresses."]
     return found, problems, warnings
 
 

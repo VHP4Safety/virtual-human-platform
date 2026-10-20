@@ -60,8 +60,9 @@ def test_api(site):
     bearer = {"Authorization": "Bearer " + tokens.create(ORCID, "Test Editor", ["tools"])}
     created = site.put(NEW, json={"@type": "SoftwareApplication", **FITTING}, headers=bearer)
     assert created.status_code == 201 and "Does T." in site.get(NEW, headers={"Accept": "text/turtle"}).data.decode()
-    refused = site.put(NEW, json={"name": "N", "installUrl": "not a link"}, headers=bearer)
-    assert refused.status_code == 422 and set(refused.json["errors"]) == {"installUrl", "description"}
+    warned = site.put(NEW, json={"name": "N", "installUrl": "not a link"}, headers=bearer)
+    assert warned.status_code == 200 and {"installUrl", "description"} <= set(warned.json["warnings"])
+    assert "not a link" in site.get(NEW, headers={"Accept": "text/turtle"}).data.decode()
     stale = {**bearer, "If-Match": "an older version"}
     assert site.put(NEW, json=FITTING, headers=stale).status_code == 412
     assert site.post("/api/move", json={"record": "tools/new", "to": "tools/renamed"}, headers=bearer).status_code == 200

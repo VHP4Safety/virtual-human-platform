@@ -20,7 +20,7 @@ from routes.record_pages import SERIALIZATIONS, data, markdown_of
 
 DESCRIPTION = """Records are read in JSON-LD, Turtle, N-Triples or Markdown, and written in JSON-LD or Turtle. The JSON-LD
 context of the platform gives the names of the fields. The SHACL shapes at /api/shapes.ttl tell what each field takes. A record that does not fit
-the shapes is refused, with the problems of each field.
+the shapes is saved, and the problems of each field are given as warnings. Only https:// and http:// addresses are taken as links.
 
 Writes need a write token or the login of an editor. The ETag of a record is its version. A write that sends this
 version in If-Match is refused when the record was changed after it. With preview=true, nothing is saved and the
@@ -67,12 +67,13 @@ class Move(Restore):
 
 
 class Done(Schema.from_dict({"@id": fields.String(metadata={"description": "The address (IRI) of the record.", "format": "iri"})})):
-    """The address and the version of the record, the page of the change and the empty recommended fields are
+    """The address and the version of the record, the page of the change and the problems of each field are
     given for a saved change."""
 
     change = fields.String()
     version = fields.String(allow_none=True)
-    warnings = fields.Dict(keys=fields.String(), values=fields.List(fields.String()))
+    warnings = fields.Dict(keys=fields.String(), values=fields.List(fields.String()),
+                           metadata={"description": "The problems of each field. The record is saved with them."})
 
 
 class Image(Schema.from_dict({"@id": fields.String(metadata={"description": "The address (IRI) of the image, for the image field of a record.", "format": "iri"})})):
@@ -181,7 +182,8 @@ def rendered(address: str, found: Graph, kind: str, who) -> Response:
 
 
 def store(address: str, body: dict, preview: bool = False, page: bool = False):
-    """The record in the request body is checked and saved at *address*."""
+    """The record in the request body is checked and saved at *address*. The problems that are found do not stop
+    the save. They are given as warnings."""
     kind = kind_of(address, body)
     if kind is None:
         abort(400, message="Unknown @type.")
@@ -193,20 +195,24 @@ def store(address: str, body: dict, preview: bool = False, page: bool = False):
         found = documents.statements(writes.document(kind, address, body))
     except ValueError as problem:
         abort(422, message=str(problem))
+    # Only web addresses are taken, so a link never runs a script (javascript:) or opens a file.
+    for _, predicate, value in found:
+        if isinstance(value, URIRef) and predicate != RDF.type and not str(value).startswith(("https://", "http://")):
+            abort(422, message=f"{jsonld_name(str(predicate))}: only https:// or http:// addresses.")
     writes.addressed(found)
-    found, problems, warnings = checks.checked(documents.document(found, address))
+    found, warnings, recommended = checks.checked(documents.document(found, address))
+    for path, messages in recommended.items():
+        warnings.setdefault(path, []).extend(messages)
     if preview and page:
         return rendered(address, found, kind, who)
     if preview:
         before = changes.statements(documents.document_of(address))
         labels = {}
-        for path in list(problems) + list(warnings):
+        for path in warnings:
             labels[path] = checks.named(kind, path)
-        return jsonify({**changes.edges(before, found, URIRef(address)), "fields": problems, "warnings": warnings, "labels": labels,
+        return jsonify({**changes.edges(before, found, URIRef(address)), "warnings": warnings, "labels": labels,
                         "document": documents.document(records.with_names(found), address)})
     unchanged(address)
-    if problems:
-        abort(422, message=str(checks.NotFitting(problems)), errors=problems)
     revision = saved(address, found, kind, who)
     return done(address, revision, 201 if revision.action == "Added" else 200, warnings)
 
