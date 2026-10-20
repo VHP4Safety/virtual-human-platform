@@ -498,8 +498,15 @@ function sections(state, page) {
 function parameters(state, page) {
   const list = make("ul", "");
   for (const [name, label] of [["bioschemas:input", "Input"], ["bioschemas:output", "Output"]]) {
-    const found = all(page, name).map(function (value) {
+    let found = all(page, name).map(function (value) {
       return value && typeof value === "object" && value["@id"] ? state.nodes.get(value["@id"]) || value : value;
+    });
+    // A parameter that keeps the HTML of the case study shows it, with its links; the datasets it links are not
+    // listed again.
+    const written = found.map(function (value) { return first(value, "description"); }).filter(Boolean).join(" ");
+    found = found.filter(function (value) {
+      const address = value && value["@id"] && !value["@id"].startsWith("_:") ? value["@id"] : "";
+      return !address || !written.includes("/" + address.split("/").slice(-2).join("/"));
     });
     if (found.length) {
       const line = make("li", "");
@@ -516,6 +523,8 @@ function parameters(state, page) {
           link.href = local(address, state.options);
           opens(link, state.options);
           line.append(link);
+        } else if (first(value, "description")) {
+          line.append(safeHtml(first(value, "description"), state.options));
         } else {
           line.append(document.createTextNode(text));
         }
