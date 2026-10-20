@@ -56,9 +56,12 @@ def node_outline(found: Graph, node, names: dict) -> dict:
         values = list(found.objects(node, URIRef(field["iri"])))
         if field["iri"] in HEADING or not values or not field["shown"]:
             continue
-        if field["part"]:
-            values = in_order(found, values)
-            shown["parts"].append({"label": field["label"], "items": [node_outline(found, part, names) for part in values]})
+        # A node without an address is shown as a part, also in a field of links, such as a named input.
+        parts = [value for value in values if field["part"] or isinstance(value, BNode)]
+        if parts:
+            shown["parts"].append({"label": field["label"], "items": [node_outline(found, part, names) for part in in_order(found, parts)]})
+        values = [value for value in values if value not in parts]
+        if not values:
             continue
         values.sort(key=str)
         given = []
