@@ -71,7 +71,6 @@ line (`linkeddata/__main__.py`) and by `app.py`.
 | | `editor.py` | the editor's data: the records of each kind, and the graph of its forms |
 | | `changes.py` | each change, field by field and as RDF statements |
 | `routes/` | `record_pages.py` | each record's address: its data, 410 Gone once removed, a general record page |
-| | `sources.py` | the `/sources` page |
 | | `records_api.py` | the records API (flask-smorest): each record a graph of the W3C Graph Store Protocol |
 | | `editor.py` | the record editor: forms built by shacl-form from the shapes, written through the records API |
 | | `changes.py` | the `/changes` pages |
