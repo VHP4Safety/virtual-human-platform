@@ -18,7 +18,9 @@
 //                that they can be previewed
 //   onNavigate   called with the address of the page in view, after a click opens another
 //   onPick       called with the page in view, the field, the section ({position, name}) and the value of
-//                what is clicked, such as a section's text; links then open only with Ctrl or Cmd
+//                what is clicked, such as the text of a section. Links are then not opened by a click. A
+//                button to a page opens that page, and onPick is called for the opened page. An icon beside
+//                each tool, method and data button opens the link in a new tab.
 //
 // markField(container, address, field, section) marks what shows a field of a page, such as the one an
 // editor's form is on, and opens that page.
@@ -401,7 +403,17 @@ function buttons(container, state, page, level) {
       button.title = "No record on the platform yet";
     }
     button.append(make("b", "", item.name || "(no name)"));
-    row.append(column(button));
+    const cell = column(button);
+    // When onPick is set, the button is picked, and the link is opened by an icon beside it.
+    if (item.address && state.options.onPick) {
+      const open = make("a", "case-study-open align-self-center", "↗");
+      open.href = local(item.address, state.options);
+      open.target = "_blank";
+      open.rel = "noopener";
+      open.title = "Open in a new tab";
+      cell.append(open);
+    }
+    row.append(cell);
   }
   return row;
 }
@@ -601,10 +613,11 @@ export function renderCaseStudy(container, caseStudy, options) {
     containers += 1;
     state = { id: "case-study-" + containers, path: [], open: new Map() };
     states.set(container, state);
-    // Told after the page's own buttons have done their part, such as opening another page.
+    // Told after the buttons of the page have done their part, such as opening another page. The icon that
+    // opens a link in a new tab is not picked.
     container.addEventListener("click", function (event) {
       const picked = states.get(container);
-      if (!picked.options.onPick || event.ctrlKey || event.metaKey) {
+      if (!picked.options.onPick || event.target.closest(".case-study-open")) {
         return;
       }
       if (event.target.closest("a[href]")) {

@@ -67,6 +67,12 @@
   }
 }
 
+/* The icon beside a tool button in the editor preview, which opens the tool in a new tab */
+.case-study .case-study-open {
+  padding: 0 0.25rem;
+  text-decoration: none;
+}
+
 /* The mark of the field the editor's form is on */
 .case-study-mark {
   outline: 3px solid var(--bs-vhppink);
