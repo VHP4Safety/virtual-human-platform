@@ -1,22 +1,26 @@
-"""The record editor: per kind, a list of records and a form built by shacl-form from the model's shapes,
-which writes through the records API with the editor's login."""
+"""The pages of the record editor are served here. The forms are made by shacl-form from the shapes of the model,
+and the records are written through the records API. The data quality page and the sources page are served here too."""
 
 import json
 
 from flask import Blueprint, Response, abort, redirect, render_template, request, url_for
+from sqlalchemy import func, select
 
+import database
 from admin import editor, writes
 from database import records
-from database.tables import PLATFORM
+from database.tables import PLATFORM, Note, Record, Source
 from linkeddata import checks, fields
+from linkeddata.imports import files_of, specs
 from linkeddata.model import settings
 from routes.account import current_editor, form_token
 
 blueprint = Blueprint("admin", __name__)
+sources_blueprint = Blueprint("sources", __name__)
 
 
 def logged_in(kind: str | None = None):
-    """The requesting editor; 404 for one not allowed to write *kind*."""
+    """The editor of the request is given here. A 404 error is given when the editor may not write records of *kind*."""
     found = current_editor()
     if found is not None and kind is not None and (kind not in settings()["kinds"] or kind not in found.kinds):
         abort(404)
@@ -32,7 +36,7 @@ def admin():
 
 @blueprint.get("/admin/quality")
 def data_quality():
-    """Record completeness, and the checks' notes on imported and written records."""
+    """The data quality page is served here to editors."""
     if logged_in() is None:
         return redirect(url_for("account.login", next=request.path))
     return render_template("records/quality.html", **checks.report(), written=PLATFORM, page_title="Data quality — VHP4Safety editor")
@@ -71,10 +75,34 @@ def edit(kind: str):
 
 @blueprint.get("/admin/form.ttl")
 def form():
-    """The graph the forms are built from: the profile, with the names of records and listed terms."""
+    """The graph for the forms is served here. The profile is given with the names of the records and the listed terms."""
     if logged_in() is None:
         abort(401)
     return Response(editor.form_graph().serialize(format="turtle"), mimetype="text/turtle")
 
 
-
+@sources_blueprint.get("/sources")
+def sources():
+    """The sources are listed with their files, the last import, and the counts of their records and notes."""
+    with database.session() as db:
+        fetched = {source.name: source for source in db.scalars(select(Source))}
+        counts = dict(db.execute(select(Record.source, func.count()).where(Record.removed_at.is_(None)).group_by(Record.source)).all())
+        noted = dict(db.execute(select(Note.source, func.count()).group_by(Note.source)).all())
+    found = []
+    for spec in specs():
+        found.append({
+            "name": spec["name"],
+            "title": spec.get("title", spec["name"]),
+            "files": files_of(spec),
+            "parser": spec["parser"],
+            "fetched": fetched.get(spec["name"]),
+            "records": counts.get(spec["name"], 0),
+            "notes": noted.get(spec["name"], 0),
+        })
+    return render_template(
+        "records/sources.html",
+        sources=found,
+        written=counts.get(PLATFORM, 0),
+        page_title="Sources — VHP4Safety",
+        meta_description="Where the VHP4Safety platform's records come from, and how each source becomes its model.",
+    )
