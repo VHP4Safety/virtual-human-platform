@@ -125,9 +125,12 @@ function parts(state, page, name) {
   return found;
 }
 
-// A page's label on its button: the name of the kind of step it is, a vocabulary term, without the term's
-// own kind in brackets ("Exposure" for "Exposure (Process Flow Step)"), else its own name.
+// The label of a page on its button: its name, else the name of the kind of step it is, a vocabulary term without
+// the kind of term in brackets ("Exposure" for "Exposure (Process Flow Step)").
 function label(state, node) {
+  if (first(node, "name")) {
+    return first(node, "name");
+  }
   for (const value of all(node, "additionalType")) {
     const term = value && typeof value === "object" ? state.nodes.get(value["@id"]) || value : null;
     const name = term ? first(term, "name") : "";
@@ -293,7 +296,7 @@ function breadcrumbs(container, state, found) {
 
 // The process flow. The stage of the page in view is active. The stages of the pages above it are completed,
 // and a click on one of them opens that page. The other stages before the active one are skipped.
-function processFlow(container, state, found) {
+function processFlow(container, state, found, header) {
   const level = found.length - 1;
   const active = stageOf(found[level], level);
   // The level of the page above at each stage; the lowest page is kept.
@@ -301,30 +304,31 @@ function processFlow(container, state, found) {
   for (let at = 0; at < level; at += 1) {
     above[stageOf(found[at], at)] = at;
   }
-  const header = make("div", "workflow-header");
-  header.append(make("h5", "", "Process Flow"));
-  const tracker = make("div", "step-tracker");
-  for (let step = 1; step <= PROCESS_FLOW.length; step += 1) {
-    if (step > 1) {
-      tracker.append(make("div", "step-line"));
+  // The header is drawn once and then only marked, as on the platform, so marks made in it, such as the
+  // glossary's, stay.
+  if (!header) {
+    header = make("div", "workflow-header");
+    header.append(make("h5", "", "Process Flow"));
+    const tracker = make("div", "step-tracker");
+    for (let step = 1; step <= PROCESS_FLOW.length; step += 1) {
+      if (step > 1) {
+        tracker.append(make("div", "step-line"));
+      }
+      const item = make("div", "step-item");
+      item.dataset.step = step;
+      item.append(make("div", "step-icon", String(step)), make("span", "step-text", PROCESS_FLOW[step - 1]));
+      tracker.append(item);
     }
-    const item = make("div", "step-item");
-    item.dataset.step = step;
-    if (step === active) {
-      item.classList.add("active");
-    } else if (above[step] !== undefined) {
-      item.classList.add("completed");
-      item.addEventListener("click", function () {
-        navigate(container, state.path.slice(0, above[step]));
-      });
-    } else if (step < active) {
-      item.classList.add("skipped");
-      item.title = "Skipped: not used on this path";
-    }
-    item.append(make("div", "step-icon", String(step)), make("span", "step-text", PROCESS_FLOW[step - 1]));
-    tracker.append(item);
+    header.append(tracker);
   }
-  header.append(tracker);
+  for (const item of header.querySelectorAll(".step-item")) {
+    const step = Number(item.dataset.step);
+    item.classList.toggle("active", step === active);
+    item.classList.toggle("completed", step !== active && above[step] !== undefined);
+    item.classList.toggle("skipped", step !== active && above[step] === undefined && step < active);
+    item.title = item.classList.contains("skipped") ? "Skipped: not used on this path" : "";
+    item.onclick = item.classList.contains("completed") ? function () { navigate(container, state.path.slice(0, above[step])); } : null;
+  }
   return header;
 }
 
@@ -333,27 +337,32 @@ function processFlow(container, state, found) {
 function items(state, page) {
   const found = [];
   for (const name of ["tool", "supply"]) {
-    const listed = [];
     for (const given of all(page, name)) {
       // A use given by address only, as in flat JSON-LD, is found by its address.
       const part = given && typeof given === "object" && given.item === undefined && given["@id"] ? state.nodes.get(given["@id"]) || given : given;
       const value = part && typeof part === "object" && part.item !== undefined ? all(part, "item")[0] : part;
+      // A use has a label and a description of its own in the case study; else the record names it.
+      const use = part && typeof part === "object" && part.item !== undefined ? part : {};
+      const item = { name: first(use, "name"), description: first(use, "description"), position: number(use), address: "", field: name };
       if (value && typeof value === "object" && value["@id"]) {
         const record = state.nodes.get(value["@id"]) || value;
-        listed.push({ name: first(record, "name") || value["@id"].split("/").pop(), address: value["@id"], field: name });
+        item.name = item.name || first(record, "name") || value["@id"].split("/").pop();
+        item.address = value["@id"];
       } else if (value && typeof value === "object") {
-        listed.push({ name: first(value, "@value"), address: "", field: name });
+        item.name = item.name || first(value, "@value");
       } else {
-        listed.push({ name: String(value), address: "", field: name });
+        item.name = item.name || String(value);
       }
-    }
-    listed.sort(function (one, other) {
-      return one.name.localeCompare(other.name, undefined, { numeric: true });
-    });
-    for (const item of listed) {
       found.push(item);
     }
   }
+  // The uses are in their order in the case study; uses without a position follow, by name.
+  found.sort(function (one, other) {
+    if (one.position !== other.position) {
+      return one.position < other.position ? -1 : 1;
+    }
+    return one.name.localeCompare(other.name, undefined, { numeric: true });
+  });
   return found;
 }
 
@@ -368,18 +377,20 @@ function column(button) {
 function buttons(container, state, page, level) {
   const row = make("div", "row py-3");
   for (const child of children(state, page, level)) {
-    const hidden = empty(child);
+    const disabled = first(child, "creativeWorkStatus") === "disabled";
+    const hidden = empty(child) && !disabled;
     if (hidden && !state.options.openDisabled) {
       continue;
     }
     const button = make("button", "btn w-100 text-white " + BUTTONS[Math.min(level, BUTTONS.length - 1)]);
     button.type = "button";
     button.append(make("b", "", label(state, child) || child["@id"] || "(no name)"));
-    // A question's button has the question under its title.
+    // A question's button has the question under its title; another button has its description.
     if (level === 0 && first(child, "text")) {
       button.append(make("br"), document.createTextNode(first(child, "text")));
+    } else if (first(child, "disambiguatingDescription")) {
+      button.append(make("br"), document.createTextNode(first(child, "disambiguatingDescription")));
     }
-    const disabled = first(child, "creativeWorkStatus") === "disabled";
     if (disabled || hidden) {
       button.classList.add("opacity-25");
     }
@@ -399,7 +410,8 @@ function buttons(container, state, page, level) {
     row.append(column(button));
   }
   for (const item of items(state, page)) {
-    const button = make(item.address ? "a" : "button", "btn w-100 text-white " + ITEMS);
+    // A box shows its label and, below it, its description, in its middle, as a button does.
+    const button = make(item.address ? "a" : "button", "btn w-100 text-white d-flex flex-column justify-content-center " + ITEMS);
     button.dataset.field = item.field;
     button.dataset.value = item.address || item.name || "";
     if (item.address) {
@@ -407,9 +419,13 @@ function buttons(container, state, page, level) {
       opens(button, state.options);
     } else {
       button.type = "button";
-      button.title = "No record on the platform yet";
     }
     button.append(make("b", "", item.name || "(no name)"));
+    if (item.description) {
+      const description = make("span", "");
+      description.append(safeHtml(item.description, state.options));
+      button.append(description);
+    }
     const cell = column(button);
     // When onPick is set, the button is picked, and the link is opened by an icon beside it.
     if (item.address && state.options.onPick) {
@@ -425,7 +441,32 @@ function buttons(container, state, page, level) {
   return row;
 }
 
-// A page's sections as an accordion, in order: the first open on a new page, else those open before.
+// A section of the accordion of a page: its title, and its content when opened.
+function accordionItem(state, accordion, key, title, content, open) {
+  const id = accordion.id + "-" + accordion.children.length;
+  const item = make("div", "accordion-item");
+  const header = make("h2", "accordion-header");
+  const toggle = make("button", "accordion-button" + (open ? "" : " collapsed"), title);
+  toggle.type = "button";
+  toggle.dataset.bsToggle = "collapse";
+  toggle.dataset.bsTarget = "#" + id;
+  toggle.setAttribute("aria-expanded", open ? "true" : "false");
+  toggle.setAttribute("aria-controls", id);
+  header.append(toggle);
+  const body = make("div", "accordion-collapse collapse" + (open ? " show" : ""));
+  body.id = id;
+  body.dataset.key = key;
+  body.dataset.bsParent = "#" + accordion.id;
+  const inner = make("div", "accordion-body");
+  inner.append(content);
+  body.append(inner);
+  item.append(header, body);
+  accordion.append(item);
+  return item;
+}
+
+// A page's sections as an accordion, in order: the first open on a new page, else those open before. The inputs
+// and outputs are the last section, closed, as on the platform's case study pages.
 function sections(state, page) {
   const accordion = make("div", "accordion");
   accordion.id = state.id + "-sections";
@@ -433,51 +474,56 @@ function sections(state, page) {
   const found = parts(state, page, "hasPart").filter(function (section) {
     return first(section, "creativeWorkStatus") !== "hidden" || state.options.openDisabled;
   });
-  for (let count = 0; count < found.length; count += 1) {
+  found.forEach(function (section, count) {
     const key = (page["@id"] || "") + " " + count;
     const open = state.open.has(key) ? state.open.get(key) : count === 0;
-    const id = state.id + "-section-" + count;
-    const item = make("div", "accordion-item" + (first(found[count], "creativeWorkStatus") === "hidden" ? " opacity-50" : ""));
-    item.dataset.position = first(found[count], "position");
-    item.dataset.name = first(found[count], "name");
-    const header = make("h2", "accordion-header");
-    const toggle = make("button", "accordion-button" + (open ? "" : " collapsed"), first(found[count], "name") || "Section " + (count + 1));
-    toggle.type = "button";
-    toggle.dataset.field = "name";
-    toggle.dataset.bsToggle = "collapse";
-    toggle.dataset.bsTarget = "#" + id;
-    toggle.setAttribute("aria-expanded", open ? "true" : "false");
-    toggle.setAttribute("aria-controls", id);
-    header.append(toggle);
-    const body = make("div", "accordion-collapse collapse" + (open ? " show" : ""));
-    body.id = id;
-    body.dataset.key = key;
-    body.dataset.bsParent = "#" + accordion.id;
-    const text = make("div", "accordion-body");
-    text.dataset.field = "text";
-    text.append(safeHtml(first(found[count], "text"), state.options));
-    body.append(text);
-    item.append(header, body);
-    accordion.append(item);
+    const item = accordionItem(state, accordion, key, first(section, "name") || "Section " + (count + 1), safeHtml(first(section, "text"), state.options), open);
+    item.classList.toggle("opacity-50", first(section, "creativeWorkStatus") === "hidden");
+    item.dataset.position = first(section, "position");
+    item.dataset.name = first(section, "name");
+    item.querySelector(".accordion-button").dataset.field = "name";
+    item.querySelector(".accordion-body").dataset.field = "text";
+  });
+  const given = parameters(state, page);
+  if (given) {
+    const key = (page["@id"] || "") + " parameters";
+    accordionItem(state, accordion, key, "Input and resulting output", given, state.open.get(key) || false);
   }
   return accordion;
 }
 
 // A step's inputs and outputs, by name, in a box of their own.
+// The inputs and outputs of a page, as a list for its last section: a dataset links to its page, a named parameter
+// is its name. Null when the page has none.
 function parameters(state, page) {
-  const box = make("div", "case-study-parameters card mb-4");
-  const body = make("div", "card-body py-2");
+  const list = make("ul", "");
   for (const [name, label] of [["bioschemas:input", "Input"], ["bioschemas:output", "Output"]]) {
-    const found = parts(state, page, name);
+    const found = all(page, name).map(function (value) {
+      return value && typeof value === "object" && value["@id"] ? state.nodes.get(value["@id"]) || value : value;
+    });
     if (found.length) {
-      const line = make("div", "");
+      const line = make("li", "");
       line.dataset.field = name.split(":").pop();
-      line.append(make("strong", "", label + ": "), document.createTextNode(found.map(function (part) { return first(part, "name"); }).join("; ")));
-      body.append(line);
+      line.append(make("strong", "", label + ":"), document.createTextNode(" "));
+      found.forEach(function (value, at) {
+        if (at) {
+          line.append(document.createTextNode(", "));
+        }
+        const address = value && value["@id"] && !value["@id"].startsWith("_:") ? value["@id"] : "";
+        const text = first(value, "name") || (address ? address.split("/").pop() : "");
+        if (address) {
+          const link = make("a", "", text);
+          link.href = local(address, state.options);
+          opens(link, state.options);
+          line.append(link);
+        } else {
+          line.append(document.createTextNode(text));
+        }
+      });
+      list.append(line);
     }
   }
-  box.append(body);
-  return body.children.length ? box : null;
+  return list.children.length ? list : null;
 }
 
 // A page: heading, summary, buttons, text, inputs and outputs, and sections. It slides in from its side, as
@@ -485,36 +531,30 @@ function parameters(state, page) {
 function view(container, state, page, level) {
   const shown = make("div", "case-study-page");
   const top = make("div", "container");
-  // A question's page has a heading of its own; the case study's summary is its introduction.
-  let heading = first(page, "name");
+  // A page has a heading of its own, else its name; the case study's summary is its introduction.
+  const heading = first(page, "headline") || first(page, "name");
   let summary = first(page, "description");
   if (level === 0) {
     summary = first(page, "abstract") || summary;
-  } else if (level === 1) {
-    heading = first(page, "headline") || heading;
   }
   const title = make("h1", HEADINGS[Math.min(level, HEADINGS.length - 1)], heading || "(no name)");
-  title.dataset.field = level === 1 ? "headline name" : "name";
+  title.dataset.field = "headline name";
   top.append(title);
-  if (summary) {
-    const introduction = make("p", "text-secondary fs-5", summary);
-    introduction.dataset.field = level === 0 ? "abstract description" : "description";
-    top.append(introduction);
-  }
+  // The summary line is written also when it is empty, as on the platform's case study pages.
+  const introduction = make("p", "text-secondary fs-5", summary);
+  introduction.dataset.field = level === 0 ? "abstract description" : "description";
+  top.append(introduction);
   const row = buttons(container, state, page, level);
   if (row.children.length) {
     top.append(row);
   }
   const bottom = make("div", "container");
-  if (first(page, "text")) {
+  // The question of a question page is on its button on the case study page, not again on its own page.
+  if (level !== 1 && first(page, "text")) {
     const text = make("div", "case-study-text mb-4");
     text.dataset.field = "text";
     text.append(safeHtml(first(page, "text"), state.options));
     bottom.append(text);
-  }
-  const given = parameters(state, page);
-  if (given) {
-    bottom.append(given);
   }
   bottom.append(sections(state, page));
   shown.append(top, bottom);
@@ -639,7 +679,11 @@ function draw(container, sliding) {
     }).observe(shown.lastElementChild);
   }
   shown.children[0].replaceWith(breadcrumbs(container, state, found));
-  shown.children[1].replaceWith(processFlow(container, state, found));
+  const flow = shown.children[1];
+  const header = processFlow(container, state, found, flow.classList.contains("workflow-header") ? flow : null);
+  if (header !== flow) {
+    flow.replaceWith(header);
+  }
   const strip = shown.lastElementChild;
   const panels = Array.from(strip.children);
   for (let at = 0; at <= level; at += 1) {

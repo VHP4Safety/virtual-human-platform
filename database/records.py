@@ -65,6 +65,12 @@ def search(text: str, classes: list[str], within: str = "", parts: bool = True, 
         return list(db.scalars(statement.order_by(func.lower(Record.name), Record.iri).limit(limit)))
 
 
+def parts_of(iri: str) -> list[str]:
+    """The addresses of the records held by a record, such as the questions and steps of a case study."""
+    with database.session() as db:
+        return list(db.scalars(select(Record.iri).where(Record.part_of == iri, Record.removed_at.is_(None))))
+
+
 def latest_change() -> str:
     """The time when a record was last written, removed or moved, in UTC (ISO 8601)."""
     with database.session() as db:

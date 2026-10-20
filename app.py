@@ -2,21 +2,22 @@
 ### Loading the required modules
 import json
 import os
-from functools import lru_cache
 import re
 import secrets
 from datetime import timedelta
+from functools import lru_cache
 
 import nh3
 import requests
 import urllib.parse
-from flask import Flask, abort, g, jsonify, render_template, request, Response, url_for
+from flask import Flask, abort, g, jsonify, redirect, render_template, request, Response, url_for
 from jinja2 import TemplateNotFound
 from markupsafe import Markup
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BaseConverter
 
 # Import BioStudies extractor
+from admin.writes import slug
 from database import records
 from linkeddata import documents, pages, void
 from linkeddata.profile import hierarchy, settings
@@ -329,9 +330,16 @@ def casestudy(case: str = "", question: str = "", step: str = "",
     record = records.get(records.address(f"casestudies/{case}"))
     if record is None:
         abort(404)
+    address = records.address(request.path.strip("/"))
+    # An address as the case study pages of the platform wrote it (/casestudies/kidney/Q1/Exposure/Current_Dose_levels)
+    # is the address of the same page here, compared part by part as written in addresses.
+    if address != record.iri and records.get(address) is None:
+        wanted = [slug(part) for part in address.removeprefix(record.iri + "/").split("/")]
+        for part in records.parts_of(record.iri):
+            if [slug(given) for given in part.removeprefix(record.iri + "/").split("/")] == wanted:
+                return redirect(page_link(part), code=301)
     found = case_outline(record.iri, records.latest_change())
     descriptions = [field["values"][0] for field in found["fields"] if field["name"] == "description"]
-    address = records.address(request.path.strip("/"))
     return render_template(
         "case_studies/casestudy.html",
         case_outline=found,
