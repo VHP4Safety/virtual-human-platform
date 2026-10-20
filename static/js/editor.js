@@ -65,40 +65,6 @@ import { outline, reveal as showPart, select, whenSelected } from "./record-inde
     window.location.search = "?record=" + encodeURIComponent(address);
   }
 
-  // What blocks saving, next to Save: each field by its label path, with a Show button.
-  function showProblems(answer) {
-    const panel = document.getElementById("save-problems");
-    const fields = Object.keys(answer.fields);
-    panel.replaceChildren(make("div", "fw-semibold mb-1", "Not saved: " + fields.length + (fields.length === 1 ? " field to fix" : " fields to fix")));
-    const list = make("ul", "mb-0 ps-3");
-    for (const path of fields) {
-      const item = make("li", "mb-1");
-      item.append(make("span", "fw-semibold", (answer.labels && answer.labels[path]) || path), document.createTextNode(": " + answer.fields[path].join(" ") + " "));
-      const button = make("button", "btn btn-link btn-sm p-0 align-baseline", "Show");
-      button.type = "button";
-      button.addEventListener("click", function () { reveal(path); });
-      item.append(button);
-      list.append(item);
-    }
-    panel.append(list);
-    panel.classList.remove("d-none");
-  }
-
-  // The field's first flagged value, else its first value.
-  function reveal(path) {
-    const term = path.split(" > ").pop();
-    const found = [];
-    for (const instance of form.shadowRoot.querySelectorAll(".property-instance")) {
-      if ((instance.dataset.path || "").split(/[/#]/).pop() === term) {
-        found.push(instance);
-      }
-    }
-    const flagged = found.find(function (instance) { return instance.classList.contains("invalid"); }) || found[0];
-    if (flagged) {
-      showPart(flagged);
-    }
-  }
-
   // The values that saving removes, by label path, from the preview.
   function removals(edges, trail, found) {
     for (const edge of edges) {
@@ -525,14 +491,10 @@ import { outline, reveal as showPart, select, whenSelected } from "./record-inde
       problems.classList.remove("d-none");
     }
 
-    // Saving is decided by the platform's checks; unlike the form's checks, warnings do not block it.
+    // Values that do not fit the model are saved, and shown as warnings; only removals are confirmed.
     async function saved(turtle, working) {
       const preview = await send("PUT", graph + "?preview=true", turtle, "text/turtle", refuse);
       if (!preview) {
-        return false;
-      }
-      if (Object.keys(preview.fields).length) {
-        showProblems(preview);
         return false;
       }
       // Removals are confirmed first.
