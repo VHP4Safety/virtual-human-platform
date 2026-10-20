@@ -20,7 +20,7 @@ from admin import tokens
 from database import export
 from linkeddata.imports import import_all
 from linkeddata.launch import launch
-from linkeddata.model import RELEASE, download_vocabularies, pinned_problems, schema_problems, tables_problems, write_schema, write_tables
+from linkeddata.model import RELEASE, download_vocabularies, schema_problems, tables_problems, write_schema, write_tables
 
 
 def main() -> None:
@@ -38,7 +38,7 @@ def main() -> None:
         print(f"Wrote {write_schema()}")
         print(f"Wrote {write_tables()}")
     elif args.command == "check":
-        problems = pinned_problems()
+        problems = download_vocabularies()
         if not problems:
             problems = schema_problems() + tables_problems()
         if not problems and (database.STATE_DIR / "platform.sqlite").exists():

@@ -9,6 +9,11 @@ __pycache__/
 # Claude
 .claude/
 
+# The pinned vocabularies and shapes, downloaded by python -m linkeddata check; a Wikidata answer changes when
+# an item is edited, so it is kept in the repository.
+linkeddata/model/v1/vocabularies/*
+!linkeddata/model/v1/vocabularies/wikidata-technology-readiness-levels.json
+
 # Distribution / packaging
 .Python
 build/

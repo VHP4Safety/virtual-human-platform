@@ -56,13 +56,13 @@ def settings() -> dict:
 
 
 def vocabularies(config: dict) -> list[Path]:
-    """The RDF vocabulary files of the model folder; only `python -m linkeddata model` downloads them. A pinned
-    file of another format, such as a JSON licence list, is read by its source only."""
+    """The RDF vocabulary files of the model folder; a missing file is downloaded from its pinned address. A
+    pinned file of another format, such as a JSON licence list, is read by its source only."""
     files = []
     for name in config["vocabularies"]:
         path = MODEL_DIR / "vocabularies" / name
         if not path.exists():
-            raise FileNotFoundError(f"{path} is missing: run python -m linkeddata model.")
+            download_vocabularies()
         if path.suffix in (".ttl", ".jsonld"):
             files.append(path)
     return files
@@ -87,7 +87,7 @@ def download_vocabularies() -> list[str]:
     for name, pinned in settings()["vocabularies"].items():
         path = MODEL_DIR / "vocabularies" / name
         if not path.exists():
-            response = requests.get(pinned["url"], timeout=60)
+            response = requests.get(pinned["url"], timeout=60, headers={"User-Agent": "VHP4Safety platform build"})
             response.raise_for_status()
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(response.content)
