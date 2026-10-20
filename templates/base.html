@@ -59,8 +59,8 @@
     <!-- Jmol for molecular visualization -->
     <script src="/static/js/JSmol.min.js"></script>
 
-    <!-- Goatcounter.com, the GDPR-compliant page visit counter -->
-    <script data-goatcounter="https://vhp4safety.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+    <!-- Goatcounter.com, the GDPR-compliant page visit counter. The path is counted without the query string. -->
+    <script data-goatcounter="https://vhp4safety.goatcounter.com/count" data-goatcounter-settings='{"path": {{ request.path|tojson }}}' async src="//gc.zgo.at/count.js"></script>
 
     <!-- Favicon -->
     <link
