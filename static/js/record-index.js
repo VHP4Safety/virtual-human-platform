@@ -12,6 +12,9 @@ const HAS_PART = "https://schema.org/hasPart";
 const TOOL = "https://schema.org/tool";
 const SUPPLY = "https://schema.org/supply";
 const QUESTIONS = "https://vhp4safety.github.io/glossary#VHP0000151";
+// The fields of a case study page that are used at one level only, by that level: the heading of a question page,
+// and the process flow step of a step of a question. At other levels they are left out of the form.
+const ONE_LEVEL = { "https://schema.org/headline": 1, "https://schema.org/additionalType": 2 };
 // The colours of the stages, as the case study pages give them.
 const COLOURS = ["--bs-vhppink-distinct", "--bs-vhpdarkpurple", "--bs-vhpdarkteal", "--bs-vhplightteal", "--bs-vhpblue"];
 // The stages of the process flow, as the case study pages name them.
@@ -197,6 +200,16 @@ export function select(target) {
     element.classList.toggle("focus-hidden", !around && element !== target && !ownField);
   }
   root.classList.toggle("focus-chrome", root !== target);
+  if (caseStudy && !isSection(target)) {
+    const level = way(target).length - 1;
+    for (const [path, only] of Object.entries(ONE_LEVEL)) {
+      for (const field of target.querySelectorAll('.property-instance[data-path="' + path + '"]')) {
+        if (field.closest("shacl-node") === target && only !== level) {
+          field.closest("shacl-property").classList.add("focus-hidden");
+        }
+      }
+    }
+  }
   // Parts with a position are added and ordered in the index, so their own cards are left out of the form.
   for (const path of Object.keys(editor.ordered)) {
     const button = addButton(target, path);

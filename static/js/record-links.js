@@ -8,6 +8,8 @@ const IRI = "http://www.w3.org/ns/shacl#IRI";
 const LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
 const TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 const TARGET = "http://www.w3.org/ns/shacl#targetClass";
+const FIRST = "http://www.w3.org/1999/02/22-rdf-syntax-ns#first";
+const REST = "http://www.w3.org/1999/02/22-rdf-syntax-ns#rest";
 const NAME = "https://schema.org/name";
 const TERM = "https://schema.org/DefinedTerm";
 const IN_SET = "https://schema.org/inDefinedTermSet";
@@ -85,6 +87,9 @@ function query(fields) {
 // text belongs is kept until the text is edited.
 class Text extends Plugin {
   createEditor(template, value) {
+    if (template.in) {
+      return choice(template, value);
+    }
     const datatype = template.datatype ? template.datatype.value : STRING;
     const field = template.config.theme.createTextEditor(template.label, value || null, false, template);
     const shown = field.querySelector(".editor");
@@ -313,8 +318,32 @@ function hold(field, path, entry) {
   return scope;
 }
 
+// A field with a list of values (sh:in), such as the process flow step of a page, is a choice from the list, by
+// the labels of the values, as shacl-form draws it.
+function choice(template, value) {
+  const store = template.config.store;
+  const entries = [];
+  // The list is given by the identifier of its first node; a node without an address is named "_:..." in the store.
+  const start = String(template.in);
+  for (let node = start.includes(":") ? start : "_:" + start; node; ) {
+    const item = store.getObjects(node, FIRST, null)[0];
+    if (!item) {
+      break;
+    }
+    // The label of a vocabulary term, without the kind of term in brackets ("Exposure (Process Flow Step)").
+    const label = (store.getObjects(item, LABEL, null)[0] || item).value.replace(/\s*\([^)]*\)$/, "");
+    entries.push({ value: item, label: label });
+    const rest = store.getObjects(node, REST, null)[0];
+    node = rest && rest.termType !== "NamedNode" ? rest : null;
+  }
+  return template.config.theme.createListEditor(template.label, value || null, false, entries, template);
+}
+
 class RecordLink extends Plugin {
   createEditor(template, value) {
+    if (template.in) {
+      return choice(template, value);
+    }
     // The field's link classes by name, from the profile; text fields, such as tool keywords, have none.
     // A field that offers a link or another value shows the other value, such as an address, as text.
     const linking = template.class || (template.or && !editor.mixed.includes(template.path));

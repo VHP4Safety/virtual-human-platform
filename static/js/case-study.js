@@ -424,12 +424,15 @@ function buttons(container, state, page, level) {
 function sections(state, page) {
   const accordion = make("div", "accordion");
   accordion.id = state.id + "-sections";
-  const found = parts(state, page, "hasPart");
+  // A hidden section is not shown on the website; the preview shows it greyed.
+  const found = parts(state, page, "hasPart").filter(function (section) {
+    return first(section, "creativeWorkStatus") !== "hidden" || state.options.openDisabled;
+  });
   for (let count = 0; count < found.length; count += 1) {
     const key = (page["@id"] || "") + " " + count;
     const open = state.open.has(key) ? state.open.get(key) : count === 0;
     const id = state.id + "-section-" + count;
-    const item = make("div", "accordion-item");
+    const item = make("div", "accordion-item" + (first(found[count], "creativeWorkStatus") === "hidden" ? " opacity-50" : ""));
     item.dataset.position = first(found[count], "position");
     item.dataset.name = first(found[count], "name");
     const header = make("h2", "accordion-header");
