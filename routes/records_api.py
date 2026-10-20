@@ -1,91 +1,87 @@
-"""The platform's API, with flask-smorest, documented at /api/docs/.
-
-Each kind of record has a resource:
-- GET /api/<kind> lists its records a page at a time, found by name (search) or by field values
-  (/api/tools?processFlowStep=<address>), as JSON rows with the profile's field names, or as JSON-LD,
-  Turtle or N-Triples, by the Accept header.
-- GET /api/<kind>/facets counts the records per value of those fields.
-- POST /api/<kind> adds a record, at an address made from its name.
-- GET, PUT and DELETE /api/tools/aopsuite read a record, with its parts, in JSON-LD, Turtle or N-Triples,
-  add or replace it, and remove it. /api/casestudies/kidney/Q1, a case study question, is read with its
-  steps and written with its case study.
-
-A record is written in JSON-LD, with the platform's context names ("name", "url", "processFlowStep", ...,
-"dct:conformsTo" for another vocabulary) or a context of its own, or in Turtle; a link is
-{"@id": "https://..."}. What each field takes is set by the model's SHACL shapes (/api/shapes.ttl); a
-record that does not fit is refused, with each field's problems. Writes need a write token, or an editor's
-login. A record's ETag is its version: a write that sends it in If-Match is refused when the record has
-changed since. With preview=true, nothing is saved; the statements before and after, and each field's
-problems, are given back; with page=true too, the record's page as saved, in HTML.
-"""
+"""The API of the platform is made here with flask-smorest. It is documented at /api/docs/."""
 
 import json
-import re
-from functools import cache
-from urllib.parse import quote
 
 from flask import Response, current_app, g, jsonify, redirect, request, url_for
 from flask_smorest import Api, Blueprint, abort
-from marshmallow import INCLUDE, Schema, fields
-from rdflib import RDF, Graph, Literal, URIRef
-from rdflib.namespace import SDO, XSD
+from marshmallow import INCLUDE, Schema, fields, pre_load
+from rdflib import RDF, Graph, URIRef
+from rdflib.namespace import SDO
 from rdfsolve.ontology.service import PROVIDERS, Ontologies, serving
 from werkzeug.exceptions import RequestEntityTooLarge
 
 import database
 from admin import changes, tokens, writes
 from database import images, records
-from linkeddata import catalogue, checks, documents, fields as model_fields, storage
-from linkeddata.catalogue import browsed
+from linkeddata import catalogue, checks, documents, storage
 from linkeddata.model import RELEASE, settings, shapes
 from routes import account, limiter
 from routes.record_pages import SERIALIZATIONS, data, markdown_of
 
-blueprint = Blueprint("api", __name__, url_prefix="/api", description="Records of each kind, at their page addresses.")
+DESCRIPTION = """Records are read in JSON-LD, Turtle, N-Triples or Markdown, and written in JSON-LD or Turtle. The JSON-LD
+context of the platform gives the names of the fields. The SHACL shapes at /api/shapes.ttl tell what each field takes. A record that does not fit
+the shapes is refused, with the problems of each field.
+
+Writes need a write token or the login of an editor. The ETag of a record is its version. A write that sends this
+version in If-Match is refused when the record was changed after it. With preview=true, nothing is saved and the
+changes are shown."""
+
+blueprint = Blueprint("api", __name__, url_prefix="/api", description="Records of each kind, at the addresses of their pages.")
 limiter.limit("300 per minute")(blueprint)
 TOKEN = [{"token": []}]
+WRITE = {"security": TOKEN, "requestBody": {"content": {"text/turtle": {"schema": {"type": "string"}}}}}
+# Records of a few kinds, as examples of a write.
+EXAMPLES = {
+    "tool": {"summary": "A tool, added with POST /api/tools", "value": {
+        "@type": "SoftwareApplication", "name": "AOP-Builder", "description": "Builds AOPs from the literature.",
+        "url": {"@id": "https://github.com/VHP4Safety/aop-builder"},
+        "processFlowStep": [{"@id": "https://vhp4safety.github.io/glossary#VHP0000156"}]}},
+    "casestudy": {"summary": "A case study with a question, written with PUT /api/casestudies/kidney", "value": {
+        "@type": "bioschemas_draft:Study", "name": "Kidney case study", "description": "To study kidney disease.",
+        "regulatoryQuestion": [{"@type": "HowTo", "name": "Question 1: Cisplatin dose", "position": 1}]}},
+}
 
 
-class Record(Schema.from_dict({"@type": fields.Raw(metadata={"description": "The record's class; needed for a new record."})})):
-    """A record in JSON-LD; what each field takes is set by the SHACL shapes (/api/shapes.ttl)."""
+class Record(Schema.from_dict({"@type": fields.Raw(metadata={"description": "The class of the record. It is needed for a new record."})})):
+    """A record in JSON-LD. The fields are set by the SHACL shapes at /api/shapes.ttl."""
 
     class Meta:
         unknown = INCLUDE
 
 
 class Writing(Schema):
-    preview = fields.Boolean(load_default=False, metadata={"description": "Nothing is saved; the changes are shown."})
-    page = fields.Boolean(load_default=False, metadata={"description": "With preview, the page as saved, in HTML."})
+    preview = fields.Boolean(load_default=False, metadata={"description": "Nothing is saved, and the changes are shown."})
+    page = fields.Boolean(load_default=False, metadata={"description": "With preview, the page is shown in HTML as it will be saved."})
 
 
 class Removal(Schema):
-    permanent = fields.Boolean(load_default=False, metadata={"description": "The address is removed too, for reuse."})
+    permanent = fields.Boolean(load_default=False, metadata={"description": "The address is removed too, so that it can be used again."})
 
 
 class Restore(Schema):
-    record = fields.String(required=True, metadata={"description": "The record's page address, such as tools/aopsuite."})
+    record = fields.String(required=True, metadata={"description": "The page address of the record, such as tools/aopsuite."})
 
 
 class Move(Restore):
-    to = fields.String(required=True, metadata={"description": "The record's new address, such as tools/aop-suite."})
+    to = fields.String(required=True, metadata={"description": "The new address of the record, such as tools/aop-suite."})
 
 
-class Done(Schema.from_dict({"@id": fields.String(metadata={"description": "The record's address (IRI).", "format": "iri"})})):
-    """A saved change: the record's address, the change's page, the record's version, and the empty
-    recommended fields."""
+class Done(Schema.from_dict({"@id": fields.String(metadata={"description": "The address (IRI) of the record.", "format": "iri"})})):
+    """The address and the version of the record, the page of the change and the empty recommended fields are
+    given for a saved change."""
 
     change = fields.String()
     version = fields.String(allow_none=True)
     warnings = fields.Dict(keys=fields.String(), values=fields.List(fields.String()))
 
 
-class Image(Schema.from_dict({"@id": fields.String(metadata={"description": "The image's address (IRI), for a record's image field.", "format": "iri"})})):
+class Image(Schema.from_dict({"@id": fields.String(metadata={"description": "The address (IRI) of the image, for the image field of a record.", "format": "iri"})})):
     pass
 
 
 def kind_of(address: str | None, body: dict) -> str | None:
-    """The kind of the record at an address, or of a new record's @type: the kind of its class, or of a class
-    above it."""
+    """The kind of the record at an address, or of the @type of a new record, is found by its class or by a
+    class above it."""
     record = records.get(address) if address else None
     given = record.type if record is not None else body.get("@type")
     names = {}
@@ -101,7 +97,7 @@ def kind_of(address: str | None, body: dict) -> str | None:
 
 
 def identity(kind: str):
-    """The requester (a token, or a logged-in editor), when allowed to write records of *kind*."""
+    """The token or the logged-in editor of the request is given when it is allowed to write records of *kind*."""
     secret = tokens.bearer(request.headers.get("Authorization", ""))
     if secret is not None:
         return tokens.check(secret, kind)
@@ -109,8 +105,8 @@ def identity(kind: str):
 
 
 def reader(kind: str | None) -> bool:
-    """Whether the request may read private fields, such as email addresses: an editor of the kind, logged in
-    or with a write token. Reading needs no form token, as nothing is changed."""
+    """Private fields, such as email addresses, are read only by an editor of the kind, with a login or a write
+    token. No form token is needed, as nothing is changed."""
     if kind is None:
         return False
     secret = tokens.bearer(request.headers.get("Authorization", ""))
@@ -121,13 +117,13 @@ def reader(kind: str | None) -> bool:
 
 
 def readable(found: Graph, kind: str | None) -> Graph:
-    """The statements as the request may read them: private fields are taken out for visitors."""
+    """Private fields are taken out of the statements for visitors."""
     return found if reader(kind) else documents.public(found)
 
 
 @blueprint.after_request
 def varied(response):
-    """Answers differ for editors, who also read private fields."""
+    """The answers are different for editors, as private fields are read by them too."""
     response.vary.add("Cookie")
     response.vary.add("Authorization")
     return response
@@ -150,7 +146,7 @@ def done(address: str, revision, status: int, warnings: dict | None = None):
 
 
 def unchanged(address: str) -> None:
-    """A write that names the version it read (If-Match) is refused when the record has changed since."""
+    """A write with a version in If-Match is refused when the record was changed after that version."""
     expected = request.headers.get("If-Match", "").strip('" ')
     record = records.get(address)
     if expected and record is not None and record.updated_at != expected:
@@ -164,9 +160,9 @@ def whole(record) -> None:
 
 
 def saved(address: str, found: Graph, kind: str, who):
-    """The record is saved, and the new records it holds are saved on their own."""
+    """The record is saved, and the new records in it are saved apart."""
     created = writes.separate(found)
-    # A record added in another's form, such as a person, needs write access to its own kind.
+    # A new record in the form of another record, such as a person, needs write access to the kind of the new record.
     for _, of_kind, _ in created:
         writer(kind_of(None, {"@type": of_kind}))
     for iri, of_kind, own in created:
@@ -175,7 +171,7 @@ def saved(address: str, found: Graph, kind: str, who):
 
 
 def rendered(address: str, found: Graph, kind: str, who) -> Response:
-    """The record's page as saving makes it, from a copy of the database with the record saved."""
+    """The page of the record is made as it will be after the save, from a copy of the database."""
     with database.copied():
         saved(address, found, kind, who)
         path = "/" + records.path(address)
@@ -185,7 +181,7 @@ def rendered(address: str, found: Graph, kind: str, who) -> Response:
 
 
 def store(address: str, body: dict, preview: bool = False, page: bool = False):
-    """A request body's record is checked and saved at *address*."""
+    """The record in the request body is checked and saved at *address*."""
     kind = kind_of(address, body)
     if kind is None:
         abort(400, message="Unknown @type.")
@@ -215,16 +211,16 @@ def store(address: str, body: dict, preview: bool = False, page: bool = False):
     return done(address, revision, 201 if revision.action == "Added" else 200, warnings)
 
 
-RECORD_FORMATS = {"200": {"description": "The record, in the Accept header's format.", "content": {
-    "application/ld+json": {"schema": {"$ref": "#/components/schemas/Record"}},
-    "text/turtle": {"schema": {"type": "string"}},
-    "application/n-triples": {"schema": {"type": "string"}},
-    "text/markdown": {"schema": {"type": "string"}},
-}}}
+def formats(description: str, *media: str) -> dict:
+    """The answer is documented in each of the formats."""
+    content = {}
+    for name in media:
+        content[name] = {"schema": {"$ref": "#/components/schemas/Record"} if name == "application/ld+json" else {"type": "string"}}
+    return {"200": {"description": description, "content": content}}
 
 
 def found_record(path: str):
-    """The record at a page's address, moved and removed ones too."""
+    """The record at the address of a page is found, also when it was moved or removed."""
     record = records.get(records.address(path))
     if record is None:
         abort(404, message="No record at this address.")
@@ -233,20 +229,19 @@ def found_record(path: str):
 
 class Search(Schema):
     text = fields.String(load_default="", metadata={"description": "Text in the name or address."})
-    of_class = fields.List(fields.Url(metadata={"format": "iri"}), data_key="class", load_default=list, metadata={"description": "Class IRIs of the records or terms; subclasses included."})
-    within = fields.String(load_default="", metadata={"description": "The address start, such as a vocabulary namespace."})
-    vocabulary = fields.Url(load_default="", metadata={"format": "iri", "description": "The vocabulary whose terms are searched."})
+    of_class = fields.List(fields.Url(metadata={"format": "iri"}), data_key="class", load_default=list, metadata={"description": "Class IRIs of the records or terms. Subclasses are included."})
+    within = fields.String(load_default="", metadata={"description": "The start of the address, such as a vocabulary namespace."})
+    vocabulary = fields.Url(load_default="", metadata={"format": "iri", "description": "The terms of this vocabulary are searched."})
     limit = fields.Integer(load_default=20, validate=lambda number: 1 <= number <= 200)
 
 
 class Registry(Schema):
-    text = fields.String(load_default="", metadata={"description": "Text in a vocabulary's or term's name."})
+    text = fields.String(load_default="", metadata={"description": "Text in the name of a vocabulary or a term."})
     namespace = fields.String(load_default="", metadata={"description": "The namespace of the vocabulary searched."})
 
 
 def registered() -> None:
-    """Registries answer editors only (logged in, or with a valid write token), as they are asked on their
-    behalf."""
+    """Registries are asked for editors only, with a login or a valid write token."""
     token = tokens.find(tokens.bearer(request.headers.get("Authorization", "")))
     if account.current_editor() is None and token is None:
         abort(401, message="Login or write token needed.")
@@ -254,7 +249,7 @@ def registered() -> None:
 
 @blueprint.get("/registries")
 def registries():
-    """The vocabulary registries searched by the editor."""
+    """The vocabulary registries searched by the editor are listed."""
     registered()
     return jsonify(PROVIDERS)
 
@@ -262,7 +257,8 @@ def registries():
 @blueprint.get("/registries/<registry>/vocabularies")
 @blueprint.arguments(Registry, location="query")
 def registry_vocabularies(given, registry):
-    """A registry's vocabularies whose identifier or title has the text: title, namespace and description."""
+    """The vocabularies of a registry with the text in their identifier or title are listed. The title, namespace
+    and description of each are given."""
     registered()
     if registry not in PROVIDERS:
         abort(404, message="No such registry.")
@@ -273,8 +269,8 @@ def registry_vocabularies(given, registry):
 @blueprint.get("/registries/terms")
 @blueprint.arguments(Registry, location="query")
 def registry_terms(given):
-    """The terms at a namespace whose names have the text, from the registry that has them: address,
-    label, definition and code."""
+    """The terms in a namespace with the text in their names are listed, from the registry of the namespace. The
+    address, label, definition and code of each term are given."""
     registered()
     if not given["text"].strip() or not given["namespace"]:
         return jsonify({"registry": None, "terms": []})
@@ -291,7 +287,8 @@ def registry_terms(given):
 @blueprint.get("/search")
 @blueprint.arguments(Search, location="query")
 def search(given):
-    """Records, parts and vocabulary terms found by name or address, in JSON-LD: address, class and name."""
+    """Records, parts and vocabulary terms are found by name or address. The address, class and name of each
+    are given in JSON-LD."""
     found = []
     among = catalogue.holders(str(SDO.DefinedTerm), str(SDO.inDefinedTermSet), [given["vocabulary"]]) if given["vocabulary"] else None
     for record in records.search(given["text"], given["of_class"] or list(settings()["kinds"].values()), given["within"], limit=given["limit"], among=among):
@@ -299,215 +296,99 @@ def search(given):
     return jsonify({"@context": documents.context(settings()), "@graph": found})
 
 
-MEDIA = ["application/json", "application/ld+json", *SERIALIZATIONS]
-LINKED = "JSON rows with the profile's field names, or JSON-LD, Turtle, N-Triples or Markdown, by the Accept header."
-
-
 class FacetValue(Schema):
-    value = fields.String(metadata={"description": "The value as in rows and queries: an IRI, or a text of a list."})
-    name = fields.String(metadata={"description": "The record's name or the term's label."})
-    count = fields.Integer(metadata={"description": "The count of found records with it."})
-    fits = fields.Boolean(metadata={"description": "Whether the profile takes it: false for a text where an IRI belongs, or a value off the list."})
+    value = fields.String(metadata={"description": "The value as in records and queries: an IRI, or a text of a list."})
+    name = fields.String(metadata={"description": "The name of the record or the label of the term."})
+    count = fields.Integer(metadata={"description": "The count of found records with the value."})
+    fits = fields.Boolean(metadata={"description": "False for a text where an IRI is needed, or for a value that is not in the list."})
 
 
-# The JSON types of literal datatypes; other datatypes are texts.
-JSON_TYPES = {str(XSD.integer): {"type": "integer"}, str(XSD.boolean): {"type": "boolean"},
-              str(XSD.date): {"type": "string", "format": "date"}, str(XSD.dateTime): {"type": "string", "format": "date-time"}}
+class Query(Schema):
+    search = fields.String(load_default="", metadata={"description": "Text in the name or address of the record, in any case."})
+
+    class Meta:
+        unknown = INCLUDE
+
+    @pre_load
+    def every_value(self, data, **kwargs):
+        """All values of a field filter are kept."""
+        found = {}
+        for name in data:
+            found[name] = data[name] if name in self.fields else data.getlist(name)
+        return found
 
 
-def resource(of_class: str) -> str:
-    """The API resource listing a class's records: its kind's, or the search for the class."""
-    for kind, of_kind in settings()["kinds"].items():
-        if of_kind == of_class:
-            return f"{blueprint.url_prefix}/{kind}"
-    return f"{blueprint.url_prefix}/search?class={quote(of_class, safe=':/')}"
+KIND = "/<any({}):kind>".format(", ".join(settings()["kinds"]))
+LISTED = "The records in JSON-LD (the default), Turtle or N-Triples, by the Accept header."
 
 
-def described(field: dict) -> str:
-    """A field's description: its label, description and values, from the profile."""
-    text = f"{field['label']}. {field['description']}".strip()
-    if field["part"]:
-        return text
-    if field["values"] and field["iris"]:
-        names = records.names(field["values"])
-        listed = []
-        for value in field["values"]:
-            listed.append(f"{names.get(value, value)} ({value})")
-        text += " One of these IRIs: " + "; ".join(listed) + "."
-    elif field["classes"]:
-        listed = []
-        for of_class in field["classes"]:
-            listed.append(f"{documents.term(of_class)} ({of_class}, at {resource(of_class)})")
-        text += " IRIs of records of " + " or ".join(listed) + "."
-    elif field["iris"]:
-        text += " IRIs."
-    # A pattern on a namespace, such as ^https://vhp4safety\.github\.io/glossary#, keeps one vocabulary's terms.
-    namespace = re.sub(r"\\(.)", r"\1", field["pattern"].removeprefix("^"))
-    if field["pattern"].startswith("^") and re.match(field["pattern"], namespace):
-        text += f" Only in the namespace {namespace}."
-    if field["fixed"]:
-        text += " Fixed values: " + ", ".join(field["fixed"]) + "."
-    return text
+@blueprint.route(KIND, methods=["GET"])
+@blueprint.response(200, {"type": "object"}, content_type="application/ld+json", description=LISTED)
+@blueprint.alt_response(200, schema={"type": "string"}, content_type="text/turtle", success=True, description=LISTED)
+@blueprint.alt_response(200, schema={"type": "string"}, content_type="application/n-triples", success=True, description=LISTED)
+@blueprint.arguments(Query, location="query", unknown=INCLUDE)
+@blueprint.paginate(page_size=20, max_page_size=200)
+def listed(given, kind, pagination_parameters):
+    """The records of a kind are listed a page at a time, found by name and by field values.
 
-
-def value_field(field: dict, allow_none: bool = False) -> fields.Field:
-    """One value of a field, as the profile types it: an IRI as an iri-format text, a literal in its JSON
-    type, a list value (sh:in) as an enum, with the field's pattern. The list and pattern are documented, not
-    enforced, so misfitting values are found too; the facets count them apart."""
-    metadata = {}
-    if field["values"]:
-        metadata["enum"] = list(field["values"])
-    if field["pattern"]:
-        metadata["pattern"] = field["pattern"]
-    if field["iris"]:
-        return fields.String(allow_none=allow_none, metadata={"format": "iri", **metadata})
-    if field["datatype"] in JSON_TYPES:
-        return fields.Raw(allow_none=allow_none, metadata={**JSON_TYPES[field["datatype"]], **metadata})
-    return fields.String(allow_none=allow_none, metadata=metadata)
-
-
-def query_schema(of_class: str, in_use: dict) -> type[Schema]:
-    """A catalogue's query: a text, and values of each browsable field, with the most used ones as examples."""
-    found = {"search": fields.String(load_default="", metadata={"description": "Text in the record's name or address, in any case."})}
-    for field in model_fields.of(of_class):
-        if not browsed(field):
-            continue
-        text = described(field) + f" {resource(of_class)}/facets counts the records per value."
-        listed = []
-        examples = []
-        for item in in_use[field["name"]]:
-            if item["count"] and item["fits"] and len(examples) < 10:
-                named = item["value"] if item["name"] == item["value"] else f"{item['name']} ({item['value']})"
-                listed.append(f"{named}: {item['count']}")
-                examples.append([item["value"]])
-        if listed and not field["values"]:
-            text += " The most used values, with record counts: " + "; ".join(listed) + "."
-        metadata = {"description": text}
-        if examples:
-            metadata["examples"] = examples
-        found[field["name"]] = fields.List(value_field(field), metadata=metadata)
-    return Schema.from_dict(found, name=documents.term(of_class).replace(":", "_") + "Query")
-
-
-@cache
-@cache
-def row_schema(of_class: str) -> type[Schema]:
-    """A row of a class's record or part: the profile's fields by JSON-LD name, a list for several values,
-    a value or null for one, typed as the profile types them; parts are rows of their own."""
-    found = {"@id": fields.String(metadata={"description": "The address (IRI) of the record or part.", "format": "iri"})}
-    for field in model_fields.of(of_class):
-        if field["part"] and field["classes"]:
-            value = fields.Nested(lambda of_part=field["classes"][0]: row_schema(of_part)(), allow_none=field["single"])
-        else:
-            value = value_field(field, field["single"])
-        if not field["single"]:
-            value = fields.List(value)
-        value.metadata["description"] = described(field)
-        found[field["name"]] = value
-    return Schema.from_dict(found, name=documents.term(of_class).replace(":", "_"))
-
-
-def row(found: Graph, node, of_class: str) -> dict:
-    """A record, or a part of one, as a row with the profile's field names."""
-    answer = {}
-    if isinstance(node, URIRef):
-        answer["@id"] = str(node)
-    for field in model_fields.of(of_class):
-        values = []
-        for value in found.objects(node, URIRef(field["iri"])):
-            if field["part"] and field["classes"]:
-                values.append(row(found, value, str(found.value(value, RDF.type) or field["classes"][0])))
-            elif isinstance(value, Literal) and isinstance(value.toPython(), (bool, int)):
-                # Numbers and booleans that fit their datatype, such as xsd:integer, are given as such.
-                values.append(value.toPython())
-            else:
-                values.append(str(value))
-        if field["single"]:
-            answer[field["name"]] = values[0] if values else None
-        else:
-            answer[field["name"]] = values
-    return answer
-
-
-def listing(of_class: str):
-    def listed(given, pagination_parameters):
-        total, iris = catalogue.page(of_class, catalogue.filters(of_class, given), given["search"], pagination_parameters.first_item, pagination_parameters.page_size)
-        pagination_parameters.item_count = total
-        found = readable(storage.graph(iris), kind_of(None, {"@type": of_class}))
-        # A kind's page passes on the format it was asked for, also by an ending (/tools.ttl).
-        media = g.get("media") or request.accept_mimetypes.best_match(MEDIA, "application/json")
-        if media == "application/json":
-            return [row(found, URIRef(iri), of_class) for iri in iris]
-        if media == "application/ld+json":
-            documented = []
-            for iri in iris:
-                document = documents.document(found, iri)
-                document.pop("@context", None)
-                documented.append(document)
-            return Response(json.dumps({"@context": documents.context(settings()), "@graph": documented}, indent=1), mimetype=media, headers={"Vary": "Accept"})
+    A field value is given by the name of the field in /api/shapes.ttl, such as
+    /api/tools?processFlowStep=https://vhp4safety.github.io/glossary%23VHP0000156. Several values of one field
+    match any. Several fields match all."""
+    of_class = settings()["kinds"][kind]
+    total, iris = catalogue.page(of_class, catalogue.filters(of_class, given), given["search"], pagination_parameters.first_item, pagination_parameters.page_size)
+    pagination_parameters.item_count = total
+    found = readable(storage.graph(iris), kind)
+    # The format asked for at the page of a kind (/tools) is used, also when it is asked by an ending (/tools.ttl).
+    media = g.get("media") or request.accept_mimetypes.best_match(["application/ld+json", *SERIALIZATIONS], "application/ld+json")
+    if media in SERIALIZATIONS:
         return data(found, media)
-
-    return listed
-
-
-def faceting(of_class: str):
-    def counted(given):
-        return catalogue.counted(of_class, given)
-
-    return counted
+    documented = []
+    for iri in iris:
+        document = documents.document(found, iri)
+        document.pop("@context", None)
+        documented.append(document)
+    return Response(json.dumps({"@context": documents.context(settings()), "@graph": documented}, indent=1), mimetype="application/ld+json", headers={"Vary": "Accept"})
 
 
-def resources() -> None:
-    """Each kind's catalogue, its facets, and the addition of records."""
-    for kind, of_class in settings()["kinds"].items():
-        browsed_fields = [field for field in model_fields.of(of_class) if browsed(field)]
-        query = query_schema(of_class, faceting(of_class)({"search": ""}))
+@blueprint.get(KIND + "/facets")
+@blueprint.arguments(Query, location="query", unknown=INCLUDE)
+@blueprint.response(200, {"type": "object", "additionalProperties": {"type": "array", "items": {"$ref": "#/components/schemas/FacetValue"}}},
+                    description="The values of each field, by the name of the field.")
+def counted(given, kind):
+    """The found records are counted per value of each field that can be browsed, with the query of the list.
 
-        listed = listing(of_class)
-        listed.__doc__ = (f"The {kind}, a page at a time, found by name and field values.\n\n"
-                          "Several values of one field match any; several fields match all.")
-        view = blueprint.paginate(page_size=20, max_page_size=200)(listed)
-        view = blueprint.arguments(query, location="query")(view)
-        for media, schema in {"application/ld+json": {"type": "object"}, "text/turtle": {"type": "string"}, "application/n-triples": {"type": "string"}}.items():
-            view = blueprint.alt_response(200, schema=schema, content_type=media, success=True, description=LINKED)(view)
-        view = blueprint.response(200, row_schema(of_class)(many=True), description=LINKED)(view)
-        blueprint.route(f"/{kind}", endpoint=f"list_{kind}", methods=["GET"], tags=[kind])(view)
+    The filter of a field is not used for the counts of that field, so each count is what that value finds."""
+    return jsonify(catalogue.counted(settings()["kinds"][kind], given))
 
-        counted = faceting(of_class)
-        counted.__doc__ = (f"The count of {kind} found per value of each browsable field.\n\n"
-                           "A field's own filter is left out of its counts, so each count is what that value would find.")
-        facet_schema = Schema.from_dict({field["name"]: fields.List(fields.Nested(FacetValue), metadata={"description": described(field)}) for field in browsed_fields},
-                                        name=documents.term(of_class).replace(":", "_") + "Facets")
-        view = blueprint.response(200, facet_schema)(blueprint.arguments(query, location="query")(counted))
-        blueprint.route(f"/{kind}/facets", endpoint=f"facets_{kind}", methods=["GET"], tags=[kind])(view)
 
-        def added(body, kind=kind):
-            # A record given in Turtle is the node of the kind's class.
-            given = None
-            if request.mimetype == "text/turtle":
-                given = Graph().parse(data=request.get_data(as_text=True), format="turtle")
-                node = given.value(None, RDF.type, URIRef(settings()["kinds"][kind]))
-                body = {"name": str(given.value(node, SDO.name) or "")}
-            # A vocabulary term keeps its own address; other records get one from their name.
-            address = body.get("@id") or writes.free(records.address(f"{kind}/{writes.slug(str(body.get('name') or kind))}"), set())
-            if records.get(address) is not None:
-                abort(409, message="Address taken.")
-            if given is not None:
-                writes.renamed(given, node, address)
-                body = documents.document(given, address)
-            body = {"@type": documents.term(settings()["kinds"][kind]), **body}
-            return store(address, body)
-
-        added.__doc__ = f"Add a record to the {kind}, in JSON-LD or Turtle, at an address made from its name."
-        blueprint.route(f"/{kind}", endpoint=f"add_{kind}", methods=["POST"], tags=[kind])(
-            blueprint.doc(security=TOKEN, requestBody={"content": {"text/turtle": {"schema": {"type": "string"}}}})(
-                blueprint.response(201, Done)(blueprint.arguments(Record)(added))))
+@blueprint.post(KIND)
+@blueprint.arguments(Record, content_type="application/ld+json", examples=EXAMPLES)
+@blueprint.response(201, Done)
+@blueprint.doc(**WRITE)
+def added(body, kind):
+    """A record is added in JSON-LD or Turtle, at an address made from its name."""
+    # A record in Turtle is the node of the class of the kind.
+    given = None
+    if request.mimetype == "text/turtle":
+        given = Graph().parse(data=request.get_data(as_text=True), format="turtle")
+        node = given.value(None, RDF.type, URIRef(settings()["kinds"][kind]))
+        body = {"name": str(given.value(node, SDO.name) or "")}
+    # A vocabulary term is kept at its address. Other records are given an address from their name.
+    address = body.get("@id") or writes.free(records.address(f"{kind}/{writes.slug(str(body.get('name') or kind))}"), set())
+    if records.get(address) is not None:
+        abort(409, message="Address taken.")
+    if given is not None:
+        writes.renamed(given, node, address)
+        body = documents.document(given, address)
+    body = {"@type": documents.term(settings()["kinds"][kind]), **body}
+    return store(address, body)
 
 
 @blueprint.get("/<path:path>")
-@blueprint.doc(responses=RECORD_FORMATS)
+@blueprint.doc(responses=formats("The record, in the format of the Accept header.", "application/ld+json", *SERIALIZATIONS, "text/markdown"))
 def read(path):
-    """A record or part at its page's address, in JSON-LD, Turtle, N-Triples or Markdown, by the Accept header."""
+    """A record or a part is read at the address of its page, in JSON-LD, Turtle, N-Triples or Markdown, by the
+    Accept header."""
     record = found_record(path)
     if record.moved_to:
         return redirect(url_for("api.read", path=records.path(record.moved_to)), code=301)
@@ -525,12 +406,12 @@ def read(path):
 
 @blueprint.put("/<path:path>")
 @blueprint.arguments(Writing, location="query")
-@blueprint.arguments(Record)
-@blueprint.response(200, Done, description="Replaced; with preview=true, the changes it would make.")
+@blueprint.arguments(Record, content_type="application/ld+json", examples=EXAMPLES)
+@blueprint.response(200, Done, description="Replaced. With preview=true, the changes are shown and nothing is saved.")
 @blueprint.alt_response(201, schema=Done, description="Added.")
-@blueprint.doc(security=TOKEN, requestBody={"content": {"text/turtle": {"schema": {"type": "string"}}}})
+@blueprint.doc(**WRITE)
 def replace(given, body, path):
-    """Add or replace the record at its page's address, in JSON-LD or Turtle."""
+    """A record is added or replaced at the address of its page, in JSON-LD or Turtle."""
     address = records.address(path)
     record = records.get(address)
     whole(record)
@@ -546,10 +427,10 @@ def replace(given, body, path):
 @blueprint.response(200, Done, description="Removed.")
 @blueprint.doc(security=TOKEN)
 def remove(given, path):
-    """Remove a record, with its parts.
+    """A record is removed, with its parts.
 
-    Its address then answers 410 Gone and is not reused, unless the removal is permanent. It can be put
-    back with restore."""
+    Then 410 Gone is given at its address, and the address is not used again, unless the removal is permanent.
+    The record can be put back with restore."""
     record = found_record(path)
     if record.removed_at and not given["permanent"]:
         abort(404, message="No record at this address.")
@@ -563,10 +444,10 @@ def remove(given, path):
 
 @blueprint.post("/move")
 @blueprint.arguments(Move)
-@blueprint.response(200, Done, description="Moved; the old address forwards to the new one.")
+@blueprint.response(200, Done, description="Moved. The old address forwards to the new one.")
 @blueprint.doc(security=TOKEN)
 def move(body):
-    """Move a record, with its parts, to a new address; the old one forwards to it."""
+    """A record is moved, with its parts, to a new address. The old address forwards to the new one."""
     record = found_record(body["record"])
     if record.removed_at:
         abort(404, message="No record at this address.")
@@ -584,7 +465,7 @@ def move(body):
 @blueprint.response(200, Done, description="Restored.")
 @blueprint.doc(security=TOKEN)
 def restore(body):
-    """Put back a removed record, with its parts."""
+    """A removed record is put back, with its parts."""
     record = found_record(body["record"])
     if not record.removed_at:
         abort(404, message="No removed record at this address.")
@@ -596,9 +477,9 @@ def restore(body):
 @blueprint.response(201, Image)
 @blueprint.doc(security=TOKEN)
 def upload_image():
-    """Upload an image, such as a tool's logo, as the form field "image".
+    """An image, such as the logo of a tool, is uploaded in the form field "image".
 
-    It is checked and saved as WebP; its address is given in a record's image field."""
+    The image is checked and saved as WebP. Its address is given in the image field of a record."""
     who = None
     for kind in settings()["kinds"]:
         who = who or identity(kind)
@@ -618,34 +499,32 @@ def upload_image():
 
 
 @blueprint.get("/dump")
-@blueprint.doc(responses={"200": {"description": "Every published statement, in N-Triples or Turtle, by the Accept header.", "content": {
-    "application/n-triples": {"schema": {"type": "string"}}, "text/turtle": {"schema": {"type": "string"}}}}})
+@blueprint.doc(responses=formats("Every published statement, in Turtle or N-Triples, by the Accept header.", *SERIALIZATIONS))
 def dump():
-    """Every record with a page, with its parts, as one file; private fields are left out. It is described at
-    /.well-known/void."""
+    """Every record with a page is given with its parts, as one file. Private fields are left out. The file is
+    described at /.well-known/void."""
     media = request.accept_mimetypes.best_match(["application/n-triples", "text/turtle"]) or "application/n-triples"
     return data(documents.published(), media)
 
 
 @blueprint.get("/dump/terms")
-@blueprint.doc(responses={"200": {"description": "The vocabulary terms that the records link to, in N-Triples or Turtle, by the Accept header.", "content": {
-    "application/n-triples": {"schema": {"type": "string"}}, "text/turtle": {"schema": {"type": "string"}}}}})
+@blueprint.doc(responses=formats("The vocabulary terms that the records link to, in Turtle or N-Triples, by the Accept header.", *SERIALIZATIONS))
 def dump_terms():
-    """The vocabulary terms that the records link to, as one file, apart from the records: each vocabulary is their
-    source and licence (/.well-known/void)."""
+    """The vocabulary terms that the records link to are given as one file, apart from the records. The source and
+    licence of the terms are given by each vocabulary (/.well-known/void)."""
     media = request.accept_mimetypes.best_match(["application/n-triples", "text/turtle"]) or "application/n-triples"
     return data(documents.published_terms(), media)
 
 
 @blueprint.get("/shapes.ttl")
-@blueprint.doc(responses={"200": {"description": "The shapes, in Turtle.", "content": {"text/turtle": {"schema": {"type": "string"}}}}})
+@blueprint.doc(responses=formats("The shapes, in Turtle.", "text/turtle"))
 def model_shapes():
-    """The model's SHACL shapes: what each field takes."""
+    """The SHACL shapes of the model tell what each field takes."""
     return Response(shapes().serialize(format="turtle"), mimetype="text/turtle")
 
 
 def register(app) -> None:
-    """The API, with its OpenAPI document at /api/docs/."""
+    """The API is added to the app, with the OpenAPI document at /api/docs/."""
     app.config.update(
         API_TITLE=settings()["title"],
         API_VERSION=RELEASE,
@@ -654,26 +533,10 @@ def register(app) -> None:
         OPENAPI_JSON_PATH="openapi.json",
         OPENAPI_SWAGGER_UI_PATH="/",
         OPENAPI_SWAGGER_UI_URL="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/",
-        API_SPEC_OPTIONS={"info": {"description": __doc__}},
+        API_SPEC_OPTIONS={"info": {"description": DESCRIPTION}},
     )
     api = Api(app)
     api.spec.components.security_scheme("token", {"type": "http", "scheme": "bearer", "description": tokens.__doc__})
     api.spec.components.schema("Record", component={"x-jsonld-context": documents.context(settings())}, schema=Record)
-    # Each row schema gives its class and JSON-LD context (x-jsonld-type, x-jsonld-context), as proposed for
-    # linked data in REST APIs; part schemas come before their class's.
-    named = set()
-
-    def hinted(of_class: str) -> None:
-        name = documents.term(of_class).replace(":", "_")
-        if name in named:
-            return
-        named.add(name)
-        for field in model_fields.of(of_class):
-            if field["part"] and field["classes"]:
-                hinted(field["classes"][0])
-        api.spec.components.schema(name, schema=row_schema(of_class), component={"x-jsonld-type": of_class, "x-jsonld-context": documents.context(settings())})
-
-    for of_class in settings()["kinds"].values():
-        hinted(of_class)
-    resources()
+    api.spec.components.schema("FacetValue", schema=FacetValue)
     api.register_blueprint(blueprint)

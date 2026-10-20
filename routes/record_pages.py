@@ -88,7 +88,7 @@ def negotiate():
     if path in settings()["kinds"] and media != "text/html":
         g.listing = path
         g.media = media
-        return current_app.view_functions[f"api.list_{path}"]()
+        return current_app.view_functions["api.listed"](kind=path)
     # A kind without a page of its own lists its records.
     if path in settings()["kinds"] and request.url_rule is None:
         return listing_page(path)

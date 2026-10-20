@@ -216,24 +216,24 @@ rules:
 
 ## Read and write records
 
-The API is documented at `/api/docs/` (OpenAPI 3.1, by flask-smorest; the record schema carries the
-JSON-LD context as `x-jsonld-context`). Each kind of record has a resource:
+The API is documented at `/api/docs/` (OpenAPI 3.1, by flask-smorest). A record body is JSON-LD with the
+JSON-LD context of the platform (given on the `Record` schema as `x-jsonld-context`), or Turtle; the fields
+are set by the shapes at `/api/shapes.ttl`. `{kind}` is one of the kinds of the profile.
 
-- `GET /api/<kind>` lists its records, found by name (`search`) and by the browsable fields: closed lists
-  (`sh:in`, given as the parameter's enum) and links to records or terms
-  (`/api/tools?processFlowStep=<address>&provider=<address>`). Several values of one field match any;
-  several fields match all. A page is given at a time (`page`, `page_size`, and flask-smorest's
-  `X-Pagination` header), as JSON rows with the profile's field names, or as JSON-LD (`@graph`), Turtle or
-  N-Triples, by the Accept header.
-- `GET /api/<kind>/facets` counts the found records per value of those fields; a field's own filter is
-  left out of its counts. The queries are made in SQL from rdfsolve's layout of the profile
+- `GET /api/{kind}` lists the records of the kind, found by name (`search`) and by field values, by the
+  name of the field (`/api/tools?processFlowStep=<address>&provider=<address>`). Several values of one
+  field match any; several fields match all. A page is given at a time (`page`, `page_size`, and the
+  `X-Pagination` header of flask-smorest), in JSON-LD (`@graph`, the default), Turtle or N-Triples, by the
+  Accept header.
+- `GET /api/{kind}/facets` counts the found records per value of those fields; the filter of a field is
+  not used for its own counts. The queries are made in SQL from the rdfsolve layout of the profile
   (`catalogue.py`).
-- `POST /api/<kind>` adds a record, at an address made from its name (a vocabulary term is at its own
+- `POST /api/{kind}` adds a record, at an address made from its name (a vocabulary term is at its own
   address, given as `@id`).
 - `GET`, `PUT` and `DELETE /api/<address of its page>` (`/api/tools/aop-builder`,
-  `/api/casestudies/kidney/Q1`) read a record in JSON-LD, Turtle or N-Triples, add or replace it, and
-  remove it. `POST /api/move` and `POST /api/restore` move and restore one. A part, such as a case study
-  question, is read at its own address and written with its record.
+  `/api/casestudies/kidney/Q1`) read a record in JSON-LD, Turtle, N-Triples or Markdown, add or replace
+  it, and remove it. `POST /api/move` and `POST /api/restore` move and restore one. A part, such as a case
+  study question, is read at its own address and written with its record.
 - `GET /api/search?text=&class=&within=` finds records, their parts and vocabulary terms by name or
   address, for the editor and the pages.
 
