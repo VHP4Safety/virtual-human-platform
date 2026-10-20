@@ -182,23 +182,23 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         found = headings(text, rst)
         authors, description = opening(text, rst)
         page = SITE + re.sub(r"\.(md|rst)$", ".html", path)
-        row = {"@id": "training/" + slug(name), "@type": "Tutorial", "name": found[0][1] if found else name,
+        row = {"@id": "training/" + slug(name), "@type": "LearningResource", "name": found[0][1] if found else name,
                "description": description, "url": link(page), "mentions": link("tools/" + name),
                "learningResourceType": "tutorial",
                "author": [author(given, others) for given in authors]}
         if follows(found):
-            row["conformsTo"] = link(FORMAT_PAGE)
+            row["dct:conformsTo"] = link(FORMAT_PAGE)
         changes = json.loads(contents.get(path + "#changes", b"[]"))
         if changes:
             row["dateModified"] = {"@value": changes[0]["commit"]["committer"]["date"][:10], "@type": DATE}
         parts = []
         for level, heading in found[1:]:
             if level <= 3 and present(heading):
-                parts.append({"@type": "Section", "name": heading, "url": link(page + "#" + anchor(heading)), "position": len(parts) + 1})
+                parts.append({"@type": "WebPageElement", "name": heading, "url": link(page + "#" + anchor(heading)), "position": len(parts) + 1})
         folder = path.rsplit("/", 1)[0] + "/"
         for entry in tree["tree"]:
             if files is not None and entry["path"].startswith(folder) and entry["path"].endswith(FILES):
-                parts.append({"@type": "File", "name": entry["path"].rsplit("/", 1)[1], "url": link(files + entry["path"])})
+                parts.append({"@type": "DigitalDocument", "name": entry["path"].rsplit("/", 1)[1], "url": link(files + entry["path"])})
         row["hasPart"] = parts
         rows.append(row)
     return rows + list(others.values())

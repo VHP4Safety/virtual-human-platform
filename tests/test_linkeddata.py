@@ -54,6 +54,6 @@ def test_imports(monkeypatch, tmp_path):
     assert (tool.name, documents.stored_values(found, tool.iri, "processFlowStep")) == ("AOP-Builder", [STEP])
     assert records.get(BASE + "people/test-author").name == "Test Author"
     with database.session() as db:
-        assert db.get(Source, "tools").queries.startswith("# title: tools: Tool")
+        assert db.get(Source, "tools").fetched_at
         assert (BASE + "tools/x", "Other") in [(note.iri, note.value) for note in db.scalars(select(Note))]
     assert documents.stored_values(found, BASE + "tools/x", "processFlowStep") == ["Other"]

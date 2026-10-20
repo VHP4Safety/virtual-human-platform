@@ -31,22 +31,22 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         if not content.strip():
             continue
         found = json.loads(content)
-        row = {"@id": iri, "@type": "Publication"}
+        row = {"@id": iri, "@type": "ScholarlyArticle"}
         if present(found.get("title")):
-            row["title"] = marked(found["title"])
+            row["name"] = marked(found["title"])
         date = published(found.get("issued"))
         if date:
-            row["date"] = date
+            row["datePublished"] = date
         journal = found.get("container-title")
         if isinstance(journal, list):
             journal = journal[0] if journal else None
         if present(journal):
-            row["journal"] = {"@type": "Journal", "name": journal}
+            row["isPartOf"] = {"@type": "Periodical", "name": journal}
             issns = []
             for issn in found.get("ISSN") or []:
                 if present(issn):
                     issns.append(issn)
             if issns:
-                row["journal"]["issn"] = issns
+                row["isPartOf"]["issn"] = issns
         rows.append(row)
     return rows

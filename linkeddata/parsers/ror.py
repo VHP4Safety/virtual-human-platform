@@ -24,5 +24,5 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             for name in organization.get("names", []):
                 names.add(plain(name["value"]))
             if item.get("chosen") and plain(item.get("substring", "")) in names:
-                rows.append({"@id": iri, "@type": "Organization", "ror": link(organization["id"])})
+                rows.append({"@id": iri, "sameAs": link(organization["id"])})
     return rows

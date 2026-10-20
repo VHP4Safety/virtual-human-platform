@@ -11,6 +11,10 @@ from linkeddata.parsers import GLOSSARY, link
 
 ITEMS = "https://compoundcloud.wikibase.cloud/entity/"
 WIKIDATA = "http://www.wikidata.org/entity/"
+# The fields of an item that the model takes, by the name rdfsolve gives each after Compound Wiki's property.
+FIELDS = {"label": "name", "alt_label": "alternateName", "short_name": "alternateName", "description": "description", "inchi": "inChI",
+          "inchikey": "inChIKey", "smiles": "smiles", "smiles_without_stereochemistry": "smiles", "chemical_formula": "molecularFormula",
+          "mass": "molecularWeight"}
 # The fields of an item that are identifiers, with the names ROBOT gives their kinds, or else Compound Wiki's.
 IDENTIFIERS = {
     "cas_registry_number": "CAS RN",
@@ -45,20 +49,17 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
     rows = []
     for item in json.loads(contents["items"]):
         key = item["item"].removeprefix(ITEMS)
-        row = dict(item)
-        row["@id"] = f"compound/{key}"
-        row["@type"] = "Compound"
-        row["item"] = link(item["item"])
-        row["same_as"] = []
-        row["identifier"] = []
+        row = {"@id": f"compound/{key}", "@type": "MolecularEntity", "sameAs": [link(item["item"])], "alternateName": [], "identifier": []}
+        for field, name in FIELDS.items():
+            row.setdefault(name, []).extend(item.get(field, []))
         for code in item.get("wikidata_q_identifier", []):
-            row["same_as"].append(link(WIKIDATA + code))
+            row["sameAs"].append(link(WIKIDATA + code))
         if key in listed:
-            row["same_as"].append(link(GLOSSARY + key))
+            row["sameAs"].append(link(GLOSSARY + key))
             if listed[key]["Abbreviation"]:
-                row["abbreviation"] = listed[key]["Abbreviation"]
+                row["alternateName"].append(listed[key]["Abbreviation"])
         for field, kind in IDENTIFIERS.items():
             for value in item.get(field, []):
-                row["identifier"].append({"@type": "Identifier", "kind": kind, "value": value})
+                row["identifier"].append({"@type": "PropertyValue", "propertyID": kind, "value": value})
         rows.append(row)
     return rows

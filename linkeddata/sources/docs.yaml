@@ -8,27 +8,3 @@ documents:
   changes: https://api.github.com/repos/VHP4Safety/vhp4safety-docs/commits?sha=8b798e06a14ef0b71833bc5ec3d4af47544ec0c2&path=
   repository: https://api.github.com/repos/VHP4Safety/vhp4safety-docs
 parser: docs
-
-# The rows of people and organisations are shaped as BioStudies' and take its rules.
-uses: [biostudies]
-rules:
-  Tutorial:
-    - {predicate: a, value: "https://schema.org/LearningResource"}
-    - {predicate: "https://schema.org/name", object: name}
-    - {predicate: "https://schema.org/description", object: description}
-    - {predicate: "https://schema.org/url", object: url}
-    - {predicate: "https://schema.org/mentions", object: mentions}
-    - {predicate: "https://schema.org/author", object: author}
-    - {predicate: "https://schema.org/learningResourceType", object: learningResourceType}
-    - {predicate: "https://schema.org/dateModified", object: dateModified}
-    - {predicate: "https://schema.org/hasPart", object: hasPart}
-    - {predicate: "http://purl.org/dc/terms/conformsTo", object: conformsTo}
-  Section:
-    - {predicate: a, value: "https://schema.org/WebPageElement"}
-    - {predicate: "https://schema.org/name", object: name}
-    - {predicate: "https://schema.org/url", object: url}
-    - {predicate: "https://schema.org/position", object: position}
-  File:
-    - {predicate: a, value: "https://schema.org/DigitalDocument"}
-    - {predicate: "https://schema.org/name", object: name}
-    - {predicate: "https://schema.org/url", object: url}

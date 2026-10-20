@@ -35,35 +35,35 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
     for key, entry in index.items():
         detail = json.loads(contents[key]) if key in contents else {}
         instance = detail.get("instance") if isinstance(detail.get("instance"), dict) else {}
-        row = {"@id": "tools/" + entry["id"], "@type": "Tool", "service": entry["service"]}
+        row = {"@id": "tools/" + entry["id"], "@type": "SoftwareApplication", "name": entry["service"]}
         if present(entry.get("description")):
             row["description"] = entry["description"]
         if present(detail.get("url") or entry.get("main_url")):
-            row["main_url"] = web_link(detail.get("url") or entry["main_url"])
+            row["url"] = web_link(detail.get("url") or entry["main_url"])
         if present(instance.get("url")) and instance.get("url") != detail.get("url"):
-            row["instance_url"] = web_link(instance["url"])
+            row["installUrl"] = web_link(instance["url"])
         logo = entry.get("png_file_name")
         if present(logo) and logo != PLACEHOLDER_LOGO:
-            row["logo"] = link(LOGOS + logo)
+            row["image"] = link(LOGOS + logo)
         # The stage is a process flow step, and the substage a topic.
         if present(detail.get("stage") or entry.get("stage")):
-            row["step"] = web_link(detail.get("stage") or entry["stage"])
+            row["processFlowStep"] = web_link(detail.get("stage") or entry["stage"])
         if present(detail.get("substage")):
-            row["topic"] = term(detail["substage"], "glossary")
+            row["about"] = term(detail["substage"], "glossary")
         # Regulatory questions are yes/no flags named by their codes.
         questions = []
         for flag, question in QUESTIONS.items():
             if str(entry.get(flag)).lower() == "true":
                 questions.append(link(question))
         if questions:
-            row["questions"] = questions
+            row["regulatoryQuestion"] = questions
         if present(detail.get("doi")):
             cited = publication(detail["doi"])
             if cited:
                 others.setdefault(cited["@id"], cited)
-                row["doi"] = link(cited["@id"])
+                row["citation"] = link(cited["@id"])
             else:
-                row["doi"] = detail["doi"]
+                row["citation"] = detail["doi"]
         elsewhere = []
         elixir = detail.get("ELIXIR") if isinstance(detail.get("ELIXIR"), dict) else {}
         other = detail.get("Other") if isinstance(detail.get("Other"), dict) else {}
@@ -77,11 +77,11 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         if present(other.get("rsd")):
             elsewhere.append(link("https://research-software-directory.org/software/" + str(other["rsd"]).strip()))
         if elsewhere:
-            row["same_as"] = elsewhere
+            row["sameAs"] = elsewhere
         if present(elixir.get("tess")):
-            row["tess"] = elixir["tess"]
+            row["keywords"] = elixir["tess"]
         if present(instance.get("version")):
-            row["version"] = str(instance["version"])
+            row["softwareVersion"] = str(instance["version"])
         notes = detail.get("notes") if isinstance(detail.get("notes"), dict) else {}
         written_license = instance.get("license") or detail.get("license") or notes.get("license")
         if present(written_license):
@@ -91,7 +91,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             if present(address) and web_link(address) not in sources:
                 sources.append(web_link(address))
         if sources:
-            row["source"] = sources
+            row["isBasedOn"] = sources
         downloads = []
         if present(instance.get("docker")):
             downloads.append(web_link(instance["docker"]))
@@ -101,22 +101,22 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             if present(address):
                 downloads.append(web_link(address))
         if downloads:
-            row["downloads"] = downloads
+            row["downloadUrl"] = downloads
         # A readiness level is written as TRL 4, TRL4, "TRL 8 - <meaning>" or a number.
         if present(instance.get("TRL")):
             level = re.match(r"(?:TRL[\s-]*)?([1-9])\b", str(instance["TRL"]).strip(), re.IGNORECASE)
-            row["trl"] = term("TRL " + level.group(1), "trl") if level else str(instance["TRL"])
+            row["creativeWorkStatus"] = term("TRL " + level.group(1), "trl") if level else str(instance["TRL"])
         if present(detail.get("release_notes")):
-            row["release_notes"] = detail["release_notes"]
+            row["releaseNotes"] = detail["release_notes"]
         help_pages = pairs(detail.get("intro")) + pairs(detail.get("demo"))
         deployment = detail.get("deployment_docs") or instance.get("deployment_docs")
         if present(deployment) and str(deployment).startswith(("http://", "https://")):
             help_pages.append(("Deployment guide", str(deployment)))
-        for kind, field, found in (("Page", "help", help_pages),
-                                   ("Page", "workflows", pairs(detail.get("workflow")) + pairs(detail.get("workflow2"))),
-                                   ("Video", "videos", pairs(detail.get("peertube")))):
+        for kind, address_field, field, found in (("WebPage", "url", "softwareHelp", help_pages),
+                                                  ("WebPage", "url", "subjectOf", pairs(detail.get("workflow")) + pairs(detail.get("workflow2"))),
+                                                  ("VideoObject", "embedUrl", "video", pairs(detail.get("peertube")))):
             if found:
-                row[field] = [{"@type": kind, "title": title, "url": link(address)} for title, address in found]
+                row[field] = [{"@type": kind, "name": title, address_field: link(address)} for title, address in found]
         provider = detail.get("provider") if isinstance(detail.get("provider"), dict) else {}
         providers = []
         if present(provider.get("name")):

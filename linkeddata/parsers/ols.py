@@ -37,15 +37,15 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         ontology = ontologies.get(term["ontology_name"], {})
         vocabulary = "vocabularies/" + term["ontology_name"]
         if vocabulary not in rows:
-            rows[vocabulary] = {"@id": vocabulary, "@type": "Vocabulary", "name": ontology.get("title") or term["ontology_name"],
-                                "namespace": namespace_of(iri, ontology), "home": link(OLS + term["ontology_name"])}
+            rows[vocabulary] = {"@id": vocabulary, "@type": "DefinedTermSet", "name": ontology.get("title") or term["ontology_name"],
+                                "void:uriSpace": namespace_of(iri, ontology), "url": link(OLS + term["ontology_name"])}
             if present(ontology.get("description")):
                 rows[vocabulary]["description"] = ontology["description"]
-        row = {"@id": iri, "@type": "Term", "code": term.get("obo_id") or term.get("short_form"), "vocabulary": link(vocabulary)}
+        row = {"@id": iri, "@type": "DefinedTerm", "termCode": term.get("obo_id") or term.get("short_form"), "inDefinedTermSet": link(vocabulary)}
         if present(term.get("label")):
-            row["label"] = term["label"]
+            row["name"] = term["label"]
         for definition in term.get("description") or []:
-            if present(definition) and "definition" not in row:
-                row["definition"] = definition
+            if present(definition) and "description" not in row:
+                row["description"] = definition
         rows[iri] = row
     return list(rows.values())

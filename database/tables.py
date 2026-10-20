@@ -81,14 +81,13 @@ class Image(Base):
 
 
 class Source(Base):
-    """A source as its last import fetched it, with the rdfsolve queries that convert it."""
+    """A source as its last import fetched it."""
 
     __tablename__ = "sources"
     name: Mapped[str] = mapped_column(primary_key=True, doc="The source's name.")
     url: Mapped[str] = mapped_column(doc="The addresses of its files, separated by spaces.")
     fetched_at: Mapped[str] = mapped_column(doc="The last fetch, in UTC (ISO 8601).")
     sha256: Mapped[str] = mapped_column(doc="The SHA-256 of the last fetched files.")
-    queries: Mapped[str] = mapped_column(doc="The rdfsolve CONSTRUCT queries that convert it into the model.")
     problem: Mapped[str | None] = mapped_column(doc="Why the last import was not stored, if so.")
 
 

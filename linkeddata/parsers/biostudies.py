@@ -67,29 +67,30 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             continue
         study = json.loads(content)
         section = study.get("section") or {}
-        row = {"@id": "data/" + key, "@type": "Dataset", "page": link(STUDIES + key)}
+        row = {"@id": "data/" + key, "@type": "Dataset", "isBasedOn": link(STUDIES + key)}
         for attribute in (study.get("attributes") or []) + (section.get("attributes") or []):
             name = attribute.get("name")
             if not present(attribute.get("value")):
                 continue
             if name == "Title":
-                row["title"] = attribute["value"]
+                row["name"] = attribute["value"]
             elif name == "Description":
                 row["description"] = attribute["value"]
             elif name == "ReleaseDate":
-                row["published"] = {"@value": attribute["value"], "@type": DATE}
+                row["datePublished"] = {"@value": attribute["value"], "@type": DATE}
             elif name == "DOI":
-                row["doi"] = link("https://doi.org/" + attribute["value"])
+                row["sameAs"] = link("https://doi.org/" + attribute["value"])
+                row["identifier"] = link("https://doi.org/" + attribute["value"])
             elif name == "Regulatory Question":
                 # The code names the question; the address next to it is sometimes the case study's.
                 code = attribute["value"]
-                row.setdefault("questions", []).append(link(QUESTIONS[code]) if code in QUESTIONS else value_of(attribute))
+                row.setdefault("regulatoryQuestion", []).append(link(QUESTIONS[code]) if code in QUESTIONS else value_of(attribute))
             elif name == "Case study":
-                row.setdefault("cases", []).append(value_of(attribute))
+                row.setdefault("isPartOf", []).append(value_of(attribute))
             elif name == "Process Flow Step":
-                row.setdefault("steps", []).append(value_of(attribute))
+                row.setdefault("processFlowStep", []).append(value_of(attribute))
             elif name == "Organism":
-                row.setdefault("topics", []).append(value_of(attribute))
+                row.setdefault("about", []).append(value_of(attribute))
             elif name == "License":
                 stated = value_of(attribute)
                 row["license"] = licence(stated["@id"] if isinstance(stated, dict) else stated)
@@ -97,9 +98,9 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 found = value_of(attribute)
                 # An assay that links to a method's page is that method.
                 if isinstance(found, dict) and found["@id"].startswith(PLATFORM + "methods/"):
-                    row.setdefault("methods", []).append(link(found["@id"].removeprefix(PLATFORM)))
+                    row.setdefault("measurementMethod", []).append(link(found["@id"].removeprefix(PLATFORM)))
                 else:
-                    row.setdefault("assays", []).append(found)
+                    row.setdefault("measurementTechnique", []).append(found)
         organisations = {}
         for part in sections(section):
             values = given(part)
@@ -107,7 +108,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 organisation = "organizations/" + slug(values["Name"])
                 others.setdefault(organisation, {"@id": organisation, "@type": "Organization", "name": values["Name"]})
                 if present(values.get("RORID")):
-                    others[organisation]["same_as"] = web_link(values["RORID"])
+                    others[organisation]["sameAs"] = web_link(values["RORID"])
                 organisations[part.get("accno")] = organisation
         for part in sections(section):
             values = given(part)
@@ -117,14 +118,14 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 if present(values.get("E-mail")):
                     found["email"] = values["E-mail"]
                 if present(values.get("ORCID")):
-                    found["same_as"] = link("https://orcid.org/" + values["ORCID"])
+                    found["sameAs"] = link("https://orcid.org/" + values["ORCID"])
                 if values.get("affiliation") in organisations:
                     found["affiliation"] = link(organisations[values["affiliation"]])
-                row.setdefault("creators", []).append(link(person))
+                row.setdefault("creator", []).append(link(person))
             elif str(part.get("type")).lower() == "publication" and present(values.get("DOI")):
                 cited = publication(values["DOI"])
                 if cited:
                     others.setdefault(cited["@id"], cited)
-                    row.setdefault("references", []).append(link(cited["@id"]))
+                    row.setdefault("citation", []).append(link(cited["@id"]))
         rows.append(row)
     return rows + list(others.values())

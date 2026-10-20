@@ -82,7 +82,7 @@ def given_dates(line: str) -> dict | None:
         end = datetime.strptime(f"{last or first} {month} {year}", "%d %B %Y").date()
     except ValueError:
         return None
-    return {"@type": "Given", "startDate": {"@value": start.isoformat(), "@type": DATE}, "endDate": {"@value": end.isoformat(), "@type": DATE}}
+    return {"@type": "CourseInstance", "startDate": {"@value": start.isoformat(), "@type": DATE}, "endDate": {"@value": end.isoformat(), "@type": DATE}}
 
 
 def agenda(row: dict, text: str, others: dict) -> None:
@@ -139,7 +139,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         parts = []
         for entry in tree["tree"]:
             if entry["type"] == "blob" and entry["path"].endswith(MATERIALS) and not any(part in entry["path"] for part in LEFT_OUT):
-                parts.append({"@type": "File", "name": entry["path"].rsplit("/", 1)[-1], "url": link(files + entry["path"])})
+                parts.append({"@type": "DigitalDocument", "name": entry["path"].rsplit("/", 1)[-1], "url": link(files + entry["path"])})
         row["hasPart"] = parts
         rows.append(row)
     return rows + list(others.values())

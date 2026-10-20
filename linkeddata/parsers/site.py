@@ -56,11 +56,11 @@ def media(node) -> tuple[list, list]:
     """The figures and videos of a text, taken out of it with their frames."""
     figures = []
     for image in node.find_all("img"):
-        figures.append({"@type": "Figure", "image": static(image["src"]), "caption": image.get("alt", "")})
+        figures.append({"@type": "ImageObject", "contentUrl": static(image["src"]), "caption": image.get("alt", "")})
         (image.find_parent("div", class_="card-img-top") or image).decompose()
     videos = []
     for frame in node.find_all("iframe"):
-        videos.append({"@type": "Video", "title": frame.get("title"), "player": link(frame["src"])})
+        videos.append({"@type": "VideoObject", "name": frame.get("title"), "embedUrl": link(frame["src"])})
         holder = frame.find_parent("div")
         (holder if holder is not None and holder is not node else frame).decompose()
     return figures, videos
@@ -70,14 +70,14 @@ def item(entry, position: int) -> dict:
     """An accordion item as a section: its button's text, and its body's text, figures and videos."""
     body = entry.select_one(".accordion-body")
     figures, videos = media(body)
-    section = {"@type": "Section", "heading": entry.select_one(".accordion-button").get_text(" ", strip=True), "position": position}
+    section = {"@type": "WebPageElement", "name": entry.select_one(".accordion-button").get_text(" ", strip=True), "position": position}
     found = text(body)
     if found:
         section["text"] = marked(found)
     if figures:
-        section["figures"] = figures
+        section["image"] = figures
     if videos:
-        section["videos"] = videos
+        section["video"] = videos
     return section
 
 
@@ -93,9 +93,9 @@ def tabs(soup) -> list[dict]:
     sections = []
     for pane in soup.select("div.tab-pane"):
         label, shown = labels.get(pane["id"], ("", False))
-        section = {"@type": "Section", "heading": label, "position": len(sections) + 1}
+        section = {"@type": "WebPageElement", "name": label, "position": len(sections) + 1}
         if not shown:
-            section["status"] = "hidden"
+            section["creativeWorkStatus"] = "hidden"
         teaser = pane.find("p", recursive=False)
         if teaser is not None:
             section["text"] = marked(str(BeautifulSoup(f"<p>{text(teaser)}</p>", "html.parser")))
@@ -103,7 +103,7 @@ def tabs(soup) -> list[dict]:
         for entry in pane.select("div.accordion-item"):
             items.append(item(entry, len(items) + 1))
         if items:
-            section["sections"] = items
+            section["hasPart"] = items
         sections.append(section)
     return sections
 
@@ -119,7 +119,7 @@ def page(key: str, content: bytes) -> dict:
     """A page and its sections; a page without tabs has one section, of its text after the heading."""
     soup = BeautifulSoup(content, "html.parser")
     name, description = heading(soup)
-    row = {"@id": PAGES[key], "@type": "Page", "name": name}
+    row = {"@id": PAGES[key], "@type": "WebPage", "name": name}
     if description:
         row["description"] = description
     sections = tabs(soup)
@@ -132,9 +132,9 @@ def page(key: str, content: bytes) -> dict:
             row["about"] = term("Process Flow Step", "glossary")
             found = re.sub(r"\{%.*?%\}|\{\{.*?\}\}", "", found).strip()
         if found:
-            sections = [{"@type": "Section", "text": marked(found), "position": 1}]
+            sections = [{"@type": "WebPageElement", "text": marked(found), "position": 1}]
     if sections:
-        row["sections"] = sections
+        row["hasPart"] = sections
     return row
 
 
@@ -146,14 +146,14 @@ def grant(section: dict) -> tuple[dict, dict] | None:
     if anchor is None:
         return None
     number = anchor.get_text().strip("() ")
-    row = {"@id": "grants/" + slug(number), "@type": "Grant", "identifier": number, "url": link(anchor["href"]),
+    row = {"@id": "grants/" + slug(number), "@type": "MonetaryGrant", "identifier": number, "url": link(anchor["href"]),
            "description": section["text"]}
     words = soup.get_text(" ")
     called = re.search(r"[‘'\"](.+?)[’'\"]", words)
     row["name"] = called.group(1) if called else number
     amount = re.search(r"([\d.]+) million euro grant", words)
     if amount:
-        row["amount"] = {"@type": "Amount", "value": {"@value": str(round(float(amount.group(1)) * 1000000)), "@type": DECIMAL}, "currency": "EUR"}
+        row["amount"] = {"@type": "MonetaryAmount", "value": {"@value": str(round(float(amount.group(1)) * 1000000)), "@type": DECIMAL}, "currency": "EUR"}
     funder = None
     named = re.search(r"funded by the (.+?) through", words)
     if named:
@@ -164,45 +164,45 @@ def grant(section: dict) -> tuple[dict, dict] | None:
 
 def project(about: dict) -> tuple[dict, list[dict]]:
     """The project's record from the project page's first tab, whose items it takes, and the grant rows."""
-    row = {"@id": PROJECT, "@type": "Project", "name": "VHP4Safety"}
+    row = {"@id": PROJECT, "@type": "ResearchProject", "name": "VHP4Safety"}
     kept = []
     others = []
-    for position, section in enumerate(about.get("sections", [])):
+    for position, section in enumerate(about.get("hasPart", [])):
         found = section.get("text")
         words = BeautifulSoup(found["@value"] if isinstance(found, dict) else str(found or ""), "html.parser")
         # An item that shows another record's fields keeps its heading and its own text.
-        shown = {"@type": "Section", "heading": section.get("heading"), "position": position + 1}
+        shown = {"@type": "WebPageElement", "name": section.get("name"), "position": position + 1}
         if position == 0:
             row["description"] = words.get_text(" ", strip=True)
             # The item's heading gives the project's full name before its colon.
-            if ":" in section.get("heading", ""):
-                row["full_name"] = section["heading"].split(":", 1)[0].strip()
-            kept.append({**shown, "about": link(PROJECT), "shows": [link(SCHEMA + "description")]})
-        elif section.get("videos"):
-            row["videos"] = [link("training/" + slug(video["title"])) for video in section["videos"] if video.get("title")]
-            if row["videos"]:
-                shown.update({"about": row["videos"][0], "shows": [link(SCHEMA + "video")]})
+            if ":" in section.get("name", ""):
+                row["alternateName"] = section["name"].split(":", 1)[0].strip()
+            kept.append({**shown, "about": link(PROJECT), "form:shows": [link(SCHEMA + "description")]})
+        elif section.get("video"):
+            row["subjectOf"] = [link("training/" + slug(video["name"])) for video in section["video"] if video.get("name")]
+            if row["subjectOf"]:
+                shown.update({"about": row["subjectOf"][0], "form:shows": [link(SCHEMA + "video")]})
             kept.append(shown)
-        elif section.get("figures") and words.find("ol") is not None:
-            row["figures"] = section["figures"]
-            row["lines"] = []
+        elif section.get("image") and words.find("ol") is not None:
+            row["image"] = section["image"]
+            row["subOrganization"] = []
             for entry in words.find_all("li"):
                 name, _, what = entry.get_text(" ", strip=True).partition(":")
-                row["lines"].append({"@type": "Line", "name": name.strip(), "description": what.strip()})
+                row["subOrganization"].append({"@type": "ResearchProject", "name": name.strip(), "description": what.strip()})
             words.find("ol").decompose()
             if words.get_text(strip=True):
                 shown["text"] = marked(str(words).strip())
-            kept.append({**shown, "about": link(PROJECT), "shows": [link(SCHEMA + "subOrganization"), link(SCHEMA + "image")]})
+            kept.append({**shown, "about": link(PROJECT), "form:shows": [link(SCHEMA + "subOrganization"), link(SCHEMA + "image")]})
         elif grant(section) is None:
             kept.append({**section, "position": position + 1})
         else:
             given, funder = grant(section)
-            row["grants"] = [link(given["@id"])]
+            row["funding"] = [link(given["@id"])]
             others.append(given)
             if funder is not None:
                 others.append(funder)
-            kept.append({**shown, "about": link(given["@id"]), "shows": [link(SCHEMA + "description")]})
-    about["sections"] = kept
+            kept.append({**shown, "about": link(given["@id"]), "form:shows": [link(SCHEMA + "description")]})
+    about["hasPart"] = kept
     return row, others
 
 
@@ -229,7 +229,7 @@ def partners(content: bytes) -> tuple[list[dict], list[dict], list[dict]]:
         if role in FUNDERS:
             funders.append(link(row["@id"]))
         else:
-            roles.append({"@type": "Partner", "organization": link(row["@id"]), "role": role})
+            roles.append({"@type": "OrganizationRole", "member": link(row["@id"]), "roleName": role})
     return organisations, roles, funders
 
 
@@ -237,20 +237,20 @@ def home(content: bytes, kinds: dict) -> tuple[dict, dict]:
     """The platform's catalogue from the home page, and its publisher's email and other addresses."""
     soup = BeautifulSoup(content, "html.parser")
     hero = soup.find("h1")
-    row = {"@id": "", "@type": "Platform", "heading": " ".join(hero.get_text(" ").split()),
+    row = {"@id": "", "@type": "DataCatalog", "alternateName": " ".join(hero.get_text(" ").split()),
            "abstract": " ".join(soup.select_one("p.lead").get_text(" ").split()), "publisher": link(PROJECT)}
-    row["kinds"] = []
+    row["void:classPartition"] = []
     for card in soup.select("div.card[onclick]"):
         path = re.search(r"location\.href='/(\w+)'", card["onclick"]).group(1)
-        row["kinds"].append({"@type": "Kind", "class": link(kinds[path]), "name": card.select_one(".card-title").get_text(strip=True),
-                             "description": marked(text(card.select_one(".card-body"))), "position": len(row["kinds"]) + 1})
+        row["void:classPartition"].append({"void:class": link(kinds[path]), "name": card.select_one(".card-title").get_text(strip=True),
+                                           "description": marked(text(card.select_one(".card-body"))), "position": len(row["void:classPartition"]) + 1})
     about = soup.find(id="main-text-section").find_parent("section")
     row["name"] = " ".join(about.find("h1").get_text(" ").split())
-    row["pages"] = []
+    row["subjectOf"] = []
     for anchor in about.select("a.btn"):
         named = re.search(r"url_for\('(\w+)'\)", anchor["href"])
         if named.group(1) in PAGES:
-            row["pages"].append(link(PAGES[named.group(1)]))
+            row["subjectOf"].append(link(PAGES[named.group(1)]))
     for found in [about.find("h1"), about.find(id="workflowTeaser"), about.select_one("a.btn").find_parent("div", class_="row")] + about.find_all("hr"):
         found.decompose()
     # The line under the heading is the description's first paragraph; the other large lines head its parts.
@@ -260,12 +260,12 @@ def home(content: bytes, kinds: dict) -> tuple[dict, dict]:
         elif number:
             found.name = "h3"
     row["description"] = marked(text(about))
-    contact = {"elsewhere": []}
+    contact = {"sameAs": []}
     for anchor in soup.select("#contact-section a[href]"):
         if anchor["href"].startswith("mailto:"):
             contact["email"] = anchor["href"].removeprefix("mailto:")
         else:
-            contact["elsewhere"].append(link(anchor["href"]))
+            contact["sameAs"].append(link(anchor["href"]))
     return row, contact
 
 
@@ -284,7 +284,7 @@ def case_studies(content: bytes) -> list[dict]:
     soup = BeautifulSoup(content, "html.parser")
     found = []
     for card in soup.select("a[href^='/casestudies/']"):
-        found.append({"@id": card["href"].strip("/"), "@type": "CaseStudy", "image": static(card.find("img")["src"])})
+        found.append({"@id": card["href"].strip("/"), "@type": "bioschemas_draft:Study", "image": static(card.find("img")["src"])})
     return found
 
 
@@ -295,35 +295,35 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         rows.append(page(key, contents[key]))
     about = next(row for row in rows if row["@id"] == "explore_our_work")
     about["@type"] = "AboutPage"
-    about["subject"] = link(PROJECT)
-    found, others = project(about["sections"][0])
+    about["mainEntity"] = link(PROJECT)
+    found, others = project(about["hasPart"][0])
     # A Publications tab of a page lists the outputs of the project's grant.
     for row in rows:
-        for section in row.get("sections", []):
-            if section.get("heading") == "Publications" and found.get("grants") and section.get("status") != "hidden":
-                section["about"] = found["grants"][0]
+        for section in row.get("hasPart", []):
+            if section.get("name") == "Publications" and found.get("funding") and section.get("creativeWorkStatus") != "hidden":
+                section["about"] = found["funding"][0]
     platform, contact = home(contents["home"], kinds)
     # The training page lists the training materials; its heading and sentence describe them in the catalogue.
     name, description = heading(BeautifulSoup(contents["training"], "html.parser"))
-    platform["kinds"].append({"@type": "Kind", "class": link(kinds["training"]), "name": name, "description": description,
-                              "position": len(platform["kinds"]) + 1})
+    platform["void:classPartition"].append({"void:class": link(kinds["training"]), "name": name, "description": description,
+                                            "position": len(platform["void:classPartition"]) + 1})
     found.update({key: value for key, value in contact.items() if value})
     described = organisation(contents["base"])
     for name in [described.get("alternateName")] if described.get("alternateName") else []:
-        found.setdefault("full_name", [])
-        found["full_name"] = ([found["full_name"]] if isinstance(found["full_name"], str) else found["full_name"]) + [name]
+        found.setdefault("alternateName", [])
+        found["alternateName"] = ([found["alternateName"]] if isinstance(found["alternateName"], str) else found["alternateName"]) + [name]
     if described.get("logo"):
         found["logo"] = link(described["logo"])
     if described.get("description"):
-        found["summary"] = described["description"]
+        found["disambiguatingDescription"] = described["description"]
     for address in described.get("sameAs") or []:
-        if link(address) not in found.setdefault("elsewhere", []):
-            found["elsewhere"].append(link(address))
+        if link(address) not in found.setdefault("sameAs", []):
+            found["sameAs"].append(link(address))
     funder = described.get("funder") or {}
     for row in others:
         if row["@type"] == "Organization" and funder.get("url"):
             row["url"] = link(funder["url"])
     organisations, roles, funders = partners(contents["partners"])
-    found["partners"] = roles
-    found["cofunders"] = funders
+    found["member"] = roles
+    found["funder"] = funders
     return rows + [platform, found] + others + organisations + case_studies(contents["casestudies"])

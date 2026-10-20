@@ -27,20 +27,20 @@ def parse(content: bytes) -> list[dict]:
         return []
     label = english(items[0], "labels")[0]
     vocabulary = "vocabularies/" + slug(label)
-    rows = [{"@id": vocabulary, "@type": "Vocabulary", "name": label[:1].upper() + label[1:],
-             "home": link("https://www.wikidata.org/wiki/" + items[0]["id"]), "same_as": link(ENTITY + items[0]["id"])}]
+    rows = [{"@id": vocabulary, "@type": "DefinedTermSet", "name": label[:1].upper() + label[1:],
+             "url": link("https://www.wikidata.org/wiki/" + items[0]["id"]), "sameAs": link(ENTITY + items[0]["id"])}]
     for description in english(items[0], "descriptions"):
         rows[0]["description"] = description
     for item in items[1:]:
-        row = {"@id": ENTITY + item["id"], "@type": "Term", "vocabulary": link(vocabulary)}
+        row = {"@id": ENTITY + item["id"], "@type": "DefinedTerm", "inDefinedTermSet": link(vocabulary)}
         for label in english(item, "labels"):
-            row["label"] = label
+            row["name"] = label
         for description in english(item, "descriptions"):
-            row["definition"] = description
+            row["description"] = description
         aliases = english(item, "aliases")
         if aliases:
-            row["code"] = aliases[0]
+            row["termCode"] = aliases[0]
         if aliases[1:]:
-            row["alternate"] = aliases[1:]
+            row["alternateName"] = aliases[1:]
         rows.append(row)
     return rows

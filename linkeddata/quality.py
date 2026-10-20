@@ -63,31 +63,12 @@ def report() -> dict:
     return {"classes": classes, "groups": groups, "notes": len(notes), "names": records.names(iris)}
 
 
-def mapping(spec: dict, labels: dict) -> list[dict]:
-    """How a source becomes the model, from its rules: each source field and the field it fills."""
-    rows = []
-    for kind, arguments in spec["rules"].items():
-        target = ""
-        for argument in arguments:
-            if argument["predicate"] == "a":
-                target = argument["value"]
-        for argument in arguments:
-            if argument["predicate"] == "a":
-                rows.append({"kind": kind, "source": f"each {kind}", "platform": "is a", "value": target})
-            elif "object" in argument:
-                rows.append({"kind": kind, "source": argument["object"], "platform": labels.get((target, argument["predicate"]), argument["predicate"]), "value": ""})
-            else:
-                rows.append({"kind": kind, "source": "", "platform": labels.get((target, argument["predicate"]), argument["predicate"]), "value": argument["value"]})
-    return rows
-
-
 def sources() -> tuple[list[dict], int]:
-    """Each source with its files, fetch, records, notes and mapping; and the count of platform records."""
+    """Each source with its files, fetch, records and notes; and the count of platform records."""
     with database.session() as db:
         fetched = {source.name: source for source in db.scalars(select(Source))}
         counts = dict(db.execute(select(Record.source, func.count()).where(Record.removed_at.is_(None)).group_by(Record.source)).all())
         noted = dict(db.execute(select(Note.source, func.count()).group_by(Note.source)).all())
-    labels = field_labels()
     found = []
     for spec in specs():
         found.append({
@@ -98,6 +79,5 @@ def sources() -> tuple[list[dict], int]:
             "fetched": fetched.get(spec["name"]),
             "records": counts.get(spec["name"], 0),
             "notes": noted.get(spec["name"], 0),
-            "mapping": mapping(spec, labels),
         })
     return found, counts.get(PLATFORM, 0)

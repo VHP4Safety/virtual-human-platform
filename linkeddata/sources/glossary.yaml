@@ -5,21 +5,3 @@ title: VHP4Safety glossary
 url: https://raw.githubusercontent.com/VHP4Safety/glossary/main/glossary.owl
 vocabulary: vhp4safety-glossary-34f9389.ttl
 parser: glossary
-
-# The rules of each kind of row: the arguments of rdfsolve's Rule.between.
-rules:
-  Term:
-    - {predicate: a, value: "https://schema.org/DefinedTerm"}
-    - {predicate: "https://schema.org/name", object: label}
-    - {predicate: "https://schema.org/description", object: definition}
-    - {predicate: "https://schema.org/termCode", object: code}
-    - {predicate: "https://schema.org/inDefinedTermSet", object: vocabulary}
-    - {predicate: "https://schema.org/alternateName", object: alternate}
-    - {predicate: "https://schema.org/sameAs", object: same_as}
-  Vocabulary:
-    - {predicate: a, value: "https://schema.org/DefinedTermSet"}
-    - {predicate: "https://schema.org/name", object: name}
-    - {predicate: "http://rdfs.org/ns/void#uriSpace", object: namespace}
-    - {predicate: "https://schema.org/url", object: home}
-    - {predicate: "https://schema.org/sameAs", object: same_as}
-    - {predicate: "https://schema.org/description", object: description}

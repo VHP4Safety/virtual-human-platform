@@ -12,24 +12,24 @@ VOCABULARY = "vocabularies/vhp4safety-glossary"
 
 def parse(content: bytes) -> list[dict]:
     graph = Graph().parse(data=content, format="turtle")
-    rows = [{"@id": VOCABULARY, "@type": "Vocabulary", "name": "VHP4Safety glossary", "namespace": NAMESPACE,
-             "home": link(NAMESPACE.rstrip("#"))}]
+    rows = [{"@id": VOCABULARY, "@type": "DefinedTermSet", "name": "VHP4Safety glossary", "void:uriSpace": NAMESPACE,
+             "url": link(NAMESPACE.rstrip("#"))}]
     for term in sorted(graph.subjects(RDF.type, OWL.Class)):
         if not str(term).startswith(NAMESPACE):
             continue
-        row = {"@id": str(term), "@type": "Term", "code": str(term).removeprefix(NAMESPACE), "vocabulary": link(VOCABULARY)}
+        row = {"@id": str(term), "@type": "DefinedTerm", "termCode": str(term).removeprefix(NAMESPACE), "inDefinedTermSet": link(VOCABULARY)}
         label = graph.value(term, RDFS.label)
         if present(label):
-            row["label"] = str(label)
+            row["name"] = str(label)
         definition = graph.value(term, DC.description)
         if present(definition):
-            row["definition"] = str(definition)
+            row["description"] = str(definition)
         # A short label, such as Exposure for Exposure (Process Flow Step), is another name of the term.
         alternates = []
         for alternate in sorted(graph.objects(term, SKOS.altLabel)):
             if present(alternate):
                 alternates.append(str(alternate))
         if alternates:
-            row["alternate"] = alternates
+            row["alternateName"] = alternates
         rows.append(row)
     return rows

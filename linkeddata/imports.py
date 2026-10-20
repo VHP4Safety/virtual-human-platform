@@ -1,8 +1,7 @@
-"""Imports of the sources. Each source is fetched, cleaned by its parser, converted to the model with
-rdfsolve, and stored in place of its earlier records; records written on the platform are kept. Sources of
-terms (terms) run next, for the terms the records are about, and sources that enrich records (enriches)
-last. Then each source's records are checked against the model. `python -m linkeddata import` runs every
-import, such as nightly."""
+"""Imports of the sources. Each source is fetched, read by its parser as rows in the terms of the model, and
+stored in place of its earlier records; records written on the platform are kept. Sources of terms run next, for
+the terms that the records are about, and sources that enrich records run last. Then the records of each source
+are checked against the model. `python -m linkeddata import` runs every import."""
 
 import hashlib
 import importlib
@@ -19,19 +18,17 @@ import yaml
 from rdfsolve import SchemaMiner
 from rdfsolve.api import Client
 from rdfsolve.client.sql_tables import merge
-from rdfsolve.conversion import Profile, Rule, write_query
 from rdfsolve.mining.wikibase_strategy import WikibaseScopeStrategy
 from rdflib import RDF, Graph, Literal, URIRef
-from rdflib.namespace import SDO
+from rdflib.namespace import SDO, SH
 from sqlalchemy import delete, func, insert, select
 
 import database
 from database.tables import PLATFORM, Note, Record, Revision, Source, now
 from linkeddata import catalogue, checks, documents, fields, storage
-from linkeddata.model import MODEL_DIR, RELEASE, profile, settings
+from linkeddata.model import MODEL_DIR, profile, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
-TARGET = f"VHP4Safety model {RELEASE}"
 ITEM = "http://wikiba.se/ontology#Item"
 
 
@@ -93,35 +90,16 @@ def members(url: str, endings: list[str]) -> dict[str, bytes]:
     return found
 
 
-def lift(rows: list[dict], vocabulary: str, base: str) -> ox.Dataset:
-    """Parsed rows as RDF, until rdfsolve reads JSON with a context: fields become properties of the
-    source's vocabulary, "@id" is a row's address and "@type" its kind."""
-    document = {"@context": {"@vocab": vocabulary, "@base": base}, "@graph": rows}
-    return ox.Dataset(ox.parse(json.dumps(document).encode(), format=ox.RdfFormat.JSON_LD))
-
-
-def convert(spec: dict, data: list[dict], base: str) -> tuple[ox.Dataset, list[str]]:
-    """One source's rows in the model, and the CONSTRUCT queries that made them."""
-    vocabulary = base + "sources/" + spec["name"] + "#"
-    rows = lift(data, vocabulary, base)
-    with SchemaMiner.from_graph(rows, delay=0) as miner:
-        source = Client(miner.mine(dataset_name=spec["name"]), rows)
-    statements = ox.Dataset()
-    queries = []
-    for kind, arguments in spec["rules"].items():
-        rules = []
-        for argument in arguments:
-            # Addresses are given, so a rule is kept when the data lacks the kind or field.
-            if "object" in argument:
-                steps = []
-                for step in argument["object"].split("/"):
-                    steps.append(f"<{vocabulary}{step}>")
-                argument = {**argument, "object": "/".join(steps)}
-            rules.append(Rule.between(client=source, focus=vocabulary + kind, **argument))
-        queries.append(write_query(rules, title=f"{spec['name']}: {kind}", source=source, target=TARGET))
-        for quad in Profile(spec["name"], rules).run(source):
-            statements.add(quad)
-    return statements, queries
+def convert(rows: list[dict], base: str) -> ox.Dataset:
+    """Parsed rows as statements of the model. The rows are read with the platform's JSON-LD context, and only
+    the types and the properties of the profile's fields are kept."""
+    document = {"@context": {**documents.context(settings()), "@base": base}, "@graph": rows}
+    kept = {str(path) for path in profile().objects(None, SH.path)} | {str(RDF.type)}
+    found = ox.Dataset()
+    for quad in ox.parse(json.dumps(document).encode(), format=ox.RdfFormat.JSON_LD):
+        if quad.predicate.value in kept:
+            found.add(quad)
+    return found
 
 
 def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[tuple[list[dict], Graph]]:
@@ -331,7 +309,7 @@ def import_source(spec: dict) -> None:
     contents = download(spec, parser)
     # One file is given as is; several are given by name.
     parsed = parser.parse(contents if "files" in spec or "entries" in spec or "terms" in spec or "members" in spec or "documents" in spec else contents[spec["name"]])
-    data, queries = convert(spec, parsed, config["base"])
+    data = convert(parsed, config["base"])
     found = records_of(data, [of_class for kind in config["kinds"].values() for of_class in catalogue.within(kind)], spec["name"])
     checksum = hashlib.sha256()
     for name in sorted(contents):
@@ -341,7 +319,6 @@ def import_source(spec: dict) -> None:
         url=" ".join(files_of(spec).values()),
         fetched_at=now(),
         sha256=checksum.hexdigest(),
-        queries="\n\n".join(queries),
     )
     store(source, found)
     print(f"{spec['name']}: {len(found)} records")
@@ -353,7 +330,7 @@ def enrich(spec: dict) -> None:
     which shows where its values came from."""
     parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
     contents = download(spec, parser)
-    data, queries = convert(spec, parser.parse(contents), settings()["base"])
+    data = convert(parser.parse(contents), settings()["base"])
     given = Graph().parse(data=ox.serialize(data, format=ox.RdfFormat.N_QUADS), format="nt")
     notes = []
     with database.session() as db, db.begin():
@@ -379,18 +356,13 @@ def enrich(spec: dict) -> None:
         checksum = hashlib.sha256()
         for name in sorted(contents):
             checksum.update(contents[name])
-        db.merge(Source(name=spec["name"], url=spec["answer"], fetched_at=now(), sha256=checksum.hexdigest(), queries="\n\n".join(queries)))
+        db.merge(Source(name=spec["name"], url=spec["answer"], fetched_at=now(), sha256=checksum.hexdigest()))
     print(f"{spec['name']}: {len(contents)} records asked for, {len(notes)} conflicting values kept")
 
 
 def spec_of(name: str) -> dict:
-    """A source as its file in sources/ describes it, with the rules of the sources it uses (uses)."""
-    spec = yaml.safe_load((SOURCES_DIR / f"{name}.yaml").read_text(encoding="utf-8"))
-    rules = {}
-    for other in spec.get("uses", []):
-        rules.update(spec_of(other)["rules"])
-    spec["rules"] = {**rules, **spec.get("rules", {})}
-    return spec
+    """A source as its file in sources/ describes it."""
+    return yaml.safe_load((SOURCES_DIR / f"{name}.yaml").read_text(encoding="utf-8"))
 
 
 def specs() -> list[dict]:
@@ -409,8 +381,8 @@ def drifted(spec: dict) -> list[dict]:
     parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
     pinned = {}
     for row in parser.parse((MODEL_DIR / "vocabularies" / spec["vocabulary"]).read_bytes()):
-        if row.get("@type") == "Term":
-            pinned[row["@id"]] = row.get("label") or ""
+        if row.get("@type") == "DefinedTerm":
+            pinned[row["@id"]] = row.get("name") or ""
     used = set()
     for node in profile().all_nodes():
         if str(node) in pinned:
@@ -452,7 +424,7 @@ def note_problem(spec: dict, problem: Exception) -> None:
     with database.session() as db, db.begin():
         source = db.get(Source, spec["name"])
         if source is None:
-            source = Source(name=spec["name"], url=" ".join(files_of(spec).values()), fetched_at="", sha256="", queries="")
+            source = Source(name=spec["name"], url=" ".join(files_of(spec).values()), fetched_at="", sha256="")
             db.add(source)
         source.problem = str(problem)
 

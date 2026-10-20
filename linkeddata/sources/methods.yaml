@@ -4,32 +4,3 @@ url: https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/meth
 # Each method's detail file, by its key in the index.
 entries: https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/docs/methods/{key}.json
 parser: methods
-
-# The rules of each kind of row: the arguments of rdfsolve's Rule.between.
-rules:
-  Method:
-    - {predicate: a, value: "https://bioschemas.org/draft_terms/LabProtocol"}
-    - {predicate: "https://schema.org/name", object: method}
-    - {predicate: "https://schema.org/description", object: description}
-    - {predicate: "https://vhp4safety.github.io/glossary#VHP0000152", object: steps}
-    - {predicate: "https://vhp4safety.github.io/glossary#VHP0000151", object: question}
-    - {predicate: "https://schema.org/about", object: about}
-    - {predicate: "https://schema.org/additionalType", object: types}
-    - {predicate: "https://schema.org/alternateName", object: assay}
-    - {predicate: "https://schema.org/url", object: url}
-    - {predicate: "https://schema.org/provider", object: vendor}
-    - {predicate: "https://schema.org/identifier", object: catalog_number}
-    - {predicate: "https://schema.org/creator", object: data_producer}
-    - {predicate: "https://schema.org/citation", object: citation}
-    - {predicate: "https://schema.org/subjectOf", object: sop}
-    - {predicate: "https://schema.org/isBasedOn", object: issue}
-  Organization:
-    - {predicate: a, value: "https://schema.org/Organization"}
-    - {predicate: "https://schema.org/name", object: name}
-  Person:
-    - {predicate: a, value: "https://schema.org/Person"}
-    - {predicate: "https://schema.org/name", object: name}
-  Publication:
-    - {predicate: a, value: "https://schema.org/ScholarlyArticle"}
-    - {predicate: "https://schema.org/sameAs", object: doi}
-    - {predicate: "https://schema.org/identifier", object: doi}

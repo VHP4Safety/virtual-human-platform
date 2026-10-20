@@ -87,9 +87,9 @@ def terms(source: str) -> dict[str, set[str]]:
     parser = importlib.import_module("linkeddata.parsers." + spec["parser"])
     found = {}
     for row in parser.parse((MODEL_DIR / "vocabularies" / spec["vocabulary"]).read_bytes()):
-        if row.get("@type") == "Term":
-            names = [row.get("label"), row.get("code")] + list(row.get("alternate") or [])
-            for address in row.get("same_as") or []:
+        if row.get("@type") == "DefinedTerm":
+            names = [row.get("name"), row.get("termCode")] + list(row.get("alternateName") or [])
+            for address in row.get("sameAs") or []:
                 names.append(address["@id"])
             for text in names:
                 if text:
@@ -119,7 +119,8 @@ def publication(value) -> dict | None:
     doi = str(value).strip().removeprefix("https://doi.org/")
     if not doi.startswith("10."):
         return None
-    return {"@id": "publications/" + slug(doi), "@type": "Publication", "doi": link("https://doi.org/" + doi)}
+    return {"@id": "publications/" + slug(doi), "@type": "ScholarlyArticle", "sameAs": link("https://doi.org/" + doi),
+            "identifier": link("https://doi.org/" + doi)}
 
 
 def slug(text: str) -> str:

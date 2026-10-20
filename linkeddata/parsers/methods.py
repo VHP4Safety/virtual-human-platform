@@ -31,15 +31,15 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         detail = dict(entry)
         if key in contents:
             detail.update(json.loads(contents[key]))
-        row = {"@id": "methods/" + entry["id"], "@type": "Method"}
-        for field, given in (("method", "method"), ("description", "method_description_content"), ("assay", "assay_name_content"),
-                             ("catalog_number", "catalog_number_content")):
+        row = {"@id": "methods/" + entry["id"], "@type": "bioschemas_draft:LabProtocol"}
+        for field, given in (("name", "method"), ("description", "method_description_content"), ("alternateName", "assay_name_content"),
+                             ("identifier", "catalog_number_content")):
             if present(detail.get(given)):
                 row[field] = detail[given]
         if present(detail.get("data_producer_content")):
             person = "people/" + slug(detail["data_producer_content"])
             others.setdefault(person, {"@id": person, "@type": "Person", "name": str(detail["data_producer_content"]).strip()})
-            row["data_producer"] = link(person)
+            row["creator"] = link(person)
         if present(detail.get("citation_content")):
             cited = publication(detail["citation_content"])
             if cited:
@@ -47,14 +47,14 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 row["citation"] = link(cited["@id"])
             else:
                 row["citation"] = detail["citation_content"]
-        for field, given in (("url", "catalog_webpage_url"), ("sop", "available_sop_or_protocol_url")):
+        for field, given in (("url", "catalog_webpage_url"), ("subjectOf", "available_sop_or_protocol_url")):
             if present(detail.get(given)):
                 row[field] = web_link(detail[given])
         steps = []
         for part in parts(detail.get("vhp4safety_workflow_stage_content")):
             steps.append(term(part, "glossary", "Process Flow Step"))
         if steps:
-            row["steps"] = steps
+            row["processFlowStep"] = steps
         about = []
         for part in parts(detail.get("workflow_substage_content")):
             about.append(term(part, "glossary"))
@@ -66,17 +66,17 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             if present(detail.get(given)):
                 types.append(web_link(detail[given]))
         if types:
-            row["types"] = types
+            row["additionalType"] = types
         # The question is linked at its page's address.
         if present(detail.get("case_study_content")) and present(detail.get("regulatory_question_content")):
-            row["question"] = link(f"casestudies/{detail['case_study_content']}/{detail['regulatory_question_content']}")
+            row["regulatoryQuestion"] = link(f"casestudies/{detail['case_study_content']}/{detail['regulatory_question_content']}")
         if about:
             row["about"] = about
         if present(detail.get("issue_number")):
-            row["issue"] = link(ISSUES + str(detail["issue_number"]))
+            row["isBasedOn"] = link(ISSUES + str(detail["issue_number"]))
         if present(detail.get("vendor_content")):
             vendor = "organizations/" + slug(detail["vendor_content"])
             others.setdefault(vendor, {"@id": vendor, "@type": "Organization", "name": detail["vendor_content"]})
-            row["vendor"] = link(vendor)
+            row["provider"] = link(vendor)
         rows.append(row)
     return rows + list(others.values())

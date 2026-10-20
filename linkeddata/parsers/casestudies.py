@@ -35,23 +35,23 @@ def parameters(row: dict, description) -> None:
     for kind, given in PARAMETERS.findall(str(description or "")):
         name = " ".join(unescape(re.sub(r"<[^>]+>", " ", given)).split())
         if present(name) and not PLACEHOLDER.search(name):
-            row.setdefault("inputs" if kind.lower() == "input" else "outputs", []).append({"@type": "Parameter", "name": name})
+            row.setdefault("bioschemas:input" if kind.lower() == "input" else "bioschemas:output", []).append({"@type": "bioschemas:FormalParameter", "name": name})
 
 
 def text(row: dict, content) -> None:
     """A page's text: in HTML, or in sections, each with a heading and an HTML text. A section of inputs and
     outputs gives the page's inputs and outputs instead."""
     if isinstance(content, str) and present(content):
-        row["content"] = html(content)
+        row["text"] = html(content)
     elif isinstance(content, list):
         for position, section in enumerate(content, start=1):
             if isinstance(section, dict) and str(section.get("section") or "").strip().lower() == "input and resulting output":
                 parameters(row, section.get("description"))
             elif isinstance(section, dict):
-                found = {"@type": "Section", "position": position, "title": section.get("section")}
+                found = {"@type": "WebPageElement", "position": position, "name": section.get("section")}
                 if present(section.get("description")):
                     found["text"] = html(section["description"])
-                row.setdefault("sections", []).append(found)
+                row.setdefault("hasPart", []).append(found)
 
 
 def item_link(item: dict) -> dict | None:
@@ -73,11 +73,11 @@ def at(levels: list[dict], depth: int, path: list[str]) -> dict:
 def step(levels: list[dict], depth: int, path: list[str], item: dict, address: str, position: int, made: set) -> list[dict]:
     """The page an item leads to, at *path* of the levels, and the pages below it."""
     node = at(levels, depth, path)
-    row = {"@id": address, "@type": "Workflow", "title": node.get("navTitle") or item.get("label"), "position": position}
+    row = {"@id": address, "@type": "HowTo", "name": node.get("navTitle") or item.get("label"), "position": position}
     if present(item.get("state")):
-        row["status"] = item["state"]
+        row["creativeWorkStatus"] = item["state"]
     if present(item.get("glossaryUrl")):
-        row["kind"] = web_link(item["glossaryUrl"])
+        row["additionalType"] = web_link(item["glossaryUrl"])
     return [row] + fill(row, node, levels, depth, path, made)
 
 
@@ -86,21 +86,21 @@ def fill(row: dict, node: dict, levels: list[dict], depth: int, path: list[str],
     tools and data it lists. The rows of the pages below are given back. A page that two items lead to is
     made once (*made*), with the first one's title and position."""
     if present(node.get("navDescription")):
-        row["summary"] = node["navDescription"]
+        row["description"] = node["navDescription"]
     text(row, node.get("content"))
     rows = []
     for entry in (node.get("steps") or []) + (node.get("tools") or []):
         if entry.get("type") in PAGES and present(entry.get("value")):
             child = f"{row['@id']}/{slug(entry['value'])}"
-            row.setdefault("steps", []).append(link(child))
+            row.setdefault("step", []).append(link(child))
             if child not in made:
                 made.add(child)
-                rows.extend(step(levels, depth + 1, path + [entry["value"]], entry, child, len(row["steps"]), made))
+                rows.extend(step(levels, depth + 1, path + [entry["value"]], entry, child, len(row["step"]), made))
             continue
         used = item_link(entry) or entry.get("label")
         if present(used):
-            part = {"@type": "Supply" if entry.get("type") == "data" else "Tool", "item": used}
-            row.setdefault("supplies" if entry.get("type") == "data" else "tools", []).append(part)
+            part = {"@type": "HowToSupply" if entry.get("type") == "data" else "HowToTool", "item": used}
+            row.setdefault("supply" if entry.get("type") == "data" else "tool", []).append(part)
     return rows
 
 
@@ -122,8 +122,8 @@ def parse(files: dict[str, bytes]) -> list[dict]:
         about = described.get(case, {})
         address = f"casestudies/{case}"
         first = data.get("step1Contents") or {}
-        row = {"@id": address, "@type": "CaseStudy", "name": about.get("name") or first.get("navTitle")}
-        for field, given in (("description", about.get("description")), ("intro", first.get("navDescription"))):
+        row = {"@id": address, "@type": "bioschemas_draft:Study", "name": about.get("name") or first.get("navTitle")}
+        for field, given in (("description", about.get("description")), ("abstract", first.get("navDescription"))):
             if present(given):
                 row[field] = html(given)
         keywords = about.get("keywords") or []
@@ -143,8 +143,8 @@ def parse(files: dict[str, bytes]) -> list[dict]:
             if question.get("type") != "regulatory-question" or not present(question.get("value")):
                 continue
             here = f"{address}/{question['value']}"
-            row.setdefault("questions", []).append(link(here))
-            found = {"@id": here, "@type": "Question", "label": question.get("label"), "position": len(row["questions"])}
+            row.setdefault("regulatoryQuestion", []).append(link(here))
+            found = {"@id": here, "@type": "HowTo", "name": question.get("label"), "position": len(row["regulatoryQuestion"])}
             if present(question.get("description")):
                 found["text"] = html(question["description"])
             node = at(levels, 0, [question["value"]])

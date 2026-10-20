@@ -7,15 +7,3 @@ keys: ^10\.\d{4,9}/\S+$
 answer: https://doi.org/{key}
 accept: application/vnd.citationstyles.csl+json
 parser: doi
-
-# The rules of each kind of row: the arguments of rdfsolve's Rule.between.
-rules:
-  Publication:
-    - {predicate: a, value: "https://schema.org/ScholarlyArticle"}
-    - {predicate: "https://schema.org/name", object: title}
-    - {predicate: "https://schema.org/datePublished", object: date}
-    - {predicate: "https://schema.org/isPartOf", object: journal}
-  Journal:
-    - {predicate: a, value: "https://schema.org/Periodical"}
-    - {predicate: "https://schema.org/name", object: name}
-    - {predicate: "https://schema.org/issn", object: issn}

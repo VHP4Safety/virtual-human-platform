@@ -7,8 +7,3 @@ by: name
 identifier: https://ror.org/
 answer: https://api.ror.org/v2/organizations?affiliation={key}
 parser: ror
-
-# The rules of each kind of row: the arguments of rdfsolve's Rule.between.
-rules:
-  Organization:
-    - {predicate: "https://schema.org/sameAs", object: ror}

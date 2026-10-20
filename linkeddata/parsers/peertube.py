@@ -32,10 +32,10 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
     rows = []
     for listed in json.loads(contents["peertube"])["data"]:
         video = json.loads(contents[listed["uuid"]]) if listed["uuid"] in contents else listed
-        row = {"@id": "training/" + slug(video["name"]), "@type": "Video", "name": video["name"],
+        row = {"@id": "training/" + slug(video["name"]), "@type": "LearningResource", "name": video["name"],
                "description": video.get("description") or video.get("truncatedDescription"), "url": link(video["url"]),
                "learningResourceType": "video", "timeRequired": duration(video["duration"]),
-               "video": {"@type": "Player", "name": video["name"], "embedUrl": link(SITE + video["embedPath"]),
+               "video": {"@type": "VideoObject", "name": video["name"], "embedUrl": link(SITE + video["embedPath"]),
                          "thumbnailUrl": link(SITE + video["thumbnailPath"]), "duration": duration(video["duration"])}}
         language = (video.get("language") or {}).get("id")
         if present(language):

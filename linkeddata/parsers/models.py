@@ -127,7 +127,7 @@ def record(nodes: dict, node: dict, others: dict) -> dict | None:
         address = "people/" + slug(name)
         row = others.setdefault(address, {"@id": address, "@type": "Person", "name": name})
         if iri.startswith("https://orcid.org/"):
-            row["same_as"] = link(iri)
+            row["sameAs"] = link(iri)
         for affiliation in values(node, "affiliation"):
             organisation = nodes.get(affiliation.get("@id"))
             if organisation is None:
@@ -140,11 +140,11 @@ def record(nodes: dict, node: dict, others: dict) -> dict | None:
         address = "organizations/" + slug(name)
         row = others.setdefault(address, {"@id": address, "@type": "Organization", "name": name})
         if iri.startswith(("http://", "https://")):
-            row["same_as"] = link(iri)
+            row["sameAs"] = link(iri)
         return link(address)
     if "Grant" in found and text(node, "identifier"):
         address = "grants/" + slug(text(node, "identifier"))
-        row = others.setdefault(address, {"@id": address, "@type": "Grant", "name": name or text(node, "identifier"),
+        row = others.setdefault(address, {"@id": address, "@type": "MonetaryGrant", "name": name or text(node, "identifier"),
                                           "identifier": text(node, "identifier")})
         for url in values(node, "url"):
             row["url"] = link(url.get("@id") or url.get("@value"))
@@ -237,14 +237,14 @@ def connections(given) -> list[dict]:
     for value in listed(given):
         written = CONNECTION.fullmatch(str(value).strip())
         if written is None:
-            found.append({"@type": "Connection", "description": str(value)})
+            found.append({"@type": "pbpk:Connection", "description": str(value)})
             continue
         source, way, target, how = written.groups()
         ends = [(source, target)]
         if way == "<->":
             ends.append((target, source))
         for start, end in ends:
-            part = {"@type": "Connection", "sourceCompartment": start, "targetCompartment": end}
+            part = {"@type": "pbpk:Connection", "pbpk:sourceCompartment": start, "pbpk:targetCompartment": end}
             if how:
                 part["description"] = how
             found.append(part)
@@ -254,21 +254,21 @@ def connections(given) -> list[dict]:
 def implementations(paths) -> list[dict]:
     found = []
     for path in listed(paths):
-        part = {"@type": "Implementation", "implementationLocation": str(path)}
+        part = {"@type": "pbpk:Implementation", "pbpk:implementationLocation": str(path)}
         if str(path).lower().endswith(".r"):
-            part["implementationType"] = "R script"
+            part["pbpk:implementationType"] = "R script"
         elif str(path).lower().endswith(".py"):
-            part["implementationType"] = "Python script"
+            part["pbpk:implementationType"] = "Python script"
         found.append(part)
     return found
 
 
 def roles(row: dict, named_roles: dict[str, list]) -> None:
     """The roles in the model of the chemicals the PBPK description names."""
-    for chemical in row.get("hasChemical", []):
+    for chemical in row.get("pbpk:hasChemical", []):
         for name in chemical.get("name", []):
-            if str(name).casefold() in named_roles and "chemicalRole" not in chemical:
-                chemical["chemicalRole"] = named_roles[str(name).casefold()]
+            if str(name).casefold() in named_roles and "pbpk:chemicalRole" not in chemical:
+                chemical["pbpk:chemicalRole"] = named_roles[str(name).casefold()]
 
 
 def system(described: dict, model: dict) -> list[dict]:
@@ -277,11 +277,11 @@ def system(described: dict, model: dict) -> list[dict]:
     if not given:
         return []
     species = given.get("species") or {}
-    part = {"@type": "BiologicalSystem", "species": species.get("name"), "lifeStage": given.get("life_stage"),
-            "physiologicalScope": given.get("physiological_scope"),
-            "populationDescription": joined(given.get("population_description"), sentence("Sex", given.get("sex")), model.get("default_subject"))}
+    part = {"@type": "pbpk:BiologicalSystem", "pbpk:species": species.get("name"), "pbpk:lifeStage": given.get("life_stage"),
+            "pbpk:physiologicalScope": given.get("physiological_scope"),
+            "pbpk:populationDescription": joined(given.get("population_description"), sentence("Sex", given.get("sex")), model.get("default_subject"))}
     if present(species.get("ncbi_taxonomy")):
-        part["species"] = link(species["ncbi_taxonomy"])
+        part["pbpk:species"] = link(species["ncbi_taxonomy"])
     return [part]
 
 
@@ -300,20 +300,20 @@ def chemical_notes(row: dict, described: dict) -> None:
     weighed = (chemical.get("molecular_weight_model_value") or {}).get("value")
     if present(weighed):
         notes.append(f"Molecular weight in the model: {weighed} g/mol.")
-    for part in row.get("hasChemical", []):
+    for part in row.get("pbpk:hasChemical", []):
         for given in part.get("name", []):
             if str(given).casefold() == name:
-                fill(part, "physicochemicalNotes", " ".join(notes))
+                fill(part, "pbpk:physicochemicalNotes", " ".join(notes))
 
 
 def parameters(model: dict) -> list[dict]:
     found = []
     for parameter in listed(model.get("parameters")):
-        part = {"@type": "Parameter", "name": parameter.get("name"), "propertyID": parameter.get("symbol"), "value": number(parameter.get("value")),
-                "unitText": parameter.get("unit"), "parameterCategory": parameter.get("category"), "sourceReference": parameter.get("source_reference")}
+        part = {"@type": "pbpk:Parameter", "name": parameter.get("name"), "propertyID": parameter.get("symbol"), "value": number(parameter.get("value")),
+                "unitText": parameter.get("unit"), "pbpk:parameterCategory": parameter.get("category"), "pbpk:sourceReference": parameter.get("source_reference")}
         notes = joined(sentence("Value expression", parameter.get("value_expression")), parameter.get("notes"))
         if notes:
-            part["notes"] = notes
+            part["pbpk:notes"] = notes
         found.append(part)
     return found
 
@@ -327,7 +327,7 @@ def calibration(model: dict) -> list[dict]:
         performed = "yes"
     elif performed is False:
         performed = "no"
-    return [{"@type": "Calibration", "description": given.get("description"), "notes": f"Performed: {performed}."}]
+    return [{"@type": "pbpk:Calibration", "description": given.get("description"), "pbpk:notes": f"Performed: {performed}."}]
 
 
 def evaluations(described: dict, model: dict) -> list[dict]:
@@ -343,14 +343,14 @@ def evaluations(described: dict, model: dict) -> list[dict]:
                 if present(study.get(key)):
                     details.append(str(study[key]))
             lines.append(f"{study.get('reference')}: {'; '.join(details)}.")
-        found.append({"@type": "Evaluation", "name": "Pharmacokinetic evaluation", "description": evaluated.get("data_extraction"),
-                      "evaluationData": " ".join(lines), "outcome": model.get("evaluation_summary")})
+        found.append({"@type": "pbpk:Evaluation", "name": "Pharmacokinetic evaluation", "description": evaluated.get("data_extraction"),
+                      "pbpk:evaluationData": " ".join(lines), "pbpk:outcome": model.get("evaluation_summary")})
     qivive = evaluated.get("qivive_and_benchmark_dose") or {}
     if qivive:
-        found.append({"@type": "Evaluation", "name": "QIVIVE and benchmark dose", "evaluationData": qivive.get("in_vitro_sources"),
+        found.append({"@type": "pbpk:Evaluation", "name": "QIVIVE and benchmark dose", "pbpk:evaluationData": qivive.get("in_vitro_sources"),
                       "description": joined(sentence("Dose metrics", qivive.get("dose_metrics")), sentence("Benchmark response", qivive.get("benchmark_response")),
                                             sentence("Software", qivive.get("software"))),
-                      "outcome": qivive.get("key_result")})
+                      "pbpk:outcome": qivive.get("key_result")})
     return found
 
 
@@ -358,9 +358,9 @@ def sensitivity(described: dict) -> list[dict]:
     given = (described.get("model_evaluation_and_validation") or {}).get("local_sensitivity_analysis") or {}
     if not given:
         return []
-    return [{"@type": "SUVAnalysis", "analysisType": "Sensitivity analysis", "method": sentence("Local sensitivity analysis", given.get("perturbation")),
-             "outcome": given.get("key_result"),
-             "notes": joined(sentence("Scenario", given.get("scenario")), sentence("Output", given.get("output")),
+    return [{"@type": "pbpk:SUVAnalysis", "pbpk:analysisType": "Sensitivity analysis", "pbpk:method": sentence("Local sensitivity analysis", given.get("perturbation")),
+             "pbpk:outcome": given.get("key_result"),
+             "pbpk:notes": joined(sentence("Scenario", given.get("scenario")), sentence("Output", given.get("output")),
                              sentence("Substantial influence", given.get("substantial_influence_threshold")))}]
 
 
@@ -379,9 +379,9 @@ def scenarios(row: dict, described: dict) -> str:
             else:
                 details.append(f"{key.replace('_', ' ')} {value}")
         sentences.append(sentence(scenario.get("name", "Scenario"), details))
-        for output in named_parts("FormalParameter", scenario.get("outputs")):
-            if output not in row.setdefault("output", []):
-                row["output"].append(output)
+        for output in named_parts("bioschemas:FormalParameter", scenario.get("outputs")):
+            if output not in row.setdefault("bioschemas:output", []):
+                row["bioschemas:output"].append(output)
     return " ".join(sentences)
 
 
@@ -390,22 +390,22 @@ def template(row: dict, described: dict, model: dict) -> None:
     general = described.get("general_model_information") or {}
     structure = model.get("structure") or {}
     kind = f"{structure['type']}." if present(structure.get("type")) else ""
-    fill(row, "intendedUse", sentence("Intended applications", general.get("intended_application")))
+    fill(row, "pbpk:intendedUse", sentence("Intended applications", general.get("intended_application")))
     fill(row, "alternateName", model.get("model_name"))
-    fill(row, "mathematicalRepresentation", listed(model.get("mathematical_representation")))
-    fill(row, "modelStructureDescription", joined(kind, sentence("Renal clearance", structure.get("renal_clearance"))))
-    fill(row, "structuralCompartments", named_parts("Compartment", structure.get("compartments")))
-    fill(row, "connections", connections(structure.get("connections")))
-    fill(row, "implementation", implementations(model.get("implementation_files")))
-    fill(row, "hasBiologicalSystem", system(described, model))
+    fill(row, "pbpk:mathematicalRepresentation", listed(model.get("mathematical_representation")))
+    fill(row, "pbpk:modelStructureDescription", joined(kind, sentence("Renal clearance", structure.get("renal_clearance"))))
+    fill(row, "pbpk:structuralCompartments", named_parts("pbpk:Compartment", structure.get("compartments")))
+    fill(row, "pbpk:connections", connections(structure.get("connections")))
+    fill(row, "pbpk:implementation", implementations(model.get("implementation_files")))
+    fill(row, "pbpk:hasBiologicalSystem", system(described, model))
     chemical_notes(row, described)
-    fill(row, "hasParameter", parameters(model))
-    fill(row, "hasCalibration", calibration(model))
-    fill(row, "hasEvaluation", evaluations(described, model))
-    fill(row, "hasSUVAnalysis", sensitivity(described))
-    fill(row, "reproducibilityInstructions", scenarios(row, described))
-    fill(row, "applicabilityDomain", sentence("Route of administration", model.get("route_of_administration")))
-    fill(row, "limitations", joined(*listed(described.get("limitations_and_uncertainties"))))
+    fill(row, "pbpk:hasParameter", parameters(model))
+    fill(row, "pbpk:hasCalibration", calibration(model))
+    fill(row, "pbpk:hasEvaluation", evaluations(described, model))
+    fill(row, "pbpk:hasSUVAnalysis", sensitivity(described))
+    fill(row, "pbpk:reproducibilityInstructions", scenarios(row, described))
+    fill(row, "pbpk:applicabilityDomain", sentence("Route of administration", model.get("route_of_administration")))
+    fill(row, "pbpk:limitations", joined(*listed(described.get("limitations_and_uncertainties"))))
 
 
 def curated(row: dict, described: dict) -> None:
@@ -416,23 +416,23 @@ def curated(row: dict, described: dict) -> None:
     for kind in listed(model.get("model_type")):
         types.append(str(kind))
         if "ordinary differential equation" in str(kind).lower():
-            fill(row, "mathematicalRepresentation", "Ordinary differential equations")
-    fill(row, "intendedUse", model.get("purpose"))
+            fill(row, "pbpk:mathematicalRepresentation", "Ordinary differential equations")
+    fill(row, "pbpk:intendedUse", model.get("purpose"))
     fill(row, "applicationCategory", types[:1])
-    fill(row, "hasBiologicalSystem", [{"@type": "BiologicalSystem", "species": str(species)} for species in listed(model.get("species"))])
-    fill(row, "structuralCompartments", named_parts("Compartment", listed(model.get("gastrointestinal_structure")) + listed(model.get("systemic_compartments"))))
-    fill(row, "modelStructureDescription", joined(sentence("Processes", model.get("processes")), sentence("Modelled entities", model.get("modelled_entity_classes")),
+    fill(row, "pbpk:hasBiologicalSystem", [{"@type": "pbpk:BiologicalSystem", "pbpk:species": str(species)} for species in listed(model.get("species"))])
+    fill(row, "pbpk:structuralCompartments", named_parts("pbpk:Compartment", listed(model.get("gastrointestinal_structure")) + listed(model.get("systemic_compartments"))))
+    fill(row, "pbpk:modelStructureDescription", joined(sentence("Processes", model.get("processes")), sentence("Modelled entities", model.get("modelled_entity_classes")),
                                                   sentence("Partition coefficient methods", model.get("partition_methods"))))
-    fill(row, "input", named_parts("FormalParameter", model.get("inputs")))
-    fill(row, "output", named_parts("FormalParameter", model.get("outputs")))
-    fill(row, "applicabilityDomain", joined(sentence("Exposure routes", model.get("exposure_routes")), sentence("Exposure pattern", model.get("exposure_pattern"))))
-    fill(row, "implementation", implementations((described.get("implementation") or {}).get("entry_points")))
+    fill(row, "bioschemas:input", named_parts("bioschemas:FormalParameter", model.get("inputs")))
+    fill(row, "bioschemas:output", named_parts("bioschemas:FormalParameter", model.get("outputs")))
+    fill(row, "pbpk:applicabilityDomain", joined(sentence("Exposure routes", model.get("exposure_routes")), sentence("Exposure pattern", model.get("exposure_pattern"))))
+    fill(row, "pbpk:implementation", implementations((described.get("implementation") or {}).get("entry_points")))
     roles(row, {str(name).casefold(): ["Parent compound"] for name in listed(evaluation.get("parent_pesticides"))})
     if evaluation:
-        metrics = [{"@type": "PerformanceMetric", "name": key.replace("_", " "), "value": str(value)} for key, value in (evaluation.get("reported_results") or {}).items()]
-        fill(row, "hasEvaluation", [{"@type": "Evaluation", "description": evaluation.get("criteria"), "performanceMetrics": metrics,
-                                     "evaluationData": sentence("Observables", evaluation.get("observables"))}])
-    fill(row, "limitations", joined(*listed(described.get("limitations"))))
+        metrics = [{"@type": "pbpk:PerformanceMetric", "name": key.replace("_", " "), "value": str(value)} for key, value in (evaluation.get("reported_results") or {}).items()]
+        fill(row, "pbpk:hasEvaluation", [{"@type": "pbpk:Evaluation", "description": evaluation.get("criteria"), "pbpk:performanceMetrics": metrics,
+                                     "pbpk:evaluationData": sentence("Observables", evaluation.get("observables"))}])
+    fill(row, "pbpk:limitations", joined(*listed(described.get("limitations"))))
 
 
 def chemicals(nodes: dict, others: dict) -> list[dict]:
@@ -440,7 +440,7 @@ def chemicals(nodes: dict, others: dict) -> list[dict]:
     found = []
     for node in nodes.values():
         if "MolecularEntity" in kinds(node) or "ChemicalSubstance" in kinds(node):
-            chemical = {"@type": ["Chemical", *kinds(node)], **fields(nodes, node, others)}
+            chemical = {"@type": kinds(node), **fields(nodes, node, others)}
             chemical.setdefault("sameAs", []).append(link(node["@id"]))
             identifiers(chemical)
             weight(chemical)
@@ -451,7 +451,7 @@ def chemicals(nodes: dict, others: dict) -> list[dict]:
 def model_row(nodes: dict, root: dict, main: dict, address: str, others: dict) -> dict:
     """A model's row: its entity's fields, then the crate's it lacks; its links to records and terms, its
     citations as publications and its requirements as texts."""
-    row = {"@id": address, "@type": "Model", **fields(nodes, main, others)}
+    row = {"@id": address, "@type": "SoftwareSourceCode", **fields(nodes, main, others)}
     for field in SHARED:
         fill(row, field, [converted(nodes, value, others, frozenset({LOCAL})) for value in values(root, field)])
     for field in LINKS:
@@ -464,6 +464,8 @@ def model_row(nodes: dict, root: dict, main: dict, address: str, others: dict) -
                 others.setdefault(article["@id"], article)
                 cited["@id"] = article["@id"]
     row["softwareRequirements"] = [version_of(part) for part in row.get("softwareRequirements", [])]
+    # The crate's authors are the model's creators in the profile.
+    row.setdefault("creator", []).extend(row.pop("author", []))
     return row
 
 
@@ -481,11 +483,11 @@ def zenodo(row: dict, hit: dict, nodes: dict, others: dict) -> None:
     for keyword in row.get("keywords", []):
         keywords.append(term(keyword, "glossary") if isinstance(keyword, str) else keyword)
     row["keywords"] = keywords
-    row["page"] = link(hit["links"]["self_html"])
+    row["isBasedOn"] = link(hit["links"]["self_html"])
     if present(hit.get("doi")):
-        row["doi"] = link("https://doi.org/" + hit["doi"])
+        row["sameAs"] = link("https://doi.org/" + hit["doi"])
     if present(metadata.get("publication_date")):
-        row["published"] = {"@value": metadata["publication_date"], "@type": DATE}
+        row["datePublished"] = {"@value": metadata["publication_date"], "@type": DATE}
     if "creator" in row or "author" in row:
         return
     for creator in metadata.get("creators") or []:
@@ -520,7 +522,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         mains = [nodes[main["@id"]] for main in values(root, "mainEntity") if main.get("@id") in nodes]
         crate_name = CRATE.match(crate_file["key"])
         found_chemicals = chemicals(nodes, others)
-        taxa = [{"@type": "BiologicalSystem", "species": link(node["@id"])} for node in nodes.values() if "Taxon" in kinds(node)]
+        taxa = [{"@type": "pbpk:BiologicalSystem", "pbpk:species": link(node["@id"])} for node in nodes.values() if "Taxon" in kinds(node)]
         for main in mains:
             model = reported(described, main)
             if crate_name and len(mains) == 1:
@@ -529,11 +531,11 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
                 name = (model or {}).get("model_name") or text(main, "name") or hit["metadata"]["title"]
             row = model_row(nodes, root, main, "models/" + slug(name), others)
             zenodo(row, hit, nodes, others)
-            fill(row, "hasChemical", copy.deepcopy(found_chemicals))
+            fill(row, "pbpk:hasChemical", copy.deepcopy(found_chemicals))
             if model is not None:
                 template(row, described, model)
             elif "model" in described:
                 curated(row, described)
-            fill(row, "hasBiologicalSystem", taxa)
+            fill(row, "pbpk:hasBiologicalSystem", taxa)
             rows.append(row)
     return rows + list(others.values())

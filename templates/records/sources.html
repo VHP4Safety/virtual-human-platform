@@ -23,31 +23,10 @@
         <dd class="col-sm-9">{% for url in source.files.values() %}<a class="link-vhpblue text-break" href="{{ url }}">{{ url }}</a>{% if not loop.last %}<br>{% endif %}{% endfor %}</dd>
         <dt class="col-sm-3">Last imported</dt>
         <dd class="col-sm-9">{% if source.fetched %}{{ source.fetched.fetched_at[:16]|replace("T", " ") }} UTC · SHA-256 <code>{{ source.fetched.sha256[:12] }}</code>{% else %}not yet{% endif %}</dd>
+        <dt class="col-sm-3">Read by</dt>
+        <dd class="col-sm-9"><code>linkeddata/parsers/{{ source.parser }}.py</code>, into the terms of the model</dd>
       </dl>
 
-      <h3 class="h6">Field mapping</h3>
-      <div class="table-responsive">
-        <table class="table table-sm align-middle">
-          <thead><tr><th style="width: 35%">In the source</th><th style="width: 30%">On the platform</th><th>Value</th></tr></thead>
-          <tbody>
-            {% for row in source.mapping %}
-            <tr>
-              <td>{% if row.source %}<code>{{ row.source }}</code>{% else %}<span class="text-secondary">always</span>{% endif %}</td>
-              <td>{{ row.platform }}</td>
-              <td class="text-break">{% if row.value %}<a class="link-vhpblue" href="{{ row.value }}">{{ row.value|short_iri }}</a>{% else %}<span class="text-secondary">the source's value</span>{% endif %}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-
-      {% if source.fetched %}
-      <details>
-        <summary class="link-vhpblue small">For developers: the conversion as a SPARQL query</summary>
-        <p class="small text-secondary mt-2">The file is cleaned by <code>linkeddata/parsers/{{ source.parser }}.py</code> and read as RDF, with its field names under the <code>{{ source.name }}:</code> prefix. This CONSTRUCT query, written by rdfsolve from the table above, maps them to the platform's model.</p>
-        <pre class="small bg-body-tertiary p-2 rounded"><code>{{ source.fetched.queries }}</code></pre>
-      </details>
-      {% endif %}
     </div>
   </div>
   {% endfor %}
