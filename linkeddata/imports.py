@@ -2,6 +2,7 @@
 
 - Fetch each source, and read it with its parser as rows in the terms of the model.
 - Replace the earlier records of the source with the rows. Keep the records written on the platform.
+- Store the people and organisations with the same ORCID iD or ROR ID as one record.
 - Import the sources of records first, then the sources of terms, then the sources that enrich records.
 - Last, check the records of each source against the model.
 
@@ -12,6 +13,7 @@ import importlib
 import io
 import json
 import re
+import unicodedata
 import zipfile
 from pathlib import Path
 from urllib.parse import quote, urlsplit
@@ -34,6 +36,8 @@ from linkeddata import checks, documents
 from linkeddata.profile import MODEL_DIR, fields, profile_graph, profile_text, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
+# The registries with addresses that identify a person or an organisation, in sameAs.
+REGISTRIES = ("https://orcid.org/", "https://ror.org/")
 LAUNCH_DIR = Path(__file__).parent / "launch"
 ITEM = "http://wikiba.se/ontology#Item"
 
@@ -120,6 +124,56 @@ def records_of(data: ox.Dataset, classes: list[str], source: str) -> list[tuple[
             own = records.described(graph, str(subject))
             found.append((records.rows(own, str(subject), kind, source), own))
     return found
+
+
+def words(name) -> set[str]:
+    """Return the words of four or more letters of a name, in lower case and without accents."""
+    plain = "".join(letter for letter in unicodedata.normalize("NFKD", str(name or "")) if not unicodedata.combining(letter))
+    return set(re.findall(r"\w{4,}", plain.casefold()))
+
+
+def one_per_identifier(found: list[tuple[list[dict], Graph]]) -> list[tuple[list[dict], Graph]]:
+    """Store the records of one class with the same registry address in sameAs (REGISTRIES) as one record.
+
+    - Use the address of the stored record with that registry address, or else the first address in *found*.
+    - Merge their statements as in an enrichment. Change the links of the other records to that address.
+    - Keep records apart if their names have no common word. The registry address of one of them is then wrong in
+      its source. Report them."""
+    names = {listed[0]["iri"]: listed[0]["name"] for listed, _ in found}
+    first, renamed = {}, {}
+    for listed, statements in found:
+        iri, of_class = listed[0]["iri"], listed[0]["type"]
+        given = sorted(str(value) for value in statements.objects(URIRef(iri), SDO.sameAs) if str(value).startswith(REGISTRIES))
+        if not given:
+            continue
+        if (of_class, given[0]) not in first:
+            with database.engine().connect() as connection:
+                stored = list(connection.scalars(records.nodes_with(of_class, str(SDO.sameAs), given[:1])))
+            kept = sorted(record.iri for record in records.kept(stored) if record.part_of is None)
+            names.update(records.names(kept))
+            first[(of_class, given[0])] = (kept or [iri])[0]
+        target = first[(of_class, given[0])]
+        if target == iri:
+            continue
+        if words(names.get(iri)) & words(names.get(target)):
+            renamed[iri] = target
+        else:
+            print(f"{iri} and {target} have the same address {given[0]} but other names; they are kept apart")
+
+    def moved(node):
+        return URIRef(renamed[str(node)]) if isinstance(node, URIRef) and str(node) in renamed else node
+
+    joined = {}
+    for listed, statements in found:
+        iri = renamed.get(listed[0]["iri"], listed[0]["iri"])
+        own = Graph()
+        for subject, predicate, value in statements:
+            own.add((moved(subject), predicate, moved(value)))
+        if iri in joined:
+            joined[iri] = (joined[iri][0], merge(joined[iri][1], own, profile_text()).graph)
+        else:
+            joined[iri] = ([{**row, "iri": iri} if row["iri"] == listed[0]["iri"] else row for row in listed], own)
+    return list(joined.values())
 
 
 class Refused(Exception):
@@ -324,7 +378,7 @@ def import_source(spec: dict) -> None:
     # One file is passed as is; several files are passed by name.
     parsed = parser.parse(contents if "files" in spec or "entries" in spec or "terms" in spec or "members" in spec or "documents" in spec else contents[spec["name"]])
     data = convert(parsed, config["base"])
-    found = records_of(data, [of_class for kind in config["kinds"].values() for of_class in records.within(kind)], spec["name"])
+    found = one_per_identifier(records_of(data, [of_class for kind in config["kinds"].values() for of_class in records.within(kind)], spec["name"]))
     checksum = hashlib.sha256()
     for name in sorted(contents):
         checksum.update(contents[name])
