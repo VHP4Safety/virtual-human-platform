@@ -1,67 +1,86 @@
 {% extends "editor/base.html" %}
+{% macro editor_link(path, iri) -%}
+{{ url_for('admin.edit', kind=path) }}?record={{ iri|urlencode }}
+{%- endmacro %}
 {% block content %}
-<section class="container-fluid px-lg-4 py-4">
-  <div class="pb-2">
-    <h1><span class="text-vhpblue">Data quality</span></h1>
-    <p class="text-secondary fs-5">Record completeness, and what the model's checks found.</p>
-    <p>Records follow the platform's model, built on <a class="link-vhpblue" href="https://schema.org">schema.org</a> and <a class="link-vhpblue" href="https://bioschemas.org">Bioschemas</a>. Imports are converted with <a class="link-vhpblue" href="https://github.com/jmillanacosta/rdfsolve">rdfsolve</a> and checked against the model; records written on the platform are checked before they are saved.</p>
-  </div>
+<section class="container-fluid px-lg-4 py-4" style="max-width: 72rem">
+  <h1 class="h3">Data quality</h1>
+  <p class="text-secondary">The records are checked against the model and against the Bioschemas profiles that the model declares, at each import and at each save. Values that do not fit are kept and listed here.</p>
 
-  <h2 class="h4 mt-3">Completeness</h2>
-  <p class="small text-secondary">Records with a value in each field. Fields marked <span class="text-danger">*</span> are required.</p>
-  <div class="row g-3">
-    {% for kind in classes %}
-    <div class="col-md-6">
-      <div class="card h-100">
-        <div class="card-header bg-vhplight-blue d-flex justify-content-between">
-          <strong>{{ kind.type|short_iri }}</strong><span>{{ kind.records }} records</span>
-        </div>
-        <div class="card-body">
-          {% for item in kind.fields %}
-          {% set share = (100 * item.records / kind.records)|round|int %}
-          <div class="d-flex justify-content-between small"><span>{{ item.field }}{% if item.required %} <span class="text-danger">*</span>{% endif %}</span><span>{{ item.records }} of {{ kind.records }}</span></div>
-          <div class="progress mb-2" role="progressbar" aria-label="{{ item.field }}" aria-valuenow="{{ share }}" aria-valuemin="0" aria-valuemax="100" style="height: 6px">
-            <div class="progress-bar {% if item.required and share < 100 %}bg-vhporange{% else %}bg-vhpblue{% endif %}" style="width: {{ share }}%"></div>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-    {% else %}
-    <p>No records imported yet.</p>
-    {% endfor %}
-  </div>
+  <h2 class="h5 mt-4">Kinds of records</h2>
+  <table class="table table-sm align-middle">
+    <thead><tr><th>Kind</th><th class="text-end">Records</th><th class="text-end">Records with notes</th><th class="text-end">Notes</th><th>Required fields not filled</th></tr></thead>
+    <tbody>
+      {% for kind in summary %}
+      <tr>
+        <td><a class="link-vhpblue" href="{{ url_for('admin.edit', kind=kind.path) }}">{{ kind.name }}</a></td>
+        <td class="text-end">{{ kind.records }}</td>
+        <td class="text-end">{{ kind.noted }}</td>
+        <td class="text-end">{{ kind.notes }}</td>
+        <td class="small">{% for item in kind.missing %}{{ item.field }} ({{ item.records }}){{ ", " if not loop.last }}{% else %}<span class="text-secondary">None</span>{% endfor %}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-secondary">No records yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
-  <h2 class="h4 mt-4">Values that do not fit <span class="badge text-bg-vhporange align-middle">{{ notes }}</span></h2>
-  <p>Source values that do not fit the model are kept, and listed here until the source is corrected. Records written on the platform are checked again weekly, as the model may have changed; they are corrected in the record editor. Values are grouped by field and problem.</p>
-  <div class="accordion" id="notes">
-    {% for group in groups %}
-    <div class="accordion-item">
-      <h3 class="accordion-header">
-        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#notes-{{ loop.index }}" aria-expanded="false" aria-controls="notes-{{ loop.index }}">
-          <span class="badge text-bg-vhporange me-2">{{ group.notes|length }}</span>
-          <span><strong>{{ group.field }}</strong>: {{ group.meaning }}</span>
-        </button>
-      </h3>
-      <div id="notes-{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#notes">
-        <div class="accordion-body p-0">
-          <p class="small text-secondary px-3 pt-2 mb-2">Check message: <code>{{ group.reason }}</code></p>
-          <table class="table table-sm mb-0">
-            <thead><tr><th class="ps-3">Record</th><th>Value</th><th>Source</th></tr></thead>
-            <tbody>
+  {% if failed %}
+  <h2 class="h5 mt-4">Failed imports</h2>
+  <p class="small text-secondary">The records of these sources are kept as they were after the last successful import.</p>
+  <table class="table table-sm">
+    <thead><tr><th>Source</th><th>Problem</th></tr></thead>
+    <tbody>
+      {% for source in failed %}
+      <tr><td>{{ source.name }}</td><td class="small text-break">{{ source.problem }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <h2 class="h5 mt-4">Values to check <span class="badge text-bg-light border align-middle">{{ notes }}</span></h2>
+  <p class="small text-secondary">Values of imported records are corrected at their source; values of records written on the platform are corrected in the editor. Click a number to see the records.</p>
+  {% for kind in noted %}
+  <h3 class="h6 mt-3">{{ kind.name }}</h3>
+  <table class="table table-sm align-top">
+    <thead><tr><th style="width: 25%">Field</th><th>Problem</th><th class="text-end" style="width: 6rem">Records</th></tr></thead>
+    <tbody>
+      {% for group in kind.groups %}
+      <tr>
+        <td>{{ group.field }}</td>
+        <td>
+          <details>
+            <summary>{{ group.reason }}</summary>
+            <ul class="list-unstyled small mt-1 mb-0">
               {% for note in group.notes %}
-              <tr>
-                <td class="ps-3"><a class="link-vhpblue text-break" href="{{ note.iri|page_link }}">{{ names.get(note.iri) or note.iri|page_link }}</a></td>
-                <td class="text-break"><code>{{ note.value or "(empty)" }}</code></td>
-                <td>{% if note.source == written %}<a class="link-vhpblue" href="{{ url_for('changes.changes', record=note.iri) }}">written on the platform</a>{% else %}{{ note.source }}{% endif %}</td>
-              </tr>
+              <li><a class="link-vhpblue" href="{{ editor_link(kind.path, note.iri) }}">{{ names.get(note.iri) or note.iri|page_link }}</a>{% if note.value %}: <code class="text-break">{{ note.value|truncate(80) }}</code>{% endif %}{% if note.source == written %} <span class="text-secondary">(written on the platform)</span>{% endif %}</li>
               {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
+            </ul>
+          </details>
+        </td>
+        <td class="text-end">{{ group.notes|length }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-secondary">No values to check.</p>
+  {% endfor %}
+
+  <h2 class="h5 mt-4">Fields missing from the model</h2>
+  <p class="small text-secondary">These fields of the declared Bioschemas profiles are not in the model, so they are not checked in the records. Add a field to the model to check it.</p>
+  <table class="table table-sm align-top">
+    <thead><tr><th>Kind</th><th>Bioschemas profile</th><th>Required</th><th>Recommended</th></tr></thead>
+    <tbody>
+      {% for gap in gaps %}
+      <tr>
+        <td>{{ gap.kind }}</td>
+        <td class="small">{{ gap.profile }}</td>
+        <td class="small">{{ gap.required|join(", ") or "None" }}</td>
+        <td class="small">{% if gap.recommended %}<details><summary>{{ gap.recommended|length }} fields</summary>{{ gap.recommended|join(", ") }}</details>{% else %}None{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </section>
 {% endblock %}

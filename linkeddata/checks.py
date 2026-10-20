@@ -1,15 +1,17 @@
 """Checks of the records against the model, with pyshacl, and the content of the data quality page."""
 
+import re
+
 import pyshacl
-from rdflib import RDF, Graph, URIRef
-from rdflib.namespace import SH
+from rdflib import RDF, BNode, Graph, URIRef
+from rdflib.namespace import DCTERMS, RDFS, SDO, SH
 from sqlalchemy import select
 
 import database
 from database import records
-from database.tables import Note, Record
+from database.tables import Note, Record, Source
 from linkeddata import documents
-from linkeddata.profile import fields, hierarchy, jsonld_name, official_fields, settings, shapes
+from linkeddata.profile import fields, hierarchy, jsonld_name, official_fields, profile_graph, settings, shape_of, shapes
 
 # Messages by SHACL constraint.
 CONSTRAINTS = {
@@ -43,6 +45,54 @@ def official(result, results: Graph) -> tuple | None:
     return path, f"{'Required' if needs else 'Recommended'} by {named}."
 
 
+# The reasons of the results of official shapes, as official() writes them.
+OFFICIAL = re.compile(r"(by|for) (Bioschemas .+|schema\.org)\.$")
+# The properties that are added when a record is published (documents.typed()), so they are no gaps of the profile.
+PUBLISHED = {RDF.type, SDO.url, SDO.mainEntityOfPage, DCTERMS.conformsTo}
+
+
+def record_of(found: Graph, node):
+    """Return the record of a node: the node if it has an address, else the record above it."""
+    seen = set()
+    while isinstance(node, BNode) and node not in seen:
+        seen.add(node)
+        node = next(found.subjects(None, node), node)
+    return node
+
+
+def in_form(found: Graph, node, path) -> bool:
+    """Return True if *path* is a field of the node shape of a class of *node*, so that it can be filled in the
+    editor."""
+    for of_class in found.objects(node, RDF.type):
+        for field in fields(str(of_class)):
+            if field["iri"] == str(path):
+                return True
+    return False
+
+
+def gaps() -> list[dict]:
+    """Return, for each node shape that declares an official profile (dct:conformsTo), the fields of that profile
+    that are not in the node shape.
+
+    Such fields cannot be filled in the editor, so they are not reported for records. Add a field to the profile to
+    check it."""
+    graph = profile_graph()
+    found = []
+    for shape, conformed in sorted(graph.subject_objects(DCTERMS.conformsTo)):
+        own = set()
+        for of_class in graph.objects(shape, SH.targetClass):
+            own.update(field["iri"] for field in fields(str(of_class)))
+        missing = {}
+        for official_shape, path, needs in official_fields().values():
+            if official_shape == conformed and path not in PUBLISHED and str(path) not in own:
+                missing[jsonld_name(str(path))] = missing.get(jsonld_name(str(path))) or needs
+        if missing:
+            found.append({"kind": str(graph.value(shape, RDFS.label) or shape), "profile": " ".join(str(conformed).split("/")[-2:]),
+                          "required": sorted(name for name, needs in missing.items() if needs),
+                          "recommended": sorted(name for name, needs in missing.items() if not needs)})
+    return found
+
+
 def validate(found: Graph) -> Graph:
     """Check statements with the shapes of the model. Add the class and the name of each linked record first, so
     that a link is checked against the class of that record."""
@@ -72,9 +122,13 @@ def notes(found: Graph) -> list[dict]:
         messages = []
         for message in results.objects(result, SH.resultMessage):
             messages.append(str(message))
-        path, reason = official(result, results) or (results.value(result, SH.resultPath), " ".join(messages))
+        given = official(result, results)
+        # An official result is noted only for a field of the form, as other fields cannot be filled (gaps()).
+        if given and not in_form(found, focus, given[0]):
+            continue
+        path, reason = given or (results.value(result, SH.resultPath), " ".join(messages))
         note = {
-            "iri": str(focus),
+            "iri": str(record_of(found, focus)),
             "field": str(path or ""),
             "value": str(results.value(result, SH.value) or ""),
             "reason": reason,
@@ -121,6 +175,8 @@ def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]
         for field in fields(str(found.value(focus, RDF.type))):
             form[field["iri"]] = field
         given = official(result, results)
+        if given and not in_form(found, focus, given[0]):
+            continue
         path = str(given[0] if given else results.value(result, SH.resultPath))
         field = " > ".join(trail + [jsonld_name(path)])
         message = form[path]["message"] if path in form and form[path]["message"] else meaning(str(results.value(result, SH.sourceConstraintComponent)))
@@ -152,44 +208,57 @@ def named(of_class: str, path: str) -> str:
 
 
 def report() -> dict:
-    """Return the content of the data quality page. Count the filled fields of each kind of records, and group the
-    notes of the checks by field and constraint."""
+    """Return the content of the data quality page.
+
+    Summarise each kind of records, group the notes of the checks by kind, field and problem, and list the failed
+    imports and the gaps of the profile (gaps())."""
     with database.session() as db:
-        kept = list(db.scalars(select(Record).where(Record.removed_at.is_(None))))
-        notes = list(db.scalars(select(Note).order_by(Note.field, Note.reason, Note.iri)))
-    labels = {}
-    for kind in settings()["kinds"].values():
-        for field in fields(kind):
-            labels[(kind, field["iri"])] = field["label"]
-    types = {}
-    of_class = {}
+        kept = list(db.scalars(select(Record).where(Record.removed_at.is_(None), Record.moved_to.is_(None), Record.part_of.is_(None))))
+        notes = list(db.scalars(select(Note).order_by(Note.iri, Note.field)))
+        failed = []
+        for source in db.scalars(select(Source).order_by(Source.name)):
+            if source.problem:
+                failed.append({"name": source.name, "problem": source.problem})
+    graph = profile_graph()
+    paths = {}
+    for path, of_class in settings()["kinds"].items():
+        for within in records.within(of_class):
+            paths.setdefault(within, path)
+    kind_of = {}
     for record in kept:
-        types[record.iri] = record.type
-        of_class.setdefault(record.type, []).append(record)
-    statements = records.read(list(types))
-    classes = []
-    for kind in sorted(of_class):
-        completeness = []
-        for field in fields(kind):
-            filled = 0
-            for record in of_class[kind]:
-                if documents.stored_values(statements, record.iri, field["name"]):
-                    filled += 1
-            completeness.append({"field": field["label"], "required": field["required"], "records": filled})
-        classes.append({"type": kind, "records": len(of_class[kind]), "fields": completeness})
-    grouped = {}
-    for note in notes:
-        grouped.setdefault((note.field, note.component or ""), []).append(note)
-    groups = []
-    for (field, component), noted in grouped.items():
-        groups.append({
-            "field": labels.get((types.get(noted[0].iri, ""), field), field),
-            "meaning": meaning(component),
-            "reason": noted[0].reason,
-            "notes": noted,
-        })
-    groups.sort(key=lambda group: -len(group["notes"]))
-    iris = []
-    for note in notes:
-        iris.append(note.iri)
-    return {"classes": classes, "groups": groups, "notes": len(notes), "names": records.names(iris)}
+        kind_of[record.iri] = paths.get(record.type, "")
+    statements = records.read(list(kind_of))
+    # A field of a part, such as a compartment of a model, is named by the label of its field in any shape.
+    every = {}
+    for of_class in set(graph.objects(None, SH.targetClass)):
+        for field in fields(str(of_class)):
+            every.setdefault(field["iri"], field["label"])
+    summary = []
+    noted = []
+    for path, of_class in settings()["kinds"].items():
+        listed = {iri for iri, kind in kind_of.items() if kind == path}
+        if not listed:
+            continue
+        name = str(graph.value(shape_of(of_class), RDFS.label) or path)
+        labels = {}
+        messages = {}
+        missing = []
+        for field in fields(of_class):
+            labels[field["iri"]] = field["label"]
+            messages[field["iri"]] = field["message"]
+            if field["required"]:
+                empty = len([iri for iri in listed if not documents.stored_values(statements, iri, field["name"])])
+                if empty:
+                    missing.append({"field": field["label"], "records": empty})
+        own = [note for note in notes if note.iri in listed]
+        summary.append({"path": path, "name": name, "records": len(listed), "noted": len({note.iri for note in own}), "notes": len(own),
+                        "missing": missing})
+        groups = {}
+        for note in own:
+            problem = note.reason if OFFICIAL.search(note.reason) else messages.get(note.field) or meaning(note.component)
+            groups.setdefault((labels.get(note.field) or every.get(note.field) or jsonld_name(note.field), problem), []).append(note)
+        if groups:
+            noted.append({"path": path, "name": name, "groups": [{"field": field, "reason": reason, "notes": found}
+                                                              for (field, reason), found in sorted(groups.items(), key=lambda item: -len(item[1]))]})
+    return {"summary": summary, "noted": noted, "notes": len(notes), "failed": failed, "gaps": gaps(),
+            "names": records.names(sorted({note.iri for note in notes}))}
