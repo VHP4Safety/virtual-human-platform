@@ -5,9 +5,9 @@ linkeddata/parsers): the repository's tree at a pinned commit gives the tutorial
   the tool it teaches (tools/<name>), as the documentation names its folders.
 - Its title is its first heading; its authors the bold line under it ("**Author:** A, B"; a team is an
   organisation); its description its first paragraph, before its first section other than its introduction,
-  without HTML blocks such as a notebook's badge. Its sections (the headings below the title, outside code) are
-  its outline, each at its address on the documentation site with the anchor Sphinx gives it (docutils'
-  identifiers: "3.1 Free-Text Search" is #free-text-search).
+  without HTML blocks such as a notebook's badge. Its web page on the documentation site is the page whose main
+  entity it is; the headings below the title, outside code, are the sections of that page, each at its address
+  with the anchor Sphinx gives it (docutils' identifiers: "3.1 Free-Text Search" is #free-text-search).
 - It follows the documentation's format (tutorials/documentation_format.md) when its sections are the format's.
 - Its notebooks and scripts are its files, at their addresses on GitHub; its date is its latest change's."""
 
@@ -191,10 +191,12 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         changes = json.loads(contents.get(path + "#changes", b"[]"))
         if changes:
             row["dateModified"] = {"@value": changes[0]["commit"]["committer"]["date"][:10], "@type": DATE}
-        parts = []
+        sections = []
         for level, heading in found[1:]:
             if level <= 3 and present(heading):
-                parts.append({"@type": "WebPageElement", "name": heading, "url": link(page + "#" + anchor(heading)), "position": len(parts) + 1})
+                sections.append({"@type": "WebPageElement", "name": heading, "url": link(page + "#" + anchor(heading)), "position": len(sections) + 1})
+        row["mainEntityOfPage"] = {"@type": "WebPage", "url": link(page), "hasPart": sections}
+        parts = []
         folder = path.rsplit("/", 1)[0] + "/"
         for entry in tree["tree"]:
             if files is not None and entry["path"].startswith(folder) and entry["path"].endswith(FILES):

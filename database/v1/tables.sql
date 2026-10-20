@@ -626,6 +626,15 @@ CREATE TABLE IF NOT EXISTS "schema_course__schema_learning_resource_type" (
   FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_course__schema_learning_resource_type__record" ON "schema_course__schema_learning_resource_type" ("record");
+CREATE TABLE IF NOT EXISTS "schema_course__schema_main_entity_of_page" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_course" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_course__schema_main_entity_of_page__record" ON "schema_course__schema_main_entity_of_page" ("record");
 CREATE TABLE IF NOT EXISTS "schema_course__schema_mentions" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
@@ -1122,6 +1131,15 @@ CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_learning_resource_t
   FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_learning_resource__schema_learning_resource_type__record" ON "schema_learning_resource__schema_learning_resource_type" ("record");
+CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_main_entity_of_page" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_learning_resource" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_learning_resource__schema_main_entity_of_page__record" ON "schema_learning_resource__schema_main_entity_of_page" ("record");
 CREATE TABLE IF NOT EXISTS "schema_learning_resource__schema_mentions" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
