@@ -91,7 +91,9 @@
       {% if draft_vocabulary is not none %}
       <div class="d-flex flex-wrap align-items-center gap-2 small mb-3">
         <span class="badge text-bg-warning">Draft</span>
-        <span class="text-secondary">A term proposed for its vocabulary and not yet in it, at a platform address.</span>
+        <span class="text-secondary">A term proposed for its vocabulary and not yet in it, at a platform address. At the next import after the
+          vocabulary has the term, this draft is merged into it: by the address in Other addresses (such as the VHP ID from the glossary
+          request), or else by the same label.</span>
         <span class="d-none align-items-center gap-2" id="term-request">
           <label class="text-secondary text-nowrap" for="term-table">Table of the glossary</label>
           <button type="button" class="btn btn-sm btn-outline-vhppurple text-nowrap" data-action="request">Request it on GitHub</button>

@@ -215,7 +215,7 @@ def report() -> dict:
     """Return the content of the data quality page.
 
     Summarise each kind of records, group the notes of the checks by kind, field and problem, and list the failed
-    imports and the gaps of the profile (gaps())."""
+    imports, the gaps of the profile (gaps()) and the draft terms that their vocabularies do not have yet."""
     with database.session() as db:
         kept = list(db.scalars(select(Record).where(Record.removed_at.is_(None), Record.moved_to.is_(None), Record.part_of.is_(None))))
         notes = list(db.scalars(select(Note).order_by(Note.iri, Note.field)))
@@ -264,5 +264,7 @@ def report() -> dict:
         if groups:
             noted.append({"path": path, "name": name, "groups": [{"field": field, "reason": reason, "notes": found}
                                                               for (field, reason), found in sorted(groups.items(), key=lambda item: -len(item[1]))]})
+    drafts = sorted({iri for iri, value in records.values(str(SDO.DefinedTerm), str(SDO.creativeWorkStatus)) if str(value) == "Draft"})
     return {"summary": summary, "noted": noted, "notes": len(notes), "failed": failed, "gaps": gaps(),
-            "names": records.names(sorted({note.iri for note in notes}))}
+            "names": records.names(sorted({note.iri for note in notes} | set(drafts))),
+            "drafts": [record.iri for record in records.kept(drafts)]}

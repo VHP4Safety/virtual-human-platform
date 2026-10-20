@@ -5,6 +5,7 @@
 - Store the people and organisations with the same ORCID iD or ROR ID as one record, at import and again after the
   enrichments, as a ROR ID can be added by an enrichment.
 - Give the address of a moved or merged record its new address, so that an import does not bring it back.
+- Merge a draft term into the term of its vocabulary once the vocabulary has it.
 - Import the sources of records first, then the sources of terms, then the sources that enrich records.
 - Last, check the records of each source against the model.
 
@@ -223,9 +224,38 @@ def one_record_each(order: list[str]) -> None:
                 print(f"{other.iri} and {listed[0].iri} have the same address {value} but other names; they are kept apart")
 
 
-def merge_into(other: Record, kept: Record, reason: str) -> None:
-    """Merge the record *other* into the record *kept*, for one_record_each. Store the change as a revision of the
-    other record."""
+def drafts_found() -> None:
+    """Merge each draft term (status Draft) into the term that its vocabulary now has: the term at an address that
+    the draft gives in sameAs, or else the term with the same name, without a bracketed ending such as
+    "(Process Flow Step)". Leave out the status. Leave a draft as it is until then."""
+    term = str(SDO.DefinedTerm)
+
+    def plain(name) -> str:
+        return re.sub(r"\s*\([^)]*\)$", "", str(name or "")).casefold()
+
+    drafts = sorted({iri for iri, value in records.values(term, str(SDO.creativeWorkStatus)) if str(value) == "Draft"})
+    if not drafts:
+        return
+    with database.session() as db:
+        terms = list(db.scalars(select(Record).where(Record.type == term, Record.removed_at.is_(None), Record.moved_to.is_(None))))
+    by_name = {}
+    for found in terms:
+        if found.iri not in drafts:
+            by_name.setdefault(plain(found.name), []).append(found)
+    for draft in records.kept(drafts):
+        statements = records.graph([draft.iri])
+        vocabulary = statements.value(URIRef(draft.iri), SDO.inDefinedTermSet)
+        given = {str(value) for value in statements.objects(URIRef(draft.iri), SDO.sameAs)}
+        candidates = [found for found in terms if found.iri in given] + by_name.get(plain(draft.name), [])
+        for candidate in candidates:
+            if records.graph([candidate.iri]).value(URIRef(candidate.iri), SDO.inDefinedTermSet) == vocabulary:
+                merge_into(draft, candidate, f"the vocabulary has the term at {candidate.iri}", without={SDO.creativeWorkStatus})
+                break
+
+
+def merge_into(other: Record, kept: Record, reason: str, without: set = frozenset()) -> None:
+    """Merge the record *other* into the record *kept*, without the fields *without*, as in one_record_each and
+    drafts_found. Store the change as a revision of the other record."""
     target = URIRef(kept.iri)
 
     def moved(node):
@@ -234,7 +264,8 @@ def merge_into(other: Record, kept: Record, reason: str) -> None:
     # The parts of the other record are numbered again under the kept record.
     statements = Graph()
     for subject, predicate, given in records.blank_parts(records.read([other.iri]), other.iri):
-        statements.add((moved(subject), predicate, moved(given)))
+        if predicate not in without:
+            statements.add((moved(subject), predicate, moved(given)))
     joined = merge(records.read([kept.iri]), records.described(statements, kept.iri), profile_text()).graph
     if other.name and other.name != kept.name and str(SDO.alternateName) in {field["iri"] for field in fields(kept.type)}:
         joined.add((target, SDO.alternateName, Literal(other.name)))
@@ -626,6 +657,7 @@ def import_all(once: bool = False) -> list[str]:
             note_problem(spec, problem)
             problems.append(f"{spec['name']}: {problem}")
     one_record_each([spec["name"] for spec in every])
+    drafts_found()
     # Records are checked after the enrichments. An enriching source has no records, and its notes are the
     # conflicting values.
     for spec in specs():

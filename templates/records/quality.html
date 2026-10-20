@@ -67,6 +67,16 @@
   <p class="text-secondary">No values to check.</p>
   {% endfor %}
 
+  {% if drafts %}
+  <h2 class="h5 mt-4">Draft terms</h2>
+  <p class="small text-secondary">These terms are proposed for a vocabulary and are not in it yet. At each import, a draft is merged into the term of its vocabulary at the address in its other addresses, or else with the same name. A request to the VHP4Safety glossary is opened from the editor of the term.</p>
+  <ul class="small">
+    {% for iri in drafts %}
+    <li><a class="link-vhpblue" href="{{ editor_link('terms', iri) }}">{{ names.get(iri) or iri }}</a></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
   <h2 class="h5 mt-4">Fields missing from the model</h2>
   <p class="small text-secondary">These fields of the declared Bioschemas profiles are not in the model, so they are not checked in the records. Add a field to the model to check it.</p>
   <table class="table table-sm align-top">
