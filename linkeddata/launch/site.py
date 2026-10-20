@@ -25,6 +25,8 @@ from linkeddata.model import settings
 from linkeddata.parsers import link, marked, term, slug
 
 PROJECT = "organizations/vhp4safety"
+# The licence of the records at launch. It is changed later in the editor, on the platform record.
+LICENSE = "https://spdx.org/licenses/CC0-1.0"
 SCHEMA = "https://schema.org/"
 DECIMAL = "http://www.w3.org/2001/XMLSchema#decimal"
 # The pages, by the templates' route names, and the files read.
@@ -238,7 +240,7 @@ def home(content: bytes, kinds: dict) -> tuple[dict, dict]:
     soup = BeautifulSoup(content, "html.parser")
     hero = soup.find("h1")
     row = {"@id": "", "@type": "DataCatalog", "alternateName": " ".join(hero.get_text(" ").split()),
-           "abstract": " ".join(soup.select_one("p.lead").get_text(" ").split()), "publisher": link(PROJECT)}
+           "abstract": " ".join(soup.select_one("p.lead").get_text(" ").split()), "publisher": link(PROJECT), "license": link(LICENSE)}
     row["void:classPartition"] = []
     for card in soup.select("div.card[onclick]"):
         path = re.search(r"location\.href='/(\w+)'", card["onclick"]).group(1)

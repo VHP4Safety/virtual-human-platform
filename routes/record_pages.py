@@ -175,8 +175,8 @@ def conditional(response) -> None:
 
 @blueprint.app_context_processor
 def publisher_context() -> dict:
-    """The platform's publisher, as its record gives it, for every page's head."""
-    return {"publisher_document": void.platform()["publisher"]}
+    """The publisher of the platform and the licence of the records are given to every page."""
+    return {"publisher_document": void.platform()["publisher"], "records_license": void.platform()["license"]}
 
 
 @blueprint.app_context_processor
