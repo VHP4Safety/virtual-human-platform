@@ -37,6 +37,23 @@ rokit-collapsible.focus-chrome::part(header) { display: none; }
 .property-instance.focus-parts { display: none; }
 shacl-property:has(> .property-instance[data-path="${POSITION}"]) { display: none; }
 rokit-collapsible.shacl-group:not(.focus-chrome) { display: block; margin: 0 0 1rem; border: 1px solid #d9d4ec; border-left: 4px solid var(--stage, #29235c); border-radius: 6px; background: #fff; }
+.focus-list { display: block; box-sizing: border-box; width: 100%; padding: 0.25rem 0.75rem 0.75rem; font-size: 0.95em; text-align: left; }
+.focus-list ol { margin: 0; padding: 0; list-style: none; }
+.focus-list .record-index-list-head { display: none; }
+.focus-list .record-index-row { display: flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.35rem; border-radius: 4px; }
+.focus-list .record-index-row:hover { background: #f3f1f9; }
+.focus-list .record-index-link { flex: 1; border: 0; background: none; text-align: left; color: #212529; cursor: pointer; font: inherit; }
+.focus-list .record-index-handle { cursor: grab; color: #9a95b8; }
+.focus-list .record-index-stage { display: inline-flex; align-items: center; justify-content: center; width: 1.3rem; height: 1.3rem; border-radius: 50%; color: #fff; font-size: 0.75rem; font-weight: 700; }
+.focus-list .stage-1 { background: var(--bs-vhppink-distinct); } .focus-list .stage-2 { background: var(--bs-vhpdarkpurple); }
+.focus-list .stage-3 { background: var(--bs-vhpdarkteal); } .focus-list .stage-4 { background: var(--bs-vhplightteal); } .focus-list .stage-5 { background: var(--bs-vhpblue); }
+.focus-list .record-index-section, .focus-list .record-index-into, .focus-list .record-index-none { color: #6c6891; font-size: 0.85em; }
+.focus-list .record-index-remove { border: 0; background: none; color: #6c6891; visibility: hidden; cursor: pointer; }
+.focus-list .record-index-row:hover .record-index-remove { visibility: visible; }
+.focus-list .record-index-problem { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: #dc3545; }
+.focus-list .record-index-adds { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; }
+.focus-list .record-index-adds button { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.1rem 0.5rem; border: 1px solid #29235c; border-radius: 4px; background: #fff; color: #29235c; font: inherit; font-size: 0.85em; cursor: pointer; }
+.focus-list .record-index-adds button:hover { background: #29235c; color: #fff; }
 rokit-collapsible.shacl-group:not(.focus-chrome)::part(header) { font-weight: 600; color: var(--stage, #29235c); background: color-mix(in srgb, var(--stage, #29235c) 7%, white); border-radius: 0 6px 0 0; }
 `;
 
@@ -163,6 +180,8 @@ function stage(node) {
 
 let form = null;
 let shown = null;
+// The list of the parts of a field, as the index draws it; set by outline().
+let partsList = null;
 let caseStudy = false;
 const listeners = [];
 
@@ -213,12 +232,22 @@ export function select(target) {
       }
     }
   }
-  // Parts with a position are added and ordered in the index, so their own cards are left out of the form.
+  // The card of a field of parts with a position, such as the questions of a case study, lists them as the index
+  // does: a click opens one, they are dragged to order them, and they are added at the end.
   for (const path of Object.keys(editor.ordered)) {
-    const button = addButton(target, path);
-    const card = button ? button.closest("rokit-collapsible") : null;
-    if (card) {
-      card.classList.add("focus-hidden");
+    const field = property(target, path);
+    const card = field ? field.querySelector("rokit-collapsible") : null;
+    if (card && partsList) {
+      for (const old of card.querySelectorAll(":scope > .focus-list")) {
+        old.remove();
+      }
+      const wrapper = card.querySelector(":scope > .add-button-wrapper");
+      if (wrapper) {
+        wrapper.classList.add("focus-hidden");
+      }
+      const listed = partsList(target, path);
+      listed.classList.add("focus-list");
+      card.append(listed);
     }
   }
   for (const listener of listeners) {
@@ -379,6 +408,26 @@ export function outline(givenForm, nav) {
     return box;
   }
 
+  // The add buttons of a field of a page: what they add, with the number of its stage for a case study.
+  function addsFor(page, field) {
+    if (field === HAS_PART) {
+      return [{ text: isSection(page) ? "§ Subsection" : "§ Text section" }];
+    }
+    if (caseStudy && field === QUESTIONS) {
+      return [{ stage: 2, text: "Regulatory question" }];
+    }
+    if (caseStudy) {
+      // A page below is a page of steps (the next stage, at most 4), or a page of tools, models and data (5).
+      const next = Math.min(way(page).length + 1, 4);
+      return [{ stage: next, text: STAGES[next - 1] + " page" }, { stage: 5, text: STAGES[4] + " page" }];
+    }
+    return [{ text: "Add " + ((editor.ordered[field] || [])[0] || "part").toLowerCase() }];
+  }
+
+  partsList = function (page, field) {
+    return list("", page, field, partsOf(page).get(field) || [], addsFor(page, field));
+  };
+
   function draw() {
     const root = form.shadowRoot && form.shadowRoot.querySelector("shacl-node");
     if (!root) {
@@ -420,20 +469,10 @@ export function outline(givenForm, nav) {
       if (field === HAS_PART || !(parts.has(field) || addButton(page, field))) {
         continue;
       }
-      const question = field === QUESTIONS;
-      let adds = [{ text: "Add " + ((editor.ordered[field] || [])[0] || "part").toLowerCase() }];
-      if (caseStudy && question) {
-        adds = [{ stage: 2, text: "Regulatory question" }];
-      } else if (caseStudy) {
-        // A page below is a page of steps (the next stage, at most 4), or a page of tools, models and data (5).
-        const next = Math.min(trail.length + 1, 4);
-        adds = [{ stage: next, text: STAGES[next - 1] + " page" }, { stage: 5, text: STAGES[4] + " page" }];
-      }
-      below.append(list(question ? "Questions" : "Pages below", page, field, parts.get(field) || [], adds));
+      below.append(list(field === QUESTIONS ? "Questions" : "Pages below", page, field, parts.get(field) || [], addsFor(page, field)));
     }
     if (parts.has(HAS_PART) || addButton(page, HAS_PART)) {
-      below.append(list(section ? "Subsections" : "Sections of text", page, HAS_PART, parts.get(HAS_PART) || [],
-        [{ text: section ? "§ Subsection" : "§ Text section" }]));
+      below.append(list(section ? "Subsections" : "Sections of text", page, HAS_PART, parts.get(HAS_PART) || [], addsFor(page, HAS_PART)));
     }
     view.append(below);
     nav.replaceChildren(view);
