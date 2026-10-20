@@ -122,7 +122,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         provider = detail.get("provider") if isinstance(detail.get("provider"), dict) else {}
         contact = provider.get("contact") if isinstance(provider.get("contact"), dict) else {}
         # A contact with one of these names is linked to the record of that name, not added as a person.
-        named = {}
+        named = {slug("VHP4Safety"): VHP4SAFETY}
         providers = []
         if present(provider.get("name")):
             # In the catalogue template, the contact is described as a person, and the provider URL as the address of
