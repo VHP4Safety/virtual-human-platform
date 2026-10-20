@@ -1,6 +1,7 @@
 """Parser of the BioStudies collection VHP4Safety, a workaround (see linkeddata/parsers).
 
-Source: the search results, and the file of each study (api/v1/studies/<accession>).
+Source: the search results, and the file of each study (api/v1/studies/<accession>), read with the BioStudies
+client (biostudies_search).
 
 - Values: the attributes of the sections of a study. Read the address or the ontology term of a value from the
   qualifiers of its attribute (valqual).
@@ -17,27 +18,39 @@ Source: the search results, and the file of each study (api/v1/studies/<accessio
 
 import json
 import re
-from urllib.parse import quote
+
+import requests
 
 from linkeddata.parsers import QUESTIONS, licence, link, present, publication, slug, web_link
+from linkeddata.parsers.biostudies_search import BioStudiesExtractor
 from linkeddata.parsers.zenodo import size
 
 STUDIES = "https://www.ebi.ac.uk/biostudies/studies/"
 DATE = "http://www.w3.org/2001/XMLSchema#date"
 # Ontologies whose terms are not at purl.obolibrary.org.
 ONTOLOGIES = {"BAO": "http://www.bioassayontology.org/bao#", "ENM": "http://purl.enanomapper.org/onto/"}
-# The files of a study are at <FILES><prefix>/<number, 3 digits>/<accession>/Files/<path>, as on the BioStudies FTP site.
-FILES = "https://ftp.ebi.ac.uk/pub/databases/biostudies/"
+COLLECTION = "VHP4Safety"
 # Sections that are read as authors, organisations, funding and publications, not as parts of the design.
 SEPARATE = {"author", "organisation", "organization", "funding", "publication"}
 
 
-def keys(index: bytes) -> list[str]:
-    """Return the accessions of the studies on the one page of search results."""
-    found = json.loads(index)
-    if found.get("totalHits", 0) > len(found.get("hits", [])):
+def fetched(spec: dict) -> dict[str, bytes]:
+    """Return the studies of the collection, read with the BioStudies client: the search results, and the file of
+    each study by its accession."""
+    client = BioStudiesExtractor(collection=COLLECTION)
+    listing = client.list_studies(page_size=100)
+    if listing.get("error"):
+        raise requests.RequestException(listing["error"])
+    if listing["total"] > len(listing["hits"]):
         raise ValueError("more studies than one search page")
-    return [hit["accession"] for hit in found["hits"]]
+    contents = {spec["name"]: json.dumps(listing).encode()}
+    for hit in listing["hits"]:
+        study = client.get_study_metadata(hit["accession"])
+        if study.get("error"):
+            print(f"{spec['name']}: {hit['accession']} not fetched ({study['error']})")
+            continue
+        contents[hit["accession"]] = json.dumps(study["raw_data"]).encode()
+    return contents
 
 
 def qualifiers(attribute: dict) -> dict:
@@ -155,16 +168,15 @@ def chemical(section: dict) -> dict:
 
 def files_of(key: str, section: dict) -> list[dict]:
     """Return the files of a study and its sections at their download addresses, in their order, each once."""
-    accession = re.fullmatch(r"(.*?)(\d+)", key)
+    client = BioStudiesExtractor()
     found = {}
 
     def walk(part: dict) -> None:
         for given in part.get("files") or []:
             for each in given if isinstance(given, list) else [given]:
                 path = each.get("path") or each.get("name") or each.get("filename")
-                if path and accession and path not in found:
-                    prefix, number = accession.groups()
-                    address = f"{FILES}{prefix}/{int(number):03d}/{key}/Files/{quote(path, safe='/')}"
+                address = client.build_biostudies_https_file_url(key, path) if path else None
+                if address and path not in found:
                     found[path] = {"@type": "DataDownload", "name": path, "contentUrl": link(address), "position": len(found) + 1}
                     if isinstance(each.get("size"), int):
                         found[path]["contentSize"] = size(each["size"])

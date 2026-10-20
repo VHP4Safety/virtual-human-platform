@@ -39,6 +39,7 @@ from linkeddata import checks, crates, documents
 from linkeddata.profile import MODEL_DIR, fields, profile_graph, profile_text, settings
 
 SOURCES_DIR = Path(__file__).parent / "sources"
+ROOT = Path(__file__).parent.parent
 # The registries with addresses that identify a person or an organisation, in sameAs.
 REGISTRIES = ("https://orcid.org/", "https://ror.org/")
 LAUNCH_DIR = Path(__file__).parent / "launch"
@@ -431,12 +432,18 @@ def download(spec: dict, parser) -> dict[str, bytes]:
     """Return the files of a source by name.
 
     For a source with entries, also return the file of each entry, by its key in the index. The keys are the keys of
-    the JSON object, or the keys read by the parser."""
+    the JSON object, or the keys read by the parser. A parser with a client of its source (fetched), such as the
+    Zenodo parser, reads the files itself."""
+    if hasattr(parser, "fetched"):
+        return parser.fetched(spec)
     contents = {}
     for name, url in files_of(spec).items():
         # A pinned vocabulary is read from the model folder, unless an upstream address (url) is given for it.
         if "vocabulary" in spec and "url" not in spec:
             contents[name] = (MODEL_DIR / "vocabularies" / spec["vocabulary"]).read_bytes()
+        # A file of the repository is given by its path, such as linkeddata/launch/site/impact.html.
+        elif not url.startswith(("https://", "http://")):
+            contents[name] = (ROOT / url).read_bytes()
         else:
             contents[name] = fetch(url)
     if "entries" in spec:
@@ -496,7 +503,7 @@ def import_source(spec: dict) -> None:
     parser = importlib.import_module(spec["module"])
     contents = download(spec, parser)
     # One file is passed as is; several files are passed by name.
-    parsed = parser.parse(contents if "files" in spec or "entries" in spec or "terms" in spec or "members" in spec or "documents" in spec else contents[spec["name"]])
+    parsed = parser.parse(contents if "files" in spec or "entries" in spec or "terms" in spec or "members" in spec or "documents" in spec or len(contents) > 1 else contents[spec["name"]])
     data = convert(parsed, config["base"])
     found = one_per_identifier(records_of(data, [of_class for kind in config["kinds"].values() for of_class in records.within(kind)], spec["name"]))
     checksum = hashlib.sha256()

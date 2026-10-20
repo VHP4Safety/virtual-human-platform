@@ -1,6 +1,6 @@
 """Parser of the Zenodo community vhp4safety, a workaround (see linkeddata/parsers).
 
-Source: the dataset search, with the metadata of each record.
+Source: the dataset search, with the metadata of each record, read with the Zenodo client (zenodo_search).
 
 - Creators: write "Last, First" as "First Last", as in other sources.
 - Links: DOIs, ORCID iDs, licences, and affiliations as organisations.
@@ -12,7 +12,11 @@ Source: the dataset search, with the metadata of each record.
 import json
 import mimetypes
 
+import requests
+
 from linkeddata.parsers import licence, link, marked, present, publication, slug, term, web_link
+from linkeddata.parsers.mapping import is_valid_doi
+from linkeddata.parsers.zenodo_search import ZenodoExtractor
 
 DATE = "http://www.w3.org/2001/XMLSchema#date"
 LICENSES = "https://zenodo.org/api/vocabularies/licenses/"
@@ -48,7 +52,7 @@ def doi_of(row: dict, hit: dict, others: dict) -> None:
     (10.5281/zenodo.*), and else as a cited publication. A depositor can give the DOI of an article in place of a
     DOI of the record."""
     # A DOI that Zenodo hides (10.5281/zenodo.***) is no DOI.
-    if not present(hit.get("doi")) or "*" in str(hit["doi"]):
+    if not is_valid_doi(hit.get("doi")):
         return
     if str(hit["doi"]).startswith("10.5281/"):
         row["sameAs"] = link("https://doi.org/" + hit["doi"])
@@ -78,6 +82,18 @@ def grant_row(row: dict, grant: dict, others: dict) -> None:
         others.setdefault(organisation, {"@id": organisation, "@type": "Organization", "name": funder})
         found["funder"] = link(organisation)
     row.setdefault("funding", []).append(link(address))
+
+
+def fetched(spec: dict) -> dict[str, bytes]:
+    """Return the datasets of the community as one search result, read page by page with the Zenodo client."""
+    hits = []
+    while True:
+        found = ZenodoExtractor().list_records(page=len(hits) // 25 + 1, size=25)
+        if found.get("error"):
+            raise requests.RequestException(found["error"])
+        hits += found["hits"]
+        if len(hits) >= found["total"] or not found["hits"]:
+            return {spec["name"]: json.dumps({"hits": {"total": len(hits), "hits": hits}}).encode()}
 
 
 def parse(content: bytes) -> list[dict]:

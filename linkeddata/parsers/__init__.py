@@ -16,6 +16,7 @@ from pathlib import Path
 
 import yaml
 
+from linkeddata.parsers.mapping import extract_doi_from_text
 from linkeddata.profile import MODEL_DIR, settings
 
 SOURCES = Path(__file__).parent.parent / "sources"
@@ -116,10 +117,10 @@ def licence(text):
 
 
 def publication(value) -> dict | None:
-    """Return the row of the publication of a DOI (10.1234/x or https://doi.org/10.1234/x), at publications/<DOI>, or
-    None for other texts."""
-    doi = str(value).strip().removeprefix("https://doi.org/")
-    if not doi.startswith("10."):
+    """Return the row of the publication of a DOI (10.1234/x, https://doi.org/10.1234/x or a text with a DOI), at
+    publications/<DOI>, or None for other texts."""
+    doi = extract_doi_from_text(str(value))
+    if doi is None:
         return None
     return {"@id": "publications/" + slug(doi), "@type": "ScholarlyArticle", "sameAs": link("https://doi.org/" + doi),
             "identifier": link("https://doi.org/" + doi)}

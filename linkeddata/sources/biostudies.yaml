@@ -1,6 +1,4 @@
 name: biostudies
 title: BioStudies collection VHP4Safety
 url: https://www.ebi.ac.uk/biostudies/api/v1/VHP4Safety/search?pageSize=100
-# Each study's file, by its accession.
-entries: https://www.ebi.ac.uk/biostudies/api/v1/studies/{key}
 parser: biostudies
