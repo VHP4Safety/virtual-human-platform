@@ -1,6 +1,4 @@
-// Record editor. The form is built by shacl-form from the shapes of the model, and it is saved through the records
-// API (Graph Store Protocol) with the version of the record. Next to the form, the published page or the linked data
-// of the record is previewed.
+// Record editor.
 import { busy } from "./busy.js";
 import { GLOSSARY, openRequest, tableChoice } from "./glossary.js";
 import { current, isPart, outline, reveal as showPart, select, whenSelected } from "./record-index.js";
@@ -77,8 +75,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     return found;
   }
 
-  // Draw the statements of the record as a diagram: an arrow for each value, green if added, red if removed.
-  // Draw the arrows of parts (sections, listed tools) in the same way.
+  // Draw the statements of the record as a diagram of added, removed and kept values.
   function renderEdges(found) {
     const edges = make("ul", "graph-edges");
     for (const edge of found) {
@@ -172,8 +169,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     });
   }
 
-  // Show in the form what is clicked on the page of the case study: the part at the address of the page, its section
-  // by position and name, and the field, at the clicked value if there is one.
+  // Show in the form what is clicked on the page of the case study.
   function showEditing(address, field, section, value) {
     const own = function (element, node) { return element.closest("shacl-node") === node; };
     let node = Array.from(form.shadowRoot.querySelectorAll("shacl-node")).find(function (found) {
@@ -211,8 +207,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     showPart(target);
   }
 
-  // Mark the focused field on the page of the nearest node with an address. A node without an address, reached by
-  // schema:hasPart, is a section, found by position and name.
+  // Mark the focused field on the page of the nearest node with an address.
   function term(path) {
     return path.split(/[/#]/).pop();
   }
@@ -246,16 +241,12 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     }
   }
 
-  // Return the statements of the form as N-Triples. A new part that requires an address, such as a new step, gets a
-  // bare identifier from shacl-form (<8f2c-...>). Write it as a node without an address, so that the platform makes
-  // its address from its name. Label the nodes without an address with letters and digits only, as jsonld requires.
-  // A node is the first term of a line (subject) or the last term before " ." (object). Texts in quotes are not
-  // changed.
+  // Return a node label of letters and digits only, as jsonld requires.
   function label(given) {
     return "_:b" + given.replace(/[^A-Za-z0-9]/g, "");
   }
 
-  // Return the identifier of a node of the form in the preview: its address, or its label as written by statements().
+  // Return the identifier of a node of the form in the preview.
   function previewId(nodeId) {
     if (nodeId.startsWith("_:")) {
       return label(nodeId.slice(2));
@@ -263,6 +254,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     return nodeId.includes(":") ? nodeId : label(nodeId);
   }
 
+  // Return the statements of the form as N-Triples, with new parts as nodes without an address.
   function statements() {
     return form.serialize("application/n-quads")
       .replace(/^(?:<([^>:]*)>|_:(\S+)) /gm, function (all, bare, blank) { return label(bare || blank) + " "; })
@@ -282,9 +274,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     }
   }
 
-  // Draw the case study from the form in the browser, without a request to the platform. Compact the statements of
-  // the form with the context of the published case study, and keep the names of the linked records from the
-  // published case study.
+  // Draw the case study from the form in the browser.
   async function showLiveCaseStudy() {
     if (!published) {
       await showPublishedCaseStudy();
@@ -303,8 +293,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     }
   }
 
-  // Show the page of another record in a frame: the published page, or the page made from the form. Open its links
-  // in a new tab, and keep its scroll position.
+  // Show the page of a record in a frame.
   function showPage(html) {
     const top = frame.contentWindow ? frame.contentWindow.scrollY : 0;
     frame.addEventListener("load", function () {
@@ -415,8 +404,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     }
   }
 
-  // Show the preview of the page or of the linked data, or hide it. A record outside the platform, such as an
-  // ontology term, has no page here.
+  // Show or hide the preview of the page or of the linked data.
   function choose(next, shown) {
     view = panel.querySelector("[data-view=page]").disabled ? "data" : next;
     panel.classList.toggle("d-none", !shown);
@@ -478,7 +466,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     whenSelected(markSelected);
   }
 
-  // Mark the part that is shown in the form in the preview: its page, or the section of the page with the part.
+  // Mark the part that is shown in the form in the preview.
   function markSelected(node) {
     if (!caseStudyComponent || !caseStudy) {
       return;

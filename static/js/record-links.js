@@ -1,7 +1,4 @@
 // shacl-form plugins of the record editor.
-// - Link fields (sh:class, or sh:or of classes): the kind of the linked record is shown, and records are found by name
-//   (/api/search). Missing records are added in a dialog, and terms are registered with their vocabulary.
-// - Text fields: values are passed to shacl-form as literals, so that HTML is not read as an address.
 import { Plugin, registerPlugin, findLabel, loadRDF } from "https://cdn.jsdelivr.net/npm/@ulb-darmstadt/shacl-form@3.7.3/dist/bundle.js";
 import { busy } from "./busy.js";
 import { GLOSSARY, openRequest, tableChoice } from "./glossary.js";
@@ -108,8 +105,7 @@ function loadTinymce() {
   return tinymceLoaded;
 }
 
-// Edit a text in HTML in a dialog over the page, with headings, lists, links, tables and images. Upload an image to
-// the platform and place it at the cursor, with a caption. Call *done* with the new HTML.
+// Edit an HTML text in a dialog, and call done with the new HTML.
 async function editText(label, html, done) {
   // A box over the page, not a modal <dialog>: the dialogs of TinyMCE, such as for an image, are drawn above it.
   const overlay = document.createElement("div");
@@ -304,8 +300,7 @@ function addRecord(of_class, label, name, store, added) {
   shown.body.append(form, bar);
 }
 
-// Add a vocabulary from a registry (OLS, Ontobee, Wikidata), found by name, or entered by hand. If the platform has a
-// vocabulary with the same namespace, choose that vocabulary instead.
+// Add a vocabulary from a registry, or one entered by hand.
 async function addVocabulary(platform, added) {
   const shown = opened("Add a vocabulary");
   const registry = make("select", "form-select form-select-sm");
@@ -434,8 +429,7 @@ function registerTerm(text, vocabulary, added) {
   shown.body.append(labelled("Label", label), labelled("Address", address), add);
 }
 
-// Propose a term for the VHP4Safety glossary. Store it as a draft term at a platform address, so that it can be used
-// at once, and open the term request form of the glossary if asked.
+// Store a draft term for the VHP4Safety glossary, and open the term request form if asked.
 function proposeTerm(text, vocabulary, added) {
   const shown = opened("Propose a term for " + vocabulary.name);
   const label = make("input", "form-control form-control-sm");
@@ -510,8 +504,7 @@ function hold(field, path, entry) {
   return scope;
 }
 
-// Draw a field with a list of values (sh:in), such as the process flow step of a page, as a choice from the list by
-// the labels of the values, in the style of shacl-form.
+// Draw a field with a list of values as a choice by label.
 function choice(template, value) {
   const store = template.config.store;
   const entries = [];
@@ -531,9 +524,7 @@ function choice(template, value) {
   return template.config.theme.createListEditor(template.label, value || null, false, entries, template);
 }
 
-// Return the classes of a link field by name, from its own shape: its sh:class, or the classes of its sh:or with their
-// labels. So two fields with the same property, such as the tool and the data of a step, find different records. Use
-// the names of the profile (editor.links) if the shape has none.
+// Return the classes of a link field by name, from its own shape.
 function linkClasses(template) {
   const store = template.config.store;
   const named = editor.links[template.path] || {};
@@ -600,7 +591,7 @@ class RecordLink extends Plugin {
     box.append(row, options);
     field.append(chosen);
 
-    // Show the kind and the page of the linked record. Mark texts, records of other classes and unknown addresses.
+    // Show the kind and the page of the linked record.
     function show() {
       kind.className = "record-link-kind";
       kind.textContent = "";
@@ -758,8 +749,7 @@ class RecordLink extends Plugin {
       }, 200);
     });
 
-    // List the registry terms with the text that are not yet on the platform. A chosen term is registered with
-    // label, definition and code.
+    // List the registry terms with the text that are not on the platform.
     async function registryTerms(text, space, seen, asked) {
       const searching = make("div", "record-link-busy", "Searching the registry…");
       asked.replaceWith(searching);
@@ -882,7 +872,7 @@ function pick(within) {
   }
 }
 
-// Return the kind of value of a field from its shape: IRI (sh:class, sh:nodeKind sh:IRI), else its sh:datatype.
+// Return the kind of value of a field from its shape.
 function typeOf(instance) {
   const editors = instance.querySelectorAll(".editor, .shown");
   for (const element of editors) {
@@ -940,8 +930,7 @@ for (const form of document.querySelectorAll("shacl-form")) {
   watch(form);
 }
 
-// A field with the address of an image, such as the icon of a case study, with a button to upload the image to the
-// platform. The address of the uploaded image is then filled in.
+// Field with the address of an image, and a button to upload the image.
 class ImageAddress extends Plugin {
   createEditor(template, value) {
     const field = Text.prototype.createEditor.call(this, template, value);

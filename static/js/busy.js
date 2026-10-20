@@ -1,4 +1,4 @@
-// Lock and dim an area while a request runs, and show the pressed button turning, with a text of what is done.
+// Lock an area and show a turning button with a text while a request runs.
 export function busy(button, text, area) {
   const shown = Array.from(button.childNodes);
   const turning = document.createElement("span");

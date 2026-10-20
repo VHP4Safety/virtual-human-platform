@@ -1,6 +1,4 @@
-// Requests of new terms for the VHP4Safety glossary, with its term request form on GitHub
-// (https://github.com/VHP4Safety/glossary). The address of a term is given in the glossary. Until then, the term is a
-// draft term at a platform address.
+// Requests of new terms for the VHP4Safety glossary.
 export const GLOSSARY = "https://vhp4safety.github.io/glossary#";
 // The tables of the terms in the glossary repository (templates/<table>.tsv). Chemicals are left out, as they have
 // Wikibase items in place of glossary addresses.
@@ -17,9 +15,7 @@ export function tableChoice() {
   return select;
 }
 
-// Return the address of the term request form, filled in with a term ({name, abbreviation, definition, references,
-// address}) and the table for it. The title starts with [TERM REQUEST], so that an identifier is assigned by the
-// workflow of the glossary.
+// Return the address of the term request form, filled in with a term and its table.
 export function requestAddress(term, table) {
   const context = ["Table: templates/" + table + ".tsv"];
   if (term.references && term.references.length) {
@@ -39,8 +35,7 @@ export function requestAddress(term, table) {
   return FORM + "?" + new URLSearchParams(fields).toString();
 }
 
-// Open the request form in a new tab. Call it within a few seconds of the click, so that the tab is not blocked as a
-// popup.
+// Open the request form in a new tab, within a few seconds of the click.
 export function openRequest(term, table) {
   window.open(requestAddress(term, table), "_blank", "noopener");
 }

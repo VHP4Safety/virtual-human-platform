@@ -1,34 +1,4 @@
-// Drawing of a case study from its JSON-LD document, in the form of the website. The document is read from
-// GET /api/casestudies/<case>, or from the editor preview of unsaved changes. One page is shown at a time.
-// - Case study page: the questions.
-// - Question page: the process flow steps.
-// - Step page: the steps below the step.
-// Each page has a heading, a summary, buttons and text in sections. The pages one level down, and the tools, methods
-// and data, are opened with the buttons. Empty steps are not shown on the website. Pages are opened in place with the
-// buttons, the breadcrumbs and the process flow. A container that is drawn again with a new document stays on its
-// page.
-//
-//   import { renderCaseStudy, stageOf } from "/static/js/case-study.js";
-//   renderCaseStudy(container, caseStudy, options);
-//
-// Options, all optional:
-//   base         the base address of the platform; platform links are made on this server, so that they are
-//                valid on each copy of the platform
-//   at           the address of the page to show; without it, the container stays on its page
-//   linkTarget   the target of links, such as "_blank" in the editor
-//   openDisabled if true, open the pages that are greyed out on the website, and show empty steps greyed, for a
-//                preview
-//   onNavigate   called with the address of the page in view, after another page is opened with a click
-//   arrive       if true, draw the case study page first, then slide to the page at *at*, as on page load
-//   onPick       called with the page in view, the field, the section ({position, name}) and the value of the
-//                clicked element, such as the text of a section. Links are then not opened with a click. A page
-//                is opened with its button, and onPick is called for the opened page. A link is opened in a new
-//                tab with the icon next to each tool, method and data button.
-//
-// markField(container, address, field, section) marks the elements of a field of a page, such as the field that
-// is edited in the form, and opens that page.
-//
-// stageOf(page, level) returns the stage of a page in the process flow, from 1 to 5.
+// Drawing of a case study from its JSON-LD document, as on the website.
 
 // Heading colours by level: case study, question, process flow step, its steps, and deeper steps.
 const HEADINGS = ["text-vhppink-distinct", "text-vhpdarkpurple", "text-vhpdarkteal", "text-vhplightteal", "text-vhpblue", "text-vhplightteal"];
@@ -66,7 +36,7 @@ function all(node, name) {
   return Array.isArray(given) ? given : [given];
 }
 
-// Return the first value of a field as a text: the value of a typed value ({"@value": "1"}), or the address of a link.
+// Return the first value of a field of a node as a text.
 function first(node, name) {
   const value = all(node, name)[0];
   if (value === undefined) {
@@ -81,8 +51,7 @@ function first(node, name) {
   return String(value);
 }
 
-// Index the nodes of a document by address, so that a node given by address only ({"@id": ...}) is found at its first
-// link, such as a tool that is used in two steps.
+// Index the nodes of a document by address.
 function index(node, found) {
   if (Array.isArray(node)) {
     for (const item of node) {
@@ -127,8 +96,7 @@ function parts(state, page, name) {
   return found;
 }
 
-// Return the label of a page for its button: its name, else the name of its kind of step, a vocabulary term without
-// the kind of term in brackets ("Exposure" for "Exposure (Process Flow Step)").
+// Return the label of the button of a page.
 function label(state, node) {
   if (first(node, "name")) {
     return first(node, "name");
@@ -163,20 +131,12 @@ function empty(step) {
   return true;
 }
 
-// Return the stage of a page in the process flow, from 1 to 5. The page is a node of the case study document, with
-// its steps in it. The level is 0 for the case study, 1 for a question, and one more for each step below.
-// A page with steps that are not empty has the stage of its level: 1 for the case study, 2 for a question, 3 for a
-// process flow step and 4 for the steps below. A page without such steps has stage 5 if it has tools, methods,
-// models or data. Other pages also have the stage of their level.
-//
-//   stageOf(caseStudy, 0);  // 1
-//   stageOf(step, 2);       // 3 for a step with steps, 5 for a step with only tools and data
-// Return true for a part of a record: a node without an address, or a part address under its record
-// (<record>#<field>-<n>). A part has no page of its own.
+// Return true for a part of a record, which has no page of its own.
 function isPart(id) {
   return id.startsWith("_:") || /#[A-Za-z_][A-Za-z0-9_]*-[0-9]+$/.test(id);
 }
 
+// Return the stage of a page in the process flow, from 1 to 5.
 export function stageOf(page, level) {
   let steps = false;
   for (const child of all(page, level === 0 ? "regulatoryQuestion" : "step")) {
@@ -188,8 +148,7 @@ export function stageOf(page, level) {
   return Math.min(level + 1, 4);
 }
 
-// Return the pages from the case study to the page in view. The path ends at an address that is no longer in the
-// document, such as a removed or moved step.
+// Return the pages from the case study to the page in view.
 function pages(state) {
   const found = [state.document];
   for (const address of state.path) {
@@ -226,7 +185,7 @@ function pathTo(state, page, level, address) {
   return null;
 }
 
-// Return a platform address as an address on this server, so that the link is valid on each copy of the platform.
+// Return a platform address as an address on this server.
 function local(address, options) {
   return options.base && address.startsWith(options.base) ? "/" + address.slice(options.base.length) : address;
 }
@@ -238,8 +197,7 @@ function opens(link, options) {
   }
 }
 
-// Return the HTML of a text without scripts and similar elements, event attributes (onclick) and javascript:
-// addresses, so that no code is run and the page around the text is not changed.
+// Return the HTML of a text without scripts, event attributes and javascript: addresses.
 function safeHtml(text, options) {
   const parsed = new DOMParser().parseFromString(text, "text/html");
   for (const element of parsed.body.querySelectorAll(UNSAFE)) {
@@ -306,8 +264,7 @@ function breadcrumbs(container, state, found) {
   return nav;
 }
 
-// Draw the process flow. The stage of the page in view is active. The stages of the pages above it are completed, and
-// each of these opens its page with a click. The other stages before the active stage are marked as skipped.
+// Draw the process flow, with the stage of the page in view active.
 function processFlow(container, state, found, header) {
   const level = found.length - 1;
   const active = stageOf(found[level], level);
@@ -344,8 +301,7 @@ function processFlow(container, state, found, header) {
   return header;
 }
 
-// Return the tools and methods of a page, then its data, by name: each as a link to its record, or as a name without
-// a link. Each use is a part (HowToTool, HowToSupply) with the record as its item.
+// Return the tools, methods and data of a page, by name.
 function items(state, page) {
   const found = [];
   for (const name of ["tool", "supply"]) {
@@ -384,8 +340,7 @@ function column(button) {
   return cell;
 }
 
-// Draw the buttons of a page: first the pages one level down, in order, then the tools, methods and data, each linked
-// to its page. Leave out empty steps, or grey them out in the preview.
+// Draw the buttons of a page.
 function buttons(container, state, page, level) {
   const row = make("div", "row py-3");
   for (const child of children(state, page, level)) {
@@ -477,8 +432,7 @@ function accordionItem(state, accordion, key, title, content, open) {
   return item;
 }
 
-// Draw the sections of a page as an accordion, in order: the first section open on a new page, else the sections that
-// were open before. The inputs and outputs are the last section, closed, as on the case study pages of the platform.
+// Draw the sections of a page as an accordion.
 function sections(state, page) {
   const accordion = make("div", "accordion");
   accordion.id = state.id + "-sections";
@@ -504,8 +458,7 @@ function sections(state, page) {
   return accordion;
 }
 
-// Return the inputs and outputs of a page, by name, as a list for its last section: a dataset as a link to its page,
-// and a named parameter as its name. Return null if the page has none.
+// Return the inputs and outputs of a page as its last section, or null.
 function parameters(state, page) {
   const list = make("ul", "");
   for (const [name, label] of [["bioschemas:input", "Input"], ["bioschemas:output", "Output"]]) {
@@ -546,8 +499,7 @@ function parameters(state, page) {
   return list.children.length ? list : null;
 }
 
-// Draw a page: heading, summary, buttons, text, inputs and outputs, and sections. Slide the page in from its side, as
-// on the website.
+// Draw a page.
 function view(container, state, page, level) {
   const shown = make("div", "case-study-page");
   const top = make("div", "container");
@@ -602,8 +554,7 @@ function sectionOf(container, section) {
   return found;
 }
 
-// Mark the elements of the marked field on the page in view. A field of a section is marked in the opened section.
-// For a field that is not shown on the page, the whole section is marked.
+// Mark the elements of the marked field on the page in view.
 function mark(container, state) {
   for (const marked of container.querySelectorAll(".case-study-mark")) {
     marked.classList.remove("case-study-mark");
@@ -651,8 +602,7 @@ function reveal(container) {
   }
 }
 
-// Scroll the panels sideways to *target* in one second, as on the case study pages of the platform, and call *done* at
-// the end. Without motion (prefers-reduced-motion), place the panels at once.
+// Scroll the panels sideways to the target, and call done at the end.
 function slide(strip, target, done) {
   if (strip.sliding) {
     window.cancelAnimationFrame(strip.sliding);
@@ -677,9 +627,7 @@ function slide(strip, target, done) {
   strip.sliding = window.requestAnimationFrame(step);
 }
 
-// Draw the breadcrumbs and the process flow above the pages. The pages from the case study down to the page in view
-// are panels side by side, and the panel in view is reached with a sideways scroll. Remove the panels below the page
-// in view once it is reached.
+// Draw the breadcrumbs, the process flow and the panels of the pages.
 function draw(container, sliding) {
   const state = states.get(container);
   rememberOpen(container, state);
@@ -739,8 +687,7 @@ function navigate(container, path) {
   }
 }
 
-// Draw the document of a case study in a container. If it is drawn again with a new document, such as a document with
-// the changes of an editor, keep its page and its open sections.
+// Draw the document of a case study in a container.
 export function renderCaseStudy(container, caseStudy, options) {
   let state = states.get(container);
   if (!state) {
@@ -784,8 +731,7 @@ export function renderCaseStudy(container, caseStudy, options) {
   draw(container, false);
 }
 
-// Mark the elements of a field of the page at an address, or of its section ({position, name}), and open that page.
-// The mark is kept when the container is drawn again.
+// Mark the elements of a field of the page at an address, and open that page.
 export function markField(container, address, field, section) {
   const state = states.get(container);
   if (!state) {

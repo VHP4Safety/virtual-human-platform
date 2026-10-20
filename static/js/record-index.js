@@ -1,9 +1,4 @@
-// Index of the pages and sections of a case study, next to the form. One page is shown at a time, as on the website:
-// the way down to the page, the page with its number in the process flow, the pages below it and its sections of
-// text. A click on a page or a section below opens its form only, and a section is shown with its subsections. A click
-// on the way goes up.
-// Pages and sections are dragged up or down to change their order, which sets their positions. New parts are added at
-// the end of their list. A part with values to check is marked with a dot.
+// Index of the pages and sections of a case study, next to the form.
 import Sortable from "https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/modular/sortable.esm.js";
 
 const NAME = "https://schema.org/name";
@@ -178,8 +173,7 @@ function way(page) {
   return found;
 }
 
-// Return the stage of a page, as in the process flow of the website (stageOf in case-study.js): the stage of its
-// level, or 5 if it has tools or data and no pages below it.
+// Return the stage of a page in the process flow.
 function stage(node) {
   const level = way(node).length - 1;
   const parts = partsOf(node);
@@ -199,8 +193,7 @@ let partsList = null;
 const caseStudy = editor.caseStudy;
 const listeners = [];
 
-// Show only the fields of *target*. Hide the fields of the parts in the index below it; they are opened through the
-// index.
+// Show only the fields of the target.
 export function select(target) {
   const root = form.shadowRoot.querySelector("shacl-node");
   if (!root || !target || !caseStudy) {
@@ -341,8 +334,7 @@ export function outline(givenForm, nav) {
     }
   }
 
-  // Return a list of parts of the page that can be dragged and removed, with buttons to add a part at the end. The
-  // text of a button names the kind of part, and for a case study the number of its stage in the process flow.
+  // Return a list of the parts of a page, with buttons to add a part.
   function list(title, page, path, parts, adds) {
     const box = make("section", "record-index-list");
     box.append(make("div", "record-index-list-head", title));
@@ -425,7 +417,7 @@ export function outline(givenForm, nav) {
     return box;
   }
 
-  // Return the add buttons of a field of a page: the kind of part, with the number of its stage for a case study.
+  // Return the add buttons of a field of a page.
   function addsFor(page, field) {
     if (field === HAS_PART) {
       return [{ text: isSection(page) ? "§ Subsection" : "§ Text section" }];
