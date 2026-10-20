@@ -4,6 +4,7 @@ import json
 import os
 import re
 import secrets
+from datetime import timedelta
 
 import nh3
 import requests
@@ -67,6 +68,10 @@ if not os.environ.get("SECRET_KEY"):
     app.logger.warning("SECRET_KEY is not set: logins end on restart, and fail with several workers.")
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLASK_DEBUG") != "1"
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=12)
+# With the __Host- prefix, the cookie is sent only to this host. The prefix is accepted only on a secure cookie.
+if app.config["SESSION_COOKIE_SECURE"]:
+    app.config["SESSION_COOKIE_NAME"] = "__Host-session"
 app.register_blueprint(account_blueprint)
 app.register_blueprint(admin_blueprint)
 limiter.init_app(app)
