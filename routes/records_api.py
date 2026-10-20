@@ -407,7 +407,12 @@ def listed(given, kind, pagination_parameters):
     `/api/tools?processFlowStep=https://vhp4safety.github.io/glossary%23VHP0000156`. Give several values of one
     field to find the records with any of them, and several fields to find the records that match all of them."""
     of_class = settings()["kinds"][kind]
-    total, iris = records.page(of_class, records.filters(of_class, given), given["search"], pagination_parameters.first_item, pagination_parameters.page_size)
+    # At the address of a kind (/tools.ttl), all records of the kind are returned, as one file. The API returns pages.
+    whole = "listing" in g
+    first, size = (0, None) if whole else (pagination_parameters.first_item, pagination_parameters.page_size)
+    total, iris = records.page(of_class, records.filters(of_class, given), given["search"], first, size)
+    if whole:
+        pagination_parameters.page, pagination_parameters.page_size = 1, max(total, 1)
     pagination_parameters.item_count = total
     found = readable(records.graph(iris), kind)
     # The format requested at the page of a kind (/tools) is used, also when it is requested with a file extension (/tools.ttl).

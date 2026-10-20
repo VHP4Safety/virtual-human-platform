@@ -119,7 +119,7 @@ def negotiate():
     # The page is returned for a request without Accept; for a request of other formats only, the formats are listed.
     if media is None:
         media = request.accept_mimetypes.best_match(OFFERED) if request.accept_mimetypes else "text/html"
-    # At the page of a kind (/tools), the records are listed as in the API, in the formats of the API.
+    # At the page of a kind (/tools), all records of the kind are given in the formats of the API, without pages.
     if path in settings()["kinds"] and media is None:
         return not_acceptable()
     if path in settings()["kinds"] and media != "text/html":
