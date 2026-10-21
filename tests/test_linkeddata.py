@@ -9,7 +9,7 @@ from admin import writes
 from database import records
 from database.tables import Note, Source
 from linkeddata import checks, documents, imports
-from linkeddata.profile import download_vocabularies, tables_problems, terms_problems
+from linkeddata.profile import download_vocabularies, official_problems, tables_problems, terms_problems
 
 BASE = "https://platform.vhp4safety.nl/"
 TOOL = "https://schema.org/SoftwareApplication"
@@ -25,7 +25,7 @@ def test_rdf():
 
 
 def test_fields():
-    assert download_vocabularies() + terms_problems() + tables_problems() == []
+    assert download_vocabularies() + terms_problems() + tables_problems() + official_problems() == []
 
 
 def test_imports(monkeypatch, tmp_path):

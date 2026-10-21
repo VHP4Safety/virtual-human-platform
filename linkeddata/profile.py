@@ -1,6 +1,7 @@
 """Profile and pinned vocabularies of the model release."""
 
 import hashlib
+import json
 import os
 from functools import cache
 from operator import itemgetter
@@ -8,11 +9,12 @@ from pathlib import Path
 
 import requests
 import yaml
-from rdflib import RDF, Graph, Literal, Namespace, URIRef
-from rdflib.collection import Collection
-from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SDO, SH, VOID
+from rdflib import RDF, BNode, Graph, Literal, Namespace, URIRef
+from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SH, VOID
 from rdfsolve.client.sql_tables import layout
-from rdfsolve.iris import curie
+from rdfsolve.iris import curie, local_name
+from rdfsolve.schema_models.readers.json_schema import address, json_schema_shape, vocabulary_context
+from rdfsolve.schema_models.readers.vocabulary import Vocabulary
 
 
 # The model of the release is in model/<release>, and its tables are in database/<release>.
@@ -20,7 +22,10 @@ RELEASE = "v1"
 MODEL_DIR = Path(__file__).parent / "model" / RELEASE
 # The tables are written from the profile by `python -m linkeddata model`.
 TABLES = Path(__file__).parent.parent / "database" / RELEASE / "tables.sql"
-ADDITIONS = MODEL_DIR / "bioschemas-additions.ttl"
+# The shapes of the official profiles are made from their pinned files by `python -m linkeddata model`.
+OFFICIAL = MODEL_DIR / "bioschemas-profiles.shacl"
+# The prefixes of the terms of the official profiles. A term of an earlier prefix is taken before a term of the same name.
+OFFICIAL_PREFIXES = ("schema", "bioschemas", "bioschemas_draft")
 
 
 FORM = Namespace("https://platform.vhp4safety.nl/model/v1/form#")
@@ -33,8 +38,8 @@ def settings() -> dict:
     graph = profile_graph()
     header = graph.value(None, RDF.type, OWL.Ontology)
     files = {}
-    # The official shapes (sh:shapesGraph) are pinned in the same way as the vocabularies.
-    for imported in [*graph.objects(header, OWL.imports), *graph.objects(header, SH.shapesGraph)]:
+    # The files of the official profiles (rdfs:isDefinedBy) are pinned in the same way as the vocabularies.
+    for imported in [*graph.objects(header, OWL.imports), *graph.objects(None, RDFS.isDefinedBy)]:
         files[str(graph.value(imported, FORM.file))] = {"url": str(imported), "sha256": str(graph.value(imported, FORM.sha256))}
     for path in sorted((Path(__file__).parent / "sources").glob("*.yaml")):
         spec = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -66,7 +71,7 @@ def jsonld_name(iri: str) -> str:
 
 
 def vocabularies(endings: tuple = (".ttl", ".jsonld")) -> list[Path]:
-    """Return the files of the pinned vocabularies, or of the official shapes with endings."""
+    """Return the files of the pinned vocabularies with endings."""
     files = []
     for name in settings()["vocabularies"]:
         path = MODEL_DIR / "vocabularies" / name
@@ -131,13 +136,68 @@ def profile_graph() -> Graph:
     return graph
 
 
+def list_terms(of_class: str) -> dict[str, dict[str, str]]:
+    """Return the JSON-LD term definitions of the list fields of the shapes of a class, by field name."""
+    graph = profile_graph()
+    shapes = set(graph.subjects(SH.targetClass, URIRef(of_class)))
+    # The shape of a part of a class is given on the field that holds the part.
+    for field in graph.subjects(SH["class"], URIRef(of_class)):
+        shapes.update(graph.objects(field, SH.node))
+    found = {}
+    for shape in shapes:
+        for field in graph.objects(shape, SH.property):
+            path = graph.value(field, SH.path)
+            if isinstance(path, URIRef) and graph.value(field, SH.node) == DASH.ListShape:
+                found[local_name(str(path))] = {"@id": str(path), "@container": "@list"}
+    return found
+
+
+def official_text() -> str:
+    """Return the Turtle of the shapes of the official profiles, made with rdfsolve from their pinned files."""
+    graph = profile_graph()
+    prefixes = settings()["prefixes"]
+    known = Vocabulary([vocabulary(path) for path in vocabularies()])
+    terms = vocabulary_context(known, [prefixes[name] for name in OFFICIAL_PREFIXES])
+    found = Graph()
+    for profile, source in sorted(graph.subject_objects(RDFS.isDefinedBy)):
+        published = json.loads((MODEL_DIR / "vocabularies" / str(graph.value(source, FORM.file))).read_text(encoding="utf-8"))
+        # A property without a term of the official prefixes keeps the address given in its profile file.
+        declared = {}
+        for node in published["@graph"]:
+            prefix, _, name = str(node["@id"]).partition(":")
+            if node.get("@type") == "rdf:Property" and prefix in published["@context"]:
+                declared[node["rdfs:label"]] = published["@context"][prefix] + name
+        # "type" is the name of @type in the JSON-LD context of schema.org.
+        context = {**declared, **terms, "type": str(RDF.type), "@vocab": prefixes["schema"]}
+        node = next(node for node in published["@graph"] if "$validation" in node)
+        target = address(node["rdfs:subClassOf"]["@id"], context)
+        # The list fields of the records of the class are RDF lists, as in the JSON-LD of the records.
+        context.update(list_terms(target))
+        shape = json_schema_shape(node["$validation"], shape=str(profile), target_class=target, context=context,
+                                  levels={"required": "Violation", "recommended": "Warning"}, vocabulary=known)
+        shape.to_rdf(found)
+    for name in OFFICIAL_PREFIXES:
+        found.bind(name, prefixes[name])
+    return "# Made from the files of the official profiles by python -m linkeddata model. Do not edit.\n" + found.serialize(format="turtle")
+
+
+def write_official() -> Path:
+    """Write the shapes of the official profiles, and return the path of their file."""
+    OFFICIAL.write_text(official_text(), encoding="utf-8")
+    return OFFICIAL
+
+
+def official_problems() -> list[str]:
+    """Return a problem if the file of the shapes of the official profiles differs from the profiles."""
+    if not OFFICIAL.exists() or OFFICIAL.read_text(encoding="utf-8") != official_text():
+        return [f"{OFFICIAL} is out of date: run python -m linkeddata model, review and commit it."]
+    return []
+
+
 @cache
 def official() -> Graph:
-    """Return the official shapes as published, with the additions of the platform."""
-    found = Graph()
-    for path in vocabularies((".shacl",)):
-        found.parse(path, format="turtle")
-    return found.parse(ADDITIONS, format="turtle")
+    """Return the shapes of the official profiles."""
+    return Graph().parse(OFFICIAL, format="turtle")
 
 
 @cache
@@ -146,11 +206,12 @@ def official_fields() -> dict:
     graph = official()
     found = {}
     for shape, field in graph.subject_objects(SH.property):
+        needs = graph.value(field, SH.minCount) is not None and graph.value(field, SH.severity) == SH.Violation
         path = graph.value(field, SH.path)
-        if graph.value(path, SH.alternativePath) is not None:
-            paths = list(Collection(graph, graph.value(path, SH.alternativePath)))
-            path = next((given for given in paths if str(given).startswith(str(SDO))), paths[-1])
-        found[field] = (shape, path, graph.value(field, SH.minCount) is not None and graph.value(field, SH.severity) == SH.Violation)
+        # A path to the members of a list is noted on the list field.
+        if isinstance(path, BNode) and graph.value(path, RDF.first) is not None:
+            path = graph.value(path, RDF.first)
+        found[field] = (shape, path, needs)
     return found
 
 

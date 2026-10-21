@@ -28,6 +28,7 @@ Python 3.12 or newer is required by rdfsolve.
 
 ```
 pip install -r requirements.txt pytest
+python -m linkeddata model      # after a change of the profile or of a pinned file: write the generated files
 python -m linkeddata launch     # once: fetch, convert, check and store all sources
 python -m linkeddata import     # each week: fetch, convert, check and store the weekly sources
 python -m pytest tests          # check the parts on small inputs, offline
@@ -37,8 +38,9 @@ python -m pytest tests          # check the parts on small inputs, offline
 
 - a vocabulary file is not the pinned file;
 - the profile uses a class or a property that is not defined in a pinned vocabulary;
-- `database/v1/tables.sql` does not match the profile. After a change of the profile, run
-  `python -m linkeddata model`, then review and commit the change;
+- `database/v1/tables.sql` does not match the profile, or `model/v1/bioschemas-profiles.shacl` does not match the
+  pinned files of the official profiles. After such a change, run `python -m linkeddata model`, then review and
+  commit the change;
 - the tables of the database are not the tables of the release of the model.
 
 The check is run by the Docker build, and by the container before the platform starts.
@@ -116,11 +118,22 @@ Each write is checked against the profile with pyshacl, with the type checks of 
 write is not stopped by problems. The problems are returned as warnings for each field, with the `sh:message` of
 the profile.
 
-The records are also checked against the official Bioschemas shapes (`sh:shapesGraph` in the header). The shapes
-are pinned and used as published. Corrections of the targets are kept in `model/v1/bioschemas-additions.ttl`.
-The Bioschemas profile of a class is named on its node shape (`dct:conformsTo`). It is stated on a record only if all
-fields required by the profile are given. The results of the official shapes are reported only for the fields of the
-form.
+The records are also checked against the shapes of the official Bioschemas profiles. Each profile version is a file of
+the Bioschemas specifications with a JSON Schema (`$validation`), pinned in the header (`rdfs:isDefinedBy`). The
+shapes are made from these files with rdfsolve by `python -m linkeddata model`, and written to
+`model/v1/bioschemas-profiles.shacl`. The properties are given the addresses of schema.org and of the Bioschemas
+terms. For a property without such a term, the address in its profile file is used. The values are read with the
+ranges of the vocabularies: a text of a property whose range is not only a data type may be a link, and a date may be
+any form of a schema.org Date, such as a year. The Bioschemas profile of a class is named on its node shape
+(`dct:conformsTo`). It is stated on a record only if all fields required by the profile are given. The results of the
+official shapes are reported only for the fields of the form.
+
+To use another version of an official profile:
+
+1. pin its file in `profile/ontology.ttl` (`rdfs:isDefinedBy`, `form:file`, `form:sha256`), and name the version on
+   the node shape of the class (`dct:conformsTo`);
+2. run `python -m linkeddata model`;
+3. review the change of `model/v1/bioschemas-profiles.shacl`, and commit it.
 
 The classes of the node shapes with `form:path` are record classes (kinds). Each record has its own address and
 page. A node of another class in an `sh:node` field is a part of its record, and it is written with its record:

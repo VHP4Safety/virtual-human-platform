@@ -8,7 +8,7 @@ from admin import tokens
 from database import export
 from linkeddata.imports import Refused, import_all
 from linkeddata.launch import launch
-from linkeddata.profile import RELEASE, download_vocabularies, tables_problems, terms_problems, write_tables
+from linkeddata.profile import RELEASE, download_vocabularies, official_problems, tables_problems, terms_problems, write_official, write_tables
 
 COMMANDS = """
     python -m linkeddata model                  write the tables of the model
@@ -36,10 +36,11 @@ def main() -> None:
         if problems:
             sys.exit(1)
         print(f"Wrote {write_tables()}")
+        print(f"Wrote {write_official()}")
     elif args.command == "check":
         problems = download_vocabularies()
         if not problems:
-            problems = terms_problems() + tables_problems()
+            problems = terms_problems() + tables_problems() + official_problems()
         if not problems and (database.STATE_DIR / "platform.sqlite").exists():
             problems = database.differences(database.STATE_DIR / "platform.sqlite")
         for problem in problems:
