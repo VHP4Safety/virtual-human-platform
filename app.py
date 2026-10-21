@@ -28,9 +28,11 @@ from routes.discovery import blueprint as discovery_blueprint
 from routes.editor import blueprint as admin_blueprint
 from routes.images import blueprint as images_blueprint
 from routes.record_pages import blueprint as pages_blueprint
-from routes.record_pages import listing_page, page_link, record_page
+from routes.record_pages import page_link
 
 ################################################################################
+BIOSTUDIES_COLLECTION_NAME = "VHP4Safety"  # Display name for the page
+MAX_PAGE_SIZE = 48
 
 # SEO defaults. Every page renders a <title>/<meta description> (see base.html);
 # routes override page_title / meta_description with page-specific values, and
@@ -42,6 +44,13 @@ def clip(text, limit=160):
     """Trim a description to a search-snippet-friendly length (~160 chars)."""
     text = " ".join((text or "").split())
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
+
+
+def page_args(default_size: int) -> tuple[int, int]:
+    """Read ?page and ?page_size from the request, kept within sensible bounds."""
+    page = max(request.args.get("page", 1, type=int), 1)
+    page_size = request.args.get("page_size", default_size, type=int)
+    return page, min(max(page_size, 1), MAX_PAGE_SIZE)
 
 ################################################################################
 class RegexConverter(BaseConverter):
@@ -230,19 +239,140 @@ def robots():
 ### Pages under 'Data'
 @app.route("/data")
 def data():
-    return listing_page("data")
+    # Pass data to template
+    return render_template(
+        "data/data.html",
+        page_title="Data — VHP4Safety",
+        meta_description=(
+            "Browse datasets and studies in the VHP4Safety data collection, "
+            "aggregated from BioStudies and Zenodo for animal-free safety assessment."
+        ),
+        **pages.data_listing(request.args),
+    )
 
 
 ################################################################################
 ### DataSet detail view
 
 
+@app.template_filter("split_text_int")
+def split_text_int(value: None | str) -> tuple[str, None | int]:
+    """
+    Splits trailing integer from a string.
+    'S-VHPS21' -> ('S-VHPS', 21)
+    'ABC'      -> ('ABC', None)
+    'X-12A'    -> ('X-12A', None)   # only splits if digits are at the very end
+    """
+    # used to construct ftp file link *POTENTIALLY BRITTLE*
+    if value is None:
+        return ("", None)
+
+    s = str(value)
+    m = re.match(r"^(.*?)(\d+)$", s)
+    if not m:
+        return (s, None)
+
+    return (m.group(1), int(m.group(2)))
+
+
 @app.route("/data/<dataid>")
 def data_detail(dataid):
-    record = records.get(records.address(f"data/{dataid}"))
-    if record is None:
+    found = records.get(records.address(f"data/{dataid}"))
+    if found is None or found.part_of is not None:
         abort(404)
-    return record_page(record)
+    filters = pages.catalogue_filters("data", records.latest_change())
+    reg_q_labels = filters["reg_q_labels"]
+    reg_q_urls = filters["reg_q_urls"]
+    reg_q_steps = filters["reg_q_steps"]
+    record = pages.catalogue_details(found)
+    rec_title = record.get("title") or "Dataset"
+    rec_desc = record.get("description") or record.get("abstract") or ""
+    return render_template(
+        "data/data_details.html",
+        data=record,
+        reg_q_labels=reg_q_labels,
+        reg_q_urls=reg_q_urls,
+        reg_q_steps=reg_q_steps,
+        page_title=f"{rec_title} — VHP4Safety data",
+        meta_description=clip(rec_desc)
+        or f"{rec_title}: a dataset in the VHP4Safety data collection.",
+    )
+
+
+################################################################################
+### Pages under 'Models'
+@app.route("/models")
+def models():
+    # Get query parameters for pagination and search
+    page, page_size = page_args(18)
+    search_query = request.args.get("query", "", type=str)
+
+    # Get filter parameters
+    filter_case_study = request.args.get("filter_case_study", "", type=str)
+    filter_regulatory_question = request.args.get(
+        "filter_regulatory_question", "", type=str
+    )
+    filter_flow_step = request.args.get("filter_flow_step", "", type=str)
+
+    # Build filter list (only include non-empty filters)
+    filters = []
+    if filter_case_study:
+        filters.append(("case_study", filter_case_study))
+    if filter_regulatory_question:
+        filters.append(("regulatory_question", filter_regulatory_question))
+    if filter_flow_step:
+        filters.append(("flow_step", filter_flow_step))
+
+    # Fetch data based on search query or list all
+    results = pages.model_listing(search_query, page, page_size, filters)
+
+    # Extract studies and metadata
+    studies = results.get("hits", [])
+    total = results.get("total", 0)
+    error = results.get("error", None)
+
+    # Get filtering metadata (if filters were applied)
+    filters_applied = results.get("filters_applied", False)
+    hits_returned = results.get("hits_returned", len(studies))
+    pages_fetched = results.get("pages_fetched", 1)
+    page_size_met = results.get("page_size_met", True)
+
+    # Calculate pagination info
+    has_next = (page * page_size) < total
+    has_prev = page > 1
+
+    # Pass model data to template
+    return render_template(
+        "models_page.html",
+        page_title="Models — VHP4Safety",
+        meta_description=(
+            "Explore computational models in the VHP4Safety Virtual Human Platform "
+            "for animal-free safety assessment of chemicals and pharmaceuticals."
+        ),
+        studies=studies,
+        total=total,
+        page=page,
+        page_size=page_size,
+        search_query=search_query,
+        collection_name=BIOSTUDIES_COLLECTION_NAME,
+        error=error,
+        has_next=has_next,
+        has_prev=has_prev,
+        filter_case_study=filter_case_study,
+        filter_regulatory_question=filter_regulatory_question,
+        filter_flow_step=filter_flow_step,
+        filters_applied=filters_applied,
+        hits_returned=hits_returned,
+        pages_fetched=pages_fetched,
+        page_size_met=page_size_met,
+        # The filter values are the case studies, questions and steps of the data.
+        **pages.catalogue_filters("data", records.latest_change()),
+    )
+
+
+@app.route("/models_page")
+def models_page():
+    return redirect(url_for("models"), code=301)
 
 
 ################################################################################
@@ -344,6 +474,31 @@ def tool_page(toolname):
         meta_description=clip(tool_meta.get("description"))
         or f"{tool_name}, a tool in the VHP4Safety Virtual Human Platform.",
     )
+
+
+@app.route("/models/<modelid>")
+def model_page(modelid):
+    found = records.get(records.address(f"models/{modelid}"))
+    if found is None or found.part_of is not None:
+        abort(404)
+    reg_q_labels = pages.catalogue_filters("data", records.latest_change())["reg_q_labels"]
+    data = pages.catalogue_details(found)
+    return render_template(
+        "models/model.html", data=data, reg_q_labels=reg_q_labels, outline=pages.outline(found),
+        page_title=f"{data['title']} — VHP4Safety models",
+        meta_description=clip(data["description"]) or f"{data['title']}: a record of the VHP4Safety models.",
+    )
+
+
+@app.route("/model/<modelid>")
+def model_redirect(modelid):
+    """Redirect the address of a model in Zenodo to its model page, or to the models listing if models share it."""
+    found = pages.based_on("models", f"https://zenodo.org/records/{modelid}")
+    if len(found) == 1:
+        return redirect(page_link(found[0]), code=301)
+    if found:
+        return redirect(url_for("models"), code=302)
+    return redirect(url_for("model_page", modelid=modelid), code=301)
 
 
 ################################################################################

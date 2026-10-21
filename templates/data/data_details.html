@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% import "records/_outline.html" as outlined %}
 {% block content %}
 
 <link rel="stylesheet" href="/static/css/data.css" />
@@ -38,9 +37,6 @@
     <h1><span class="text-vhpblue">{{ val(record.title, 'Dataset') }}</span></h1>
     {% if record.description %}
       <p class="text-secondary">{{ record.description | sanitize_html }}</p>
-    {% endif %}
-    {% if record.url %}
-      <a href="{{ record.url }}" class="btn btn-outline-vhpblue mb-2" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right pe-1"></i>{{ "Zenodo" if "zenodo.org" in record.url else "BioStudies" if "biostudies" in record.url else "Source record" }}</a>
     {% endif %}
   </div>
   
@@ -130,45 +126,55 @@
       {% set bio_models = [] %}
       {% set ns_bio = namespace(organisms=[], organ=None, organ_url=None, tissue=None, tissue_url=None, cell_type=None, cell_type_url=None, bioassays=[], aop_name=None, aop_url=None, aop_events=[]) %}
       {% if record.type == "study" %}
-        {# The experimental design of the study. #}
-        {% set sec_attrs = data.design.attributes if data.design else [] %}
-        {% set subs_bio = data.design.subsections if data.design else [] %}
+        {% set sec_attrs = data.metadata.raw_data.section.attributes
+          if data.metadata and data.metadata.raw_data and data.metadata.raw_data.section else [] %}
+        {% set subs_bio = data.metadata.raw_data.section.subsections
+          if data.metadata and data.metadata.raw_data and data.metadata.raw_data.section else [] %}
 
         {% for a in sec_attrs %}
           {% if a.name == 'Organism' %}
             {% set ont = namespace(url=None) %}
-            {% if 'NCBITaxon_' in a.term %}
-              {% set ont.url = 'https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=' ~ a.term.rsplit('NCBITaxon_', 1)[-1] %}
+            {% for qq in a.valqual or [] %}
+              {% if qq.name == 'Ontology' and qq.value == 'NCBITaxon' %}
+                {% set ont.url = 'https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=' ~ (a.valqual | selectattr('name','equalto','TermId') | map(attribute='value') | first | replace('NCBITaxon_','')) %}
               {% endif %}
+            {% endfor %}
             {% set _ = ns_bio.organisms.append({'value': a.value, 'url': ont.url}) %}
 
           {% elif a.name == 'Organ' %}
-            {% if a.term %}{% set ns_bio.organ_url = a.term %}{% endif %}
+            {% for q in a.valqual or [] %}
+              {% if q.name == 'TermId' %}{% set ns_bio.organ_url = 'https://purl.obolibrary.org/obo/' ~ q.value | replace(':','_') %}{% endif %}
+            {% endfor %}
             {% set ns_bio.organ = a.value %}
 
           {% elif a.name == 'Tissue' %}
-            {% if a.term %}{% set ns_bio.tissue_url = a.term %}{% endif %}
+            {% for q in a.valqual or [] %}
+              {% if q.name == 'TermId' %}{% set ns_bio.tissue_url = 'https://purl.obolibrary.org/obo/' ~ q.value | replace(':','_') %}{% endif %}
+            {% endfor %}
             {% set ns_bio.tissue = a.value %}
 
           {% elif a.name == 'Bioassay' %}
             {% set ba = namespace(url=None, bao_url=None, ontology=None) %}
-            {% set ba.url = a.url or None %}
-            {% for q in a.qualifiers %}{% if q.name == 'Ontology' %}{% set ba.ontology = q.value %}{% endif %}{% endfor %}
-            {% if a.term %}
-              {% set ba.bao_url = a.term %}
-              {% set ba.ontology = a.term.replace('#', '/').rsplit('/', 1)[-1].split('_')[0] %}
-            {% endif %}
+            {% for q in a.valqual or [] %}
+              {% if q.name == 'URL' %}{% set ba.url = q.value %}{% endif %}
+              {% if q.name == 'TermId' %}{% set ba.bao_url = 'https://www.bioassayontology.org/bao#' ~ q.value if q.value.startswith('BAO_') else ba.url %}{% endif %}
+              {% if q.name == 'Ontology' %}{% set ba.ontology = q.value %}{% endif %}
+            {% endfor %}
             {% set _ = ns_bio.bioassays.append({'value': a.value, 'url': ba.url, 'bao_url': ba.bao_url, 'ontology': ba.ontology}) %}
 
           {% elif a.name == 'AOP' %}
             {% set aop_q = namespace(url=None) %}
-            {% set aop_q.url = a.url or None %}
+            {% for q in a.valqual or [] %}
+              {% if q.name == 'URL' %}{% set aop_q.url = q.value %}{% endif %}
+            {% endfor %}
             {% set ns_bio.aop_name = a.value %}
             {% set ns_bio.aop_url = aop_q.url %}
 
           {% elif a.name == 'AOP event' %}
             {% set ev_q = namespace(url=None) %}
-            {% set ev_q.url = a.url or None %}
+            {% for q in a.valqual or [] %}
+              {% if q.name == 'URL' %}{% set ev_q.url = q.value %}{% endif %}
+            {% endfor %}
             {% set _ = ns_bio.aop_events.append({'value': a.value, 'url': ev_q.url}) %}
           {% endif %}
         {% endfor %}
@@ -294,16 +300,6 @@
                 </div>
               </div>
 
-              {% if outline %}
-              <div class="card mt-3 overflow-hidden">
-                <div class="card-header py-2"><h5 class="m-0">Model details</h5></div>
-                <div class="card-body">
-                  {{ outlined.fields_table(outline.fields, left_out=("name", "description")) }}
-                  {{ outlined.parts(outline.parts, 2) }}
-                </div>
-              </div>
-              {% endif %}
-
             </div>
 
             <div class="col-md-4">
@@ -416,17 +412,28 @@
                     {% set ns_bm.cell_line = a.value %}
                   {% elif a.name == 'RRID' %}
                     {% set ns_bm.rrid = a.value %}
-                    {% set ns_bm.rrid_url = a.url or None %}
+                    {% for q in a.valqual or [] %}
+                      {% if q.name == 'URL' %}{% set ns_bm.rrid_url = q.value %}{% endif %}
+                    {% endfor %}
                   {% elif a.name == 'Supplier' %}
                     {% set ns_bm.supplier = a.value %}
                   {% elif a.name == 'Cell type' %}
-                    {% set ns_bm.cell_type_url = a.url or a.term or None %}
+                    {% for q in a.valqual or [] %}
+                      {% if q.name == 'URL' %}{% set ns_bm.cell_type_url = q.value %}
+                      {% elif q.name == 'TermId' %}{% set ns_bm.cell_type_url = 'https://purl.obolibrary.org/obo/' ~ q.value | replace(':','_') %}{% endif %}
+                    {% endfor %}
                     {% set ns_bm.cell_type = a.value %}
                   {% elif a.name == 'Organ' %}
-                    {% set ns_bm.organ_url = a.url or a.term or None %}
+                    {% for q in a.valqual or [] %}
+                      {% if q.name == 'URL' %}{% set ns_bm.organ_url = q.value %}
+                      {% elif q.name == 'TermId' %}{% set ns_bm.organ_url = 'https://purl.obolibrary.org/obo/' ~ q.value | replace(':','_') %}{% endif %}
+                    {% endfor %}
                     {% set ns_bm.organ = a.value %}
                   {% elif a.name == 'Tissue' %}
-                    {% set ns_bm.tissue_url = a.url or a.term or None %}
+                    {% for q in a.valqual or [] %}
+                      {% if q.name == 'URL' %}{% set ns_bm.tissue_url = q.value %}
+                      {% elif q.name == 'TermId' %}{% set ns_bm.tissue_url = 'https://purl.obolibrary.org/obo/' ~ q.value | replace(':','_') %}{% endif %}
+                    {% endfor %}
                     {% set ns_bm.tissue = a.value %}
                   {% elif a.name and a.name|lower == 'description' %}
                     {% set ns_bm.description = a.value %}
@@ -538,7 +545,8 @@
 
     
         <div class="tab-pane fade" id="tab-chemical" role="tabpanel" aria-labelledby="tab-chemical-link">
-          {% set subs = data.design.subsections if data.design else [] %}
+          {% set subs = data.metadata.raw_data.section.subsections
+            if data.metadata and data.metadata.raw_data and data.metadata.raw_data.section else [] %}
 
           {% set chemicals = [] %}
           {% for s in subs %}
@@ -571,7 +579,11 @@
                       {% set ns.cid = a.value %}
                     {% elif a.name == 'CompoundCloudID' %}
                       {% set ns.cc_id = a.value %}
-                      {% if a.url %}{% set ns.cc_url = a.url %}{% endif %}
+                      {% for q in a.valqual or [] %}
+                        {% if q.name == 'URL' %}
+                          {% set ns.cc_url = q.value %}
+                        {% endif %}
+                      {% endfor %}
                     {% endif %}
                   {% endfor %}
 
@@ -684,7 +696,7 @@
                 {% for a in ex.attributes or [] %}
                   {% if a.name == 'Exposure type' %}{% set ns_ex.exp_type = a.value %}
                   {% elif a.name == 'Exposure duration' %}{% set ns_ex.duration = a.value %}
-                    {% set du = ([a.unit] if a.unit else []) %}
+                    {% set du = (a.valqual | selectattr('name','equalto','Unit') | map(attribute='value') | list) if a.valqual else [] %}
                     {% set ns_ex.duration_unit = du[0] if du else None %}
                   {% elif a.name == 'Bioassay' %}{% set _ = ns_ex.bioassays.append(a.value) %}
                   {% else %}{% if a.value %}{% set _ = ns_ex.extra.append(a) %}{% endif %}
@@ -693,8 +705,10 @@
 
                 {# nested per-regimen subsections (shared-parent + regimen-deltas form) #}
                 {% set regimens = [] %}
-                {% for s in ex.subsections or [] %}
+                {% for grp in ex.subsections or [] %}
+                  {% for s in grp %}
                     {% if s.type and s.type|lower == 'exposure regimen' %}{% set _ = regimens.append(s) %}{% endif %}
+                  {% endfor %}
                 {% endfor %}
 
                 {% if regimens %}
@@ -722,13 +736,13 @@
                             <i class="bi bi-clock-history text-vhpblue fs-4"></i>
                           </div>
                           <div class="w-100">
-                        <div class="small">{% if rb.uniq %}{% for a in rb.uniq %}{% if not loop.first %} &middot; {% endif %}{{ a.name }}: {{ a.value }}{% set u = ([a.unit] if a.unit else []) %}{% if u %} {{ u[0] }}{% endif %}{% endfor %}{% else %}{{ rb.name or 'Regimen' }}{% endif %}</div>
+                        <div class="small">{% if rb.uniq %}{% for a in rb.uniq %}{% if not loop.first %} &middot; {% endif %}{{ a.name }}: {{ a.value }}{% set u = (a.valqual | selectattr('name','equalto','Unit') | map(attribute='value') | list) if a.valqual else [] %}{% if u %} {{ u[0] }}{% endif %}{% endfor %}{% else %}{{ rb.name or 'Regimen' }}{% endif %}</div>
                         {# shared items — valid for all regimens, repeated in each card for clarity #}
                         {% if ns_ex.extra or common or ns_ex.bioassays %}
                           <div class="small text-muted mt-1">
                             {% set sp = namespace(n=false) %}
-                            {% for a in ns_ex.extra %}{% if sp.n %} &middot; {% endif %}{{ a.name }}: {{ a.value }}{% set eu = ([a.unit] if a.unit else []) %}{% if eu %} {{ eu[0] }}{% endif %}{% set sp.n = true %}{% endfor %}
-                            {% for nm in common %}{% if sp.n %} &middot; {% endif %}{% set fa = regimens[0].attributes | selectattr('name','equalto',nm) | list | first %}{{ nm }}: {{ fa.value }}{% set u = ([fa.unit] if fa.unit else []) %}{% if u %} {{ u[0] }}{% endif %}{% set sp.n = true %}{% endfor %}
+                            {% for a in ns_ex.extra %}{% if sp.n %} &middot; {% endif %}{{ a.name }}: {{ a.value }}{% set eu = (a.valqual | selectattr('name','equalto','Unit') | map(attribute='value') | list) if a.valqual else [] %}{% if eu %} {{ eu[0] }}{% endif %}{% set sp.n = true %}{% endfor %}
+                            {% for nm in common %}{% if sp.n %} &middot; {% endif %}{% set fa = regimens[0].attributes | selectattr('name','equalto',nm) | list | first %}{{ nm }}: {{ fa.value }}{% set u = (fa.valqual | selectattr('name','equalto','Unit') | map(attribute='value') | list) if fa.valqual else [] %}{% if u %} {{ u[0] }}{% endif %}{% set sp.n = true %}{% endfor %}
                             {% if ns_ex.bioassays %}{% if sp.n %} &middot; {% endif %}Bioassays: {% for bn in ns_ex.bioassays %}{% if not loop.first %}, {% endif %}{% set m = namespace(url=None) %}{% for b in ns_bio.bioassays %}{% if b.value and b.value|lower|trim == bn|lower|trim %}{% set m.url = b.url or b.bao_url %}{% endif %}{% endfor %}{% if m.url %}<a href="{{ m.url }}" target="_blank" rel="noopener" class="fw-semibold text-nowrap"><i class="bi bi-link-45deg text-vhpblue"></i> {{ bn }}</a>{% else %}{{ bn }}{% endif %}{% endfor %}{% endif %}
                           </div>
                         {% endif %}
@@ -758,7 +772,7 @@
                           {% endif %}
                           {% if ns_ex.extra %}
                             <div class="small text-muted mt-1">
-                              {% for a in ns_ex.extra %}{% if not loop.first %} &middot; {% endif %}{{ a.name }}: {{ a.value }}{% set eu = ([a.unit] if a.unit else []) %}{% if eu %} {{ eu[0] }}{% endif %}{% endfor %}
+                              {% for a in ns_ex.extra %}{% if not loop.first %} &middot; {% endif %}{{ a.name }}: {{ a.value }}{% set eu = (a.valqual | selectattr('name','equalto','Unit') | map(attribute='value') | list) if a.valqual else [] %}{% if eu %} {{ eu[0] }}{% endif %}{% endfor %}
                             </div>
                           {% endif %}
                         </div>
@@ -794,26 +808,28 @@
                   {% if a.name == 'Bioassay' %}{% set ns_ep.bioassay_name = a.value %}
                   {% elif a.name == 'AOP event' %}
                     {% set ev = namespace(url=None) %}
-                    {% set ev.url = a.url or None %}
+                    {% for q in a.valqual or [] %}{% if q.name == 'URL' %}{% set ev.url = q.value %}{% endif %}{% endfor %}
                     {% set _ = ns_ep.aop_events.append({'value': a.value, 'url': ev.url}) %}
                   {% elif a.name == 'Detection instrument' %}{% set ns_ep.instrument = a.value %}
                   {% elif a.name == 'Instrument manufacturer' %}{% set ns_ep.manufacturer = a.value %}
                   {% elif a.name == 'Measured entity' %}{% set ns_ep.measured_entity = a.value %}
                   {% elif a.name == 'Endpoint readout' %}{% set ns_ep.readout = a.value %}
-                    {% set ru = ([a.unit] if a.unit else []) %}
+                    {% set ru = (a.valqual | selectattr('name','equalto','Unit') | map(attribute='value') | list) if a.valqual else [] %}
                     {% set ns_ep.readout_unit = ru[0] if ru else None %}
                   {% elif a.name == 'Time point' %}{% set ns_ep.time_point = a.value %}
-                    {% set tu = ([a.unit] if a.unit else []) %}
+                    {% set tu = (a.valqual | selectattr('name','equalto','Unit') | map(attribute='value') | list) if a.valqual else [] %}
                     {% set ns_ep.time_point_unit = tu[0] if tu else None %}
                   {% elif a.name == 'Replicates' %}{% set ns_ep.replicates = a.value %}
                   {% elif a.name == 'Technical replicates' %}{% set ns_ep.tech_replicates = a.value %}
                   {% elif a.name == 'Positive control' %}
                     {% set pc = namespace(name=a.value, url=None, conc=None, conc_unit=None, dur=None, dur_unit=None) %}
-                    {% set pc.url = a.url or None %}
-                    {% for q in a.qualifiers %}
-                      {% if q.name == 'CID' and not pc.url %}{% set pc.url = 'https://pubchem.ncbi.nlm.nih.gov/compound/' ~ q.value %}
+                    {% for q in a.valqual or [] %}
+                      {% if q.name == 'URL' %}{% set pc.url = q.value %}
+                      {% elif q.name == 'CID' and not pc.url %}{% set pc.url = 'https://pubchem.ncbi.nlm.nih.gov/compound/' ~ q.value %}
                       {% elif q.name|lower == 'concentration' %}{% set pc.conc = q.value %}
+                        {% set cu = (q.valqual | selectattr('name','equalto','Unit') | map(attribute='value') | list) if q.valqual else [] %}{% set pc.conc_unit = cu[0] if cu else None %}
                       {% elif q.name == 'Exposure duration' %}{% set pc.dur = q.value %}
+                        {% set du = (q.valqual | selectattr('name','equalto','Unit') | map(attribute='value') | list) if q.valqual else [] %}{% set pc.dur_unit = du[0] if du else None %}
                       {% endif %}
                     {% endfor %}
                     {% set _ = ns_ep.pos_controls.append(pc) %}
@@ -929,7 +945,7 @@
                           {% endfor %}
 
                           {% for a in ns_ep.extra %}
-                            <br>{{ a.name }}: {{ a.value }}{% set eu = ([a.unit] if a.unit else []) %}{% if eu %} {{ eu[0] }}{% endif %}
+                            <br>{{ a.name }}: {{ a.value }}{% set eu = (a.valqual | selectattr('name','equalto','Unit') | map(attribute='value') | list) if a.valqual else [] %}{% if eu %} {{ eu[0] }}{% endif %}
                           {% endfor %}
                         </div>
 
@@ -956,7 +972,7 @@
               {% if a.name == 'Bioassay' %}{% set epx.ba = a.value %}
               {% elif a.name == 'AOP event' %}
                 {% set ev = namespace(url=None) %}
-                {% set ev.url = a.url or None %}
+                {% for q in a.valqual or [] %}{% if q.name == 'URL' %}{% set ev.url = q.value %}{% endif %}{% endfor %}
                 {% set _ = epx.evs.append({'value': a.value, 'url': ev.url}) %}
               {% endif %}
             {% endfor %}

@@ -5,23 +5,18 @@
 <section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
     <!-- Page Title and Description -->
     <div data-vhp-glossary-skip class="">
-        {% if kind == "models" %}
-        <h1><span class="text-vhpblue" id="collection-name">Models</span></h1>
-        <p class="text-secondary fs-5">Explore models generated or used in <span id="collection-name-sub">{{ collection_name }} and hosted on Zenodo.</span></p>
-        {% else %}
         <h1><span class="text-vhpblue" id="collection-name">Data</span></h1>
         <p class="text-secondary fs-5">Explore datasets generated or used in <span id="collection-name-sub">{{ collection_name }} and hosted on BioStudies or Zenodo archives.</span></p>
-        {% endif %}
     </div>
 
     <nav class="navbar navbar-expand-lg d-inline">
-        <form method="GET" action="{{ request.path }}" class="d-flex" role="search" id="search-form">
-            <input type="text" class="form-control me-2" name="search" id="search-input" value="{{ search_query or '' }}" placeholder="{% if kind == "models" %}Search for models (e.g., PBK, qAOP, cisplatin...){% else %}Search for datasets (e.g., S-VHPS28, dinoseb, liver...){% endif %}" />
+        <form method="GET" action="{{ url_for('data') }}" class="d-flex" role="search" id="search-form">
+            <input type="text" class="form-control me-2" name="search" id="search-input" value="{{ search_query or '' }}" placeholder="Search for datasets (e.g., S-VHPS28, dinoseb, liver...)" />
             <!-- Filter hidden inputs are added dynamically by search_filter.js
                  in multipleInputs mode (one <input> per selected value). -->
             <div class="btn-group" role="group" aria-label="Search and filter buttons">
                 <button type="submit" class="btn btn-outline-vhpblue">Search</button>
-                <a href="{{ request.path }}" class="btn btn-outline-danger text-nowrap">Clear</a>
+                <a href="{{ url_for('data') }}" class="btn btn-outline-danger text-nowrap">Clear</a>
                 <button type="button" id="filter-toggle-btn" class="btn btn-outline-secondary">Filters</button>
             </div>
         </form>
@@ -130,7 +125,7 @@
                         </div>
                     </div>
                     <div class="card-footer btn-group bg-white border-0 py-3 px-2 px-sm-3 text-nowrap" role="group">
-                            <a href="{{ request.path }}/{{ study.accession }}" class="btn btn-vhpblue" role="button" data-bs-toggle="tooltip" data-bs-title="View details"><i class="bi bi-info-circle"></i></a>
+                            <a href="{{ url_for('data_detail', dataid=study.accession) }}" class="btn btn-vhpblue" role="button" data-bs-toggle="tooltip" data-bs-title="View details"><i class="bi bi-info-circle"></i></a>
                             {% if study.url%}
                             <a href="{{ study.url}}" class="btn btn-outline-vhpblue d-inline" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right pe-1"></i> BioStudies</a>
                             {% endif%}
@@ -172,7 +167,7 @@
                         </div>
                     </div>
                     <div class="card-footer btn-group bg-white border-0 py-3 px-2 px-sm-3 text-nowrap" role="group">
-                            <a href="{{ request.path }}/{{ dataset.id }}" class="btn btn-vhpblue" role="button" data-bs-toggle="tooltip" data-bs-title="View details"><i class="bi bi-info-circle"></i></a>
+                            <a href="{{ url_for('data_detail', dataid=dataset.id) }}" class="btn btn-vhpblue" role="button" data-bs-toggle="tooltip" data-bs-title="View details"><i class="bi bi-info-circle"></i></a>
                             {% if dataset.doi_url%}
                             <a href="{{ dataset.doi_url}}" class="btn btn-outline-vhpblue d-inline" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right pe-1"></i> Zenodo</a>
                             {% endif%}

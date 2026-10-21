@@ -1,5 +1,6 @@
 """Content of the record pages, the listings and the home page."""
 
+import re
 from functools import lru_cache
 from operator import itemgetter
 from pathlib import Path
@@ -675,7 +676,7 @@ def data_listing(arguments) -> dict:
             "page_size": LISTED, "search_query": found["search"], "collection_name": (void.platform()["publisher"] or {}).get("name", ""), "errors": {},
             "has_next": first + half < max(len(studies), len(datasets)), "has_prev": number > 1, "filter_case_study": arguments.getlist("case_study"),
             "filter_regulatory_question": arguments.getlist("reg_q"), "filter_flow_step": arguments.getlist("stage"), "filters_applied": bool(chosen),
-            "hits_returned": len(listed), "pages_fetched": 1, "page_size_met": True, "process_flow_steps": known, "kind": "data"}
+            "hits_returned": len(listed), "pages_fetched": 1, "page_size_met": True, "process_flow_steps": known}
 
 
 def catalogue_details(record: Record) -> dict:
@@ -706,7 +707,8 @@ def catalogue_details(record: Record) -> dict:
                               "url": shown["url"], "doi": shown["doi"], "doi_url": shown["doi_url"], "title": shown["title"],
                               "description": str(description) if description is not None else "", "publications": [{"doi": doi} for doi in dois(found, node)],
                               "files": files(found, node), "authors": authors, "funding": funding}
-    shown["design"] = design_of(found, node)
+    shown["description"] = plain(description)
+    shown["metadata"]["raw_data"] = {"section": design_of(found, node)} if shown["type"] == "study" else {}
     return shown
 
 
@@ -716,30 +718,35 @@ SAMPLE_VALUES = URIRef("https://bioschemas.org/terms/additionalProperty")
 
 
 def attributes_of(found: Graph, node, path) -> list[dict]:
-    """Return the values of a field of node as BioStudies attributes."""
+    """Return the values of a field of node as BioStudies attributes, with URL, TermId, Ontology and Unit qualifiers."""
     listed = []
     for item in in_order(found, found.objects(node, path)):
-        references = list(found.objects(item, SDO.valueReference))
-        terms = [str(reference) for reference in references if not records.is_part(found, reference)]
         qualifiers = []
-        for reference in references:
+        # A term without a page of its own is linked at its address.
+        page = found.value(item, SDO.url) or next((term for term in found.objects(item, SDO.valueReference) if not records.is_part(found, term)), None)
+        if page is not None:
+            qualifiers.append({"name": "URL", "value": local(str(page))})
+        for reference in found.objects(item, SDO.valueReference):
             if records.is_part(found, reference):
                 qualifiers.append({"name": str(found.value(reference, SDO.propertyID) or ""), "value": str(found.value(reference, SDO.value) or "")})
-        listed.append({"name": str(found.value(item, SDO.propertyID) or ""), "value": str(found.value(item, SDO.value) or ""),
-                       "unit": str(found.value(item, SDO.unitText) or ""), "url": local(str(found.value(item, SDO.url) or "")),
-                       "term": terms[0] if terms else "", "qualifiers": qualifiers})
+            else:
+                term = re.split(r"[/#]", str(reference))[-1]
+                qualifiers += [{"name": "TermId", "value": term}, {"name": "Ontology", "value": term.split("_")[0]}]
+        if found.value(item, SDO.unitText) is not None:
+            qualifiers.append({"name": "Unit", "value": str(found.value(item, SDO.unitText))})
+        listed.append({"name": str(found.value(item, SDO.propertyID) or ""), "value": str(found.value(item, SDO.value) or ""), "valqual": qualifiers})
     return listed
 
 
 def section_of(found: Graph, node, kind: str = "") -> dict:
-    """Return a part of the experimental design as a BioStudies section."""
+    """Return a part of the experimental design as a BioStudies section, with the sections below it as one table."""
     attributes = attributes_of(found, node, URIRef(DRAFT + "additionalProperty")) + attributes_of(found, node, SAMPLE_VALUES)
     if (node, RDF.type, SDO.ChemicalSubstance) in found:
-        attributes = [{"name": "Chemical", "value": str(found.value(node, SDO.name) or ""), "unit": "", "url": "", "term": "", "qualifiers": []}]
+        attributes = [{"name": "Chemical", "value": str(found.value(node, SDO.name) or ""), "valqual": []}]
         attributes += attributes_of(found, node, SDO.identifier)
     below = members(found, node, SDO.hasPart) + in_order(found, found.objects(node, SDO.subjectOf))
     return {"type": kind or str(found.value(node, SDO.additionalType) or ""), "attributes": attributes,
-            "subsections": [section_of(found, part) for part in below]}
+            "subsections": [[section_of(found, part) for part in below]] if below else []}
 
 
 def design_of(found: Graph, node) -> dict | None:
@@ -796,36 +803,31 @@ def uses(iris: list[str]) -> dict[str, dict]:
     return used
 
 
-def model_listing(arguments) -> dict:
-    """Return one page of models as the data listing of the cloud catalogue."""
-    filters = catalogue_filters("data", records.latest_change())
+def based_on(path: str, address: str) -> list[str]:
+    """Return the addresses of the records of the kind at path that are made from the source record at address."""
+    return sorted(iri for iri, value in records.values(settings()["kinds"][path], documents.expand("isBasedOn")) if value == address)
+
+
+def model_listing(search: str, page: int, size: int, filters: list[tuple[str, str]]) -> dict:
+    """Return one page of models found by name and by case-study use, as search results of the models page."""
+    labels = catalogue_filters("data", records.latest_change())["reg_q_labels"]
     # All the models found by name are read at once, as they are filtered here.
-    found = listing("models", MultiDict({"search": arguments.get("search", "")}), records.page(settings()["kinds"]["models"], {}, "", 0, 1)[0] or 1)
+    found = listing("models", MultiDict({"search": search}), records.page(settings()["kinds"]["models"], {}, "", 0, 1)[0] or 1)
     used = uses([item["address"] for item in found["listed"]])
-    names = filters["reg_q_labels"]
     shown = documents.public(records.graph([item["address"] for item in found["listed"]]))
     known = steps()
     listed = []
     for item in found["listed"]:
         use = used[item["address"]]
-        if arguments.getlist("case_study") and not {case.title() for case in use["case_study"]} & set(arguments.getlist("case_study")):
-            continue
-        if arguments.getlist("reg_q") and not {names.get(question, "") for question in use["regulatory_question"]} & set(arguments.getlist("reg_q")):
-            continue
-        if arguments.getlist("stage") and not use["flow_step"] & set(arguments.getlist("stage")):
+        chosen = {"case_study": {case.title() for case in use["case_study"]}, "flow_step": use["flow_step"],
+                  "regulatory_question": {labels.get(question, "") for question in use["regulatory_question"]}}
+        if any(value not in chosen[field] for field, value in filters):
             continue
         model = dataset(shown, URIRef(item["address"]), known)
-        source = str(shown.value(URIRef(item["address"]), SDO.isBasedOn) or "")
-        model["metadata"]["resource_type"] = {"type": kind_of(settings()["kinds"]["models"]).lower()}
-        model.update(type=kind_of(settings()["kinds"]["models"]).lower(), doi="", doi_url=local(source) if "zenodo.org/" in source else "",
-                     links={"archive": "/" + records.path(item["address"]) + "/ro-crate-metadata.json"}, parsed_metadata={"is_rocrate": True})
+        path = "/" + records.path(item["address"])
+        model.update(type=kind_of(settings()["kinds"]["models"]).lower(), url=path, meta_data=path + ".md",
+                     links={"archive": path + "/ro-crate-metadata.json"})
         listed.append(model)
     listed.sort(key=itemgetter("release_date"), reverse=True)
-    number = max(arguments.get("page", 1, type=int), 1)
-    first = (number - 1) * LISTED
-    chosen = arguments.getlist("case_study") + arguments.getlist("reg_q") + arguments.getlist("stage")
-    return {**filters, "kind": "models", "studies": [], "datasets": listed[first:first + LISTED], "total": len(listed), "page": number, "page_size": LISTED,
-            "search_query": found["search"], "collection_name": (void.platform()["publisher"] or {}).get("name", ""), "errors": {},
-            "has_next": first + LISTED < len(listed), "has_prev": number > 1, "filter_case_study": arguments.getlist("case_study"),
-            "filter_regulatory_question": arguments.getlist("reg_q"), "filter_flow_step": arguments.getlist("stage"), "filters_applied": bool(chosen),
-            "hits_returned": len(listed), "pages_fetched": 1, "page_size_met": True, "process_flow_steps": known}
+    first = (page - 1) * size
+    return {"hits": listed[first:first + size], "total": len(listed), "filters_applied": bool(filters), "hits_returned": len(listed)}

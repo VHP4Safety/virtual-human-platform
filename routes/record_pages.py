@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from urllib.parse import quote
 
 from flask import Blueprint, Response, abort, current_app, g, redirect, render_template, request, url_for
-from markupsafe import Markup
 from rdfsolve.iris import prefix_map
 from rdflib import RDF, Graph
 from rdflib.namespace import SDO
@@ -62,10 +61,6 @@ def markdown_of(record: Record) -> Response:
 
 def listing_page(kind: str):
     """Return the listing page of a kind."""
-    if kind == "data":
-        return render_template("data/data.html", **pages.data_listing(request.args), page_title=f"{pages.kind_names()[kind]} — VHP4Safety")
-    if kind == "models":
-        return render_template("data/data.html", **pages.model_listing(request.args), page_title=f"{pages.kind_names()[kind]} — VHP4Safety")
     found = pages.listing(kind, request.args)
     return render_template("records/listing.html", listing=found, page_title=f"{found['name'] or kind.capitalize()} — VHP4Safety")
 
@@ -149,23 +144,6 @@ def crate_root(path: str):
     if not crates.of_models(records.get(records.address(path))):
         abort(404)
     return redirect(f"/{path}/ro-crate-metadata.json", code=303)
-
-
-# The models are listed as the data, so the listing has an address of its own for its page links.
-@blueprint.get("/models")
-def models():
-    return listing_page("models")
-
-
-# The addresses of the model pages of the cloud catalogue are redirected to the models.
-@blueprint.get("/models_page")
-def models_page():
-    return redirect("/models", code=301)
-
-
-@blueprint.get("/model/<name>")
-def model_page(name: str):
-    return redirect("/models/" + name, code=301)
 
 
 @blueprint.after_app_request
@@ -256,15 +234,6 @@ def page_link(iri: str) -> str:
 
 def record_page(record: Record):
     """Return the page of a record."""
-    kind = records.path(record.iri).split("/", 1)[0]
-    if kind in ("data", "models") and record.part_of is None:
-        found = pages.catalogue_details(record)
-        filters = pages.catalogue_filters(kind, records.latest_change())
-        description = Markup(found["norm_metadata"]["description"]).striptags()
-        return render_template("data/data_details.html", data=found, kind=kind, reg_q_labels=filters["reg_q_labels"],
-                               reg_q_urls=filters["reg_q_urls"], reg_q_steps=filters["reg_q_steps"],
-                               outline=pages.outline(record) if kind == "models" else None, page_title=f"{found['title']} — VHP4Safety {kind}",
-                               meta_description=description[:160] or f"{found['title']}: a record of the VHP4Safety {kind}.")
     if record.type in records.within(str(SDO.WebPage)):
         found = pages.page(record)
         steps = {term["iri"]: term for term in found["kinds"]}
