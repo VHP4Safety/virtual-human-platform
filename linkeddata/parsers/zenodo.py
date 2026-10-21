@@ -11,6 +11,8 @@ from linkeddata.parsers.zenodo_search import ZenodoExtractor
 
 DATE = "http://www.w3.org/2001/XMLSchema#date"
 LICENSES = "https://zenodo.org/api/vocabularies/licenses/"
+# Zenodo record format, in which licences outside the Zenodo licence vocabulary are also given.
+RECORD_FORMAT = {"Accept": "application/vnd.inveniordm.v1+json"}
 
 
 # Zenodo licence identifiers that are not SPDX identifiers.
@@ -78,6 +80,12 @@ def fetched(spec: dict) -> dict[str, bytes]:
         found = ZenodoExtractor().list_records(page=len(hits) // 25 + 1, size=25)
         if found.get("error"):
             raise requests.RequestException(found["error"])
+        for hit in found["hits"]:
+            # A licence outside the licence vocabulary of Zenodo is left out of the search results.
+            if not hit["metadata"].get("license"):
+                record = requests.get(hit["links"]["self"], headers=RECORD_FORMAT, timeout=30)
+                record.raise_for_status()
+                hit["metadata"]["rights"] = record.json()["metadata"].get("rights") or []
         hits += found["hits"]
         if len(hits) >= found["total"] or not found["hits"]:
             return {spec["name"]: json.dumps({"hits": {"total": len(hits), "hits": hits}}).encode()}
@@ -103,6 +111,9 @@ def parse(content: bytes) -> list[dict]:
         if isinstance(metadata.get("license"), dict) and present(metadata["license"].get("id")):
             given = licence(LICENCES.get(metadata["license"]["id"], metadata["license"]["id"]))
             row["license"] = given if isinstance(given, dict) else link(LICENSES + metadata["license"]["id"])
+        for right in metadata.get("rights") or []:
+            if "license" not in row and present(right.get("link")):
+                row["license"] = licence(right["link"])
         authors = []
         for creator in metadata.get("creators") or []:
             if not present(creator.get("name")):
