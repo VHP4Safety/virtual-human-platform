@@ -178,17 +178,17 @@ def sitemap():
     # Static, parameter-less GET pages, derived from the URL map so new pages
     # are picked up automatically. Machine endpoints are excluded. Routes with
     # <params> are skipped and handled below.
-    EXCLUDED_ENDPOINTS = {"sitemap", "robots", "static"}
+    EXCLUDED_ENDPOINTS = {"sitemap", "robots", "static", "pages.models_page"}
     # The pages for editors (login, tokens, editing, changes) and the API are left out.
-    EXCLUDED_BLUEPRINTS = {"account", "admin", "changes", "api", "api-docs"}
-    paths = sorted(
+    EXCLUDED_BLUEPRINTS = {"account", "admin", "changes", "records", "api-docs", "discovery"}
+    paths = sorted({
         rule.rule.rstrip("/") or "/"
         for rule in app.url_map.iter_rules()
         if not rule.arguments
         and rule.endpoint not in EXCLUDED_ENDPOINTS
         and rule.endpoint.split(".")[0] not in EXCLUDED_BLUEPRINTS
         and "GET" in (rule.methods or set())
-    )
+    })
     listed = records.with_pages()
     with_pages = {address.rstrip("/") for address, _ in listed}
     # A static page that is also the page of a record, such as the home page, is listed once.
