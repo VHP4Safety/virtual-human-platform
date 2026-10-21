@@ -245,10 +245,16 @@ PARTS = (SH.BlankNode, SH.BlankNodeOrIRI)
 @cache
 def fields(kind: str) -> list[dict]:
     """Return the fields of the class kind, in the order of the form."""
+    shape = shape_of(kind)
+    return shape_fields(str(shape)) if shape is not None else []
+
+
+@cache
+def shape_fields(shape: str) -> list[dict]:
+    """Return the fields of the node shape at shape, in the order of the form."""
     graph = profile_graph()
     kinds = set(settings()["kinds"].values())
-    shape = shape_of(kind)
-    node_shapes = [shape] + list(graph.objects(shape, SH.node)) if shape is not None else []
+    node_shapes = [URIRef(shape)] + list(graph.objects(URIRef(shape), SH.node))
     found = []
     for node in node_shapes:
         for field in graph.objects(node, SH.property):
@@ -271,6 +277,11 @@ def fields(kind: str) -> list[dict]:
                 for alternative in graph.items(alternatives):
                     for of_class in graph.objects(alternative, SH["class"]):
                         classes.append(str(of_class))
+            # The node shape of the values. The values of a list are described by the field of its members.
+            described = graph.value(field, SH.node)
+            if described == DASH.ListShape:
+                member = next((own for own in graph.objects(field, SH.property) if not isinstance(graph.value(own, SH.path), URIRef)), None)
+                described = graph.value(member, SH.node) if member is not None else None
             found.append({
                 "name": jsonld_name(path),
                 "iri": path,
@@ -295,6 +306,7 @@ def fields(kind: str) -> list[dict]:
                 "read_only": graph.value(field, DASH.readOnly) == Literal(True),
                 "position": (int(graph.value(group, SH.order) or 0) if group is not None else 0, str(group or ""), int(graph.value(field, SH.order) or 0)),
                 "section": str(graph.value(group, RDFS.label) or "") if group is not None else "",
+                "node": str(described) if described is not None else "",
             })
     found.sort(key=itemgetter("position"))
     return found

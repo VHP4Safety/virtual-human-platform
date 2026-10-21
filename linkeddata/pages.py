@@ -17,7 +17,7 @@ from database import records
 from database.tables import Record
 from linkeddata import documents, void
 from linkeddata.parsers import QUESTIONS
-from linkeddata.profile import fields, jsonld_name, profile_graph, settings, shape_of
+from linkeddata.profile import fields, jsonld_name, profile_graph, settings, shape_fields, shape_of
 
 # The name is used as the heading of a node, and the position for its order. Neither is listed with the fields.
 HEADING = {str(SDO.name), str(SDO.position)}
@@ -65,23 +65,26 @@ def by_name(item: dict) -> str:
     return item["name"].casefold()
 
 
-def node_outline(found: Graph, node, names: dict) -> dict:
-    """Return the outline of node, with an outline for each part."""
+def node_outline(found: Graph, node, names: dict, shape: str = "") -> dict:
+    """Return the outline of node, by the fields of shape or else of its class, with an outline for each part."""
     of_class = str(found.value(node, RDF.type) or "")
     shown = {"address": None if records.is_part(found, node) else str(node), "name": str(found.value(node, SDO.name) or ""),
              "kind": kind_of(of_class), "fields": [], "parts": []}
-    for field in fields(of_class):
-        values = list(found.objects(node, URIRef(field["iri"])))
+    for field in shape_fields(shape) if shape else fields(of_class):
+        values = members(found, node, URIRef(field["iri"]))
         if field["iri"] in HEADING or not values or not field["shown"]:
             continue
-        # A node without an address is shown as a part, also in a field of links, such as a named input.
-        parts = [value for value in values if field["part"] or records.is_part(found, value)]
+        listed = any((value, RDF.first, None) in found for value in found.objects(node, URIRef(field["iri"])))
+        # A node without an address is shown as a part, also in a field of links, such as a named input. A list holds parts
+        # or links, so the members that are parts are found one by one.
+        parts = [value for value in values if (field["part"] and not listed) or records.is_part(found, value)]
         if parts:
-            shown["parts"].append({"label": field["label"], "items": [node_outline(found, part, names) for part in in_order(found, parts)]})
+            shown["parts"].append({"label": field["label"], "items": [node_outline(found, part, names, field["node"]) for part in parts]})
         values = [value for value in values if value not in parts]
         if not values:
             continue
-        values.sort(key=str)
+        if not listed:
+            values.sort(key=str)
         given = []
         long = False
         for value in values:
