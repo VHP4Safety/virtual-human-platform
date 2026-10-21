@@ -142,10 +142,12 @@ Build and run the Docker container:
 
 ```
 docker build -t vhp4safety_ui .
-docker run -d -p 5000:5050 vhp4safety_ui
+docker run -d -p 5000:5050 -v vhp4safety_data:/data -e SECRET_KEY=<a long random text> vhp4safety_ui
+docker exec <container> python -m linkeddata launch
 ```
 
-The application will be available at [http://localhost:5000/](http://localhost:5000/).
+The application will be available at [http://localhost:5000/](http://localhost:5000/). The database is kept in the
+volume `/data`, and the launch makes the first records.
 
 ### Published images
 
@@ -156,7 +158,7 @@ without building it yourself:
 
 ```
 docker pull vhp4safety/virtual-human-platform:<version>
-docker run -d -p 5000:5050 vhp4safety/virtual-human-platform:<version>
+docker run -d -p 5000:5050 -v vhp4safety_data:/data -e SECRET_KEY=<a long random text> vhp4safety/virtual-human-platform:<version>
 ```
 
 The workflow is `.github/workflows/docker-publish.yml`. It needs the repository secrets

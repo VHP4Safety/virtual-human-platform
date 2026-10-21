@@ -35,6 +35,7 @@ ENV PLATFORM_STATE=/data/state PLATFORM_RECORDS=/data/records
 
 # Run as an unprivileged user
 RUN useradd --create-home app && mkdir -p /data && chown app /data
+VOLUME /data
 USER app
 
 # Define the entrypoint script
