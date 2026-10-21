@@ -69,11 +69,11 @@
     {% block head %}{% endblock %}
   </head>
 
-  <nav class="navbar navbar-expand-xl py-md-2 pe-md-2 pe-0 py-0  navbar-light bg-white border-bottom fixed-top">
+  <nav class="navbar navbar-expand-xxl py-md-2 pe-md-2 pe-0 py-0  navbar-light bg-white border-bottom fixed-top">
     <div class="container-fluid d-flex align-items-center justify-content-between">
 
     <!-- Logo -->
-    <a class="navbar-brand ms-xl-3" href="/">
+    <a class="navbar-brand ms-xxl-3" href="/">
       <img
         src="/static/images/logos/logo/PNG/300ppi/VHP_Logo_Long_02_300.png"
         alt="VHP4Safety Logo"
@@ -91,7 +91,7 @@
 
 
   <!-- Desktop buttons (hidden on mobile) -->
-  <div class="d-none d-xl-flex align-items-center gap-3">
+  <div class="d-none d-xxl-flex align-items-center gap-3">
     
     <!-- Glossary Toggle Switch -->
     <div class="form-check form-switch mb-0 text-nowrap" data-vhp-glossary-skip>
@@ -185,11 +185,11 @@
     </div>
 
 
-    <!-- Data and Models Button Group -->
-    <div class="btn-group" role="group" style="width: 150px;">
-      <button class="btn btn-vhpblue text-nowrap px-2" onclick="location.href='/data'" type="button">Data</button>
-      <button class="btn btn-vhpblue text-nowrap px-2" style="border-left: 1px solid rgba(255,255,255,.6);" onclick="location.href='/models'" type="button">Models</button>
-    </div>
+    <!-- Data Button -->
+    <button class="btn btn-vhpblue text-nowrap" style="width: 150px;" onclick="location.href='/data'" type="button">Data</button>
+
+    <!-- Models Button -->
+    <button class="btn btn-vhpblue text-nowrap" style="width: 150px;" onclick="location.href='/models'" type="button">Models</button>
 
   </div>
 </nav>
