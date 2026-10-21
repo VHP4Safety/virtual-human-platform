@@ -555,9 +555,10 @@ def impact():
 # General Safety Assessment Workflow page
 @app.route("/safety_assessment_workflow")
 def SafetyAssessmentWorkflow():
+    page = page_record("safety_assessment_workflow")
     return render_template(
         "safety_assessment_workflow.html", process_flow_steps=get_process_flow_steps(),
-        page=page_record("safety_assessment_workflow"), page_title="Safety Assessment Workflow — VHP4Safety",
+        page=page, page_title="Safety Assessment Workflow — VHP4Safety", meta_description=clip(page["description"]),
     )
 
 
