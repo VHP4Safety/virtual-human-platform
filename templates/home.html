@@ -113,7 +113,7 @@
               {% set is_odd = (process_flow_steps | length) % 2 == 1 %}
               {% for k, v in process_flow_steps.items() %}
                 <div class="col d-grid{% if loop.first and is_odd %} col-md-12{% endif %}">
-                  <a href="/safety_assessment_workflow#definition-{{ v.slug }}" class="text-decoration-none">
+                  <a href="{{ url_for('SafetyAssessmentWorkflow') }}#definition-{{ v.slug }}" class="text-decoration-none">
                     <div class="bg-vhppurple text-white rounded-pill px-3 py-2 text-center small fw-semibold">{{ v.label }}</div>
                   </a>
                 </div>

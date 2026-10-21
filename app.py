@@ -106,17 +106,17 @@ def sanitize_html(value) -> Markup:
     return Markup(nh3.clean(str(value or ""), attribute_filter=local_link))
 
 
-# --- Case studies & regulatory questions -----------------------------------
-# The glossary term whose kinds are the process flow steps.
-PROCESS_FLOW_STEP = "https://vhp4safety.github.io/glossary#VHP0000152"
-
-
 def get_process_flow_steps() -> dict:
     """Return the process flow steps of the glossary by address, with label, slug and description."""
-    steps = {}
-    for kind in pages.kinds(PROCESS_FLOW_STEP):
-        steps[kind["iri"]] = {"label": kind["label"], "slug": kind["slug"], "description": kind["description"]}
-    return steps
+    return pages.steps()
+
+
+def page_record(path: str) -> dict:
+    """Return the content of the page record at path, or abort with 404."""
+    record = records.get(records.address(path))
+    if record is None:
+        abort(404)
+    return pages.page(record)
 
 
 def menu(kind: str) -> list[dict]:
@@ -270,6 +270,66 @@ def tool_page(toolname):
     if record is None:
         abort(404)
     return record_page(record)
+
+
+################################################################################
+### Pages under 'Implementation'
+
+
+# General Explore our work
+@app.route("/explore_our_work")
+def explore_our_work():
+    return render_template(
+        "records/page.html",
+        page=page_record("explore_our_work"),
+        page_title="Our work — VHP4Safety",
+        meta_description=(
+            "How the VHP4Safety consortium builds the Virtual Human Platform to "
+            "advance animal-free safety assessment of chemicals and pharmaceuticals."
+        ),
+    )
+
+
+# General Training
+@app.route("/training")
+def training():
+    return render_template(
+        "records/page.html",
+        page=page_record("training"),
+        listed=pages.items(records.page(settings()["kinds"]["training"], {}, "", 0, None)[1]),
+        page_title="Training — VHP4Safety",
+        meta_description=(
+            "Training materials and courses on the VHP4Safety Virtual Human Platform "
+            "and animal-free, human-based safety assessment."
+        ),
+    )
+
+
+# General Impact
+@app.route("/impact")
+def impact():
+    return render_template(
+        "records/page.html",
+        page=page_record("impact"),
+        page_title="Impact — VHP4Safety",
+        meta_description=(
+            "The scientific and societal impact of VHP4Safety in the transition to "
+            "animal-free safety assessment of chemicals and pharmaceuticals."
+        ),
+    )
+
+
+################################################################################
+### Pages under 'Process Flow'
+
+
+# General Safety Assessment Workflow page
+@app.route("/safety_assessment_workflow")
+def SafetyAssessmentWorkflow():
+    return render_template(
+        "safety_assessment_workflow.html", process_flow_steps=get_process_flow_steps(),
+        page=page_record("safety_assessment_workflow"), page_title="Safety Assessment Workflow — VHP4Safety",
+    )
 
 
 ################################################################################
@@ -604,6 +664,28 @@ def show_compounds_expdata_as_json(cwid):
             }
         )
     return jsonify(compound_list), 200
+
+
+################################################################################
+### Pages under 'Legal'
+@app.route("/legal/terms_of_service")
+def terms_of_service():
+    return render_template(
+        "legal/terms_of_service.html",
+        page=page_record("legal/terms_of_service"),
+        page_title="Terms of Service — VHP4Safety",
+        meta_description="Terms of Service for the VHP4Safety Virtual Human Platform.",
+    )
+
+
+@app.route("/legal/privacypolicy")
+def privacy_policy():
+    return render_template(
+        "legal/privacypolicy.html",
+        page=page_record("legal/privacypolicy"),
+        page_title="Privacy Policy — VHP4Safety",
+        meta_description="Privacy Policy for the VHP4Safety Virtual Human Platform.",
+    )
 
 
 if __name__ == "__main__":
