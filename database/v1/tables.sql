@@ -1423,17 +1423,6 @@ CREATE TABLE IF NOT EXISTS "schema_organization__schema_same_as" (
   FOREIGN KEY ("iri") REFERENCES "schema_organization" ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_organization__schema_same_as__record" ON "schema_organization__schema_same_as" ("record");
-CREATE TABLE IF NOT EXISTS "schema_organization_role" (
-  "record" TEXT NOT NULL,
-  "iri" TEXT NOT NULL,
-  "type" TEXT,
-  "schema_member" TEXT,
-  "schema_member__term" TEXT,
-  "schema_role_name" TEXT,
-  "schema_role_name__term" TEXT,
-  PRIMARY KEY ("iri")
-);
-CREATE INDEX IF NOT EXISTS "schema_organization_role__record" ON "schema_organization_role" ("record");
 CREATE TABLE IF NOT EXISTS "schema_periodical" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,

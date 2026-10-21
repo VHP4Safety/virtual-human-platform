@@ -348,19 +348,16 @@ def items(iris: list[str]) -> list[dict]:
     return listed
 
 def partners(found: Graph, node) -> list[dict]:
-    """Return the partners and co-funders of an organisation, in order."""
-    held = []
-    for role in found.objects(node, SDO.member):
-        held.append((str(found.value(role, SDO.roleName) or ""), str(found.value(role, SDO.member) or "")))
+    """Return the partners and co-funders of an organisation, each by name."""
+    members = sorted(str(member) for member in found.objects(node, SDO.member))
     funders = sorted(str(funder) for funder in found.objects(node, SDO.funder))
-    organisations = documents.public(records.graph([iri for _, iri in held] + funders))
+    organisations = documents.public(records.graph(members + funders))
     listed = []
-    for role, iri in held + [("", funder) for funder in funders]:
+    for iri in members + funders:
         organisation = URIRef(iri)
-        listed.append({"role": role, "name": str(organisations.value(organisation, SDO.name) or iri), "address": iri,
+        listed.append({"name": str(organisations.value(organisation, SDO.name) or iri), "address": iri,
                        "logo": str(organisations.value(organisation, SDO.logo) or ""), "url": str(organisations.value(organisation, SDO.url) or "")})
-    partnered = sorted([one for one in listed if one["role"]], key=lambda one: (one["role"], by_name(one)))
-    return partnered + sorted([one for one in listed if not one["role"]], key=by_name)
+    return sorted(listed, key=by_name)
 
 
 # The partner logo files of the home page, in their order.

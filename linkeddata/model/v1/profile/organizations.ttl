@@ -35,12 +35,5 @@ form:ResearchProject a sh:NodeShape ;
     sh:property [ sh:path schema:image ; sh:order 9 ; sh:name "Figures" ; sh:class schema:ImageObject ; sh:node form:ImageObject ; sh:nodeKind sh:BlankNodeOrIRI ] ;
     sh:property [ sh:path schema:subOrganization ; sh:order 10 ; sh:name "Research lines" ; sh:class schema:ResearchProject ; sh:node form:ResearchProject ; sh:nodeKind sh:BlankNodeOrIRI ;
         sh:description "Each with its name and what it does." ] ;
-    sh:property [ sh:path schema:member ; sh:order 11 ; sh:name "Partners" ; sh:class schema:OrganizationRole ; sh:node form:OrganizationRole ; sh:nodeKind sh:BlankNodeOrIRI ;
-        sh:description "Each partner organisation with its role, such as coordination." ] ;
+    sh:property [ sh:path schema:member ; sh:order 11 ; sh:name "Partners" ; sh:class schema:Organization ] ;
     sh:property [ sh:path schema:funder ; sh:order 12 ; sh:name "Co-funders" ; sh:class schema:Organization ] .
-
-form:OrganizationRole a sh:NodeShape ;
-    sh:targetClass schema:OrganizationRole ;
-    rdfs:label "Partner" ;
-    sh:property [ sh:path schema:member ; sh:order 1 ; sh:name "Organisation" ; sh:minCount 1 ; sh:maxCount 1 ; sh:class schema:Organization ; sh:message "One organisation needed." ] ;
-    sh:property [ sh:path schema:roleName ; sh:order 2 ; sh:name "Role" ; sh:maxCount 1 ; sh:datatype xsd:string ] .

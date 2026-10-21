@@ -193,7 +193,7 @@ def project(about: dict) -> tuple[dict, list[dict]]:
 def partners(content: bytes) -> tuple[list[dict], list[dict], list[dict]]:
     """Return the organisations, the partners and the co-funders of the partner list."""
     organisations = []
-    roles = []
+    members = []
     funders = []
     role = ""
     for line in content.decode("utf-8").splitlines():
@@ -212,8 +212,8 @@ def partners(content: bytes) -> tuple[list[dict], list[dict], list[dict]]:
         if role in FUNDERS:
             funders.append(link(row["@id"]))
         else:
-            roles.append({"@type": "OrganizationRole", "member": link(row["@id"]), "roleName": role})
-    return organisations, roles, funders
+            members.append(link(row["@id"]))
+    return organisations, members, funders
 
 
 def home(content: bytes, kinds: dict) -> tuple[dict, dict]:
@@ -304,7 +304,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
     for row in others:
         if row["@type"] == "Organization" and funder.get("url"):
             row["url"] = link(funder["url"])
-    organisations, roles, funders = partners(contents["partners"])
-    found["member"] = roles
+    organisations, members, funders = partners(contents["partners"])
+    found["member"] = members
     found["funder"] = funders
     return rows + [platform, found] + others + organisations + case_studies(contents["casestudies"])
