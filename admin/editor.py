@@ -187,6 +187,9 @@ def mixed() -> list[str]:
     graph = profile_graph()
     found = []
     for field in graph.objects(None, SH.property):
+        # A field of the members of a list has a path that is a blank node, and no name to be found by.
+        if not isinstance(graph.value(field, SH.path), URIRef):
+            continue
         for alternatives in graph.objects(field, SH["or"]):
             listed = list(graph.items(alternatives))
             classes = 0
@@ -203,7 +206,7 @@ def links() -> dict[str, dict[str, str]]:
     graph = profile_graph()
     found = {}
     for field in graph.objects(None, SH.property):
-        if graph.value(field, SH.node) is not None or graph.value(field, SH.nodeKind) in PARTS:
+        if graph.value(field, SH.node) is not None or graph.value(field, SH.nodeKind) in PARTS or not isinstance(graph.value(field, SH.path), URIRef):
             continue
         named = []
         for of_class in graph.objects(field, SH["class"]):
