@@ -111,6 +111,14 @@ def get_process_flow_steps() -> dict:
     return pages.steps()
 
 
+def get_service_detail(tool_id: str) -> dict:
+    """Return the details of the tool tool_id from its record, or an empty dict."""
+    record = records.get(records.address(f"tools/{tool_id}"))
+    if record is None or record.part_of is not None:
+        return {}
+    return pages.tool_details(record)
+
+
 def page_record(path: str) -> dict:
     """Return the content of the page record at path, or abort with 404."""
     record = records.get(records.address(path))
@@ -244,7 +252,21 @@ def data_detail(dataid):
 ### Here begins the updated version for creating the tool list page.
 @app.route("/tools")
 def tools():
-    return listing_page("tools")
+    try:
+        return render_template(
+            "tools/tools.html",
+            page_title="Tools — VHP4Safety",
+            meta_description=(
+                "Browse the catalogue of tools in the VHP4Safety Virtual Human "
+                "Platform for animal-free safety assessment of chemicals and "
+                "pharmaceuticals."
+            ),
+            **pages.catalogue_listing("tools", request.args),
+        )
+
+    except Exception:
+        app.logger.exception("Tools page failed")
+        return "Error processing service data", 500
 
 
 ### New route to list methods (similar to the tools page)
@@ -252,24 +274,76 @@ def tools():
 @app.route("/methods/")
 def methods():
     """Render the methods listing from the records."""
-    return listing_page("methods")
+    try:
+        # Pass everything the template expects
+        return render_template(
+            "methods/methods.html",
+            page_title="Methods — VHP4Safety",
+            meta_description=(
+                "Browse the catalogue of experimental and computational methods in "
+                "the VHP4Safety Virtual Human Platform for animal-free safety assessment."
+            ),
+            **pages.catalogue_listing("methods", request.args),
+        )
+
+    except Exception:
+        app.logger.exception("Methods page failed")
+        return "Error processing methods data", 500
 
 
 @app.route("/methods/<methodid>")
 def method_page(methodid):
     """Render the page of a method from its record."""
     record = records.get(records.address(f"methods/{methodid}"))
-    if record is None:
-            abort(404)
-    return record_page(record)
+    if record is None or record.part_of is not None:
+        abort(404)
+    method_details = {}
+    method_json = pages.method_json(record)
+
+    # Mirror the template's title/description resolution (methods/method.html)
+    src = method_json if isinstance(method_json, dict) else method_details
+    method_name = (
+        src.get("method")
+        or src.get("method_name_content")
+        or src.get("service")
+        or methodid
+    )
+    method_desc = (
+        src.get("method_description_content")
+        or src.get("method_description")
+        or src.get("description")
+        or ""
+    )
+    # Pass both to the template: some templates expect method_json, others method_details
+    return render_template(
+        "methods/method.html",
+        method=method_details,
+        method_details=method_details,
+        method_json=method_json,
+        page_title=f"{method_name} — VHP4Safety",
+        meta_description=clip(method_desc)
+        or f"{method_name}, a method in the VHP4Safety Virtual Human Platform.",
+    )
 
 
 @app.route("/tools/<toolname>")
 def tool_page(toolname):
-    record = records.get(records.address(f"tools/{toolname}"))
-    if record is None:
+    # get the tools metadata:
+    tool_details = get_service_detail(toolname)
+    if not tool_details:
         abort(404)
-    return record_page(record)
+
+    tool_meta = tool_details
+    tool_name = tool_meta.get("service") or tool_meta.get("title") or toolname
+    return render_template(
+        "tools/tool.html",
+        tool_json=tool_meta,
+        tool_details=tool_details,
+        process_flow_steps=get_process_flow_steps(),
+        page_title=f"{tool_name} — VHP4Safety",
+        meta_description=clip(tool_meta.get("description"))
+        or f"{tool_name}, a tool in the VHP4Safety Virtual Human Platform.",
+    )
 
 
 ################################################################################

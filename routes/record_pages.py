@@ -62,9 +62,6 @@ def markdown_of(record: Record) -> Response:
 
 def listing_page(kind: str):
     """Return the listing page of a kind."""
-    if kind in ("tools", "methods"):
-        found = pages.catalogue_listing(kind, request.args)
-        return render_template(f"{kind}/{kind}.html", **found, page_title=f"{pages.kind_names()[kind]} — VHP4Safety")
     if kind == "data":
         return render_template("data/data.html", **pages.data_listing(request.args), page_title=f"{pages.kind_names()[kind]} — VHP4Safety")
     if kind == "models":
@@ -260,17 +257,6 @@ def page_link(iri: str) -> str:
 def record_page(record: Record):
     """Return the page of a record."""
     kind = records.path(record.iri).split("/", 1)[0]
-    if kind == "tools" and record.part_of is None:
-        details = pages.tool_details(record)
-        return render_template("tools/tool.html", tool_json=details, tool_details=details, process_flow_steps=pages.steps(),
-                               page_title=f"{details['service']} — VHP4Safety",
-                               meta_description=details["description"][:160]
-                               or f"{details['service']}, a tool in the VHP4Safety Virtual Human Platform.")
-    if kind == "methods" and record.part_of is None:
-        method = pages.method_json(record)
-        return render_template("methods/method.html", method_json=method, method_details={}, page_title=f"{method['method']} — VHP4Safety",
-                               meta_description=method["method_description_content"][:160]
-                               or f"{method['method']}, a method in the VHP4Safety Virtual Human Platform.")
     if kind in ("data", "models") and record.part_of is None:
         found = pages.catalogue_details(record)
         filters = pages.catalogue_filters(kind, records.latest_change())
