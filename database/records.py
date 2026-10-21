@@ -1,4 +1,4 @@
-"""Reads and writes of the records in the release tables."""
+"""Read and write records."""
 
 import logging
 import re
@@ -19,7 +19,7 @@ logging.getLogger("rdflib.term").setLevel(logging.ERROR)
 
 
 def address(path: str) -> str:
-    """Return the address of the record at the page path path."""
+    """Return the address of the record at a page path."""
     whole = re.fullmatch(r"(https?):/+(.*)", path)
     if whole:
         return whole.group(1) + "://" + whole.group(2)
@@ -44,7 +44,7 @@ def of_kind(kind: str) -> list[Record]:
 
 
 def search(text: str, classes: list[str], within: str = "", parts: bool = True, limit: int | None = 20, among=None) -> list[Record]:
-    """Return the records of classes with text in the name or the address, sorted by name."""
+    """Return sorted by name the records of classes with text in the name or the address."""
     every = set(classes)
     for of_class in classes:
         every |= {str(sub) for sub in hierarchy().transitive_subjects(RDFS.subClassOf, URIRef(of_class))}
@@ -140,7 +140,7 @@ def read(records: list[str]) -> Graph:
     return sql_tables.from_tables(found, profile_text())
 
 
-# The address of a part under its record, <record>#<field>-<n>, as made by rdfsolve (sql_tables.tables with skolem).
+# The address of a part under its record, <record>#<field>-<n>, made with rdfsolve (sql_tables.tables with skolemized bnodes).
 PART = re.compile(r"^(?P<record>[^#]+)#[A-Za-z_][A-Za-z0-9_]*-[0-9]+$")
 
 
@@ -209,7 +209,7 @@ def described(found: Graph, iri: str | BNode) -> Graph:
 def rows(found: Graph, iri: str, kind: str, source: str) -> list[dict]:
     """Return the rows of the records table for the record at iri and its parts."""
     listed = {iri: kind}
-    # A part address (<record>#<field>-<n>) has no row, as it has no page.
+    # A part address (<record>#<field>-<n>) has no row and no page.
     for subject in described(found, iri).subjects():
         if isinstance(subject, URIRef) and not PART.match(str(subject)) and str(subject) not in listed and found.value(subject, RDF.type) is not None:
             listed[str(subject)] = str(found.value(subject, RDF.type))
@@ -362,7 +362,6 @@ def page(of_class: str, filters: dict, search: str, first: int, size: int) -> tu
 
 def facets(of_class: str, paths: list[str], filters: dict, search: str = "") -> dict[str, dict[tuple[str, bool], int]]:
     """Return the number of records found for each value of each field in paths."""
-    # The records are found once (MATERIALIZED), not once per field.
     every = chosen(of_class, filters, search).with_only_columns(Record.iri).cte("chosen").prefix_with("MATERIALIZED")
     branches = []
     for number, path in enumerate(paths):
@@ -372,7 +371,6 @@ def facets(of_class: str, paths: list[str], filters: dict, search: str = "") -> 
             del others[path]
             records = chosen(of_class, others, search).with_only_columns(Record.iri).cte(f"chosen_but_{number}").prefix_with("MATERIALIZED")
         for source in sources(of_class, path):
-            # A node has a value once per place (the keys of the tables), so its rows are counted.
             iri = (source["term"] == "@id").label("iri")
             branches.append(select(literal(path).label("path"), source["value"].label("value"), iri, func.count().label("records"))
                             .where(source["table"].c.iri.in_(select(records.c.iri)), source["where"]).group_by(source["value"], iri))
@@ -414,7 +412,7 @@ def counted(of_class: str, given: dict) -> dict:
     named = names(every)
     found = {}
     for field in browsed_fields:
-        # List values are counted even when no record has them.
+        # Count list values when they are not in a record.
         values = {}
         for value in field["values"]:
             values[(value, field["iris"])] = 0
@@ -422,10 +420,10 @@ def counted(of_class: str, given: dict) -> dict:
             values[key] = values.get(key, 0) + count
         listed = []
         for (value, iri), count in values.items():
-            # A value fits if it is an IRI where an IRI is required, and if it is in the list of the field.
+            # Value fits if it is an IRI and if it is in the list of the field.
             fits = iri == field["iris"] and (value in field["values"] or not field["values"])
             listed.append({"value": value, "name": (named.get(value) if iri else None) or value, "count": count, "fits": fits})
-        # The values that fit are listed first, then the most used values, then the values by name.
+        # List values that fit first, then the most used values, then the values by name.
         listed.sort(key=lambda value: (not value["fits"], -value["count"], value["name"]))
         found[field["name"]] = listed
     return found

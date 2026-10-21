@@ -94,7 +94,7 @@ form:HowToTool a sh:NodeShape ;
     sh:property [ sh:path schema:name ; sh:order 2 ; sh:name "Label on its button" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:description ; sh:order 3 ; sh:name "Description under the label" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:position ; sh:order 4 ; sh:name "Position" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
-        sh:description "Button order among the tools and data of the page. 1 is first." ] .
+        sh:description "Button order for the tools and data of the page." ] .
 
 form:HowToSupply a sh:NodeShape ;
     sh:targetClass schema:HowToSupply ;

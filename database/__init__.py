@@ -46,7 +46,7 @@ def differences(path: Path) -> list[str]:
 
 
 def engine() -> Engine:
-    """Return the database engine, and make the file and the tables on first use."""
+    """Return the database engine and write the file and the tables on first use."""
     path = STATE_DIR / "platform.sqlite"
     with _making:
         if path not in _engines:

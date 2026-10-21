@@ -1,4 +1,4 @@
-"""Storage of the uploaded images."""
+"""Store the uploaded images."""
 
 import hashlib
 import io
@@ -25,7 +25,7 @@ def folder():
 
 
 def picture_of(stream) -> Picture.Image:
-    """Return the image of an uploaded file, or raise ValueError."""
+    """Return the image of an uploaded file or raise ValueError."""
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Picture.DecompressionBombWarning)

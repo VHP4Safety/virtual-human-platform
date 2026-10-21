@@ -33,6 +33,6 @@ form:Identifier a sh:NodeShape ;
         sh:or ( [ sh:class schema:DefinedTerm ; rdfs:label "Term" ] [ sh:class schema:PropertyValue ; rdfs:label "Qualifier" ] ) ;
         sh:description "The ontology term of the value, such as an UBERON term for an organ, and qualifiers of the value, such as the concentration of a positive control." ] ;
     sh:property [ sh:path schema:position ; sh:order 6 ; sh:name "Place" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
-        sh:description "The place of the value among the values of its holder, as in the source." ] ;
+        sh:description "The position kept as in the source." ] ;
     sh:property [ sh:path schema:url ; sh:order 5 ; sh:name "Page" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
         sh:description "The page of the value, such as its Cellosaurus entry." ] .

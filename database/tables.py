@@ -1,4 +1,4 @@
-"""Database tables of the records, revisions, notes, sources and tokens."""
+"""Define the tables of the records, revisions, notes, sources, tokens and images."""
 
 from datetime import datetime, timezone
 
@@ -16,21 +16,21 @@ class Base(DeclarativeBase):
 
 
 class Record(Base):
-    """Record or part with an address, with its class, source, dates and name."""
+    """An individual record with its address, class and name."""
 
     __tablename__ = "records"
-    iri: Mapped[str] = mapped_column(primary_key=True, doc="The record's address.")
-    type: Mapped[str] = mapped_column(index=True, doc="The record's class.")
-    source: Mapped[str] = mapped_column(index=True, doc='The source it is imported from, or "platform".')
-    updated_at: Mapped[str] = mapped_column(default=now, doc="When the record was last written, in UTC (ISO 8601).")
-    removed_at: Mapped[str | None] = mapped_column(doc="When the record was removed.")
-    moved_to: Mapped[str | None] = mapped_column(doc="Where this earlier address forwards to.")
-    name: Mapped[str | None] = mapped_column(doc="The record's name.")
-    part_of: Mapped[str | None] = mapped_column(index=True, doc="The record holding this part, such as a question's case study.")
+    iri: Mapped[str] = mapped_column(primary_key=True, doc="Address of the record.")
+    type: Mapped[str] = mapped_column(index=True, doc="Class of the record.")
+    source: Mapped[str] = mapped_column(index=True, doc='Source, external or "platform".')
+    updated_at: Mapped[str] = mapped_column(default=now, doc="Date of last write in UTC (ISO 8601).")
+    removed_at: Mapped[str | None] = mapped_column(doc="Date of removal.")
+    moved_to: Mapped[str | None] = mapped_column(doc="New address if redirected (moved).")
+    name: Mapped[str | None] = mapped_column(doc="The record name.")
+    part_of: Mapped[str | None] = mapped_column(index=True, doc="For records part of other records.")
 
 
 class Revision(Base):
-    """Change made on the platform, with the record before and after it."""
+    """A JSON-LD change, the before and after, author, and date."""
 
     __tablename__ = "revisions"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -44,7 +44,7 @@ class Revision(Base):
 
 
 class Token(Base):
-    """A write token, with the hash of its secret only."""
+    """A write token. Only keeps the secret hash."""
 
     __tablename__ = "tokens"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -76,21 +76,21 @@ class Source(Base):
     """A source, as fetched at its last import."""
 
     __tablename__ = "sources"
-    name: Mapped[str] = mapped_column(primary_key=True, doc="The source's name.")
-    url: Mapped[str] = mapped_column(doc="The addresses of its files, separated by spaces.")
-    fetched_at: Mapped[str] = mapped_column(doc="The last fetch, in UTC (ISO 8601).")
+    name: Mapped[str] = mapped_column(primary_key=True, doc="The source name.")
+    url: Mapped[str] = mapped_column(doc="The file addresses, separated by spaces.")
+    fetched_at: Mapped[str] = mapped_column(doc="The last fetch in UTC (ISO 8601).")
     sha256: Mapped[str] = mapped_column(doc="The SHA-256 of the last fetched files.")
-    problem: Mapped[str | None] = mapped_column(doc="Why the last import was not stored, if so.")
+    problem: Mapped[str | None] = mapped_column(doc="Why the last import was not stored.")
 
 
 class Note(Base):
-    """Value of a source that does not fit the model, from the checks of the last import."""
+    """A source value not satisfying a constraint, found during last import."""
 
     __tablename__ = "notes"
-    id: Mapped[int] = mapped_column(primary_key=True, doc="The note's number.")
-    source: Mapped[str] = mapped_column(index=True, doc='The record\'s source, or "platform".')
-    iri: Mapped[str] = mapped_column(doc="The record's address.")
-    field: Mapped[str] = mapped_column(doc="The address of the field's property.")
-    value: Mapped[str] = mapped_column(doc="The value that does not fit; empty when a value is missing.")
-    reason: Mapped[str] = mapped_column(doc="Why it does not fit, as the checks say.")
-    component: Mapped[str | None] = mapped_column(doc="The SHACL constraint the value breaks, such as sh:NodeKindConstraintComponent.")
+    id: Mapped[int] = mapped_column(primary_key=True, doc="Id for the note.")
+    source: Mapped[str] = mapped_column(index=True, doc='The record source or "platform".')
+    iri: Mapped[str] = mapped_column(doc="The record address.")
+    field: Mapped[str] = mapped_column(doc="The address of the field property.")
+    value: Mapped[str] = mapped_column(doc="The value that does not fit or empty when a value is missing.")
+    reason: Mapped[str] = mapped_column(doc="Reason why the value does not fit coming from the checks.")
+    component: Mapped[str | None] = mapped_column(doc="The SHACL constraint that did not pass, e.g. sh:NodeKindConstraintComponent.")

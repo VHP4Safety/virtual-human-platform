@@ -18,13 +18,11 @@ from linkeddata.profile import RELEASE, jsonld_name, settings, shapes
 from routes import account, limiter
 from routes.record_pages import SERIALIZATIONS, data, markdown_of
 
-DESCRIPTION = """REST API of the VHP4Safety platform. Read, list and filter records in JSON-LD, Turtle, N-Triples and
-Markdown. Write records in JSON-LD or Turtle with a write token.
+DESCRIPTION = """OAS 3.1 specification for the VHP4Safety Platform.
 
-The records conform to schema.org and Bioschemas. The field names are defined in the JSON-LD context
-(`x-jsonld-context` of the Record schema), and the fields of each kind are described in the SHACL shapes at
-`/api/shapes.ttl`. To get the data of a page of the website, add a file extension to the page address, such as
-`/tools/aopwiki.ttl`.
+The GET operations below can be used to read the platform data in JSON-LD, Turtle, N-Triples or Markdown.
+
+Writes need a write token or the login of an editor.
 
 [The platform](/) · [Write tokens](/account/tokens/) · [Record editor](/admin/)"""
 

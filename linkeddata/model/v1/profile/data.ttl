@@ -35,34 +35,34 @@ form:Dataset a sh:NodeShape ;
     sh:property [ sh:path schema:measurementMethod ; sh:order 8 ; sh:name "Methods" ; sh:class bioschemas_draft:LabProtocol ;
         sh:description "The methods with which the data was measured." ] ;
     sh:property [ sh:path schema:measurementTechnique ; sh:order 9 ; sh:name "Assays" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
-        sh:message "Choose a term, such as from BAO, or register it." ;
-        sh:description "The assays with which the data was measured, as terms of BAO or other ontologies." ] ;
+        sh:message "Choose a term or register it." ;
+        sh:description "The assays with which the data was measured, preferably BAO or ENM." ] ;
     sh:property [ sh:path schema:citation ; sh:order 10 ; sh:name "Publications" ; sh:class schema:ScholarlyArticle ] ;
     sh:property [ sh:path schema:license ; sh:order 11 ; sh:name "License" ; sh:minCount 1 ; sh:maxCount 1 ; sh:severity sh:Warning ;
         sh:class schema:DefinedTerm ; sh:pattern "^https://spdx\\.org/licenses/" ; form:publishedAs schema:CreativeWork ;
-        sh:message "Add the license, chosen from SPDX. Other values are kept." ] ;
+        sh:message "Add the license from SPDX." ] ;
     sh:property [ sh:path schema:isBasedOn ; sh:order 12 ; sh:name "Source record" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
-        sh:description "The BioStudies or Zenodo record from which this record is made at each import." ] ;
+        sh:description "The BioStudies or Zenodo record." ] ;
     sh:property [ sh:path schema:sameAs ; sh:order 13 ; sh:name "DOI and other addresses" ; sh:nodeKind sh:IRI ] ;
     sh:property [ sh:path schema:keywords ; sh:order 14 ; sh:name "Keywords" ; sh:severity sh:Warning ; sh:class schema:DefinedTerm ;
-        sh:message "Choose a vocabulary term, or register it. Text is kept until then." ] ;
+        sh:message "Choose a vocabulary term or register it." ] ;
     sh:property [ sh:path schema:identifier ; sh:order 15 ; sh:name "DOI" ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
-        sh:description "The DOI, as a web address." ] ;
+        sh:description "The DOI (as an IRI)." ] ;
     sh:property [ sh:path schema:distribution ; sh:order 16 ; sh:name "Files" ; sh:class schema:DataDownload ; sh:node form:DataDownload ; sh:nodeKind sh:BlankNodeOrIRI ;
-        sh:description "Its files, each at its download address, as in the source record." ] ;
+        sh:description "The files with the individual download addresses as in the source record." ] ;
     sh:property [ sh:path schema:version ; sh:order 19 ; sh:name "Version" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "As given by the source." ] ;
+        sh:description "Version of the source." ] ;
     sh:property [ sh:path schema:funding ; sh:order 17 ; sh:name "Funding" ; sh:class schema:MonetaryGrant ;
         sh:description "The grants that funded the data." ] ;
     sh:property [ sh:path schema:hasPart ; sh:order 18 ; sh:name "Experimental design" ; sh:class bioschemas_draft:LabProtocol ; dash:readOnly true ;
         sh:node form:StudyProtocol ; sh:nodeKind sh:BlankNodeOrIRI ;
-        sh:description "The design of the study, as in its BioStudies record: the biological models, the chemicals, and the other sections, such as exposures and endpoint readouts." ] .
+        sh:description "The design of the study: the biological models, the chemicals, exposures, endpoint readouts, etc." ] .
 
 form:StudyProtocol a sh:NodeShape ;
     rdfs:label "Study protocol" ;
     sh:property [ sh:path schema:name ; sh:order 1 ; sh:name "Name" ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
     sh:property [ sh:path schema:additionalType ; sh:order 2 ; sh:name "Section" ; sh:maxCount 1 ; sh:datatype xsd:string ;
-        sh:description "The kind of section in BioStudies, such as Exposure information." ] ;
+        sh:description "BioStudies section, e.g. Exposure information." ] ;
     sh:property [ sh:path bioschemas_draft:bioSample ; sh:order 3 ; sh:name "Biological models" ; sh:class bioschemas:BioSample ;
         sh:node form:BioSample ; sh:nodeKind sh:BlankNodeOrIRI ] ;
     sh:property [ sh:path bioschemas_draft:reagent ; sh:order 4 ; sh:name "Chemicals" ; sh:maxCount 1 ; sh:node dash:ListShape ;
@@ -86,7 +86,7 @@ form:BioSample a sh:NodeShape ;
         sh:node form:Identifier ; sh:nodeKind sh:BlankNodeOrIRI ; sh:description "Such as the RRID of the cell line." ] ;
     sh:property [ sh:path schema:description ; sh:order 3 ; sh:name "Description" ; sh:maxCount 1 ; dash:singleLine false ; sh:datatype xsd:string ] ;
     sh:property [ sh:path bioschemas:additionalProperty ; sh:order 4 ; sh:name "Values" ; sh:class schema:PropertyValue ;
-        sh:node form:Identifier ; sh:nodeKind sh:BlankNodeOrIRI ; sh:description "Such as the cell type, the organ and the supplier." ] ;
+        sh:node form:Identifier ; sh:nodeKind sh:BlankNodeOrIRI ; sh:description "Used for terms outside of Bioschemas, like the cell type, the organ and the supplier." ] ;
     sh:property [ sh:path schema:subjectOf ; sh:order 5 ; sh:name "Preparation" ; sh:class bioschemas_draft:LabProtocol ;
         sh:node form:StudyProtocol ; sh:nodeKind sh:BlankNodeOrIRI ; sh:description "Such as the cell line preparation." ] ;
     sh:property [ sh:path schema:position ; sh:order 6 ; sh:name "Place" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
@@ -96,7 +96,7 @@ form:Checksum a sh:NodeShape ;
     sh:targetClass spdx:Checksum ;
     rdfs:label "Checksum" ;
     sh:property [ sh:path spdx:algorithm ; sh:order 1 ; sh:name "Algorithm" ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ;
-        sh:message "One algorithm needed, such as spdx:checksumAlgorithm_md5." ] ;
+        sh:message "Algorithm e.g. spdx:checksumAlgorithm_md5." ] ;
     sh:property [ sh:path spdx:checksumValue ; sh:order 2 ; sh:name "Value" ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ;
         sh:message "One value needed." ] .
 
@@ -110,6 +110,6 @@ form:DataDownload a sh:NodeShape ;
     sh:property [ sh:path schema:contentSize ; sh:order 4 ; sh:name "Size" ; sh:maxCount 1 ; sh:datatype xsd:string ;
         sh:description "Such as 3.1 MB." ] ;
     sh:property [ sh:path spdx:checksum ; sh:order 5 ; sh:name "Checksums" ; sh:class spdx:Checksum ; sh:node form:Checksum ; sh:nodeKind sh:BlankNodeOrIRI ;
-        sh:description "As given by the source, such as an MD5 sum." ] ;
+        sh:description "As given by source e.g. MD5 sum." ] ;
     sh:property [ sh:path schema:position ; sh:order 6 ; sh:name "Place" ; sh:maxCount 1 ; sh:datatype xsd:integer ;
-        sh:description "The place of the file among the files of the dataset, as in the source." ] .
+        sh:description "The position same as in the source." ] .

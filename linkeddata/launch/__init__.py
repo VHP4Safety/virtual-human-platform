@@ -1,4 +1,4 @@
-"""Launch of the platform."""
+"""Launch the platform."""
 
 from pathlib import Path
 
@@ -15,7 +15,7 @@ NAME = "VHP4Safety launch"
 
 
 def corrected(found: Graph, correction: dict) -> int:
-    """Apply a correction to the statements in found, and return the number of changed values."""
+    """Apply a correction to the statements in found and return the number of changed values."""
     changed = 0
     for move in correction.get("move") or []:
         field = URIRef(documents.expand(move["field"]))
