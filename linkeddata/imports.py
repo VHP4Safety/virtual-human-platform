@@ -17,6 +17,7 @@ from rdfsolve import SchemaMiner
 from rdfsolve.api import Client
 from rdfsolve.client.sql_tables import merge
 from rdfsolve.mining.wikibase_strategy import WikibaseScopeStrategy
+from rdfsolve.sparql_helper import EndpointError
 from rdflib import RDF, Graph, Literal, URIRef
 from rdflib.namespace import SDO, SH
 from sqlalchemy import delete, func, insert, select
@@ -602,7 +603,7 @@ def import_all(once: bool = False) -> list[str]:
             else:
                 import_source(spec)
         # A KeyError or TypeError of a parser means a changed format of an upstream file.
-        except (Refused, requests.RequestException, OSError, ValueError, KeyError, TypeError) as problem:
+        except (Refused, requests.RequestException, EndpointError, OSError, ValueError, KeyError, TypeError) as problem:
             note_problem(spec, problem)
             problems.append(f"{spec['name']}: {problem}")
     one_record_each([spec["name"] for spec in every])
