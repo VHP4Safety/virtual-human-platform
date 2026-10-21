@@ -14,8 +14,7 @@ def folders(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def site(monkeypatch):
+def site():
     import app as platform
 
-    monkeypatch.setattr(platform, "get_process_flow_steps", lambda: {})
     return platform.app.test_client()

@@ -42,24 +42,6 @@ def stored_values(found: Graph, iri: str, name: str) -> list[str]:
     return values
 
 
-def values(document: dict, name: str) -> list:
-    """Return the values of the field name of document."""
-    given = document.get(name)
-    found = []
-    if isinstance(given, list):
-        items = given
-    elif given is None:
-        items = []
-    else:
-        items = [given]
-    for item in items:
-        if isinstance(item, dict):
-            item = item.get("@id", item.get("@value"))
-        if item is not None:
-            found.append(item)
-    return found
-
-
 def statements(document: dict) -> Graph:
     return Graph().parse(data=json.dumps(document), format="json-ld")
 

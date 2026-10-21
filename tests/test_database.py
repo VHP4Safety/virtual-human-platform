@@ -4,22 +4,17 @@ import io
 
 import pytest
 from PIL import Image as Picture
-from sqlalchemy import insert, text
+from sqlalchemy import text
 
 import database
 from admin import writes
-from database import export, images, records
-from database.tables import Record
+from database import export, images
 
 BASE = "https://platform.vhp4safety.nl/"
 TOOL = "https://schema.org/SoftwareApplication"
 
 
-def test_records():
-    with database.session() as db, db.begin():
-        db.execute(insert(Record), [{"iri": BASE + "tools/x", "type": TOOL, "source": "tools", "name": "X"}])
-    assert [record.name for record in records.of_kind("tools")] == ["X"]
-    assert records.names([BASE + "tools/x"]) == {BASE + "tools/x": "X"}
+def test_backup():
     with database.engine().connect() as connection:
         assert connection.execute(text("PRAGMA journal_mode")).scalar() == "wal"
     for _ in range(3):

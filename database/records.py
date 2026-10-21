@@ -43,7 +43,7 @@ def of_kind(kind: str) -> list[Record]:
         return list(db.scalars(statement.order_by(Record.iri)))
 
 
-def search(text: str, classes: list[str], within: str = "", parts: bool = True, limit: int | None = 20, among=None) -> list[Record]:
+def search(text: str, classes: list[str], within: str = "", limit: int | None = 20, among=None) -> list[Record]:
     """Return sorted by name the records of classes with text in the name or the address."""
     every = set(classes)
     for of_class in classes:
@@ -55,8 +55,6 @@ def search(text: str, classes: list[str], within: str = "", parts: bool = True, 
         statement = statement.where(Record.iri.startswith(within))
     if among is not None:
         statement = statement.where(Record.iri.in_(among))
-    if not parts:
-        statement = statement.where(Record.part_of.is_(None))
     with database.session() as db:
         return list(db.scalars(statement.order_by(func.lower(Record.name), Record.iri).limit(limit)))
 
