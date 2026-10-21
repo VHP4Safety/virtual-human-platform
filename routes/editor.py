@@ -1,4 +1,4 @@
-"""Pages of the record editor and the data quality page."""
+"""Serve the record editor pages."""
 
 import json
 
@@ -6,8 +6,7 @@ from flask import Blueprint, Response, abort, redirect, render_template, request
 
 from admin import editor, writes
 from database import records
-from database.tables import PLATFORM
-from linkeddata import checks, crates, pages
+from linkeddata import crates, pages
 from linkeddata.profile import settings, shape_of
 from routes.account import current_editor, form_token
 
@@ -32,15 +31,7 @@ def logged_in(kind: str | None = None):
 def admin():
     if logged_in() is None:
         return redirect(url_for("account.login", next=request.path))
-    return render_template("admin/kinds.html", kinds=editor.counts(), page_title="VHP4Safety editor")
-
-
-@blueprint.get("/admin/quality")
-def data_quality():
-    """Return the data quality page for editors."""
-    if logged_in() is None:
-        return redirect(url_for("account.login", next=request.path))
-    return render_template("records/quality.html", **checks.report(), written=PLATFORM, page_title="Data quality — VHP4Safety editor")
+    return render_template("admin/kinds.html", kinds=editor.counts(), failed=editor.failed(), page_title="VHP4Safety editor")
 
 
 @blueprint.get("/admin/<kind>/")

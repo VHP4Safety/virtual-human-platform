@@ -94,3 +94,4 @@ class Note(Base):
     value: Mapped[str] = mapped_column(doc="The value that does not fit or empty when a value is missing.")
     reason: Mapped[str] = mapped_column(doc="Reason why the value does not fit coming from the checks.")
     component: Mapped[str | None] = mapped_column(doc="The SHACL constraint that did not pass, e.g. sh:NodeKindConstraintComponent.")
+    severity: Mapped[str | None] = mapped_column(doc="The SHACL severity (Violation, Warning or Info).")

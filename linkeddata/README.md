@@ -64,7 +64,7 @@ The code is in four packages, with one concern each. A package uses only the pac
 | | `launch/` | the sources that are read once, at launch, and the corrections made then |
 | | `documents.py` | JSON-LD documents of the records |
 | | `pages.py` | the content of the record pages, the listings and the home page |
-| | `checks.py` | checks of the records against the shapes, and the data quality page |
+| | `checks.py` | checks of the records against the shapes |
 | | `imports.py` | imports of the sources: fetch, conversion with rdfsolve, checks and storage |
 | | `crates.py` | the RO-Crate of each record |
 | | `void.py` | the VoID description of the data of the platform |
@@ -74,7 +74,7 @@ The code is in four packages, with one concern each. A package uses only the pac
 | | `changes.py` | the comparison of a record before and after a change |
 | `routes/` | `record_pages.py` | the address of each record: its page, its data, 410 Gone after removal |
 | | `records_api.py` | the records API (flask-smorest), with each record as a graph of the W3C Graph Store Protocol |
-| | `editor.py` | the record editor (forms made by shacl-form from the shapes) and the data quality page |
+| | `editor.py` | the record editor (forms made by shacl-form from the shapes) |
 | | `changes.py` | the `/changes` pages |
 | | `account.py` | editor sign-in (ORCID or a write token) and the tokens page |
 | | `discovery.py` | `/.well-known/api-catalog` and `/.well-known/void` |
@@ -116,9 +116,8 @@ the profile.
 The records are also checked against the official Bioschemas shapes (`sh:shapesGraph` in the header, pinned as the
 vocabularies are). The Bioschemas profile of a class is named on its node shape (`dct:conformsTo`), and only these
 profiles are checked. The profile is stated on a record (`dct:conformsTo`) only if all fields required by it are
-given. The results of an official shape are reported only for the fields of the form. The fields of a declared
-profile that the model does not have are listed on the data quality page. The official schema.org shapes are not
-used: they are recursive, so pyshacl stops on nested records, and they accept any text for most fields.
+given. The results of an official shape are reported only for the fields of the form. The official schema.org shapes are
+not used: they are recursive, so pyshacl stops on nested records, and they accept any text for most fields.
 
 The classes of the node shapes with `form:path` are record classes (kinds). Each record has its own address and
 page. A node of another class in an `sh:node` field is a part of its record, and it is written with its record:
@@ -209,7 +208,7 @@ url: https://zenodo.org/api/records?communities=vhp4safety&type=dataset&size=25&
 parser: zenodo
 ```
 
-3. Run the import. The notes of its records are shown on the data quality page (`/admin/quality`).
+3. Run the import. The missing values and the notes of each kind are counted on the editor start page (`/admin/`).
 
 ## Read and write records
 

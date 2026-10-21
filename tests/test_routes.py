@@ -86,7 +86,3 @@ def test_pages(site):
     writes.retire(BASE + "tools/t", "Test Editor", ORCID)
     assert site.get("/tools/t").status_code == 410
 
-
-def test_data(site):
-    add_records()
-    assert site.get("/admin/quality").status_code == 302

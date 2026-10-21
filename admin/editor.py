@@ -7,12 +7,12 @@ from sqlalchemy import func, select
 
 import database
 from database import records
-from database.tables import PLATFORM, Note, Record
+from database.tables import PLATFORM, Note, Record, Source
 from linkeddata.profile import DASH, FORM, PARTS, fields, hierarchy, jsonld_name, profile_graph, settings, shape_of, terms
 
 
 def counts() -> list[dict]:
-    """Return the counts of records, platform records, removed records and notes of each kind."""
+    """Return the counts of records, platform records, removed records, missing values and notes of each kind."""
     found = []
     with database.session() as db:
         for name, kind in settings()["kinds"].items():
@@ -22,15 +22,25 @@ def counts() -> list[dict]:
             filled = 0
             for item in listed:
                 filled += item["filled"]
+            missing = dict(db.execute(select(Note.severity, func.count()).where(Note.iri.in_(of_kind), Note.component.endswith("MinCountConstraintComponent"))
+                                      .group_by(Note.severity)).all())
             found.append({
                 "kind": name,
                 "records": db.scalar(select(func.count()).select_from(Record).where(Record.type.in_(records.within(kind)), Record.removed_at.is_(None))),
                 "edited": db.scalar(select(func.count()).select_from(Record).where(Record.type.in_(records.within(kind)), Record.source == PLATFORM)),
                 "removed": db.scalar(select(func.count()).select_from(Record).where(Record.type.in_(records.within(kind)), Record.removed_at.is_not(None))),
                 "notes": db.scalar(select(func.count()).select_from(Note).where(Note.iri.in_(of_kind))),
+                "required": missing.get("Violation", 0),
+                "recommended": missing.get("Warning", 0),
                 "complete": round(100 * filled / (len(listed) * len(fields(kind)))) if listed else 0,
             })
     return found
+
+
+def failed() -> list[Source]:
+    """Return the sources whose last import was not stored."""
+    with database.session() as db:
+        return list(db.scalars(select(Source).where(Source.problem.is_not(None)).order_by(Source.name)))
 
 
 def listing(kind: str) -> list[dict]:

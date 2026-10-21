@@ -32,7 +32,7 @@
     <nav class="bg-vhppurple" aria-label="Editor">
       <div class="container-fluid px-lg-4">
         <ul class="nav editor-nav">
-          {% for endpoint, label, icon in [("admin.admin", "Records", "pencil-square"), ("admin.data_quality", "Data quality", "clipboard-check"), ("changes.changes", "Changes", "clock-history"), ("account.account_tokens", "Write tokens", "key")] %}
+          {% for endpoint, label, icon in [("admin.admin", "Records", "pencil-square"), ("changes.changes", "Changes", "clock-history"), ("account.account_tokens", "Write tokens", "key")] %}
           <li class="nav-item">
             <a class="nav-link{% if request.endpoint == endpoint or request.blueprint == endpoint.split('.')[0] and endpoint != 'account.account_tokens' %} active{% endif %}" href="{{ url_for(endpoint) }}"><i class="bi bi-{{ icon }}"></i> {{ label }}</a>
           </li>
