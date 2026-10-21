@@ -271,7 +271,7 @@ The settings are environment variables:
 
 | Variable | Meaning |
 |---|---|
-| `PLATFORM_EDITORS` | the ORCID iDs of the editors, separated by commas |
+| `PLATFORM_EDITORS` | the ORCID iDs of the editors, separated by commas. A token works only while its ORCID iD is listed. |
 | `ORCID_CLIENT_ID`, `ORCID_CLIENT_SECRET` | the credentials of the platform for the ORCID public API; the redirect URI is `<platform>/orcid/callback/` |
 | `SECRET_KEY` | the key that signs the sign-in sessions |
 | `PLATFORM_STATE` | the folder of the database |

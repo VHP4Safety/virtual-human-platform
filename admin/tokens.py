@@ -37,7 +37,8 @@ def create(orcid: str, name: str, kinds: list[str], days: int = DEFAULT_DAYS) ->
 
 
 def usable(token: Token | None) -> Token | None:
-    if token is None or token.revoked_at or token.expires_at < now():
+    """Return the token if it is not revoked or expired and its ORCID iD is an editor, else None."""
+    if token is None or token.revoked_at or token.expires_at < now() or token.orcid not in editors():
         return None
     return token
 
@@ -48,7 +49,7 @@ def bearer(header: str) -> str | None:
 
 
 def find(secret: str | None) -> Token | None:
-    """Return the token of a secret, if it is not revoked or expired."""
+    """Return the token of a secret if it is usable, else None."""
     if not secret:
         return None
     with database.session() as db:

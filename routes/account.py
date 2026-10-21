@@ -76,13 +76,13 @@ def login():
 def token_login():
     check_form()
     token = tokens.find(request.form.get("token", "").strip())
-    if token is None or token.orcid not in tokens.editors():
+    if token is None:
         return render_template(
             "account/login.html",
             next=local_path(request.form.get("next")) or "",
             orcid_ready=bool(os.environ.get("ORCID_CLIENT_ID")),
             form_token=form_token(),
-            problem="Invalid token, or not an editor's.",
+            problem="Invalid or expired token.",
             page_title="Log in — VHP4Safety",
         ), 403
     session.clear()
