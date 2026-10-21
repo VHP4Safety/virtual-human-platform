@@ -113,12 +113,11 @@ Each write is checked against the profile with pyshacl, with the type checks of 
 write is not stopped by problems. The problems are returned as warnings for each field, with the `sh:message` of
 the profile.
 
-The records are also checked against the official Bioschemas shapes (`sh:shapesGraph` in the header, pinned as the
-vocabularies are), as published. The additions of the platform are in `model/v1/bioschemas-additions.ttl`: the targets
-that the official file misses, and the two draft profiles that the official file targets at a parent class. The
-Bioschemas profile of a class is named on its node shape (`dct:conformsTo`). The profile is stated on a record
-(`dct:conformsTo`) only if all fields required by it are given. The results of an official shape are reported only for the fields of the form. The official schema.org shapes are
-not used: they are recursive, so pyshacl stops on nested records, and they accept any text for most fields.
+The records are also checked against the official Bioschemas shapes (`sh:shapesGraph` in the header). The shapes
+are pinned and used as published. Corrections of the targets are kept in `model/v1/bioschemas-additions.ttl`.
+The Bioschemas profile of a class is named on its node shape (`dct:conformsTo`). It is stated on a record only if all
+fields required by the profile are given. The results of the official shapes are reported only for the fields of the
+form.
 
 The classes of the node shapes with `form:path` are record classes (kinds). Each record has its own address and
 page. A node of another class in an `sh:node` field is a part of its record, and it is written with its record:
