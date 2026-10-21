@@ -4,30 +4,28 @@ import json
 import os
 import re
 import secrets
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 import nh3
 import requests
 import urllib.parse
-from flask import Flask, abort, g, jsonify, redirect, render_template, request, Response, url_for
+from flask import Flask, abort, g, jsonify, redirect, render_template, request, Response, send_from_directory, url_for
 from jinja2 import TemplateNotFound
 from markupsafe import Markup
+from rdflib.namespace import SDO
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BaseConverter
 
-# Import BioStudies extractor
 from admin.writes import slug
 from database import records
-from linkeddata import documents, pages, void
+from database.images import NAME, folder
+from database.tables import Record
+from linkeddata import crates, documents, pages, void
 from linkeddata.profile import hierarchy, settings
+from routes import records_api
 from routes.account import blueprint as account_blueprint
-from routes import limiter, records_api
 from routes.changes import blueprint as changes_blueprint
-from routes.discovery import blueprint as discovery_blueprint
 from routes.editor import blueprint as admin_blueprint
-from routes.images import blueprint as images_blueprint
-from routes.record_pages import blueprint as pages_blueprint
-from routes.record_pages import page_link
 
 ################################################################################
 BIOSTUDIES_COLLECTION_NAME = "VHP4Safety"  # Display name for the page
@@ -82,12 +80,9 @@ if app.config["SESSION_COOKIE_SECURE"]:
     app.config["SESSION_COOKIE_NAME"] = "__Host-session"
 app.register_blueprint(account_blueprint)
 app.register_blueprint(admin_blueprint)
-limiter.init_app(app)
+records_api.limiter.init_app(app)
 records_api.register(app)
-app.register_blueprint(pages_blueprint)
 app.register_blueprint(changes_blueprint)
-app.register_blueprint(images_blueprint)
-app.register_blueprint(discovery_blueprint)
 # Google Search Console verification token (rendered as a <meta> tag in
 # base.html when set). Kept out of the repo -- set it in the service env.
 app.config["GOOGLE_SITE_VERIFICATION"] = os.environ.get("GOOGLE_SITE_VERIFICATION", "")
@@ -918,6 +913,262 @@ def privacy_policy():
         page_title="Privacy Policy — VHP4Safety",
         meta_description="Privacy Policy for the VHP4Safety Virtual Human Platform.",
     )
+
+
+################################################################################
+### Pages and data of the records
+OFFERED = ["text/html", *records_api.FORMATS.values(), "application/json", "text/markdown"]
+# A page is also changed by a change of the code, such as a new release.
+STARTED = datetime.now(timezone.utc).replace(microsecond=0)
+
+
+@app.template_filter("page_link")
+def page_link(iri: str) -> str:
+    """Return a platform address as a path on this server."""
+    return pages.local(iri)
+
+
+def not_acceptable() -> Response:
+    """Return 406 with the formats of the address."""
+    lines = ["None of the formats asked for is given here. This address answers in:", "- text/html"]
+    for ending, media in records_api.FORMATS.items():
+        lines.append(f"- {media}, or with the ending {ending}")
+    lines.append("- application/json (its JSON-LD)")
+    lines.append(f"- text/markdown, or with the ending {records_api.MARKDOWN}")
+    return Response("\n".join(lines) + "\n", status=406, content_type="text/plain; charset=utf-8", headers={"Vary": "Accept"})
+
+
+def listing_page(kind: str):
+    """Return the listing page of a kind."""
+    found = pages.listing(kind, request.args)
+    return render_template("records/listing.html", listing=found, page_title=f"{found['name'] or kind.capitalize()} — VHP4Safety")
+
+
+def record_page(record: Record):
+    """Return the page of a record."""
+    if record.type in records.within(str(SDO.WebPage)):
+        found = pages.page(record)
+        steps = {term["iri"]: term for term in found["kinds"]}
+        return render_template("records/page.html", page=found, process_flow_steps=steps,
+                               page_title=f"{found['name']} — VHP4Safety",
+                               meta_description=found["description"][:160] or f"{found['name']}, a page of the VHP4Safety Virtual Human Platform.")
+    found = pages.outline(record)
+    first = {}
+    for field in found["fields"]:
+        first[field["name"]] = field["values"][0]
+    description = first.get("description", {}).get("text")
+    image = first.get("image", {}).get("link")
+    name = record.name or record.iri
+    return render_template(
+        "records/record.html",
+        record={"iri": record.iri, "name": record.name, "description": description, "image": image},
+        outline=found,
+        page_title=f"{name} — VHP4Safety",
+        meta_description=(description or "")[:160] or f"{name}, a record of the VHP4Safety Virtual Human Platform.",
+    )
+
+
+@app.before_request
+def negotiate():
+    """Return the data of a record if it is requested."""
+    if request.endpoint in ("static", "image") or request.path.startswith("/api/"):
+        return None
+    # An address with a slash at the end and without a page of its own is redirected to the address without the
+    # slash (/casestudies/ to /casestudies), so that each page has one address.
+    if request.url_rule is None and len(request.path) > 1 and request.path.endswith("/"):
+        target = "/" + urllib.parse.quote(request.path.strip("/"))
+        if request.query_string:
+            target += "?" + request.query_string.decode()
+        return redirect(target, code=308)
+    path = request.path.strip("/")
+    media = None
+    for ending, ending_media in {**records_api.FORMATS, records_api.MARKDOWN: "text/markdown"}.items():
+        if path.endswith(ending):
+            path = path.removesuffix(ending)
+            media = ending_media
+    # The page is returned for a request without Accept. For a request of other formats only, the formats are listed.
+    if media is None:
+        media = request.accept_mimetypes.best_match(OFFERED) if request.accept_mimetypes else "text/html"
+    # At the page of a kind (/tools), all records of the kind are given in the formats of the API, without pages.
+    if path in settings()["kinds"] and media is None:
+        return not_acceptable()
+    if path in settings()["kinds"] and media != "text/html":
+        g.listing = path
+        g.media = media
+        return app.view_functions["records.listed"](kind=path)
+    # For a kind without a page of its own, the records are listed.
+    if path in settings()["kinds"] and request.url_rule is None:
+        return listing_page(path)
+    record = records.get(records.address(path))
+    if record is None:
+        return None
+    if media is None:
+        return not_acceptable()
+    if record.moved_to:
+        ending = request.path.removeprefix("/" + path) if request.path.startswith("/" + path) else ""
+        target = page_link(record.moved_to) + ending
+        if request.query_string:
+            target += "?" + request.query_string.decode()
+        return redirect(target, code=301)
+    if record.removed_at:
+        return render_template("records/gone.html", record=record, page_title="Removed — VHP4Safety"), 410
+    g.record = record
+    if media == "text/markdown":
+        return records_api.markdown_of(record)
+    # The address of the platform is the address of its dataset, so its data is the VoID description.
+    if media != "text/html":
+        # The data of another record is one document with its parts.
+        if record.iri == settings()["base"]:
+            return records_api.data(void.described(), media)
+        return records_api.data(documents.linked(record), media, record.iri)
+    # A record with no page of its own is shown on the general record page.
+    if request.url_rule is None:
+        return record_page(record)
+    return None
+
+
+@app.route("/<path:path>/ro-crate-metadata.json")
+def ro_crate(path: str):
+    """Return the RO-Crate of a model."""
+    record = records.get(records.address(path))
+    if not crates.of_models(record):
+        abort(404)
+    headers = {"Access-Control-Allow-Origin": "*", "Content-Disposition": f'inline; filename="{crates.file_name(record)}"'}
+    given = crates.zenodo(record)
+    if given is not None:
+        return Response(given, mimetype="application/ld+json", headers=headers)
+    headers["Link"] = f'<{crates.PROFILE}>; rel="profile", <{record.iri}>; rel="cite-as"'
+    return Response(json.dumps(crates.crate(record), indent=2), mimetype="application/ld+json", headers=headers)
+
+
+# The root of the draft crate of a model is at the model address with /ro-crate/ (linkeddata/crates.py).
+@app.route("/<path:path>/ro-crate/")
+def crate_root(path: str):
+    if not crates.of_models(records.get(records.address(path))):
+        abort(404)
+    return redirect(f"/{path}/ro-crate-metadata.json", code=303)
+
+
+@app.after_request
+def link_data(response):
+    links = []
+    if "record" in g:
+        links = [f'<{g.record.iri}>; rel="cite-as"', f'<{g.record.type}>; rel="type"']
+        for ending, media in records_api.FORMATS.items():
+            links.append(f'<{page_link(g.record.iri)}{ending}>; rel="describedby"; type="{media}"')
+        if crates.of_models(g.record):
+            links.append(f'<{page_link(g.record.iri)}/ro-crate-metadata.json>; rel="describedby"; type="application/ld+json"')
+        links.append(f'<{url_for("records.model_shapes")}>; rel="http://www.w3.org/ns/ldp#constrainedBy"; type="text/turtle"')
+        links.append(f'<{page_link(g.record.iri)}{records_api.MARKDOWN}>; rel="alternate"; type="text/markdown"')
+        response.headers["Vary"] = "Accept"
+    # The licence of the records is linked from their pages, their data and the API.
+    if ("record" in g or "listing" in g or request.path.startswith("/api/")) and void.platform()["license"]:
+        links.append(f'<{void.platform()["license"]}>; rel="license"')
+    if "record" in g and g.record.iri != settings()["base"]:
+        links.append(f'<{settings()["base"]}>; rel="http://rdfs.org/ns/void#inDataset"')
+    if links:
+        given = response.headers.get("Link")
+        response.headers["Link"] = ", ".join(([given] if given else []) + links)
+    if "record" in g and request.method in ("GET", "HEAD") and response.status_code == 200:
+        conditional(response)
+    # Public data may be read by scripts of other sites, without credentials, as visitors.
+    if request.method in ("GET", "HEAD") and (request.path.startswith("/api/") or "listing" in g or ("record" in g and response.mimetype != "text/html")):
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Expose-Headers"] = "Link, ETag, Last-Modified, X-Pagination"
+    return response
+
+
+def conditional(response) -> None:
+    """Return 304 Not Modified if no record was changed since the request version."""
+    latest = records.latest_change()
+    changed = max(datetime.fromisoformat(latest) if latest else STARTED, STARTED)
+    response.set_etag(f"{latest}-{int(STARTED.timestamp())}-{response.mimetype}", weak=True)
+    response.last_modified = changed
+    response.make_conditional(request)
+
+
+@app.context_processor
+def publisher_context() -> dict:
+    """Return the publisher of the platform and the licence of the records for the templates."""
+    return {"publisher_document": void.platform()["publisher"], "records_license": void.platform()["license"]}
+
+
+@app.context_processor
+def record_context() -> dict:
+    """Return the JSON-LD and data addresses of the record of the page."""
+    if "record" not in g:
+        return {}
+    formats = {}
+    for ending, media in records_api.FORMATS.items():
+        formats[media] = page_link(g.record.iri) + ending
+    try:
+        document = documents.page_document(g.record.iri, records.latest_change())
+    except ValueError as problem:
+        app.logger.warning("The record %s does not fit the model: %s", g.record.iri, problem)
+        document = None
+    found = {"record_document": document, "record_formats": formats, "record_markdown": page_link(g.record.iri) + records_api.MARKDOWN}
+    # Only models have an RO-Crate. It is the crate in Zenodo, or a draft made from the record.
+    if crates.of_models(g.record):
+        found.update(record_crate=page_link(g.record.iri) + "/ro-crate-metadata.json", record_crate_draft=crates.zenodo(g.record) is None)
+    return found
+
+
+################################################################################
+### Uploaded images
+@app.route("/images/<name>")
+def image(name: str):
+    if not NAME.fullmatch(name):
+        abort(404)
+    response = send_from_directory(folder(), name, mimetype="image/webp", max_age=31536000)
+    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    response.headers["Content-Security-Policy"] = "default-src 'none'"
+    return response
+
+
+################################################################################
+### Discovery addresses of the data and the APIs
+CATALOG = "/.well-known/api-catalog"
+OPENAPI = "api/docs/openapi.json"
+DOCS = "api/docs/"
+
+
+def services() -> list[dict]:
+    """Return the APIs of the platform as linkset entries."""
+    found = [{
+        "anchor": records.address("api/"),
+        "service-desc": [{"href": records.address(OPENAPI), "type": "application/vnd.oai.openapi+json"}],
+        "service-doc": [{"href": records.address(DOCS), "type": "text/html"}],
+    }]
+    return found
+
+
+@app.route(CATALOG)
+def api_catalog():
+    body = json.dumps({"linkset": services()}, indent=1)
+    return Response(body, content_type='application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"',
+                    headers={"Access-Control-Allow-Origin": "*"})
+
+
+@app.route("/.well-known/void")
+def void_description():
+    media = request.accept_mimetypes.best_match(["text/turtle", "application/ld+json", *records_api.SERIALIZATIONS]) or "text/turtle"
+    answer = records_api.data(void.described(), media)
+    answer.headers["Access-Control-Allow-Origin"] = "*"
+    return answer
+
+
+@app.after_request
+def service_links(response):
+    links = []
+    if request.path.startswith("/api/"):
+        links.append(f'<{records.address(OPENAPI)}>; rel="service-desc"; type="application/vnd.oai.openapi+json"')
+        links.append(f'<{records.address(DOCS)}>; rel="service-doc"; type="text/html"')
+    if request.path == "/":
+        links.append(f'<{CATALOG}>; rel="api-catalog"')
+    if links:
+        given = response.headers.get("Link")
+        response.headers["Link"] = ", ".join(([given] if given else []) + links)
+    return response
 
 
 if __name__ == "__main__":

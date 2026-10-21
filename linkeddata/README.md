@@ -72,13 +72,13 @@ The code is in four packages, with one concern each. A package uses only the pac
 | | `writes.py` | writes of records on the platform, with a revision for each change |
 | | `editor.py` | the data of the editor: the records of each kind, and the graph of the forms |
 | | `changes.py` | the comparison of a record before and after a change |
-| `routes/` | `record_pages.py` | the address of each record: its page, its data, 410 Gone after removal |
-| | `records_api.py` | the records API (flask-smorest), with each record as a graph of the W3C Graph Store Protocol |
+| `routes/` | `records_api.py` | the records API (flask-smorest), with each record as a graph of the W3C Graph Store Protocol |
 | | `editor.py` | the record editor (forms made by shacl-form from the shapes) |
 | | `changes.py` | the `/changes` pages |
 | | `account.py` | editor sign-in (ORCID or a write token) and the tokens page |
-| | `discovery.py` | `/.well-known/api-catalog` and `/.well-known/void` |
-| | `images.py` | the uploaded images |
+
+The pages of the website are routes of `app.py`. It also answers the data of each record address (410 Gone after a
+removal), the RO-Crates of the models, the uploaded images, `/.well-known/api-catalog` and `/.well-known/void`.
 
 ## The database
 

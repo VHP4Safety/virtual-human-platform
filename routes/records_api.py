@@ -3,20 +3,53 @@
 import json
 
 from flask import Response, g, jsonify, redirect, render_template, request, url_for
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_smorest import Api, Blueprint, abort
 from marshmallow import INCLUDE, Schema, fields, pre_load
 from rdflib import RDF, Graph, URIRef
 from rdflib.namespace import SDO
+from rdfsolve.iris import prefix_map
 from rdfsolve.ontology.service import PROVIDERS, Ontologies, serving
 from werkzeug.exceptions import HTTPException, RequestEntityTooLarge
 
 import database
 from admin import changes, tokens, writes
 from database import images, records, tables
-from linkeddata import checks, documents, pages
+from linkeddata import checks, documents, pages, void
 from linkeddata.profile import RELEASE, jsonld_name, settings, shapes
-from routes import account, limiter
-from routes.record_pages import SERIALIZATIONS, data, markdown_of
+from routes import account
+
+FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "application/n-triples"}
+FORMAT_NAMES = {".jsonld": "JSON-LD", ".ttl": "Turtle", ".nt": "N-Triples"}
+# A page in Markdown, for readers of plain text such as agents.
+MARKDOWN = ".md"
+SERIALIZATIONS = {"text/turtle": "turtle", "application/n-triples": "nt"}
+# The counts are kept in memory, as the platform is run with one worker.
+limiter = Limiter(get_remote_address, storage_uri="memory://")
+
+
+def data(found: Graph, media: str, iri: str | None = None) -> Response:
+    """Return the statements in found in JSON-LD, Turtle or N-Triples."""
+    if media in ("application/ld+json", "application/json"):
+        body = json.dumps(documents.document(found, iri, named=True), indent=2)
+    else:
+        # The prefixes of the profile and of rdfsolve are bound, so that no namespace is written as ns1.
+        terms = {str(term) for term in found.predicates()} | {str(term) for term in found.objects(None, RDF.type)}
+        for prefix, namespace in prefix_map(terms, settings()["prefixes"]).items():
+            found.bind(prefix, namespace, override=True, replace=True)
+        body = found.serialize(format=SERIALIZATIONS[media])
+    return Response(body, mimetype=media, headers={"Vary": "Accept"})
+
+
+def markdown_of(record: tables.Record) -> Response:
+    """Return the page of a record in Markdown."""
+    formats = {}
+    for ending, name in FORMAT_NAMES.items():
+        formats[name] = record.iri + ending
+    body = pages.markdown(record, formats, void.platform()["license"])
+    return Response(body, content_type=pages.MEDIA, headers={"Vary": "Accept"})
+
 
 DESCRIPTION = """OAS 3.1 specification for the VHP4Safety Platform.
 
