@@ -67,8 +67,8 @@ class RegexConverter(BaseConverter):
 
 
 app = Flask(__name__)
-# The scheme and host are taken from the reverse proxy, for the ORCID login.
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+# The client address, scheme and host are taken from the reverse proxy, for the rate limits and the ORCID login.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 if not os.environ.get("SECRET_KEY"):
     app.logger.warning("SECRET_KEY is not set: logins end on restart, and fail with several workers.")
