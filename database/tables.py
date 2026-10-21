@@ -8,7 +8,8 @@ PLATFORM = "platform"
 
 
 def now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    """Return the current time in UTC, to the microsecond, as the version of a write."""
+    return datetime.now(timezone.utc).isoformat()
 
 
 class Base(DeclarativeBase):

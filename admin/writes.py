@@ -2,7 +2,6 @@
 
 import json
 import re
-from datetime import datetime, timezone
 
 from rdflib import RDF, BNode, Graph, URIRef
 from rdflib.namespace import SDO
@@ -14,11 +13,6 @@ from database.tables import PLATFORM, Record, Revision, now
 from linkeddata import documents
 from linkeddata.documents import context
 from linkeddata.profile import fields, jsonld_name, settings
-
-
-def version() -> str:
-    """Return the time of a write, to the microsecond, as the version of a record."""
-    return datetime.now(timezone.utc).isoformat()
 
 
 def class_of(kind: str, body: dict) -> str:
@@ -162,7 +156,7 @@ def save(document: dict, kind: str, name: str, orcid: str) -> Revision:
         db.execute(delete(Record).where((Record.iri == iri) | (Record.part_of == iri)))
         found = documents.statements(document)
         records.save(db, found, iri)
-        db.execute(insert(Record), [{**row, "updated_at": version()} for row in records.rows(found, iri, kind, PLATFORM)])
+        db.execute(insert(Record), [{**row, "updated_at": now()} for row in records.rows(found, iri, kind, PLATFORM)])
         revision = Revision(
             record_iri=iri,
             action="Added" if created else "Changed",
@@ -182,7 +176,7 @@ def retire(iri: str, name: str, orcid: str) -> Revision:
         for record in db.scalars(select(Record).where((Record.iri == iri) | (Record.part_of == iri))):
             record.removed_at = now()
             record.source = PLATFORM
-            record.updated_at = version()
+            record.updated_at = now()
         revision = Revision(record_iri=iri, action="Removed", previous=previous, name=name, orcid=orcid)
         db.add(revision)
     return revision
@@ -207,12 +201,12 @@ def move(old: str, new: str, name: str, orcid: str) -> Revision:
         # A record can be moved back to an earlier address. That address is then no longer redirected.
         db.execute(delete(Record).where(((Record.iri == new) | Record.iri.startswith(new + "/")), ((Record.moved_to == old) | Record.moved_to.startswith(old + "/"))))
         records.save(db, found, new)
-        db.execute(insert(Record), [{**row, "updated_at": version()} for row in records.rows(found, new, record.type, PLATFORM)])
+        db.execute(insert(Record), [{**row, "updated_at": now()} for row in records.rows(found, new, record.type, PLATFORM)])
         for kept in db.scalars(select(Record).where((Record.iri == old) | (Record.part_of == old))):
             kept.removed_at = now()
             kept.moved_to = str(moved(URIRef(kept.iri)))
             kept.source = PLATFORM
-            kept.updated_at = version()
+            kept.updated_at = now()
         for earlier in db.scalars(select(Record).where(Record.moved_to == old)):
             earlier.moved_to = new
     document = documents.document_of(new)
@@ -259,7 +253,7 @@ def merge(found: Graph, old: str, new: str, kind: str, name: str, orcid: str) ->
             kept.removed_at = now()
             kept.moved_to = str(moved(URIRef(kept.iri)))
             kept.source = PLATFORM
-            kept.updated_at = version()
+            kept.updated_at = now()
         for earlier in db.scalars(select(Record).where(Record.moved_to == old)):
             earlier.moved_to = new
         revision = Revision(record_iri=old, action="Merged", previous=previous, name=name, orcid=orcid)
@@ -272,7 +266,7 @@ def restore(iri: str, name: str, orcid: str) -> Revision:
     with database.session() as db, db.begin():
         for record in db.scalars(select(Record).where((Record.iri == iri) | (Record.part_of == iri))):
             record.removed_at = None
-            record.updated_at = version()
+            record.updated_at = now()
     document = documents.document_of(iri)
     with database.session() as db, db.begin():
         revision = Revision(record_iri=iri, action="Restored", document=document, name=name, orcid=orcid)

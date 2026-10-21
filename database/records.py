@@ -50,7 +50,7 @@ def search(text: str, classes: list[str], within: str = "", parts: bool = True, 
         every |= {str(sub) for sub in hierarchy().transitive_subjects(RDFS.subClassOf, URIRef(of_class))}
     statement = select(Record).where(Record.type.in_(every), Record.removed_at.is_(None), Record.moved_to.is_(None))
     if text:
-        statement = statement.where(func.lower(Record.name).contains(text.lower()) | Record.iri.contains(text))
+        statement = statement.where(Record.name.icontains(text, autoescape=True) | Record.iri.contains(text, autoescape=True))
     if within:
         statement = statement.where(Record.iri.startswith(within))
     if among is not None:
