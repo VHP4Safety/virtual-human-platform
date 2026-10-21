@@ -18,6 +18,7 @@ from admin import changes, tokens, writes
 from database import images, records, tables
 from linkeddata import checks, documents, pages, void
 from linkeddata.profile import RELEASE, jsonld_name, settings, shapes
+from linkeddata.profile import fields as fields_of
 from routes import account
 
 FORMATS = {".jsonld": "application/ld+json", ".ttl": "text/turtle", ".nt": "application/n-triples"}
@@ -474,6 +475,11 @@ def counted(given, kind):
     return jsonify(records.counted(settings()["kinds"][kind], given))
 
 
+def vocabulary_kind(kind: str) -> bool:
+    """Return True if the records of kind are terms of a vocabulary."""
+    return any(field["iri"] == str(SDO.inDefinedTermSet) for field in fields_of(settings()["kinds"][kind]))
+
+
 @blueprint.post(KIND, tags=["editing"], parameters=OF_KIND)
 @blueprint.arguments(Record, content_type="application/ld+json", examples=NEW_TOOL)
 @blueprint.response(201, Done, description="Added.")
@@ -490,8 +496,12 @@ def added(body, kind):
     if request.mimetype == "text/turtle":
         given = Graph().parse(data=request.get_data(as_text=True), format="turtle")
         node = given.value(None, RDF.type, URIRef(settings()["kinds"][kind]))
+        if node is None:
+            abort(422, message=f"Send one node of the class {jsonld_name(settings()['kinds'][kind])}.")
         body = {"name": str(given.value(node, SDO.name) or "")}
-    # A vocabulary term is stored at the address in @id. Other records are stored at an address made from the name.
+    # A term of a vocabulary is stored at the address in @id. Other records are stored at an address made from the name.
+    if body.get("@id") is not None and not (str(body["@id"]).startswith(("http://", "https://")) and vocabulary_kind(kind)):
+        abort(422, message="Send @id only for a term of a vocabulary, as an http or https address.")
     address = body.get("@id") or writes.free(records.address(f"{kind}/{writes.slug(str(body.get('name') or kind))}"), set())
     if records.get(address) is not None:
         abort(409, message="Address taken.")
@@ -598,7 +608,7 @@ def move(body):
 def restore(body):
     """Restore a removed record."""
     record = found_record(body["record"])
-    if not record.removed_at:
+    if not record.removed_at or record.moved_to:
         abort(404, message="No removed record at this address.")
     who = writer(kind_of(record.iri, {}))
     return done(record.iri, writes.restore(record.iri, who.name, who.orcid), 200)
