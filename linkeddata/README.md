@@ -24,7 +24,7 @@ page ──rows──rdfsolve from_tables──► JSON-LD, Turtle, N-Triples
 Python 3.12 or newer is required by rdfsolve.
 
 ```
-pip install -r requirements.txt -r linkeddata/requirements.txt
+pip install -r requirements.txt pytest
 python -m linkeddata launch     # once: fetch, convert, check and store all sources
 python -m linkeddata import     # each week: fetch, convert, check and store the weekly sources
 python -m pytest tests          # check the parts on small inputs, offline

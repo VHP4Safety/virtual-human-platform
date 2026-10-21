@@ -17,8 +17,7 @@ WORKDIR /usr/src/app
 
 # The packages are installed before the code is copied, so a code change does not reinstall them
 COPY requirements.txt requirements.txt
-COPY linkeddata/requirements.txt linkeddata/requirements.txt
-RUN pip install -r requirements.txt -r linkeddata/requirements.txt
+RUN pip install -r requirements.txt
 
 # Copy the current directory contents into the container at /usr/src/app
 COPY . .
