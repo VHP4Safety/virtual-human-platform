@@ -1,7 +1,6 @@
 """Writes of records on the platform, with a revision for each change."""
 
 import json
-import re
 
 from rdflib import RDF, BNode, Graph, URIRef
 from rdflib.namespace import SDO
@@ -10,7 +9,7 @@ from sqlalchemy import delete, insert, select
 import database
 from database import records
 from database.tables import PLATFORM, Record, Revision, now
-from linkeddata import documents
+from linkeddata import documents, parsers
 from linkeddata.documents import context
 from linkeddata.profile import fields, jsonld_name, settings
 
@@ -77,7 +76,7 @@ def classed(found: Graph, iri: str) -> None:
 
 
 def slug(name: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:60] or "record"
+    return parsers.slug(name)[:60] or "record"
 
 
 def part(found: Graph, node: BNode) -> bool:
