@@ -1056,11 +1056,11 @@ def link_data(response):
     if "record" in g:
         links = [f'<{g.record.iri}>; rel="cite-as"', f'<{g.record.type}>; rel="type"']
         for ending, media in records_api.FORMATS.items():
-            links.append(f'<{page_link(g.record.iri)}{ending}>; rel="describedby"; type="{media}"')
+            links.append(f'<{g.record.iri}{ending}>; rel="describedby"; type="{media}"')
         if crates.of_models(g.record):
-            links.append(f'<{page_link(g.record.iri)}/ro-crate-metadata.json>; rel="describedby"; type="application/ld+json"')
-        links.append(f'<{url_for("records.model_shapes")}>; rel="http://www.w3.org/ns/ldp#constrainedBy"; type="text/turtle"')
-        links.append(f'<{page_link(g.record.iri)}{records_api.MARKDOWN}>; rel="alternate"; type="text/markdown"')
+            links.append(f'<{g.record.iri}/ro-crate-metadata.json>; rel="describedby"; type="application/ld+json"; profile="https://w3id.org/ro/crate"')
+        links.append(f'<{url_for("records.model_shapes", _external=True)}>; rel="http://www.w3.org/ns/ldp#constrainedBy"; type="text/turtle"')
+        links.append(f'<{g.record.iri}{records_api.MARKDOWN}>; rel="alternate"; type="text/markdown"')
         response.headers["Vary"] = "Accept"
     # The page and the data of a record link the licence of the record. Listings and the API link the licence of the records.
     licences = []

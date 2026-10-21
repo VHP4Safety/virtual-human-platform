@@ -32,14 +32,14 @@
     <meta name="google-site-verification" content="{{ config.GOOGLE_SITE_VERIFICATION }}" />
     {% endif %}
 
+    {% if record_document %}
+    <!-- The record of the page, as published. It is the first block, as only the first block is read by some programs. -->
+    <script type="application/ld+json" id="record-document">{{ record_document|tojson }}</script>
+    {% endif %}
+
     {% if publisher_document %}
     <!-- The publisher of the platform, from its record, for search engines -->
     <script type="application/ld+json">{{ publisher_document|tojson }}</script>
-    {% endif %}
-
-    {% if record_document %}
-    <!-- The record of the page, as published -->
-    <script type="application/ld+json" id="record-document">{{ record_document|tojson }}</script>
     {% endif %}
 
     {% if config.DEBUG %}
