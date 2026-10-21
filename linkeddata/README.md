@@ -9,14 +9,17 @@ The tables are written to `database/v1/tables.sql` with `python -m linkeddata mo
 The records are checked against the SHACL shapes of the model with pyshacl. The sources are converted to the model,
 and the statements to rows and back, with [rdfsolve](https://github.com/jmillanacosta/rdfsolve).
 
-```
-source file ──parser──► rows in the terms of the model ──JSON-LD──► RDF ──pyshacl checks──► notes
-            ──rdfsolve tables──► rows of the release tables                python -m linkeddata import
-
-API request ──JSON-LD──pyshacl checks──► rows and revision                 PUT, POST, DELETE /api/...
-API query ──rows──rdfsolve from_tables──► JSON-LD, one page at a time        GET /api/...
-
-page ──rows──rdfsolve from_tables──► JSON-LD, Turtle, N-Triples
+```mermaid
+flowchart LR
+    subgraph imports["python -m linkeddata launch (once) and import (each week)"]
+        file["Source file"] -->|parser| rows["Rows in the terms of the model"]
+        rows -->|JSON-LD| statements["RDF statements"]
+    end
+    statements -->|rdfsolve| tables[("Release tables")]
+    tables -->|"pyshacl, after all sources are stored"| notes[("Notes")]
+    write["PUT, POST, DELETE /api/..."] -->|"JSON-LD, pyshacl"| tables
+    write --> revisions[("Revisions")]
+    tables -->|"rdfsolve from_tables"| read["Pages and GET /api/...<br/>HTML, JSON-LD, Turtle, N-Triples, Markdown"]
 ```
 
 ## Run it
