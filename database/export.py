@@ -1,7 +1,7 @@
 """Export of the platform records to a git repository."""
 
-import json
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -32,18 +32,12 @@ def latest_documents() -> dict[str, str]:
 
 
 def used_images() -> dict[str, Path]:
-    """Return the uploaded images that are used in platform records, by file path."""
+    """Return the uploaded images that are used anywhere in platform records, by file path."""
     used = {}
     for text in latest_documents().values():
-        document = json.loads(text)
-        for node in document.get("@graph", [document]):
-            image = node.get("image")
-            for item in image if isinstance(image, list) else [image]:
-                address = item.get("@id") if isinstance(item, dict) else item
-                if isinstance(address, str) and records.path(address).startswith("images/"):
-                    path = images.folder() / records.path(address).removeprefix("images/")
-                    if path.exists():
-                        used[records.path(address)] = path
+        for name in re.findall(re.escape(records.address("images") + "/") + "(" + images.NAME.pattern + ")", text):
+            if (images.folder() / name).exists():
+                used["images/" + name] = images.folder() / name
     return used
 
 
