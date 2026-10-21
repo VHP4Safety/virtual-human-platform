@@ -12,6 +12,7 @@ import urllib.parse
 from flask import Flask, abort, g, jsonify, redirect, render_template, request, Response, send_from_directory, url_for
 from jinja2 import TemplateNotFound
 from markupsafe import Markup
+from rdflib import URIRef
 from rdflib.namespace import SDO
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BaseConverter
@@ -1061,9 +1062,14 @@ def link_data(response):
         links.append(f'<{url_for("records.model_shapes")}>; rel="http://www.w3.org/ns/ldp#constrainedBy"; type="text/turtle"')
         links.append(f'<{page_link(g.record.iri)}{records_api.MARKDOWN}>; rel="alternate"; type="text/markdown"')
         response.headers["Vary"] = "Accept"
-    # The licence of the records is linked from their pages, their data and the API.
-    if ("record" in g or "listing" in g or request.path.startswith("/api/")) and void.platform()["license"]:
-        links.append(f'<{void.platform()["license"]}>; rel="license"')
+    # The page and the data of a record link the licence of the record. Listings and the API link the licence of the records.
+    licences = []
+    if "record" in g:
+        licences = sorted(str(value) for value in records.graph([g.record.iri]).objects(URIRef(g.record.iri), SDO.license))
+    elif ("listing" in g or request.path.startswith("/api/")) and void.platform()["license"]:
+        licences = [void.platform()["license"]]
+    for licence in licences:
+        links.append(f'<{licence}>; rel="license"')
     if "record" in g and g.record.iri != settings()["base"]:
         links.append(f'<{settings()["base"]}>; rel="http://rdfs.org/ns/void#inDataset"')
     if links:
