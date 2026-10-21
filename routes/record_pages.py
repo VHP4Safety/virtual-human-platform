@@ -3,6 +3,7 @@
 import json
 import re
 from datetime import datetime, timezone
+from urllib.parse import quote
 
 from flask import Blueprint, Response, abort, current_app, g, redirect, render_template, request, url_for
 from markupsafe import Markup
@@ -90,7 +91,7 @@ def negotiate():
     # An address with a slash at the end and without a page of its own is redirected to the address without the
     # slash (/casestudies/ to /casestudies), so that each page has one address.
     if request.url_rule is None and len(request.path) > 1 and request.path.endswith("/"):
-        target = request.path.rstrip("/")
+        target = "/" + quote(request.path.strip("/"))
         if request.query_string:
             target += "?" + request.query_string.decode()
         return redirect(target, code=308)

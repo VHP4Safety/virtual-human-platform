@@ -39,7 +39,7 @@ def check_form() -> None:
 
 def local_path(address: str | None) -> str | None:
     """Return the address if it is a path on this site, so that a sign-in does not redirect elsewhere."""
-    if address and address.startswith("/") and not address.startswith("//") and "\\" not in address:
+    if address and address.isprintable() and address.startswith("/") and not address.startswith("//") and "\\" not in address:
         return address
     return None
 
