@@ -1,6 +1,6 @@
 // Record editor.
 import { busy } from "./busy.js";
-import { GLOSSARY, openRequest, tableChoice } from "./glossary.js";
+import { GLOSSARY, requestAddress, tableChoice } from "./glossary.js";
 import { current, isPart, outline, reveal as showPart, select, whenSelected } from "./record-index.js";
 
 (function () {
@@ -584,12 +584,20 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
       act(event.currentTarget, "Restoring…", "POST", "/api/restore", JSON.stringify({ record: path }), editor.graph);
     },
     // A draft term of the glossary is requested with the term request form of the glossary, filled in with its values.
+    // The tab is opened at the click, as browsers block tabs opened after a wait.
     request: async function () {
-      const term = await (await fetch(graph, { headers: { Accept: "application/ld+json" } })).json();
-      const references = [].concat(term["http://www.w3.org/2000/01/rdf-schema#isDefinedBy"] || []).map(function (given) { return given["@id"] || given; });
-      const definition = term.description && term.description["@value"] !== undefined ? term.description["@value"] : term.description;
-      openRequest({ name: term.name, abbreviation: [].concat(term.alternateName || [])[0], definition: definition, references: references,
-                    address: editor.graph }, document.getElementById("term-table").value);
+      const tab = window.open("", "_blank");
+      tab.opener = null;
+      try {
+        const term = await (await fetch(graph, { headers: { Accept: "application/ld+json" } })).json();
+        const references = [].concat(term["http://www.w3.org/2000/01/rdf-schema#isDefinedBy"] || []).map(function (given) { return given["@id"] || given; });
+        const definition = term.description && term.description["@value"] !== undefined ? term.description["@value"] : term.description;
+        tab.location = requestAddress({ name: term.name, abbreviation: [].concat(term.alternateName || [])[0], definition: definition, references: references,
+                                        address: editor.graph }, document.getElementById("term-table").value);
+      } catch (error) {
+        tab.close();
+        throw error;
+      }
     },
     // An imported model is saved unchanged, so that it is a platform record, with a draft RO-Crate.
     own: function () {

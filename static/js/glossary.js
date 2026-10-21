@@ -35,7 +35,7 @@ export function requestAddress(term, table) {
   return FORM + "?" + new URLSearchParams(fields).toString();
 }
 
-// Open the request form in a new tab, within a few seconds of the click.
+// Open the request form in a new tab.
 export function openRequest(term, table) {
   window.open(requestAddress(term, table), "_blank", "noopener");
 }
