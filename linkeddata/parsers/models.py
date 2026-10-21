@@ -9,7 +9,7 @@ from pyld import jsonld
 from rdfsolve.iris import local_name
 
 from linkeddata.parsers import licence, link, present, publication, slug, term
-from linkeddata.parsers.zenodo import doi_of, download
+from linkeddata.parsers.zenodo import LICENCES, doi_of, download
 
 DATE = "http://www.w3.org/2001/XMLSchema#date"
 DECIMAL = "http://www.w3.org/2001/XMLSchema#decimal"
@@ -34,8 +34,11 @@ def crate_of(hit: dict) -> dict | None:
 
 def packages(index: bytes) -> dict[str, str]:
     """Return the crate zip of each model record in index, by record identifier."""
+    hits = json.loads(index)["hits"]
+    if hits["total"] > len(hits["hits"]):
+        raise ValueError("more models than one search page")
     found = {}
-    for hit in json.loads(index)["hits"]["hits"]:
+    for hit in hits["hits"]:
         crate = crate_of(hit)
         if crate is not None:
             found[str(hit["id"])] = crate["links"]["self"]
@@ -458,7 +461,7 @@ def zenodo(row: dict, hit: dict, nodes: dict, others: dict) -> None:
     licences = [licence(value["@id"]) for value in row.get("license", []) if isinstance(value, dict) and "@id" in value]
     row["license"] = licences
     if not any(str(value.get("@id", "")).startswith("https://spdx.org/") for value in licences) and isinstance(metadata.get("license"), dict):
-        row["license"] = [licence(metadata["license"]["id"])]
+        row["license"] = [licence(LICENCES.get(metadata["license"]["id"], metadata["license"]["id"]))]
     fill(row, "keywords", metadata.get("keywords") or [])
     keywords = []
     for keyword in row.get("keywords", []):
