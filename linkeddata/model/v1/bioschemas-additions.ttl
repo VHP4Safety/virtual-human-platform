@@ -1,0 +1,17 @@
+# Additions to the official Bioschemas shapes (vocabularies/bioschemas-profiles-99beab9.shacl), which are used as
+# published. The checks read both files.
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix bioschemas: <https://bioschemas.org/terms/> .
+@prefix bioschemas_draft: <https://bioschemas.org/draft_terms/> .
+
+# In the official file, these profiles target classes at discovery.biothings.io, which no record has.
+<https://bioschemas.org/profiles/LabProtocol/0.8-DRAFT> sh:targetClass bioschemas_draft:LabProtocol .
+<https://bioschemas.org/profiles/Study/0.3-DRAFT> sh:targetClass bioschemas_draft:Study .
+
+# In the official file, this profile targets schema:FormalParameter. The records have the Bioschemas class.
+<https://bioschemas.org/profiles/FormalParameter/1.0-RELEASE> sh:targetClass bioschemas:FormalParameter .
+
+# In the official file, these draft profiles target a parent class: ProteinStructure every BioChemEntity, and
+# SemanticTextAnnotation every CreativeWork. No record is a protein structure or a text annotation.
+<https://bioschemas.org/profiles/ProteinStructure/0.6-DRAFT> sh:deactivated true .
+<https://bioschemas.org/profiles/SemanticTextAnnotation/0.3-DRAFT> sh:deactivated true .

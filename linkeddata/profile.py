@@ -20,6 +20,7 @@ RELEASE = "v1"
 MODEL_DIR = Path(__file__).parent / "model" / RELEASE
 # The tables are written from the profile by `python -m linkeddata model`.
 TABLES = Path(__file__).parent.parent / "database" / RELEASE / "tables.sql"
+ADDITIONS = MODEL_DIR / "bioschemas-additions.ttl"
 
 
 FORM = Namespace("https://platform.vhp4safety.nl/model/v1/form#")
@@ -132,37 +133,11 @@ def profile_graph() -> Graph:
 
 @cache
 def official() -> Graph:
-    """Return the official shapes, with targets from the profile."""
+    """Return the official shapes as published, with the additions of the platform."""
     found = Graph()
     for path in vocabularies((".shacl",)):
         found.parse(path, format="turtle")
-    for target in (SH.targetClass, SH.targetNode, SH.targetSubjectsOf, SH.targetObjectsOf):
-        found.remove((None, target, None))
-    for shape, conformed in profile_graph().subject_objects(DCTERMS.conformsTo):
-        for of_class in profile_graph().objects(shape, SH.targetClass):
-            found.add((conformed, SH.targetClass, of_class))
-    properties = set()
-    for path in vocabularies():
-        properties.update(str(term) for term in vocabulary(path).subjects(RDF.type, RDF.Property))
-    for field, path in list(found.subject_objects(SH.path)):
-        if isinstance(path, URIRef) and corrected(path, properties) != path:
-            found.set((field, SH.path, corrected(path, properties)))
-    return found
-
-
-# Change against upstream: in the official shapes, some properties have addresses at discovery.biothings.io, such as
-# https://discovery.biothings.io/view/bioschemasdrafts/keywords, which are not used in markup.
-BIOTHINGS = {"https://discovery.biothings.io/view/bioschemas/": "https://bioschemas.org/terms/",
-             "https://discovery.biothings.io/view/bioschemasdrafts/": "https://bioschemas.org/draft_terms/"}
-
-
-def corrected(path: URIRef, properties: set[str]) -> URIRef:
-    """Return the schema.org or Bioschemas property for the discovery.biothings.io address path."""
-    for prefix, namespace in BIOTHINGS.items():
-        if str(path).startswith(prefix):
-            name = str(path).removeprefix(prefix)
-            return URIRef(str(SDO) + name) if str(SDO) + name in properties else URIRef(namespace + name)
-    return path
+    return found.parse(ADDITIONS, format="turtle")
 
 
 @cache
