@@ -5,7 +5,6 @@ import os
 import re
 import secrets
 from datetime import timedelta
-from functools import lru_cache
 
 import nh3
 import requests
@@ -582,28 +581,15 @@ def SafetyAssessmentWorkflow():
 # General case studies page
 @app.route("/casestudies")
 def workflows():
-    listed = [record for record in records.of_kind("casestudies") if record.part_of is None]
-    statements = records.graph([record.iri for record in listed])
-    case_studies = []
-    for record in listed:
-        aims = documents.stored_values(statements, record.iri, "description")
-        icons = documents.stored_values(statements, record.iri, "image")
-        case_studies.append({"address": record.iri, "name": record.name, "aim": aims[0] if aims else "", "icon": icons[0] if icons else ""})
     return render_template(
         "case_studies/casestudies.html",
-        case_studies=case_studies,
+        case_studies=pages.case_studies(),
         page_title="Case studies — VHP4Safety",
         meta_description=(
             "Explore the VHP4Safety case studies (kidney, Parkinson's disease and "
             "thyroid) that connect tools, methods and data to real regulatory questions."
         ),
     )
-
-
-@lru_cache(maxsize=16)
-def case_outline(iri: str, latest: str) -> dict:
-    """Return the outline of a case study for readers without scripts."""
-    return pages.outline(records.get(iri))
 
 
 # Individual case study page, dynamically filled based on URL
@@ -621,6 +607,8 @@ def casestudy(case: str = "", question: str = "", step: str = "",
     record = records.get(records.address(f"casestudies/{case}"))
     if record is None:
         abort(404)
+    # The <question>/<step> sub-routes are JS-driven states of the same page, so
+    # canonicalise them all to the base case URL to avoid duplicate indexing.
     address = records.address(request.path.strip("/"))
     # An address such as /casestudies/kidney/Q1/Exposure/Current_Dose_levels is matched to a page part by part.
     if address != record.iri and records.get(address) is None:
@@ -628,8 +616,9 @@ def casestudy(case: str = "", question: str = "", step: str = "",
         for part in records.parts_of(record.iri):
             if [slug(given) for given in part.removeprefix(record.iri + "/").split("/")] == wanted:
                 return redirect(page_link(part), code=301)
-    found = case_outline(record.iri, records.latest_change())
+    found = pages.case_outline(record.iri, records.latest_change())
     descriptions = [field["values"][0] for field in found["fields"] if field["name"] == "description"]
+    # JS will handle steps via the URL
     return render_template(
         "case_studies/casestudy.html",
         case_outline=found,

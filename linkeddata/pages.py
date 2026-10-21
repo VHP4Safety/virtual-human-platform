@@ -803,6 +803,24 @@ def uses(iris: list[str]) -> dict[str, dict]:
     return used
 
 
+def case_studies() -> list[dict]:
+    """Return the address, name, aim and icon of each case study."""
+    listed = [record for record in records.of_kind("casestudies") if record.part_of is None]
+    statements = records.graph([record.iri for record in listed])
+    found = []
+    for record in listed:
+        aims = documents.stored_values(statements, record.iri, "description")
+        icons = documents.stored_values(statements, record.iri, "image")
+        found.append({"address": record.iri, "name": record.name, "aim": aims[0] if aims else "", "icon": icons[0] if icons else ""})
+    return found
+
+
+@lru_cache(maxsize=16)
+def case_outline(iri: str, latest: str) -> dict:
+    """Return the outline of the case study at iri, cached until latest changes."""
+    return outline(records.get(iri))
+
+
 def menu(kind: str) -> list[dict]:
     """Return the identifier, name and page of each record of a kind, sorted by name."""
     listed = []
