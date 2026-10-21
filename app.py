@@ -695,7 +695,7 @@ def show_compounds_properties_as_json(cwid):
     except Exception:
         app.logger.exception("Compound query failed")
         return jsonify({"error": "Upstream query failed"}), 500
-    if not bool(compound_dat):
+    if not bool(compound_dat) or not compound_dat["results"]["bindings"]:
         return jsonify({"error": "No data found"}), 404
     compound_dat = compound_dat["results"]["bindings"][0]
     # return jsonify(compound_dat);
@@ -707,8 +707,8 @@ def show_compounds_properties_as_json(cwid):
     ]
     if "inchi" in compound_dat:
         compound_list[0]["inchi"] = compound_dat["inchi"]["value"]
-    if "inchikey" in compound_dat:
-        compound_list[0]["inchikey"] = compound_dat["inchikey"]["value"]
+    if "inchiKey" in compound_dat:
+        compound_list[0]["inchikey"] = compound_dat["inchiKey"]["value"]
     if "SMILES" in compound_dat:
         compound_list[0]["SMILES"] = compound_dat["SMILES"]["value"]
     if "formula" in compound_dat:
@@ -752,7 +752,7 @@ def show_compounds_identifiers_as_json(cwid):
                 {
                     "propertyLabel": expProp["propertyLabel"]["value"],
                     "value": expProp["value"]["value"],
-                    "formatterURL": expProp["formatterURL"]["value"],
+                    "formatterURL": expProp.get("formatterURL", {}).get("value", ""),
                 }
             )
         else:

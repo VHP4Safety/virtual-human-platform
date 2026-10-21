@@ -129,9 +129,13 @@
         tableBody.append(`<tr><td>InChI</td><td>${data[0].inchi}</td></tr>`);
         tableBody.append(`<tr><td>InChIKey</td><td>${data[0].inchikey}</td></tr>`);
 
-        // add a JmolJS applet
-        $("#mydiv").html(Jmol.getAppletHtml("jmolApplet0"))
-        Jmol.script(jmolApplet0, 'load smiles \"' + data[0].SMILES + "\"")
+        // add a JmolJS applet, loaded from the SMILES, or from the InChIKey if the SMILES cannot be read
+        if (data[0].SMILES || data[0].inchikey) {
+          $("#mydiv").html(Jmol.getAppletHtml("jmolApplet0"))
+          Jmol.script(jmolApplet0, 'try { load smiles "' + (data[0].SMILES || "") + '" } catch(e) { load $' + (data[0].inchikey || "") + ' }')
+        } else {
+          $("#mydiv").text("No structure in the Compound Wiki.")
+        }
       });
       
       $.getJSON("/get_compound_identifiers/{{ cwid }}", function (data) {
