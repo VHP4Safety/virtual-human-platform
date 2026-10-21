@@ -803,6 +803,16 @@ def uses(iris: list[str]) -> dict[str, dict]:
     return used
 
 
+def menu(kind: str) -> list[dict]:
+    """Return the identifier, name and page of each record of a kind, sorted by name."""
+    listed = []
+    for record in records.of_kind(kind):
+        if record.part_of is None:
+            listed.append({"id": record.iri.rsplit("/", 1)[-1], "title": record.name or record.iri, "url": local(record.iri)})
+    listed.sort(key=lambda item: item["title"].lower())
+    return listed
+
+
 def based_on(path: str, address: str) -> list[str]:
     """Return the addresses of the records of the kind at path that are made from the source record at address."""
     return sorted(iri for iri, value in records.values(settings()["kinds"][path], documents.expand("isBasedOn")) if value == address)

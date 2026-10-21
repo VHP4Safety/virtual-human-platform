@@ -111,7 +111,7 @@ def local_link(tag: str, attribute: str, value: str) -> str:
 
 @app.template_filter("sanitize_html")
 def sanitize_html(value) -> Markup:
-    """Return upstream HTML with its formatting tags, without scripts and event handlers."""
+    """Keep the formatting tags of upstream HTML; scripts and event handlers are removed."""
     return Markup(nh3.clean(str(value or ""), attribute_filter=local_link))
 
 
@@ -136,20 +136,23 @@ def page_record(path: str) -> dict:
     return pages.page(record)
 
 
-def menu(kind: str) -> list[dict]:
-    """Return the records of a kind for the menus and the search bar, by name."""
-    listed = []
-    for record in records.of_kind(kind):
-        if record.part_of is None:
-            listed.append({"id": record.iri.rsplit("/", 1)[-1], "title": record.name or record.iri, "url": page_link(record.iri)})
-    listed.sort(key=lambda item: item["title"].lower())
-    return listed
+# Provide methods list to all templates for the Methods dropdown in the navbar
+@app.context_processor
+def inject_methods_menu():
+    """Return the methods for the navigation menu and the search bar."""
+    return {"methods_menu": pages.menu("methods")}
 
 
 @app.context_processor
-def inject_menus():
-    """Return the tools, methods and data for the menus and the search bar."""
-    return {"tools_menu": menu("tools"), "methods_menu": menu("methods"), "data_menu": menu("data")}
+def inject_tools_menu():
+    """Return the tools for the navigation menu and the search bar."""
+    return {"tools_menu": pages.menu("tools")}
+
+
+@app.context_processor
+def inject_data_menu():
+    """Return the datasets for the navigation menu and the search bar."""
+    return {"data_menu": pages.menu("data")}
 
 
 @app.context_processor
@@ -191,32 +194,42 @@ def home():
 ### The sitemap.xml for search engines
 @app.route("/sitemap.xml")
 def sitemap():
+    BASE = records.address("").rstrip("/")
 
     # Static, parameter-less GET pages, derived from the URL map so new pages
     # are picked up automatically. Machine endpoints are excluded. Routes with
     # <params> are skipped and handled below.
-    EXCLUDED_ENDPOINTS = {"sitemap", "robots", "static", "pages.models_page"}
+    EXCLUDED_ENDPOINTS = {"sitemap", "robots", "static", "models_page"}
     # The pages for editors (login, tokens, editing, changes) and the API are left out.
     EXCLUDED_BLUEPRINTS = {"account", "admin", "changes", "records", "api-docs", "discovery"}
-    paths = sorted({
+    paths = sorted(
         rule.rule.rstrip("/") or "/"
         for rule in app.url_map.iter_rules()
         if not rule.arguments
         and rule.endpoint not in EXCLUDED_ENDPOINTS
         and rule.endpoint.split(".")[0] not in EXCLUDED_BLUEPRINTS
         and "GET" in (rule.methods or set())
-    })
-    listed = records.with_pages()
-    with_pages = {address.rstrip("/") for address, _ in listed}
-    # A static page that is also the page of a record, such as the home page, is listed once.
-    entries = [f"  <url>\n    <loc>{records.address(p)}</loc>\n  </url>" for p in paths if records.address(p).rstrip("/") not in with_pages]
-    for address, changed in listed:
-        entries.append(f"  <url>\n    <loc>{address}</loc>\n    <lastmod>{changed}</lastmod>\n  </url>")
+    )
+
+    # Record pages, with the time of their last change
+    changed = {}
+    for address, time in records.with_pages():
+        changed["/" + records.path(address)] = time
+    paths += sorted(changed)
+
+    # Dedupe while preserving order
+    seen = set()
+    unique_paths = [p for p in paths if not (p in seen or seen.add(p))]
+
+    url_entries = "\n".join(
+        f"  <url>\n    <loc>{BASE}{p}</loc>\n" + (f"    <lastmod>{changed[p]}</lastmod>\n" if p in changed else "") + "  </url>"
+        for p in unique_paths
+    )
     sitemapContent = (
         '<?xml version="1.0" encoding="utf-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        + "\n".join(entries)
-        + "\n</urlset>\n"
+        f"{url_entries}\n"
+        "</urlset>\n"
     )
     return Response(sitemapContent, mimetype="text/xml")
 
