@@ -26,6 +26,8 @@ TABLES = Path(__file__).parent.parent / "database" / RELEASE / "tables.sql"
 OFFICIAL = MODEL_DIR / "bioschemas-profiles.shacl"
 # The prefixes of the terms of the official profiles. A term of an earlier prefix is taken before a term of the same name.
 OFFICIAL_PREFIXES = ("schema", "bioschemas", "bioschemas_draft")
+# The profiles that the platform publishes, in the file format of the Bioschemas profiles: <name>_v<version>.json.
+PROFILES = MODEL_DIR / "profiles"
 
 
 FORM = Namespace("https://platform.vhp4safety.nl/model/v1/form#")
@@ -152,15 +154,27 @@ def list_terms(of_class: str) -> dict[str, dict[str, str]]:
     return found
 
 
-def official_text() -> str:
-    """Return the Turtle of the shapes of the official profiles, made with rdfsolve from their pinned files."""
+def profile_files() -> dict[str, Path]:
+    """Return the file of each profile by address: the pinned official files and the platform profiles."""
     graph = profile_graph()
+    found = {}
+    for profile, source in graph.subject_objects(RDFS.isDefinedBy):
+        found[str(profile)] = MODEL_DIR / "vocabularies" / str(graph.value(source, FORM.file))
+    for path in PROFILES.glob("*.json"):
+        published = json.loads(path.read_text(encoding="utf-8"))
+        prefix, _, name = next(node for node in published["@graph"] if "$validation" in node)["@id"].partition(":")
+        found[f"{published['@context'][prefix]}{name}/{path.stem.rpartition('_v')[2]}"] = path
+    return found
+
+
+def official_text() -> str:
+    """Return the Turtle of the shapes of the official profiles, made with rdfsolve from their files."""
     prefixes = settings()["prefixes"]
     known = Vocabulary([vocabulary(path) for path in vocabularies()])
     terms = vocabulary_context(known, [prefixes[name] for name in OFFICIAL_PREFIXES])
     found = Graph()
-    for profile, source in sorted(graph.subject_objects(RDFS.isDefinedBy)):
-        published = json.loads((MODEL_DIR / "vocabularies" / str(graph.value(source, FORM.file))).read_text(encoding="utf-8"))
+    for profile, path in sorted(profile_files().items()):
+        published = json.loads(path.read_text(encoding="utf-8"))
         # A property without a term of the official prefixes keeps the address given in its profile file.
         declared = {}
         for node in published["@graph"]:

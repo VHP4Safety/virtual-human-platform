@@ -22,7 +22,7 @@ from database import records
 from database.images import NAME, folder
 from database.tables import Record
 from linkeddata import crates, documents, pages, void
-from linkeddata.profile import hierarchy, settings
+from linkeddata.profile import PROFILES, hierarchy, settings
 from routes import records_api
 from routes.account import blueprint as account_blueprint
 from routes.changes import blueprint as changes_blueprint
@@ -1128,6 +1128,15 @@ def image(name: str):
     response = send_from_directory(folder(), name, mimetype="image/webp", max_age=31536000)
     response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
     response.headers["Content-Security-Policy"] = "default-src 'none'"
+    return response
+
+
+################################################################################
+### Profiles that the platform publishes
+@app.route("/profiles/<name>/<version>")
+def published_profile(name: str, version: str):
+    response = send_from_directory(PROFILES, f"{name}_v{version}.json", mimetype="application/ld+json")
+    response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
 

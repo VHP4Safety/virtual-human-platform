@@ -1,0 +1,184 @@
+{
+  "@context": {
+    "schema": "http://schema.org/",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "vhp4safety": "https://platform.vhp4safety.nl/profiles/"
+  },
+  "@graph": [
+    {
+      "@id": "vhp4safety:CaseStudyWorkflow",
+      "@type": "rdfs:Class",
+      "rdfs:label": "CaseStudyWorkflow",
+      "rdfs:comment": "A regulatory question of a VHP4Safety case study, or a step of the workflow that answers it: instructions (schema:HowTo) whose steps are workflows of their own, with the tools, methods, models and data used at each step. Version: 0.1-DRAFT.",
+      "rdfs:subClassOf": {
+        "@id": "schema:HowTo"
+      },
+      "$validation": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "Title",
+            "description": "Shown on its button, as the heading of its page, and in the way back to it.",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "description": "For a question: the question. For a step: the text of its page above its sections, in HTML.",
+            "type": "string"
+          },
+          "headline": {
+            "title": "Heading of its page",
+            "description": "The heading of its page, if it differs from the title.",
+            "type": "string"
+          },
+          "description": {
+            "title": "Summary",
+            "description": "Shown under the heading of its page.",
+            "type": "string"
+          },
+          "disambiguatingDescription": {
+            "title": "Description under its button",
+            "description": "For a step: shown under the title on its button.",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "description": "The order among the questions of the case study, or among the steps of the workflow above it. 1 is first.",
+            "type": "integer"
+          },
+          "additionalType": {
+            "title": "Process flow step",
+            "description": "For the steps of a question: the step of the VHP4Safety process flow, a term of the VHP4Safety glossary.",
+            "type": "string",
+            "format": "uri",
+            "enum": [
+              "https://vhp4safety.github.io/glossary#VHP0000153",
+              "https://vhp4safety.github.io/glossary#VHP0000154",
+              "https://vhp4safety.github.io/glossary#VHP0000155",
+              "https://vhp4safety.github.io/glossary#VHP0000156",
+              "https://vhp4safety.github.io/glossary#VHP0000158"
+            ]
+          },
+          "creativeWorkStatus": {
+            "title": "Status",
+            "description": "Incomplete: its page has no content yet, so its button is greyed out and the page cannot be opened.",
+            "type": "string",
+            "enum": ["Incomplete"]
+          },
+          "hasPart": {
+            "title": "Sections",
+            "description": "The sections of its page.",
+            "anyOf": [
+              {"$ref": "#/definitions/section"},
+              {"type": "array", "items": {"$ref": "#/definitions/section"}}
+            ]
+          },
+          "step": {
+            "title": "Steps",
+            "description": "The steps of the workflow, each a workflow of its own at an address under this one. For a question, these are its process flow steps.",
+            "anyOf": [
+              {"$ref": "#/definitions/workflow"},
+              {"type": "array", "items": {"$ref": "#/definitions/workflow"}}
+            ]
+          },
+          "tool": {
+            "title": "Tools, methods and models",
+            "description": "Each tool, method or model used at this step, with the label and the description of its button.",
+            "anyOf": [
+              {"$ref": "#/definitions/tool"},
+              {"type": "array", "items": {"$ref": "#/definitions/tool"}}
+            ]
+          },
+          "supply": {
+            "title": "Data",
+            "description": "Each dataset used at this step, with the label and the description of its button.",
+            "anyOf": [
+              {"$ref": "#/definitions/supply"},
+              {"type": "array", "items": {"$ref": "#/definitions/supply"}}
+            ]
+          },
+          "input": {
+            "title": "Input",
+            "description": "The input of a step, such as an estimated daily intake: a dataset, or a name if there is no record of it yet.",
+            "anyOf": [
+              {"$ref": "#/definitions/dataset"},
+              {"$ref": "#/definitions/parameter"},
+              {"type": "array", "items": {"anyOf": [{"$ref": "#/definitions/dataset"}, {"$ref": "#/definitions/parameter"}]}}
+            ]
+          },
+          "output": {
+            "title": "Output",
+            "description": "The output of a step, such as an exposure calculation: a dataset, or a name if there is no record of it yet.",
+            "anyOf": [
+              {"$ref": "#/definitions/dataset"},
+              {"$ref": "#/definitions/parameter"},
+              {"type": "array", "items": {"anyOf": [{"$ref": "#/definitions/dataset"}, {"$ref": "#/definitions/parameter"}]}}
+            ]
+          }
+        },
+        "required": ["name"],
+        "recommended": ["position"],
+        "optional": ["text", "headline", "description", "disambiguatingDescription", "additionalType", "creativeWorkStatus", "hasPart", "step", "tool", "supply", "input", "output"],
+        "definitions": {
+          "workflow": {
+            "@type": "HowTo",
+            "description": "A step of the workflow (CaseStudyWorkflow profile).",
+            "type": "object"
+          },
+          "section": {
+            "@type": "WebPageElement",
+            "description": "A section of the page: a heading, a text in HTML and its position.",
+            "type": "object",
+            "properties": {
+              "name": {"description": "The heading of the section.", "type": "string"},
+              "text": {"description": "The text of the section, in HTML.", "type": "string"},
+              "position": {"description": "The order of the section on the page. 1 is first.", "type": "integer"}
+            },
+            "required": ["text"]
+          },
+          "tool": {
+            "@type": "HowToTool",
+            "description": "A tool, method or model used at the step.",
+            "type": "object",
+            "properties": {
+              "item": {"description": "The tool, method or model: a link to its record, or its name if it has no record yet.", "type": "string"},
+              "name": {"description": "The label of its button.", "type": "string"},
+              "description": {"description": "The description under the label.", "type": "string"},
+              "position": {"description": "The order of its button among the tools and data of the step. 1 is first.", "type": "integer"}
+            },
+            "required": ["item"]
+          },
+          "supply": {
+            "@type": "HowToSupply",
+            "description": "A dataset used at the step.",
+            "type": "object",
+            "properties": {
+              "item": {"description": "The dataset: a link to its record, or its name if it has no record yet.", "type": "string"},
+              "name": {"description": "The label of its button.", "type": "string"},
+              "description": {"description": "The description under the label.", "type": "string"},
+              "position": {"description": "The order of its button among the tools and data of the step. 1 is first.", "type": "integer"}
+            },
+            "required": ["item"]
+          },
+          "dataset": {
+            "@type": "Dataset",
+            "description": "A dataset of the platform.",
+            "type": "object"
+          },
+          "parameter": {
+            "@type": "FormalParameter",
+            "description": "An input or output named only, until there is a record of it.",
+            "type": "object",
+            "properties": {
+              "name": {"description": "The name of the input or output.", "type": "string"},
+              "description": {"description": "A description, in HTML.", "type": "string"}
+            },
+            "required": ["name"]
+          }
+        }
+      }
+    }
+  ]
+}
