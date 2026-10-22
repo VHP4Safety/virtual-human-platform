@@ -1,10 +1,12 @@
 {% extends "editor/base.html" %}
 {% set editing = selected and (not record or not record.removed_at) %}
+{# A stored record of a kind kept as it is in the editor, such as a model, is shown and not edited. #}
+{% set saving = editing and not read_only %}
 {# While a record is edited, the page has the height of the window. The form is scrolled above the footer, and Save
    is in the footer, so that it is never over the form. #}
 {% block body_class %}{% if editing %}editor-app{% endif %}{% endblock %}
 {% block footer_bar %}
-{% if editing %}
+{% if saving %}
 <div class="container-fluid px-lg-4 editor-save">
   <div class="alert alert-danger small py-2 mb-0 d-none" id="save-problems" role="alert"></div>
   <button type="button" class="btn btn-success" id="save" disabled><i class="bi bi-check-lg"></i> Save</button>
@@ -68,7 +70,9 @@
         <code class="me-auto align-self-center">{{ selected }}</code>
         {% if record %}
         <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('changes.changes', record=selected) }}"><i class="bi bi-clock-history"></i> Changes</a>
-        {% if record.removed_at %}
+        {% if read_only %}
+        <span class="small text-secondary align-self-center">Kept as it is in the editor; a write token of the <a class="link-vhpblue" href="/api/docs/">API</a> changes it.</span>
+        {% elif record.removed_at %}
         <button class="btn btn-sm btn-outline-vhpblue" data-action="restore"><i class="bi bi-arrow-counterclockwise"></i> Restore</button>
         {% else %}
         <button class="btn btn-sm btn-outline-secondary" data-action="move"><i class="bi bi-pencil"></i> Move</button>
@@ -80,8 +84,10 @@
       <p class="small text-secondary mb-3"><i class="bi bi-box-seam"></i>
         {% if crate == "zenodo" %}
         <a class="link-vhpblue" href="{{ selected|page_link }}/ro-crate-metadata.json" target="_blank" rel="noopener">RO-Crate from Zenodo</a>, served unchanged.
+        {% if not read_only %}
         After a save, this model is a platform record, and its RO-Crate is a draft made from the record.
         <button type="button" class="btn btn-sm btn-outline-vhppurple ms-1" data-action="own">Make a platform record</button>
+        {% endif %}
         {% else %}
         <a class="link-vhpblue" href="{{ selected|page_link }}/ro-crate-metadata.json" target="_blank" rel="noopener">RO-Crate draft</a>, not in Zenodo:
         made from this record, as a start for the curation of a crate.
@@ -105,7 +111,7 @@
       <div class="card"><div class="card-body">
         <shacl-form data-shapes-url="{{ url_for('admin.form') }}" data-shape-subject="{{ shape }}"
                     {% if record %}data-values-url="{{ url_for('records.read', path=selected.removeprefix(base)) }}"{% elif values %}data-values="{{ values }}"{% endif %}
-                    data-values-subject="{{ selected }}" data-generate-node-shape-reference="" data-collapse="open"></shacl-form>
+                    data-values-subject="{{ selected }}" data-generate-node-shape-reference="" data-collapse="open"{% if read_only %} data-mode="view"{% endif %}></shacl-form>
       </div></div>
       {% endif %}
       {% else %}

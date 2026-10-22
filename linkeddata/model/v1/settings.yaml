@@ -157,3 +157,6 @@ read only:
 # The fields of a class that are kept in the data and shown to editors, but not shown on the pages.
 hidden:
   bioschemas_draft:Study: [schema:creator]
+# The kinds whose stored records are kept as they are in the record editor, where new records can still be added. A
+# write token of the API changes them.
+read only in the editor: [models, organizations, people]

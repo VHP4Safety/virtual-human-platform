@@ -63,6 +63,7 @@ def edit(kind: str):
         form_token=form_token(),
         # A model has the RO-Crate in Zenodo while it is an imported record, and else a draft crate.
         crate=("zenodo" if crates.zenodo(record) is not None else "draft") if crates.of_models(record) else None,
+        read_only=record is not None and kind in settings()["read only in the editor"],
         draft_vocabulary=editor.draft_vocabulary(record),
         page_title=f"{pages.kind_names()[kind]} — VHP4Safety editor",
     ))

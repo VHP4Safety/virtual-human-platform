@@ -12,6 +12,7 @@ from routes import account
 ORCID = "0000-0002-1825-0097"
 BASE = "https://platform.vhp4safety.nl/"
 TOOL = "https://schema.org/SoftwareApplication"
+PERSON = "https://schema.org/Person"
 STEP = "https://vhp4safety.github.io/glossary#VHP0000156"
 FITTING = {"name": "T", "description": "Does T.", "url": {"@id": "https://t.org/"}, "keywords": [{"@id": STEP}]}
 NEW = "/api/tools/new"
@@ -42,7 +43,7 @@ def test_editor_and_changes(site):
     site.get("/login/")
     with site.session_transaction() as session:
         form_token = session["form_token"]
-    secret = tokens.create(ORCID, "Test Editor", ["tools"])
+    secret = tokens.create(ORCID, "Test Editor", ["tools", "people"])
     assert site.post("/login/token/", data={"token": secret, "form_token": form_token, "next": "/admin/"}).status_code == 302
     assert "Tools" in site.get("/admin/").data.decode()
     assert "<shacl-form" in site.get("/admin/tools/?record=" + BASE + "tools/t").data.decode()
@@ -53,6 +54,11 @@ def test_editor_and_changes(site):
     answer = site.put("/api/tools/t", data=turtle, content_type="text/turtle", headers={"X-Form-Token": form_token}).json
     change = site.get(answer["change"]).data.decode()
     assert "graph-removed" in change and "Toxicodynamics (Process Flow Step)" in change
+    # A stored person is kept as it is in the editor, and changed with a write token.
+    writes.save(writes.document(PERSON, BASE + "people/p", {"name": "P"}), PERSON, "Test Editor", ORCID)
+    person = f'<{BASE}people/p> a <{PERSON}> ; <https://schema.org/name> "Q" .'
+    assert site.put("/api/people/p", data=person, content_type="text/turtle", headers={"X-Form-Token": form_token}).status_code == 403
+    assert site.put("/api/people/p", data=person, content_type="text/turtle", headers={"Authorization": "Bearer " + secret}).status_code == 200
 
 
 def test_api(site):

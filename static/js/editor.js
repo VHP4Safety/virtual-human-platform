@@ -484,7 +484,8 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     }
   }
 
-  if (form) {
+  // A record that is kept as it is in the editor, such as a model, has no Save.
+  if (form && document.getElementById("save")) {
     // A change after which the record is as loaded, such as a new empty field, is not an edit.
     let loaded = null;
     form.addEventListener("ready", function () {

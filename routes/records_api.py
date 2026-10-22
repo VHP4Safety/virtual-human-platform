@@ -221,6 +221,13 @@ def unchanged(address: str) -> None:
         abort(412, message="Changed since it was opened; reopen it to see the change.")
 
 
+def editable(record) -> None:
+    """Refuse a change from the record editor to a stored record of a kind that is kept as it is there, such as a model.
+    A write token of the API changes it."""
+    if record is not None and kind_of(record.iri, {}) in settings()["read only in the editor"] and tokens.bearer(request.headers.get("Authorization", "")) is None:
+        abort(403, message="Kept as it is in the record editor; a write token of the API changes it.")
+
+
 def whole(record) -> None:
     """Refuse a write of a part, such as a case-study question, as parts are written with their record."""
     if record is not None and record.part_of:
@@ -556,6 +563,8 @@ def replace(given, body, path):
     whole(record)
     if record is not None and (record.moved_to or record.removed_at):
         abort(409, message="Address of a moved or removed record; not reused.")
+    if not given["preview"]:
+        editable(record)
     if request.mimetype == "text/turtle":
         body = documents.document(Graph().parse(data=request.get_data(as_text=True), format="turtle"), address)
     return store(address, body, given["preview"], given["page"])
@@ -575,6 +584,7 @@ def remove(given, path):
     if record.removed_at and not given["permanent"]:
         abort(404, message="No record at this address.")
     whole(record)
+    editable(record)
     who = writer(kind_of(record.iri, {}))
     unchanged(record.iri)
     if given["permanent"]:
@@ -593,6 +603,7 @@ def move(body):
     if record.removed_at:
         abort(404, message="No record at this address.")
     whole(record)
+    editable(record)
     who = writer(kind_of(record.iri, {}))
     target = records.get(records.address(body["to"]))
     if target is not None and target.moved_to != record.iri:
@@ -610,6 +621,7 @@ def restore(body):
     record = found_record(body["record"])
     if not record.removed_at or record.moved_to:
         abort(404, message="No removed record at this address.")
+    editable(record)
     who = writer(kind_of(record.iri, {}))
     return done(record.iri, writes.restore(record.iri, who.name, who.orcid), 200)
 
