@@ -90,6 +90,14 @@ profiles:
     url: https://raw.githubusercontent.com/BioSchemas/specifications/88f238dd97b61584eba749a38f7d201e343b9d91/FormalParameter/jsonld/FormalParameter_v1.0-RELEASE.json
     file: bioschemas-FormalParameter-1.0-RELEASE-88f238d.json
     sha256: d03b7a3cbc817df549acb9f622b0298d8346e1ef2ed95038b54793fd85ec8415
+  https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE:
+    url: https://raw.githubusercontent.com/BioSchemas/specifications/88f238dd97b61584eba749a38f7d201e343b9d91/ComputationalWorkflow/jsonld/ComputationalWorkflow_v1.0-RELEASE.json
+    file: bioschemas-ComputationalWorkflow-1.0-RELEASE-88f238d.json
+    sha256: 0ccdb416f4ac7bd3b53bb454b5b1956a6f6e0cac8124f874f5c456709604c45a
+  https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT:
+    url: https://raw.githubusercontent.com/BioSchemas/specifications/88f238dd97b61584eba749a38f7d201e343b9d91/DefinedTermSet/jsonld/DefinedTermSet_v0.1-DRAFT.json
+    file: bioschemas-DefinedTermSet-0.1-DRAFT-88f238d.json
+    sha256: 40018046eef3d58b53f2a76fe0aff316f60ac12a6f66bfedc4a1b57319277c8f
 # The kinds of records, by the address of their pages, in the order of the menu: their class and their name.
 kinds:
   tools:

@@ -75,6 +75,66 @@
         <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE#url-required> ;
     sh:targetClass schema:SoftwareApplication .
 
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE> a sh:NodeShape ;
+    sh:property <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#alternateName>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#citation>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#citation-recommended>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#conditionsOfAccess>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#contributor>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#contributor-recommended>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#creativeWorkStatus>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#creativeWorkStatus-recommended>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#creator>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#creator-required>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#dateCreated>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#dateCreated-required>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#dateModified>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#datePublished>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#description>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#description-recommended>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#documentation>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#documentation-recommended>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#encodingFormat>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#funding>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#funding-recommended>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#hasPart>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#hasPart-recommended>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#identifier>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#image>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#input>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#input-required>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#isBasedOn>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#isBasedOn-recommended>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#keywords>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#keywords-recommended>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#license>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#license-required>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#maintainer>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#maintainer-recommended>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#name>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#name-required>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#output>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#output-required>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#producer>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#producer-recommended>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#programmingLanguage>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#programmingLanguage-required>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#publisher>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#publisher-recommended>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#runtimePlatform>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#runtimePlatform-recommended>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#sdPublisher>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#sdPublisher-required>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#softwareRequirements>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#softwareRequirements-recommended>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#targetProduct>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#targetProduct-recommended>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#url>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#url-required>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#version>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#version-required> ;
+    sh:targetClass bioschemas:ComputationalWorkflow .
+
 <https://bioschemas.org/profiles/Course/1.0-RELEASE> a sh:NodeShape ;
     sh:property <https://bioschemas.org/profiles/Course/1.0-RELEASE#about>,
         <https://bioschemas.org/profiles/Course/1.0-RELEASE#about-recommended>,
@@ -243,6 +303,33 @@
         <https://bioschemas.org/profiles/DefinedTerm/0.1-DRAFT#termCode-recommended>,
         <https://bioschemas.org/profiles/DefinedTerm/0.1-DRAFT#url> ;
     sh:targetClass schema:DefinedTerm .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT> a sh:NodeShape ;
+    sh:property <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#alternateName>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#alternateName-recommended>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#citation>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#conditionsOfAccess>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#creator>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#creator-recommended>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#dateCreated>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#dateModified>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#datePublished>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#description>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#hasDefinedTerm>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#isAccessibleForFree>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#keywords>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#license>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#license-recommended>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#maintainer>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#name>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#name-recommended>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#sameAs>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#sameAs-recommended>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#url>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#url-required>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#version>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#version-recommended> ;
+    sh:targetClass schema:DefinedTermSet .
 
 <https://bioschemas.org/profiles/FormalParameter/1.0-RELEASE> a sh:NodeShape ;
     sh:property <https://bioschemas.org/profiles/FormalParameter/1.0-RELEASE#additionalType>,
@@ -597,6 +684,70 @@
         <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#text>,
         <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#tool> ;
     sh:targetClass schema:HowTo .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT> a sh:NodeShape ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#about>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#alternateName>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#applicabilityDomain>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#applicabilityDomain-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#applicationCategory>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#applicationCategory-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#citation>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#codeRepository>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#codeRepository-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#confidenceStatement>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#confidenceStatement-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#connections>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#connections-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#contributor>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#creator>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#creator-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#datePublished>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#description>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#description-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#funding>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasBiologicalSystem>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasBiologicalSystem-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasCalibration>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasChemical>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasChemical-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasEvaluation>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasEvaluation-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasParameter>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasParameter-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasPart>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasPart-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasSUVAnalysis>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#implementation>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#implementation-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#input>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#intendedUse>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#intendedUse-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#isBasedOn>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#keywords>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#license>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#license-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#limitations>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#limitations-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#mathematicalRepresentation>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#mathematicalRepresentation-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#modelStructureDescription>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#modelStructureDescription-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#name>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#name-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#output>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#programmingLanguage>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#programmingLanguage-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#reproducibilityInstructions>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#reproducibilityInstructions-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#runtimePlatform>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#sameAs>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#softwareRequirements>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#structuralCompartments>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#structuralCompartments-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#version>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#version-required> ;
+    sh:targetClass bioschemas:ComputationalWorkflow .
 
 <https://bioschemas.org/profiles/ChemicalSubstance/0.4-RELEASE#alternateName> a sh:PropertyShape ;
     sh:description "An alias for the item." ;
@@ -1477,6 +1628,853 @@
     sh:minCount 1 ;
     sh:name "url" ;
     sh:path schema:url ;
+    sh:severity sh:Violation .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#alternateName> a sh:PropertyShape ;
+    sh:description "An alias for the item." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-optional> ;
+    sh:name "Alternate name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 12 ;
+    sh:path schema:alternateName ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#citation> a sh:PropertyShape ;
+    sh:description "A citation or reference to another creative work, such as another publication, web page, scholarly article, etc." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> ;
+    sh:name "Citation" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/creativeWork> ) ;
+    sh:order 18 ;
+    sh:path schema:citation ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#citation-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "citation" ;
+    sh:path schema:citation ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#conditionsOfAccess> a sh:PropertyShape ;
+    sh:description "Conditions that affect the availability of, or method(s) of access to, an item. Typically used for real world items such as an ArchiveComponent held by an ArchiveOrganization. This property is not suitable for use as a general Web access control mechanism. It is expressed only in natural language. For example “Available by appointment from the Reading Room” or “Accessible only from logged-in accounts “." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Conditions of access" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 8 ;
+    sh:path schema:conditionsOfAccess ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#contributor> a sh:PropertyShape ;
+    sh:description "A secondary contributor to the CreativeWork or Event." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> ;
+    sh:name "Contributor" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person> <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization> ) ;
+    sh:order 19 ;
+    sh:path schema:contributor ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#contributor-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "contributor" ;
+    sh:path schema:contributor ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#creativeWorkStatus> a sh:PropertyShape ;
+    sh:description "The status of a creative work in terms of its stage in a lifecycle. Example terms include Incomplete, Draft, Published, Obsolete. Some organizations define a set of terms for the stages of their publication lifecycle." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> ;
+    sh:name "Creative work status" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/definedTerm> ) ;
+    sh:order 3 ;
+    sh:path schema:creativeWorkStatus ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#creativeWorkStatus-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "creativeWorkStatus" ;
+    sh:path schema:creativeWorkStatus ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#creator> a sh:PropertyShape ;
+    sh:description "The creator/author of this CreativeWork. This is the same as the Author property for CreativeWork." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-required> ;
+    sh:name "Creator" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person> <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization> ) ;
+    sh:order 20 ;
+    sh:path schema:creator ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#creator-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "creator" ;
+    sh:path schema:creator ;
+    sh:severity sh:Violation .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#dateCreated> a sh:PropertyShape ;
+    sh:description "The date on which the CreativeWork was created or the item was added to a DataFeed." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Date created" ;
+    sh:or ( [ sh:datatype xsd:date ] [ sh:datatype xsd:gYearMonth ] [ sh:datatype xsd:gYear ] ) ;
+    sh:order 21 ;
+    sh:path schema:dateCreated ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#dateCreated-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "dateCreated" ;
+    sh:path schema:dateCreated ;
+    sh:severity sh:Violation .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#dateModified> a sh:PropertyShape ;
+    sh:description "The date on which the CreativeWork was most recently modified or when the item's entry was modified within a DataFeed." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Date modified" ;
+    sh:or ( [ sh:datatype xsd:date ] [ sh:datatype xsd:gYearMonth ] [ sh:datatype xsd:gYear ] ) ;
+    sh:order 22 ;
+    sh:path schema:dateModified ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#datePublished> a sh:PropertyShape ;
+    sh:description "Date of first broadcast/publication." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Date published" ;
+    sh:or ( [ sh:datatype xsd:date ] [ sh:datatype xsd:gYearMonth ] [ sh:datatype xsd:gYear ] ) ;
+    sh:order 23 ;
+    sh:path schema:datePublished ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/categoryCode> sh:class schema:CategoryCode ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/categoryCode/codeValue>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/categoryCode/codeValue-required>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/categoryCode/name>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/categoryCode/name-required>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/categoryCode/url>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/categoryCode/url-required> .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/categoryCode/codeValue> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Code value" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 2 ;
+    sh:path schema:codeValue ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/categoryCode/codeValue-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "codeValue" ;
+    sh:path schema:codeValue ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/categoryCode/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/categoryCode/name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/categoryCode/url> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Url" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 3 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/categoryCode/url-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "url" ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/computerLanguage> sh:class schema:ComputerLanguage ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/computerLanguage/name> .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/computerLanguage/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/creativeWork/identifier> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Identifier" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:identifier ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/creativeWork/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/creativeWork/url> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Url" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 3 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/definedTerm> sh:class schema:DefinedTerm ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/definedTerm/identifier>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/definedTerm/name>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/definedTerm/termCode>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/definedTerm/url> .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/definedTerm/identifier> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Identifier" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:identifier ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/definedTerm/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/definedTerm/termCode> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Term code" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 4 ;
+    sh:path schema:termCode ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/definedTerm/url> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Url" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 3 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/formalParameter/identifier> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Identifier" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:identifier ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/formalParameter/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/formalParameter/url> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Url" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 3 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/grant> sh:class schema:Grant ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/grant/identifier>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/grant/name>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/grant/name-required>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/grant/sponsor>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/grant/url> .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/grant/identifier> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Identifier" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 4 ;
+    sh:path schema:identifier ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/grant/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/grant/name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/grant/sponsor> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Sponsor" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization> <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person> ) ;
+    sh:order 3 ;
+    sh:path schema:sponsor ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/grant/url> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Url" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/imageObject> sh:class schema:ImageObject ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/imageObject/name>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/imageObject/url> .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/imageObject/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/imageObject/url> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Url" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization/alternateName> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Alternate name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 2 ;
+    sh:path schema:alternateName ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization/identifier> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Identifier" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 3 ;
+    sh:path schema:identifier ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization/url> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Url" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 4 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person/affiliation> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Affiliation" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization> ) ;
+    sh:order 3 ;
+    sh:path schema:affiliation ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person/name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person/url> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Url" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/product> sh:class schema:Product ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/product/identifier>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/product/name>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/product/url> .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/product/identifier> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Identifier" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:identifier ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/product/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/product/url> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Url" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 3 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue> sh:class schema:PropertyValue ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/identifier>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/name>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/name-required>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/unitCode>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/unitText>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/value>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/value-required>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/valueReference> .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/identifier> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Identifier" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 3 ;
+    sh:path schema:identifier ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/unitCode> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Unit code" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 5 ;
+    sh:path schema:unitCode ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/unitText> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Unit text" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 6 ;
+    sh:path schema:unitText ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/value> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Value" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] [ sh:datatype xsd:boolean ] [ sh:datatype xsd:integer ] [ sh:datatype xsd:decimal ] [ sh:datatype xsd:double ] ) ;
+    sh:order 2 ;
+    sh:path schema:value ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/value-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "value" ;
+    sh:path schema:value ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue/valueReference> a sh:PropertyShape ;
+    sh:name "Value reference" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/categoryCode> ) ;
+    sh:order 4 ;
+    sh:path schema:valueReference ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/softwareApplication> sh:class schema:SoftwareApplication ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/softwareApplication/name>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/softwareApplication/url> .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/softwareApplication/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/softwareApplication/url> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Url" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#description> a sh:PropertyShape ;
+    sh:description "A description of the item." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> ;
+    sh:maxCount 1 ;
+    sh:name "Description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 13 ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#description-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "description" ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#documentation> a sh:PropertyShape ;
+    sh:description "Documentation describing the ComputationalWorkflow and its use." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> ;
+    sh:name "Documentation" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/creativeWork> ) ;
+    sh:order 4 ;
+    sh:path schema:documentation ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#documentation-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "documentation" ;
+    sh:path schema:documentation ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#encodingFormat> a sh:PropertyShape ;
+    sh:description "Media type typically expressed using a MIME format (see <a href=\"http://www.iana.org/assignments/media-types/media-types.xhtml\">IANA site</a> and <a href=\"https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types\">MDN reference</a>) e.g. application/zip for a SoftwareApplication binary, audio/mpeg for .mp3 etc.).<br/><br/> In cases where a <a class=\"localLink\" href=\"http://schema.org/CreativeWork\">CreativeWork</a> has several media type representations, <a class=\"localLink\" href=\"http://schema.org/encoding\">encoding</a> can be used to indicate each <a class=\"localLink\" href=\"http://schema.org/MediaObject\">MediaObject</a> alongside particular <a class=\"localLink\" href=\"http://schema.org/encodingFormat\">encodingFormat</a> information.<br/><br/> Unregistered or niche encoding and file formats can be indicated instead via the most appropriate URL, e.g. defining Web page or a Wikipedia/Wikidata entry." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-optional> ;
+    sh:name "Encoding format" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 24 ;
+    sh:path schema:encodingFormat ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#funding> a sh:PropertyShape ;
+    sh:description "The funding for the workflow" ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> ;
+    sh:name "Funding" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/grant> ) ;
+    sh:order 5 ;
+    sh:path schema:funding ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#funding-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "funding" ;
+    sh:path schema:funding ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#hasPart> a sh:PropertyShape ;
+    sh:description "Indicates an item or CreativeWork that is part of this item, or CreativeWork (in some sense)." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> ;
+    sh:name "Has part" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/creativeWork> ) ;
+    sh:order 25 ;
+    sh:path schema:hasPart ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#hasPart-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "hasPart" ;
+    sh:path schema:hasPart ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#identifier> a sh:PropertyShape ;
+    sh:description "The identifier property represents any kind of identifier for any kind of <a class=\"localLink\" href=\"http://schema.org/Thing\">Thing</a>, such as ISBNs, GTIN codes, UUIDs etc. Schema.org provides dedicated properties for representing many of these, either as textual strings or as URL (URI) links. See <a href=\"/docs/datamodel.html#identifierBg\">background notes</a> for more details." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-optional> ;
+    sh:name "Identifier" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/propertyValue> [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 14 ;
+    sh:path schema:identifier ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#image> a sh:PropertyShape ;
+    sh:description "An image of the item. This can be a <a class=\"localLink\" href=\"http://schema.org/URL\">URL</a> or a fully described <a class=\"localLink\" href=\"http://schema.org/ImageObject\">ImageObject</a>." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-optional> ;
+    sh:name "Image" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/imageObject> ) ;
+    sh:order 15 ;
+    sh:path schema:image ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#input> a sh:PropertyShape ;
+    sh:description "An input required to use the computational workflow (eg. Excel spreadsheet, BAM file)" ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-required> ;
+    sh:name "Input" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/formalParameter> ) ;
+    sh:order 1 ;
+    sh:path bioschemas:input ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#input-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "input" ;
+    sh:path bioschemas:input ;
+    sh:severity sh:Violation .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#isBasedOn> a sh:PropertyShape ;
+    sh:description "A resource from which this work is derived or from which it is a modification or adaption." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> ;
+    sh:maxCount 1 ;
+    sh:name "Is based on" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/product> <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/creativeWork> [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 26 ;
+    sh:path schema:isBasedOn ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#isBasedOn-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "isBasedOn" ;
+    sh:path schema:isBasedOn ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#keywords> a sh:PropertyShape ;
+    sh:description "Keywords or tags used to describe this content. Multiple entries in a keywords list are typically delimited by commas." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> ;
+    sh:name "Keywords" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 27 ;
+    sh:path schema:keywords ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#keywords-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "keywords" ;
+    sh:path schema:keywords ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#license> a sh:PropertyShape ;
+    sh:description "A license document that applies to this content, typically indicated by URL." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-required> ;
+    sh:name "License" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/creativeWork> ) ;
+    sh:order 28 ;
+    sh:path schema:license ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#license-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "license" ;
+    sh:path schema:license ;
+    sh:severity sh:Violation .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#maintainer> a sh:PropertyShape ;
+    sh:description "maintainer of a Dataset, software package (SoftwareApplication), or other Project. A maintainer is a Person or Organization that manages contributions to, and/or publication of, some (typically complex) artifact. It is common for distributions of software and data to be based on “upstream” sources. When maintainer is applied to a specific version of something e.g. a particular version or packaging of a Dataset, it is always possible that the upstream source has a different maintainer. The isBasedOn property can be used to indicate such relationships between datasets to make the different maintenance roles clear. Similarly in the case of software, a package may have dedicated maintainers working on integration into software distributions such as Ubuntu, as well as upstream maintainers of the underlying work." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> ;
+    sh:name "Maintainer" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person> <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization> ) ;
+    sh:order 6 ;
+    sh:path schema:maintainer ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#maintainer-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "maintainer" ;
+    sh:path schema:maintainer ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#name> a sh:PropertyShape ;
+    sh:description "The name of the item." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 16 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Violation .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#output> a sh:PropertyShape ;
+    sh:description "An output produced by the workflow" ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-required> ;
+    sh:name "Output" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/formalParameter> ) ;
+    sh:order 2 ;
+    sh:path bioschemas:output ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#output-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "output" ;
+    sh:path bioschemas:output ;
+    sh:severity sh:Violation .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#producer> a sh:PropertyShape ;
+    sh:description "The person or organization who produced the work (e.g. music album, movie, tv/radio series etc.)." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> ;
+    sh:name "Producer" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person> <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization> ) ;
+    sh:order 29 ;
+    sh:path schema:producer ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#producer-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "producer" ;
+    sh:path schema:producer ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#programmingLanguage> a sh:PropertyShape ;
+    sh:description "The computer programming language." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-required> ;
+    sh:name "Programming language" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/computerLanguage> ) ;
+    sh:order 10 ;
+    sh:path schema:programmingLanguage ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#programmingLanguage-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "programmingLanguage" ;
+    sh:path schema:programmingLanguage ;
+    sh:severity sh:Violation .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#publisher> a sh:PropertyShape ;
+    sh:description "The publisher of the creative work." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> ;
+    sh:name "Publisher" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person> <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization> ) ;
+    sh:order 30 ;
+    sh:path schema:publisher ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#publisher-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "publisher" ;
+    sh:path schema:publisher ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#runtimePlatform> a sh:PropertyShape ;
+    sh:description "Runtime platform or script interpreter dependencies (Example - Java v1, Python2.3, .Net Framework 3.0)." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> ;
+    sh:name "Runtime platform" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 11 ;
+    sh:path schema:runtimePlatform ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#runtimePlatform-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "runtimePlatform" ;
+    sh:path schema:runtimePlatform ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#sdPublisher> a sh:PropertyShape ;
+    sh:description "Indicates the party responsible for generating and publishing the current structured data markup, typically in cases where the structured data is derived automatically from existing published content but published on a different site. For example, student projects and open data initiatives often re-publish existing content with more explicitly structured metadata. The <a class=\"localLink\" href=\"http://schema.org/sdPublisher\">sdPublisher</a> property helps make such practices more explicit." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-required> ;
+    sh:name "Sd publisher" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person> <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization> ) ;
+    sh:order 31 ;
+    sh:path schema:sdPublisher ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#sdPublisher-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "sdPublisher" ;
+    sh:path schema:sdPublisher ;
+    sh:severity sh:Violation .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#softwareRequirements> a sh:PropertyShape ;
+    sh:description "Renaming schema.org/requirements as softwareRequirements. Component dependency requirements for application. This includes runtime environments and shared libraries that are not included in the application distribution package, but required to run the application (Examples: DirectX, Java or .NET runtime). Supersedes requirements." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> ;
+    sh:name "Software requirements" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 7 ;
+    sh:path schema:softwareRequirements ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#softwareRequirements-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "softwareRequirements" ;
+    sh:path schema:softwareRequirements ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#targetProduct> a sh:PropertyShape ;
+    sh:description "Target Operating System / Product to which the code applies. If applies to several versions, just the product name can be used." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> ;
+    sh:name "Target product" ;
+    sh:or ( <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/softwareApplication> ) ;
+    sh:order 9 ;
+    sh:path schema:targetProduct ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#targetProduct-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "targetProduct" ;
+    sh:path schema:targetProduct ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#url> a sh:PropertyShape ;
+    sh:description "URL of the item." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Url" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 17 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#url-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "url" ;
+    sh:path schema:url ;
+    sh:severity sh:Violation .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#version> a sh:PropertyShape ;
+    sh:description "The version of the CreativeWork embodied by a specified resource." ;
+    sh:group <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Version" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:datatype xsd:integer ] [ sh:datatype xsd:decimal ] [ sh:datatype xsd:double ] ) ;
+    sh:order 32 ;
+    sh:path schema:version ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#version-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "version" ;
+    sh:path schema:version ;
     sh:severity sh:Violation .
 
 <https://bioschemas.org/profiles/Course/1.0-RELEASE#about> a sh:PropertyShape ;
@@ -3843,6 +4841,333 @@
     sh:or ( [ sh:nodeKind sh:IRI ] ) ;
     sh:order 7 ;
     sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#alternateName> a sh:PropertyShape ;
+    sh:description "An alias for the item." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-recommended> ;
+    sh:name "Alternate name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 13 ;
+    sh:path schema:alternateName ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#alternateName-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "alternateName" ;
+    sh:path schema:alternateName ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#citation> a sh:PropertyShape ;
+    sh:description "A citation or reference to another creative work, such as another publication, web page, scholarly article, etc." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-optional> ;
+    sh:name "Citation" ;
+    sh:or ( <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/creativework> [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:citation ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#conditionsOfAccess> a sh:PropertyShape ;
+    sh:description "Conditions that affect the availability of, or method(s) of access to, an item. Typically used for real world items such as an [[ArchiveComponent]] held by an [[ArchiveOrganization]]. This property is not suitable for use as a general Web access control mechanism. It is expressed only in natural language.\\n\\nFor example \"Available by appointment from the Reading Room\" or \"Accessible only from logged-in accounts \"." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Conditions of access" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 3 ;
+    sh:path schema:conditionsOfAccess ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#creator> a sh:PropertyShape ;
+    sh:description "The creator/author of this CreativeWork. This is the same as the Author property for CreativeWork." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-recommended> ;
+    sh:name "Creator" ;
+    sh:or ( <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/organization> <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/person> ) ;
+    sh:order 4 ;
+    sh:path schema:creator ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#creator-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "creator" ;
+    sh:path schema:creator ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#dateCreated> a sh:PropertyShape ;
+    sh:description "The date on which the CreativeWork was created or the item was added to a DataFeed." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Date created" ;
+    sh:or ( [ sh:datatype xsd:date ] [ sh:datatype xsd:gYearMonth ] [ sh:datatype xsd:gYear ] [ sh:datatype xsd:dateTime ] ) ;
+    sh:order 5 ;
+    sh:path schema:dateCreated ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#dateModified> a sh:PropertyShape ;
+    sh:description "The date on which the CreativeWork was most recently modified or when the item's entry was modified within a DataFeed." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Date modified" ;
+    sh:or ( [ sh:datatype xsd:date ] [ sh:datatype xsd:gYearMonth ] [ sh:datatype xsd:gYear ] [ sh:datatype xsd:dateTime ] ) ;
+    sh:order 6 ;
+    sh:path schema:dateModified ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#datePublished> a sh:PropertyShape ;
+    sh:description "Date of first broadcast/publication." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Date published" ;
+    sh:or ( [ sh:datatype xsd:date ] [ sh:datatype xsd:gYearMonth ] [ sh:datatype xsd:gYear ] [ sh:datatype xsd:dateTime ] ) ;
+    sh:order 7 ;
+    sh:path schema:datePublished ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/creativework/identifier> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Identifier" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:identifier ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/creativework/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/creativework/url> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Url" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 3 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/definedterm/identifier> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Identifier" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 4 ;
+    sh:path schema:identifier ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/definedterm/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 2 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/definedterm/termCode> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Term code" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 3 ;
+    sh:path schema:termCode ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/definedterm/url> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Url" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 1 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/organization/description> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 3 ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/organization/legalName> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Legal name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 2 ;
+    sh:path schema:legalName ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/organization/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/organization/sameAs> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Same as" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 4 ;
+    sh:path schema:sameAs ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/person/mainEntityOfPage> a sh:PropertyShape ;
+    sh:name "Main entity of page" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/creativework> ) ;
+    sh:order 3 ;
+    sh:path schema:mainEntityOfPage ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/person/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/person/name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/person/url> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Url" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#description> a sh:PropertyShape ;
+    sh:description "A description of the item." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 14 ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-required> a sh:PropertyGroup ;
+    rdfs:label "Required" ;
+    sh:order 1 .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#hasDefinedTerm> a sh:PropertyShape ;
+    sh:description "A Defined Term contained in this term set." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-optional> ;
+    sh:name "Has defined term" ;
+    sh:or ( <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/definedterm> ) ;
+    sh:order 1 ;
+    sh:path schema:hasDefinedTerm ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#isAccessibleForFree> a sh:PropertyShape ;
+    sh:description "A flag to signal that the item, event, or place is accessible for free." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Is accessible for free" ;
+    sh:or ( [ sh:datatype xsd:boolean ] ) ;
+    sh:order 8 ;
+    sh:path schema:isAccessibleForFree ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#keywords> a sh:PropertyShape ;
+    sh:description "Keywords or tags used to describe this content. Multiple entries in a keywords list are typically delimited by commas." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-optional> ;
+    sh:name "Keywords" ;
+    sh:or ( <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/definedterm> [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 9 ;
+    sh:path schema:keywords ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#license> a sh:PropertyShape ;
+    sh:description "A license document that applies to this content, typically indicated by URL." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-recommended> ;
+    sh:maxCount 1 ;
+    sh:name "License" ;
+    sh:or ( <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/creativework> [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 10 ;
+    sh:path schema:license ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#license-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "license" ;
+    sh:path schema:license ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#maintainer> a sh:PropertyShape ;
+    sh:description "A maintainer of a [[Dataset]], software package ([[SoftwareApplication]]), or other [[Project]]. A maintainer is a [[Person]] or [[Organization]] that manages contributions to, and/or publication of, some (typically complex) artifact. It is common for distributions of software and data to be based on \"upstream\" sources. When [[maintainer]] is applied to a specific version of something e.g. a particular version or packaging of a [[Dataset]], it is always possible that the upstream source has a different maintainer. The [[isBasedOn]] property can be used to indicate such relationships between datasets to make the different maintenance roles clear. Similarly in the case of software, a package may have dedicated maintainers working on integration into software distributions such as Ubuntu, as well as upstream maintainers of the underlying work." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-optional> ;
+    sh:name "Maintainer" ;
+    sh:or ( <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/organization> <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/person> ) ;
+    sh:order 11 ;
+    sh:path schema:maintainer ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#name> a sh:PropertyShape ;
+    sh:description "The name of the item." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-recommended> ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 15 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#name-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#sameAs> a sh:PropertyShape ;
+    sh:description "URL of a reference Web page that unambiguously indicates the item's identity. E.g. the URL of the item's Wikipedia page, Wikidata entry, or official website." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-recommended> ;
+    sh:maxCount 1 ;
+    sh:name "Same as" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 16 ;
+    sh:path schema:sameAs ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#sameAs-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "sameAs" ;
+    sh:path schema:sameAs ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#url> a sh:PropertyShape ;
+    sh:description "URL of the item." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Url" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 17 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#url-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "url" ;
+    sh:path schema:url ;
+    sh:severity sh:Violation .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#version> a sh:PropertyShape ;
+    sh:description "The version of the CreativeWork embodied by a specified resource." ;
+    sh:group <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-recommended> ;
+    sh:maxCount 1 ;
+    sh:name "Version" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:datatype xsd:integer ] [ sh:datatype xsd:decimal ] [ sh:datatype xsd:double ] ) ;
+    sh:order 12 ;
+    sh:path schema:version ;
+    sh:severity sh:Warning .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#version-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "version" ;
+    sh:path schema:version ;
     sh:severity sh:Warning .
 
 <https://bioschemas.org/profiles/FormalParameter/1.0-RELEASE#additionalType> a sh:PropertyShape ;
@@ -9131,6 +10456,1655 @@
     sh:path schema:tool ;
     sh:severity sh:Warning .
 
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#about> a sh:PropertyShape ;
+    sh:description "The topics of the model, such as its chemicals (ChEBI) and organisms." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:name "Topics" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/definedterm> ) ;
+    sh:order 32 ;
+    sh:path schema:about ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#alternateName> a sh:PropertyShape ;
+    sh:description "Such as the name of the model in its PBPK description, if the crate names the file of the model." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:name "Other name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 9 ;
+    sh:path schema:alternateName ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#applicabilityDomain> a sh:PropertyShape ;
+    sh:description "Add the applicability domain (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Applicability domain" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 24 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#applicabilityDomain> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#applicabilityDomain-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "applicabilityDomain" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#applicabilityDomain> ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#applicationCategory> a sh:PropertyShape ;
+    sh:description "Add the intended application category (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Intended application category" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 8 ;
+    sh:path schema:applicationCategory ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#applicationCategory-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "applicationCategory" ;
+    sh:path schema:applicationCategory ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#citation> a sh:PropertyShape ;
+    sh:description "The publications that describe the model, with links to their DOIs on their pages." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:name "Publications" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/scholarlyarticle> ) ;
+    sh:order 30 ;
+    sh:path schema:citation ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#codeRepository> a sh:PropertyShape ;
+    sh:description "Add the model availability (URLs/DOIs) (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:name "Model availability (URLs/DOIs)" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 6 ;
+    sh:path schema:codeRepository ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#codeRepository-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "codeRepository" ;
+    sh:path schema:codeRepository ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#confidenceStatement> a sh:PropertyShape ;
+    sh:description "Add the confidence statement (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Confidence statement" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 25 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#confidenceStatement> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#confidenceStatement-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "confidenceStatement" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#confidenceStatement> ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#connections> a sh:PropertyShape ;
+    sh:description "Add the inter-compartmental connections (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:name "Inter-compartmental connections" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection> ) ;
+    sh:order 12 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#connections> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#connections-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "connections" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#connections> ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#contributor> a sh:PropertyShape ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:name "Contributors" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/person> <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/organization> ) ;
+    sh:order 29 ;
+    sh:path schema:contributor ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#creator> a sh:PropertyShape ;
+    sh:description "Add the model author(s) (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:name "Model author(s)" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/person> <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/organization> ) ;
+    sh:order 4 ;
+    sh:path schema:creator ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#creator-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "creator" ;
+    sh:path schema:creator ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#datePublished> a sh:PropertyShape ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Published" ;
+    sh:or ( [ sh:datatype xsd:date ] [ sh:datatype xsd:gYearMonth ] [ sh:datatype xsd:gYear ] ) ;
+    sh:order 36 ;
+    sh:path schema:datePublished ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem> sh:class <https://platform.vhp4safety.nl/model/v1/pbpk#BiologicalSystem> ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/anatomicalAssumptions>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/compartments>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/compartments-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/lifeStage>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/lifeStage-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/physiologicalScope>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/physiologicalScope-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/populationDescription>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/species>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/species-required> .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/anatomicalAssumptions> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Anatomical assumptions" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 6 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#anatomicalAssumptions> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/compartments> a sh:PropertyShape ;
+    sh:description "Choose an ontology term, or register it. Text is kept until then." ;
+    sh:name "Compartments" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/definedterm> ) ;
+    sh:order 4 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#compartments> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/compartments-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "compartments" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#compartments> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/lifeStage> a sh:PropertyShape ;
+    sh:description "Choose from the list. Other values are kept." ;
+    sh:name "Life stage(s)" ;
+    sh:or ( [ sh:in ( "Adult" "Juvenile" "Neonate" "Pregnant" "Lactating" "Other" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:order 2 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#lifeStage> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/lifeStage-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "lifeStage" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#lifeStage> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/physiologicalScope> a sh:PropertyShape ;
+    sh:description "Add the physiological scope (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Physiological scope" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 3 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#physiologicalScope> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/physiologicalScope-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "physiologicalScope" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#physiologicalScope> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/populationDescription> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Population description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 5 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#populationDescription> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/species> a sh:PropertyShape ;
+    sh:description "Choose an ontology term, or register it. Text is kept until then." ;
+    sh:maxCount 1 ;
+    sh:name "Species" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/definedterm> ) ;
+    sh:order 1 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#species> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem/species-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "species" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#species> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration> sh:class <https://platform.vhp4safety.nl/model/v1/pbpk#Calibration> ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/calibratedParameters>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/calibrationData>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/description>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/description-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/method>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/method-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/name>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/notes>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/optimizationCriteria> .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/calibratedParameters> a sh:PropertyShape ;
+    sh:name "Calibrated parameters" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 5 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#calibratedParameters> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/calibrationData> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Calibration data" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 4 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#calibrationData> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/description> a sh:PropertyShape ;
+    sh:description "Add the calibration description (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Calibration description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/description-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "description" ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/method> a sh:PropertyShape ;
+    sh:description "Choose from the list. Other values are kept." ;
+    sh:maxCount 1 ;
+    sh:name "Calibration method" ;
+    sh:or ( [ sh:in ( "Manual fitting" "Least squares optimization" "Bayesian inference" "Visual inspection" "Other" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:order 3 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#method> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/method-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "method" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#method> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Calibration name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/notes> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Calibration notes" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 7 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#notes> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration/optimizationCriteria> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Optimization criteria" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 6 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#optimizationCriteria> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance> sh:class schema:ChemicalSubstance ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/alternateName>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/chemicalRole>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/chemicalRole-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/description>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/identifier>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/identifier-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/inChI>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/inChIKey>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/molecularFormula>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/molecularWeight>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/name>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/name-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/physicochemicalNotes>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/sameAs>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/smiles> .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/alternateName> a sh:PropertyShape ;
+    sh:name "Other names" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 6 ;
+    sh:path schema:alternateName ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/chemicalRole> a sh:PropertyShape ;
+    sh:description "Choose from the list. Other values are kept." ;
+    sh:maxCount 1 ;
+    sh:name "Role in the model" ;
+    sh:or ( [ sh:in ( "Parent compound" "Metabolite" "Co-exposure component" "Other" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:order 2 ;
+    sh:path schema:chemicalRole ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/chemicalRole-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "chemicalRole" ;
+    sh:path schema:chemicalRole ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/description> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 7 ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/identifier> a sh:PropertyShape ;
+    sh:description "Add the chemical identifier(s) (required by ROBOT)." ;
+    sh:name "Chemical identifier(s)" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/propertyvalue> ) ;
+    sh:order 3 ;
+    sh:path schema:identifier ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/identifier-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "identifier" ;
+    sh:path schema:identifier ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/inChI> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "InChI" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 8 ;
+    sh:path schema:inChI ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/inChIKey> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "InChIKey" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 9 ;
+    sh:path schema:inChIKey ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/molecularFormula> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Molecular formula" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 11 ;
+    sh:path schema:molecularFormula ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/molecularWeight> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Molecular weight (g/mol)" ;
+    sh:or ( [ sh:datatype xsd:integer ] [ sh:datatype xsd:decimal ] [ sh:datatype xsd:double ] ) ;
+    sh:order 4 ;
+    sh:path schema:molecularWeight ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/name> a sh:PropertyShape ;
+    sh:description "Add the chemical name (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Chemical name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/physicochemicalNotes> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Physicochemical notes" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 5 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#physicochemicalNotes> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/sameAs> a sh:PropertyShape ;
+    sh:description "Such as its ChEBI or PubChem page." ;
+    sh:name "Addresses elsewhere" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 12 ;
+    sh:path schema:sameAs ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance/smiles> a sh:PropertyShape ;
+    sh:name "SMILES" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 10 ;
+    sh:path schema:smiles ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/compartment> sh:class <https://platform.vhp4safety.nl/model/v1/pbpk#Compartment> ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/compartment/biologicalReference>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/compartment/biologicalReference-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/compartment/description>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/compartment/name>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/compartment/name-required> .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/compartment/biologicalReference> a sh:PropertyShape ;
+    sh:description "Choose an ontology term, or register it. Text is kept until then." ;
+    sh:maxCount 1 ;
+    sh:name "Biological reference" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/definedterm> ) ;
+    sh:order 2 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#biologicalReference> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/compartment/biologicalReference-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "biologicalReference" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#biologicalReference> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/compartment/description> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Compartment description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 3 ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/compartment/name> a sh:PropertyShape ;
+    sh:description "Add the compartment name (model) (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Compartment name (model)" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/compartment/name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage> sh:class schema:ComputerLanguage ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage/alternateName>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage/name>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage/name-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage/url>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage/url-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage/version>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage/version-required> .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage/alternateName> a sh:PropertyShape ;
+    sh:name "Other name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 4 ;
+    sh:path schema:alternateName ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage/name> a sh:PropertyShape ;
+    sh:description "Such as R, Python, Stan or SBML." ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage/name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage/url> a sh:PropertyShape ;
+    sh:description "Add the address of the language (required by RO-Crate)." ;
+    sh:maxCount 1 ;
+    sh:name "Address" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage/url-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "url" ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage/version> a sh:PropertyShape ;
+    sh:description "Add the version the model was made with (required by RO-Crate)." ;
+    sh:maxCount 1 ;
+    sh:name "Version" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 3 ;
+    sh:path schema:version ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage/version-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "version" ;
+    sh:path schema:version ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection> sh:class <https://platform.vhp4safety.nl/model/v1/pbpk#Connection> ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection/connectionType>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection/connectionType-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection/description>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection/sourceCompartment>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection/sourceCompartment-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection/targetCompartment>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection/targetCompartment-required> .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection/connectionType> a sh:PropertyShape ;
+    sh:description "Choose from the list. Other values are kept." ;
+    sh:maxCount 1 ;
+    sh:name "Connection type" ;
+    sh:or ( [ sh:in ( "Blood flow" "Diffusion" "Permeation" "Other" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:order 3 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#connectionType> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection/connectionType-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "connectionType" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#connectionType> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection/description> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Connection description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 4 ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection/sourceCompartment> a sh:PropertyShape ;
+    sh:description "Add the source compartment (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Source compartment" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#sourceCompartment> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection/sourceCompartment-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "sourceCompartment" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#sourceCompartment> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection/targetCompartment> a sh:PropertyShape ;
+    sh:description "Add the target compartment (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Target compartment" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 2 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#targetCompartment> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection/targetCompartment-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "targetCompartment" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#targetCompartment> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation> sh:class <https://platform.vhp4safety.nl/model/v1/pbpk#Evaluation> ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/description>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/description-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/evaluationData>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/limitations>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/method>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/method-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/name>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/outcome>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/outcome-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/performanceMetrics> .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/description> a sh:PropertyShape ;
+    sh:description "Add the evaluation description (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Evaluation description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/description-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "description" ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/evaluationData> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Evaluation data (reference)" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 3 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#evaluationData> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/limitations> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Evaluation limitations" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 7 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#limitations> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/method> a sh:PropertyShape ;
+    sh:description "Choose from the list. Other values are kept." ;
+    sh:maxCount 1 ;
+    sh:name "Evaluation method" ;
+    sh:or ( [ sh:in ( "Visual comparison" "Statistical goodness-of-fit" "Observed vs predicted regression" "Other" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:order 4 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#method> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/method-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "method" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#method> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Evaluation name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/outcome> a sh:PropertyShape ;
+    sh:description "Add the evaluation outcome (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Evaluation outcome" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 6 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#outcome> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/outcome-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "outcome" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#outcome> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation/performanceMetrics> a sh:PropertyShape ;
+    sh:name "Performance metrics" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/performancemetric> ) ;
+    sh:order 5 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#performanceMetrics> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/formalparameter/description> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/formalparameter/name> a sh:PropertyShape ;
+    sh:description "One name needed." ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/formalparameter/name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/implementation> sh:class <https://platform.vhp4safety.nl/model/v1/pbpk#Implementation> ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/implementation/implementationLocation>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/implementation/implementationLocation-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/implementation/implementationType>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/implementation/implementationType-required> .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/implementation/implementationLocation> a sh:PropertyShape ;
+    sh:description "Add the implementation location (relative path) (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Implementation location (relative path)" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 2 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#implementationLocation> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/implementation/implementationLocation-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "implementationLocation" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#implementationLocation> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/implementation/implementationType> a sh:PropertyShape ;
+    sh:description "Choose from the list. Other values are kept." ;
+    sh:maxCount 1 ;
+    sh:name "Implementation type" ;
+    sh:or ( [ sh:in ( "SBML" "Python script" "R script" "Other" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#implementationType> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/implementation/implementationType-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "implementationType" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#implementationType> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject> sh:class schema:MediaObject ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/artifactLocation>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/artifactLocation-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/artifactType>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/artifactType-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/contentSize>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/encodingFormat>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/encodingFormat-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/name>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/name-required> .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/artifactLocation> a sh:PropertyShape ;
+    sh:description "Add the artifact location (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Artifact location" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 4 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#artifactLocation> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/artifactLocation-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "artifactLocation" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#artifactLocation> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/artifactType> a sh:PropertyShape ;
+    sh:description "Choose from the list. Other values are kept." ;
+    sh:maxCount 1 ;
+    sh:name "Artifact type" ;
+    sh:or ( [ sh:in ( "Model code" "Simulation script" "Parameter file" "Dataset" "Documentation" "Notebook" "Other" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:order 2 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#artifactType> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/artifactType-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "artifactType" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#artifactType> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/contentSize> a sh:PropertyShape ;
+    sh:description "Such as 3.1 MB." ;
+    sh:maxCount 1 ;
+    sh:name "Size" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 5 ;
+    sh:path schema:contentSize ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/encodingFormat> a sh:PropertyShape ;
+    sh:description "Add the artifact format (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Artifact format" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 3 ;
+    sh:path schema:encodingFormat ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/encodingFormat-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "encodingFormat" ;
+    sh:path schema:encodingFormat ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/name> a sh:PropertyShape ;
+    sh:description "Add the artifact name (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Artifact name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject/name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity> sh:class schema:MolecularEntity ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/alternateName>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/chemicalRole>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/chemicalRole-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/description>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/identifier>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/identifier-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/inChI>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/inChIKey>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/molecularFormula>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/molecularWeight>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/name>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/name-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/physicochemicalNotes>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/sameAs>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/smiles> .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/alternateName> a sh:PropertyShape ;
+    sh:name "Other names" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 6 ;
+    sh:path schema:alternateName ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/chemicalRole> a sh:PropertyShape ;
+    sh:description "Choose from the list. Other values are kept." ;
+    sh:maxCount 1 ;
+    sh:name "Role in the model" ;
+    sh:or ( [ sh:in ( "Parent compound" "Metabolite" "Co-exposure component" "Other" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:order 2 ;
+    sh:path schema:chemicalRole ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/chemicalRole-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "chemicalRole" ;
+    sh:path schema:chemicalRole ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/description> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 7 ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/identifier> a sh:PropertyShape ;
+    sh:description "Add the chemical identifier(s) (required by ROBOT)." ;
+    sh:name "Chemical identifier(s)" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/propertyvalue> ) ;
+    sh:order 3 ;
+    sh:path schema:identifier ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/identifier-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "identifier" ;
+    sh:path schema:identifier ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/inChI> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "InChI" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 8 ;
+    sh:path schema:inChI ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/inChIKey> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "InChIKey" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 9 ;
+    sh:path schema:inChIKey ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/molecularFormula> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Molecular formula" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 11 ;
+    sh:path schema:molecularFormula ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/molecularWeight> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Molecular weight (g/mol)" ;
+    sh:or ( [ sh:datatype xsd:integer ] [ sh:datatype xsd:decimal ] [ sh:datatype xsd:double ] ) ;
+    sh:order 4 ;
+    sh:path schema:molecularWeight ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/name> a sh:PropertyShape ;
+    sh:description "Add the chemical name (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Chemical name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/physicochemicalNotes> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Physicochemical notes" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 5 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#physicochemicalNotes> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/sameAs> a sh:PropertyShape ;
+    sh:description "Such as its ChEBI or PubChem page." ;
+    sh:name "Addresses elsewhere" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 12 ;
+    sh:path schema:sameAs ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity/smiles> a sh:PropertyShape ;
+    sh:name "SMILES" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 10 ;
+    sh:path schema:smiles ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/monetarygrant> sh:class schema:MonetaryGrant ;
+    sh:nodeKind sh:BlankNodeOrIRI .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter> sh:class <https://platform.vhp4safety.nl/model/v1/pbpk#Parameter> ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/appliesToChemicals>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/appliesToCompartments>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/appliesToSpecies>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/name>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/name-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/notes>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/parameterCategory>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/parameterCategory-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/parameterSource>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/parameterSource-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/propertyID>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/scope>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/scope-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/sourceReference>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/unitText>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/unitText-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/value>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/value-required> .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/appliesToChemicals> a sh:PropertyShape ;
+    sh:name "Applicable chemicals" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 8 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#appliesToChemicals> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/appliesToCompartments> a sh:PropertyShape ;
+    sh:description "Choose an ontology term, or register it. Text is kept until then." ;
+    sh:name "Applicable compartments" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/definedterm> ) ;
+    sh:order 7 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#appliesToCompartments> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/appliesToSpecies> a sh:PropertyShape ;
+    sh:description "Choose an ontology term, or register it. Text is kept until then." ;
+    sh:name "Applicable species" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/definedterm> ) ;
+    sh:order 6 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#appliesToSpecies> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/name> a sh:PropertyShape ;
+    sh:description "Add the parameter name (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Parameter name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/notes> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Parameter notes" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 11 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#notes> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/parameterCategory> a sh:PropertyShape ;
+    sh:description "Choose from the list. Other values are kept." ;
+    sh:maxCount 1 ;
+    sh:name "Parameter category" ;
+    sh:or ( [ sh:in ( "Physiological" "Biochemical" "Physicochemical" "Empirical" "Other" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:order 2 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#parameterCategory> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/parameterCategory-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "parameterCategory" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#parameterCategory> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/parameterSource> a sh:PropertyShape ;
+    sh:description "Choose from the list. Other values are kept." ;
+    sh:maxCount 1 ;
+    sh:name "Parameter source" ;
+    sh:or ( [ sh:in ( "Literature" "Experimental data" "In silico estimation" "Assumed" "Other" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:order 9 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#parameterSource> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/parameterSource-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "parameterSource" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#parameterSource> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/propertyID> a sh:PropertyShape ;
+    sh:description "The symbol of the parameter in the code of the model, such as BW." ;
+    sh:maxCount 1 ;
+    sh:name "Symbol" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 12 ;
+    sh:path schema:propertyID ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/scope> a sh:PropertyShape ;
+    sh:description "Choose from the list. Other values are kept." ;
+    sh:maxCount 1 ;
+    sh:name "Parameter scope" ;
+    sh:or ( [ sh:in ( "Global" "Species-specific" "Compartment-specific" "Chemical-specific" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:order 5 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#scope> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/scope-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "scope" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#scope> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/sourceReference> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Source reference" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 10 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#sourceReference> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/unitText> a sh:PropertyShape ;
+    sh:description "Add the parameter unit (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Parameter unit" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 4 ;
+    sh:path schema:unitText ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/unitText-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "unitText" ;
+    sh:path schema:unitText ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/value> a sh:PropertyShape ;
+    sh:description "Add the parameter value (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Parameter value" ;
+    sh:or ( [ sh:datatype xsd:integer ] [ sh:datatype xsd:decimal ] [ sh:datatype xsd:double ] ) ;
+    sh:order 3 ;
+    sh:path schema:value ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter/value-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "value" ;
+    sh:path schema:value ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/performancemetric> sh:class <https://platform.vhp4safety.nl/model/v1/pbpk#PerformanceMetric> ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/performancemetric/interpretation>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/performancemetric/name>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/performancemetric/name-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/performancemetric/value> .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/performancemetric/interpretation> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Metric interpretation" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 3 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#interpretation> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/performancemetric/name> a sh:PropertyShape ;
+    sh:description "Add the metric name (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Metric name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/performancemetric/name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/performancemetric/value> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Metric value" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:value ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/propertyvalue/propertyID> a sh:PropertyShape ;
+    sh:description "Choose from the list. Other values are kept." ;
+    sh:maxCount 1 ;
+    sh:name "Identifier type" ;
+    sh:or ( [ sh:in ( "CAS RN" "InChI" "InChIKey" "SMILES" "PubChem CID" "Other" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:propertyID ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/propertyvalue/propertyID-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "propertyID" ;
+    sh:path schema:propertyID ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/propertyvalue/value> a sh:PropertyShape ;
+    sh:description "Add the identifier value (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Identifier value" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:value ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/propertyvalue/value-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "value" ;
+    sh:path schema:value ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/scholarlyarticle> sh:class schema:ScholarlyArticle ;
+    sh:nodeKind sh:BlankNodeOrIRI .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis> sh:class <https://platform.vhp4safety.nl/model/v1/pbpk#SUVAnalysis> ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/analysisType>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/analysisType-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/analyzedParameters>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/method>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/name>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/notes>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/outcome>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/outcome-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/robustnessInterpretation> .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/analysisType> a sh:PropertyShape ;
+    sh:description "Choose from the list. Other values are kept." ;
+    sh:maxCount 1 ;
+    sh:name "Analysis type" ;
+    sh:or ( [ sh:in ( "Sensitivity analysis" "Uncertainty analysis" "Variability analysis" "Combined analysis" "Other" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:order 2 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#analysisType> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/analysisType-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "analysisType" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#analysisType> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/analyzedParameters> a sh:PropertyShape ;
+    sh:name "Analyzed parameters" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 4 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#analyzedParameters> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/method> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Analysis method" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 3 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#method> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Analysis name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/notes> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Additional notes" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 7 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#notes> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/outcome> a sh:PropertyShape ;
+    sh:description "Add the analysis results (required by ROBOT)." ;
+    sh:maxCount 1 ;
+    sh:name "Analysis results" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 5 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#outcome> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/outcome-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "outcome" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#outcome> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis/robustnessInterpretation> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Robustness interpretation" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 6 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#robustnessInterpretation> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#description> a sh:PropertyShape ;
+    sh:description "Add the model description (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Model description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 3 ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#description-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "description" ;
+    sh:path schema:description ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#funding> a sh:PropertyShape ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:name "Funded by" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/monetarygrant> ) ;
+    sh:order 31 ;
+    sh:path schema:funding ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasBiologicalSystem> a sh:PropertyShape ;
+    sh:description "Add the biological system(s) (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:name "Biological system(s)" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem> ) ;
+    sh:order 18 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#hasBiologicalSystem> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasBiologicalSystem-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "hasBiologicalSystem" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#hasBiologicalSystem> ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasCalibration> a sh:PropertyShape ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:name "Calibration activities" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration> ) ;
+    sh:order 20 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#hasCalibration> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasChemical> a sh:PropertyShape ;
+    sh:description "Add the chemical substance(s) (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:name "Chemical substance(s)" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity> <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance> ) ;
+    sh:order 17 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#hasChemical> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasChemical-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "hasChemical" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#hasChemical> ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasEvaluation> a sh:PropertyShape ;
+    sh:description "Add the evaluation activities (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:name "Evaluation activities" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation> ) ;
+    sh:order 21 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#hasEvaluation> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasEvaluation-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "hasEvaluation" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#hasEvaluation> ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasParameter> a sh:PropertyShape ;
+    sh:description "Add the parameters (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:name "Parameters" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter> ) ;
+    sh:order 19 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#hasParameter> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasParameter-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "hasParameter" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#hasParameter> ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasPart> a sh:PropertyShape ;
+    sh:description "Add the digital artifacts (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:name "Digital artifacts" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject> ) ;
+    sh:order 27 ;
+    sh:path schema:hasPart ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasPart-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "hasPart" ;
+    sh:path schema:hasPart ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasSUVAnalysis> a sh:PropertyShape ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:name "SUV analyses" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis> ) ;
+    sh:order 22 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#hasSUVAnalysis> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#implementation> a sh:PropertyShape ;
+    sh:description "Add the model implementation reference(s) (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:name "Model implementation reference(s)" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/implementation> ) ;
+    sh:order 14 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#implementation> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#implementation-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "implementation" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#implementation> ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#input> a sh:PropertyShape ;
+    sh:description "The inputs of the model, such as doses or physiological parameters (input in RO-Crate)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:name "Inputs" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/formalparameter> ) ;
+    sh:order 15 ;
+    sh:path bioschemas:input ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#intendedUse> a sh:PropertyShape ;
+    sh:description "Add the intended use (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Intended use" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 23 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#intendedUse> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#intendedUse-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "intendedUse" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#intendedUse> ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#isBasedOn> a sh:PropertyShape ;
+    sh:description "The Zenodo record from which this record is made." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Source record" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 37 ;
+    sh:path schema:isBasedOn ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#keywords> a sh:PropertyShape ;
+    sh:description "Choose a vocabulary term, or register it. Text is kept until then." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:name "Keywords" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/definedterm> ) ;
+    sh:order 33 ;
+    sh:path schema:keywords ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#license> a sh:PropertyShape ;
+    sh:description "Add the license, chosen from SPDX. Other values are kept." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "License" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/definedterm> ) ;
+    sh:order 7 ;
+    sh:path schema:license ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#license-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "license" ;
+    sh:path schema:license ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#limitations> a sh:PropertyShape ;
+    sh:description "Add the known limitations (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Known limitations" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 26 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#limitations> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#limitations-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "limitations" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#limitations> ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#mathematicalRepresentation> a sh:PropertyShape ;
+    sh:description "Choose from the list. Other values are kept." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Mathematical representation" ;
+    sh:or ( [ sh:in ( "Ordinary differential equations" "Algebraic equations" "Hybrid ODE-algebraic system" "Other" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:order 13 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#mathematicalRepresentation> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#mathematicalRepresentation-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "mathematicalRepresentation" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#mathematicalRepresentation> ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#modelStructureDescription> a sh:PropertyShape ;
+    sh:description "Add the model structure description (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Model structure description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 10 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#modelStructureDescription> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#modelStructureDescription-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "modelStructureDescription" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#modelStructureDescription> ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#name> a sh:PropertyShape ;
+    sh:description "Add the model name (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Model name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#output> a sh:PropertyShape ;
+    sh:description "The outputs of the model, such as concentration-time profiles (output in RO-Crate)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:name "Outputs" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/formalparameter> ) ;
+    sh:order 16 ;
+    sh:path bioschemas:output ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#programmingLanguage> a sh:PropertyShape ;
+    sh:description "Add the software platform (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:name "Software platform" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage> ) ;
+    sh:order 5 ;
+    sh:path schema:programmingLanguage ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#programmingLanguage-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "programmingLanguage" ;
+    sh:path schema:programmingLanguage ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#reproducibilityInstructions> a sh:PropertyShape ;
+    sh:description "Add the reproducibility instructions (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Reproducibility instructions" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 28 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#reproducibilityInstructions> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#reproducibilityInstructions-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "reproducibilityInstructions" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#reproducibilityInstructions> ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#runtimePlatform> a sh:PropertyShape ;
+    sh:description "Such as R 4.1.0, or Berkeley Madonna 10.6.1." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:name "Runtime" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 34 ;
+    sh:path schema:runtimePlatform ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#sameAs> a sh:PropertyShape ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:name "DOI and other addresses" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 38 ;
+    sh:path schema:sameAs ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#softwareRequirements> a sh:PropertyShape ;
+    sh:description "The packages required by the model, with their versions." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:name "Requirements" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 35 ;
+    sh:path schema:softwareRequirements ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#structuralCompartments> a sh:PropertyShape ;
+    sh:description "Add the structural compartments (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:name "Structural compartments" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/compartment> ) ;
+    sh:order 11 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#structuralCompartments> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#structuralCompartments-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "structuralCompartments" ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/pbpk#structuralCompartments> ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#version> a sh:PropertyShape ;
+    sh:description "Add the model version (required by ROBOT)." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Model version" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 2 ;
+    sh:path schema:version ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#version-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "version" ;
+    sh:path schema:version ;
+    sh:severity sh:Violation .
+
 <https://bioschemas.org/profiles/ChemicalSubstance/0.4-RELEASE#group-recommended> a sh:PropertyGroup ;
     rdfs:label "Recommended" ;
     sh:order 2 .
@@ -9140,6 +12114,12 @@
     sh:property <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE#definitions/formalParameter/identifier>,
         <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE#definitions/formalParameter/name>,
         <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE#definitions/formalParameter/url> .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/formalParameter> sh:class bioschemas:FormalParameter ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/formalParameter/identifier>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/formalParameter/name>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/formalParameter/url> .
 
 <https://bioschemas.org/profiles/Course/1.0-RELEASE#definitions/datetime> sh:class schema:DateTime ;
     sh:nodeKind sh:BlankNodeOrIRI ;
@@ -9222,6 +12202,27 @@
         <https://bioschemas.org/profiles/Dataset/1.0-RELEASE#definitions/propertyvalue/value>,
         <https://bioschemas.org/profiles/Dataset/1.0-RELEASE#definitions/propertyvalue/value-required>,
         <https://bioschemas.org/profiles/Dataset/1.0-RELEASE#definitions/propertyvalue/valuereference> .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/definedterm> sh:class schema:DefinedTerm ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/definedterm/identifier>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/definedterm/name>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/definedterm/termCode>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/definedterm/url> .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/organization> sh:class schema:Organization ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/organization/description>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/organization/legalName>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/organization/name>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/organization/sameAs> .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/person> sh:class schema:Person ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/person/mainEntityOfPage>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/person/name>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/person/name-required>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/person/url> .
 
 <https://bioschemas.org/profiles/LabProtocol/0.8-DRAFT#definitions/biochementity> sh:class schema:BioChemEntity ;
     sh:nodeKind sh:BlankNodeOrIRI ;
@@ -9325,6 +12326,25 @@
         <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/parameter/name>,
         <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/parameter/name-required> .
 
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/formalparameter> sh:class bioschemas:FormalParameter ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/formalparameter/description>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/formalparameter/name>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/formalparameter/name-required> .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/organization> sh:class schema:Organization ;
+    sh:nodeKind sh:BlankNodeOrIRI .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/person> sh:class schema:Person ;
+    sh:nodeKind sh:BlankNodeOrIRI .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/propertyvalue> sh:class schema:PropertyValue ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/propertyvalue/propertyID>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/propertyvalue/propertyID-required>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/propertyvalue/value>,
+        <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/propertyvalue/value-required> .
+
 <https://bioschemas.org/profiles/ChemicalSubstance/0.4-RELEASE#definitions/bioChemEntity> sh:class schema:BioChemEntity ;
     sh:nodeKind sh:BlankNodeOrIRI ;
     sh:property <https://bioschemas.org/profiles/ChemicalSubstance/0.4-RELEASE#definitions/bioChemEntity/identifier>,
@@ -9401,6 +12421,12 @@
 <https://bioschemas.org/profiles/DefinedTerm/0.1-DRAFT#group-recommended> a sh:PropertyGroup ;
     rdfs:label "Recommended" ;
     sh:order 2 .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/creativework> sh:class schema:CreativeWork ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/creativework/identifier>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/creativework/name>,
+        <https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#definitions/creativework/url> .
 
 <https://bioschemas.org/profiles/FormalParameter/1.0-RELEASE#group-optional> a sh:PropertyGroup ;
     rdfs:label "Optional" ;
@@ -9514,6 +12540,12 @@
         <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE#definitions/organization/identifier>,
         <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE#definitions/organization/name> .
 
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/creativeWork> sh:class schema:CreativeWork ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/creativeWork/identifier>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/creativeWork/name>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/creativeWork/url> .
+
 <https://bioschemas.org/profiles/Course/1.0-RELEASE#definitions/creativework> sh:class schema:CreativeWork ;
     sh:nodeKind sh:BlankNodeOrIRI ;
     sh:property <https://bioschemas.org/profiles/Course/1.0-RELEASE#definitions/creativework/identifier>,
@@ -9558,6 +12590,10 @@
     rdfs:label "Required" ;
     sh:order 1 .
 
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-recommended> a sh:PropertyGroup ;
+    rdfs:label "Recommended" ;
+    sh:order 2 .
+
 <https://bioschemas.org/profiles/LabProtocol/0.8-DRAFT#group-required> a sh:PropertyGroup ;
     rdfs:label "Required" ;
     sh:order 1 .
@@ -9589,9 +12625,27 @@
     rdfs:label "Recommended" ;
     sh:order 2 .
 
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person> sh:class schema:Person ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person/affiliation>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person/name>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person/name-required>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/person/url> .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-optional> a sh:PropertyGroup ;
+    rdfs:label "Optional" ;
+    sh:order 3 .
+
 <https://bioschemas.org/profiles/Study/0.3-DRAFT#group-required> a sh:PropertyGroup ;
     rdfs:label "Required" ;
     sh:order 1 .
+
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization> sh:class schema:Organization ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization/alternateName>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization/identifier>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization/name>,
+        <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization/url> .
 
 <https://bioschemas.org/profiles/DataCatalog/0.3-RELEASE-2019_07_01#group-recommended> a sh:PropertyGroup ;
     rdfs:label "Recommended" ;
@@ -9610,6 +12664,9 @@
     rdfs:label "Recommended" ;
     sh:order 2 .
 
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/definedterm> sh:class schema:DefinedTerm ;
+    sh:nodeKind sh:BlankNodeOrIRI .
+
 <https://bioschemas.org/profiles/LabProtocol/0.8-DRAFT#group-optional> a sh:PropertyGroup ;
     rdfs:label "Optional" ;
     sh:order 3 .
@@ -9624,9 +12681,17 @@
     rdfs:label "Optional" ;
     sh:order 3 .
 
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-required> a sh:PropertyGroup ;
+    rdfs:label "Required" ;
+    sh:order 1 .
+
 <https://bioschemas.org/profiles/Dataset/1.0-RELEASE#group-recommended> a sh:PropertyGroup ;
     rdfs:label "Recommended" ;
     sh:order 2 .
+
+<https://bioschemas.org/profiles/DefinedTermSet/0.1-DRAFT#group-optional> a sh:PropertyGroup ;
+    rdfs:label "Optional" ;
+    sh:order 3 .
 
 <https://bioschemas.org/profiles/LabProtocol/0.8-DRAFT#definitions/creativework> sh:class schema:CreativeWork ;
     sh:nodeKind sh:BlankNodeOrIRI ;
@@ -9686,6 +12751,14 @@
     rdfs:label "Recommended" ;
     sh:order 2 .
 
+<https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#group-recommended> a sh:PropertyGroup ;
+    rdfs:label "Recommended" ;
+    sh:order 2 .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> a sh:PropertyGroup ;
+    rdfs:label "Optional" ;
+    sh:order 3 .
+
 <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE#group-optional> a sh:PropertyGroup ;
     rdfs:label "Optional" ;
     sh:order 3 .
@@ -9693,4 +12766,8 @@
 <https://bioschemas.org/profiles/MolecularEntity/0.5-RELEASE#group-optional> a sh:PropertyGroup ;
     rdfs:label "Optional" ;
     sh:order 3 .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> a sh:PropertyGroup ;
+    rdfs:label "Required" ;
+    sh:order 1 .
 

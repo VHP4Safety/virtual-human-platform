@@ -1,0 +1,2075 @@
+{
+  "@context": {
+    "schema": "https://schema.org/",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "bioschemastypes": "https://discovery.biothings.io/view/bioschemastypes/",
+    "bioschemas": "https://bioschemas.org/terms/",
+    "pbpk": "https://platform.vhp4safety.nl/model/v1/pbpk#",
+    "vhp4safety": "https://platform.vhp4safety.nl/profiles/"
+  },
+  "@graph": [
+    {
+      "@id": "vhp4safety:PBPKModel",
+      "@type": "rdfs:Class",
+      "rdfs:label": "PBPKModel",
+      "rdfs:comment": "A physiologically based kinetic (PBK/PBPK) model, as the main entity of its RO-Crate: a ComputationalWorkflow with the fields that ROBOT requires of a PBPK model. It adds to the Bioschemas ComputationalWorkflow profile, which applies too. Version: 0.1-DRAFT.",
+      "rdfs:subClassOf": {
+        "@id": "bioschemastypes:ComputationalWorkflow"
+      },
+      "$validation": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "Model name",
+            "description": "Add the model name (required by ROBOT).",
+            "type": "string"
+          },
+          "version": {
+            "title": "Model version",
+            "description": "Add the model version (required by ROBOT).",
+            "type": "string"
+          },
+          "description": {
+            "title": "Model description",
+            "description": "Add the model description (required by ROBOT).",
+            "type": "string"
+          },
+          "creator": {
+            "title": "Model author(s)",
+            "description": "Add the model author(s) (required by ROBOT).",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/person"
+              },
+              {
+                "$ref": "#/definitions/organization"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/person"
+                    },
+                    {
+                      "$ref": "#/definitions/organization"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "programmingLanguage": {
+            "title": "Software platform",
+            "description": "Add the software platform (required by ROBOT).",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/computerlanguage"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/computerlanguage"
+                }
+              }
+            ]
+          },
+          "codeRepository": {
+            "title": "Model availability (URLs/DOIs)",
+            "description": "Add the model availability (URLs/DOIs) (required by ROBOT).",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            ]
+          },
+          "license": {
+            "title": "License",
+            "description": "Add the license, chosen from SPDX. Other values are kept.",
+            "$ref": "#/definitions/definedterm"
+          },
+          "applicationCategory": {
+            "title": "Intended application category",
+            "description": "Add the intended application category (required by ROBOT).",
+            "type": "string"
+          },
+          "alternateName": {
+            "title": "Other name",
+            "description": "Such as the name of the model in its PBPK description, if the crate names the file of the model.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "modelStructureDescription": {
+            "title": "Model structure description",
+            "description": "Add the model structure description (required by ROBOT).",
+            "type": "string"
+          },
+          "structuralCompartments": {
+            "title": "Structural compartments",
+            "description": "Add the structural compartments (required by ROBOT).",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/compartment"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/compartment"
+                }
+              }
+            ]
+          },
+          "connections": {
+            "title": "Inter-compartmental connections",
+            "description": "Add the inter-compartmental connections (required by ROBOT).",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/connection"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/connection"
+                }
+              }
+            ]
+          },
+          "mathematicalRepresentation": {
+            "title": "Mathematical representation",
+            "description": "Choose from the list. Other values are kept.",
+            "type": "string",
+            "enum": [
+              "Ordinary differential equations",
+              "Algebraic equations",
+              "Hybrid ODE-algebraic system",
+              "Other"
+            ]
+          },
+          "implementation": {
+            "title": "Model implementation reference(s)",
+            "description": "Add the model implementation reference(s) (required by ROBOT).",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/implementation"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/implementation"
+                }
+              }
+            ]
+          },
+          "input": {
+            "title": "Inputs",
+            "description": "The inputs of the model, such as doses or physiological parameters (input in RO-Crate).",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/formalparameter"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/formalparameter"
+                }
+              }
+            ]
+          },
+          "output": {
+            "title": "Outputs",
+            "description": "The outputs of the model, such as concentration-time profiles (output in RO-Crate).",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/formalparameter"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/formalparameter"
+                }
+              }
+            ]
+          },
+          "hasChemical": {
+            "title": "Chemical substance(s)",
+            "description": "Add the chemical substance(s) (required by ROBOT).",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/molecularentity"
+              },
+              {
+                "$ref": "#/definitions/chemicalsubstance"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/molecularentity"
+                    },
+                    {
+                      "$ref": "#/definitions/chemicalsubstance"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "hasBiologicalSystem": {
+            "title": "Biological system(s)",
+            "description": "Add the biological system(s) (required by ROBOT).",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/biologicalsystem"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/biologicalsystem"
+                }
+              }
+            ]
+          },
+          "hasParameter": {
+            "title": "Parameters",
+            "description": "Add the parameters (required by ROBOT).",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/parameter"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/parameter"
+                }
+              }
+            ]
+          },
+          "hasCalibration": {
+            "title": "Calibration activities",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/calibration"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/calibration"
+                }
+              }
+            ]
+          },
+          "hasEvaluation": {
+            "title": "Evaluation activities",
+            "description": "Add the evaluation activities (required by ROBOT).",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/evaluation"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/evaluation"
+                }
+              }
+            ]
+          },
+          "hasSUVAnalysis": {
+            "title": "SUV analyses",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/suvanalysis"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/suvanalysis"
+                }
+              }
+            ]
+          },
+          "intendedUse": {
+            "title": "Intended use",
+            "description": "Add the intended use (required by ROBOT).",
+            "type": "string"
+          },
+          "applicabilityDomain": {
+            "title": "Applicability domain",
+            "description": "Add the applicability domain (required by ROBOT).",
+            "type": "string"
+          },
+          "confidenceStatement": {
+            "title": "Confidence statement",
+            "description": "Add the confidence statement (required by ROBOT).",
+            "type": "string"
+          },
+          "limitations": {
+            "title": "Known limitations",
+            "description": "Add the known limitations (required by ROBOT).",
+            "type": "string"
+          },
+          "hasPart": {
+            "title": "Digital artifacts",
+            "description": "Add the digital artifacts (required by ROBOT).",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/mediaobject"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/mediaobject"
+                }
+              }
+            ]
+          },
+          "reproducibilityInstructions": {
+            "title": "Reproducibility instructions",
+            "description": "Add the reproducibility instructions (required by ROBOT).",
+            "type": "string"
+          },
+          "contributor": {
+            "title": "Contributors",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/person"
+              },
+              {
+                "$ref": "#/definitions/organization"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/person"
+                    },
+                    {
+                      "$ref": "#/definitions/organization"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "citation": {
+            "title": "Publications",
+            "description": "The publications that describe the model, with links to their DOIs on their pages.",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/scholarlyarticle"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/scholarlyarticle"
+                }
+              }
+            ]
+          },
+          "funding": {
+            "title": "Funded by",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/monetarygrant"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/monetarygrant"
+                }
+              }
+            ]
+          },
+          "about": {
+            "title": "Topics",
+            "description": "The topics of the model, such as its chemicals (ChEBI) and organisms.",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/definedterm"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/definedterm"
+                }
+              }
+            ]
+          },
+          "keywords": {
+            "title": "Keywords",
+            "description": "Choose a vocabulary term, or register it. Text is kept until then.",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/definedterm"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/definedterm"
+                }
+              }
+            ]
+          },
+          "runtimePlatform": {
+            "title": "Runtime",
+            "description": "Such as R 4.1.0, or Berkeley Madonna 10.6.1.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "softwareRequirements": {
+            "title": "Requirements",
+            "description": "The packages required by the model, with their versions.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "datePublished": {
+            "title": "Published",
+            "type": "string",
+            "format": "date"
+          },
+          "isBasedOn": {
+            "title": "Source record",
+            "description": "The Zenodo record from which this record is made.",
+            "type": "string",
+            "format": "uri"
+          },
+          "sameAs": {
+            "title": "DOI and other addresses",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "version",
+          "description",
+          "creator",
+          "programmingLanguage",
+          "codeRepository",
+          "license",
+          "applicationCategory",
+          "modelStructureDescription",
+          "structuralCompartments",
+          "connections",
+          "mathematicalRepresentation",
+          "implementation",
+          "hasChemical",
+          "hasBiologicalSystem",
+          "hasParameter",
+          "hasEvaluation",
+          "intendedUse",
+          "applicabilityDomain",
+          "confidenceStatement",
+          "limitations",
+          "hasPart",
+          "reproducibilityInstructions"
+        ],
+        "optional": [
+          "alternateName",
+          "input",
+          "output",
+          "hasCalibration",
+          "hasSUVAnalysis",
+          "contributor",
+          "citation",
+          "funding",
+          "about",
+          "keywords",
+          "runtimePlatform",
+          "softwareRequirements",
+          "datePublished",
+          "isBasedOn",
+          "sameAs"
+        ],
+        "definitions": {
+          "person": {
+            "@type": "schema:Person",
+            "type": "object"
+          },
+          "organization": {
+            "@type": "schema:Organization",
+            "type": "object"
+          },
+          "computerlanguage": {
+            "@type": "schema:ComputerLanguage",
+            "type": "object",
+            "properties": {
+              "name": {
+                "title": "Name",
+                "description": "Such as R, Python, Stan or SBML.",
+                "type": "string"
+              },
+              "url": {
+                "title": "Address",
+                "description": "Add the address of the language (required by RO-Crate).",
+                "type": "string",
+                "format": "uri"
+              },
+              "version": {
+                "title": "Version",
+                "description": "Add the version the model was made with (required by RO-Crate).",
+                "type": "string"
+              },
+              "alternateName": {
+                "title": "Other name",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "url",
+              "version"
+            ]
+          },
+          "definedterm": {
+            "@type": "schema:DefinedTerm",
+            "type": "object"
+          },
+          "compartment": {
+            "@type": "pbpk:Compartment",
+            "type": "object",
+            "properties": {
+              "name": {
+                "title": "Compartment name (model)",
+                "description": "Add the compartment name (model) (required by ROBOT).",
+                "type": "string"
+              },
+              "biologicalReference": {
+                "title": "Biological reference",
+                "description": "Choose an ontology term, or register it. Text is kept until then.",
+                "$ref": "#/definitions/definedterm"
+              },
+              "description": {
+                "title": "Compartment description",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "biologicalReference"
+            ]
+          },
+          "connection": {
+            "@type": "pbpk:Connection",
+            "type": "object",
+            "properties": {
+              "sourceCompartment": {
+                "title": "Source compartment",
+                "description": "Add the source compartment (required by ROBOT).",
+                "type": "string"
+              },
+              "targetCompartment": {
+                "title": "Target compartment",
+                "description": "Add the target compartment (required by ROBOT).",
+                "type": "string"
+              },
+              "connectionType": {
+                "title": "Connection type",
+                "description": "Choose from the list. Other values are kept.",
+                "type": "string",
+                "enum": [
+                  "Blood flow",
+                  "Diffusion",
+                  "Permeation",
+                  "Other"
+                ]
+              },
+              "description": {
+                "title": "Connection description",
+                "type": "string"
+              }
+            },
+            "required": [
+              "sourceCompartment",
+              "targetCompartment",
+              "connectionType"
+            ]
+          },
+          "implementation": {
+            "@type": "pbpk:Implementation",
+            "type": "object",
+            "properties": {
+              "implementationType": {
+                "title": "Implementation type",
+                "description": "Choose from the list. Other values are kept.",
+                "type": "string",
+                "enum": [
+                  "SBML",
+                  "Python script",
+                  "R script",
+                  "Other"
+                ]
+              },
+              "implementationLocation": {
+                "title": "Implementation location (relative path)",
+                "description": "Add the implementation location (relative path) (required by ROBOT).",
+                "type": "string"
+              }
+            },
+            "required": [
+              "implementationType",
+              "implementationLocation"
+            ]
+          },
+          "formalparameter": {
+            "@type": "bioschemas:FormalParameter",
+            "type": "object",
+            "properties": {
+              "name": {
+                "title": "Name",
+                "description": "One name needed.",
+                "type": "string"
+              },
+              "description": {
+                "title": "Description",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "molecularentity": {
+            "@type": "schema:MolecularEntity",
+            "type": "object",
+            "properties": {
+              "name": {
+                "title": "Chemical name",
+                "description": "Add the chemical name (required by ROBOT).",
+                "type": "string"
+              },
+              "chemicalRole": {
+                "title": "Role in the model",
+                "description": "Choose from the list. Other values are kept.",
+                "type": "string",
+                "enum": [
+                  "Parent compound",
+                  "Metabolite",
+                  "Co-exposure component",
+                  "Other"
+                ]
+              },
+              "identifier": {
+                "title": "Chemical identifier(s)",
+                "description": "Add the chemical identifier(s) (required by ROBOT).",
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/propertyvalue"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/propertyvalue"
+                    }
+                  }
+                ]
+              },
+              "molecularWeight": {
+                "title": "Molecular weight (g/mol)",
+                "type": "number"
+              },
+              "physicochemicalNotes": {
+                "title": "Physicochemical notes",
+                "type": "string"
+              },
+              "alternateName": {
+                "title": "Other names",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              },
+              "description": {
+                "title": "Description",
+                "type": "string"
+              },
+              "inChI": {
+                "title": "InChI",
+                "type": "string"
+              },
+              "inChIKey": {
+                "title": "InChIKey",
+                "type": "string"
+              },
+              "smiles": {
+                "title": "SMILES",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              },
+              "molecularFormula": {
+                "title": "Molecular formula",
+                "type": "string"
+              },
+              "sameAs": {
+                "title": "Addresses elsewhere",
+                "description": "Such as its ChEBI or PubChem page.",
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  }
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "chemicalRole",
+              "identifier"
+            ]
+          },
+          "propertyvalue": {
+            "@type": "schema:PropertyValue",
+            "type": "object",
+            "properties": {
+              "propertyID": {
+                "title": "Identifier type",
+                "description": "Choose from the list. Other values are kept.",
+                "type": "string",
+                "enum": [
+                  "CAS RN",
+                  "InChI",
+                  "InChIKey",
+                  "SMILES",
+                  "PubChem CID",
+                  "Other"
+                ]
+              },
+              "value": {
+                "title": "Identifier value",
+                "description": "Add the identifier value (required by ROBOT).",
+                "type": "string"
+              }
+            },
+            "required": [
+              "propertyID",
+              "value"
+            ]
+          },
+          "chemicalsubstance": {
+            "@type": "schema:ChemicalSubstance",
+            "type": "object",
+            "properties": {
+              "name": {
+                "title": "Chemical name",
+                "description": "Add the chemical name (required by ROBOT).",
+                "type": "string"
+              },
+              "chemicalRole": {
+                "title": "Role in the model",
+                "description": "Choose from the list. Other values are kept.",
+                "type": "string",
+                "enum": [
+                  "Parent compound",
+                  "Metabolite",
+                  "Co-exposure component",
+                  "Other"
+                ]
+              },
+              "identifier": {
+                "title": "Chemical identifier(s)",
+                "description": "Add the chemical identifier(s) (required by ROBOT).",
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/propertyvalue"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/propertyvalue"
+                    }
+                  }
+                ]
+              },
+              "molecularWeight": {
+                "title": "Molecular weight (g/mol)",
+                "type": "number"
+              },
+              "physicochemicalNotes": {
+                "title": "Physicochemical notes",
+                "type": "string"
+              },
+              "alternateName": {
+                "title": "Other names",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              },
+              "description": {
+                "title": "Description",
+                "type": "string"
+              },
+              "inChI": {
+                "title": "InChI",
+                "type": "string"
+              },
+              "inChIKey": {
+                "title": "InChIKey",
+                "type": "string"
+              },
+              "smiles": {
+                "title": "SMILES",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              },
+              "molecularFormula": {
+                "title": "Molecular formula",
+                "type": "string"
+              },
+              "sameAs": {
+                "title": "Addresses elsewhere",
+                "description": "Such as its ChEBI or PubChem page.",
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  }
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "chemicalRole",
+              "identifier"
+            ]
+          },
+          "biologicalsystem": {
+            "@type": "pbpk:BiologicalSystem",
+            "type": "object",
+            "properties": {
+              "species": {
+                "title": "Species",
+                "description": "Choose an ontology term, or register it. Text is kept until then.",
+                "$ref": "#/definitions/definedterm"
+              },
+              "lifeStage": {
+                "title": "Life stage(s)",
+                "description": "Choose from the list. Other values are kept.",
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "Adult",
+                      "Juvenile",
+                      "Neonate",
+                      "Pregnant",
+                      "Lactating",
+                      "Other"
+                    ]
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "Adult",
+                        "Juvenile",
+                        "Neonate",
+                        "Pregnant",
+                        "Lactating",
+                        "Other"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "physiologicalScope": {
+                "title": "Physiological scope",
+                "description": "Add the physiological scope (required by ROBOT).",
+                "type": "string"
+              },
+              "compartments": {
+                "title": "Compartments",
+                "description": "Choose an ontology term, or register it. Text is kept until then.",
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/definedterm"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/definedterm"
+                    }
+                  }
+                ]
+              },
+              "populationDescription": {
+                "title": "Population description",
+                "type": "string"
+              },
+              "anatomicalAssumptions": {
+                "title": "Anatomical assumptions",
+                "type": "string"
+              }
+            },
+            "required": [
+              "species",
+              "lifeStage",
+              "physiologicalScope",
+              "compartments"
+            ]
+          },
+          "parameter": {
+            "@type": "pbpk:Parameter",
+            "type": "object",
+            "properties": {
+              "name": {
+                "title": "Parameter name",
+                "description": "Add the parameter name (required by ROBOT).",
+                "type": "string"
+              },
+              "parameterCategory": {
+                "title": "Parameter category",
+                "description": "Choose from the list. Other values are kept.",
+                "type": "string",
+                "enum": [
+                  "Physiological",
+                  "Biochemical",
+                  "Physicochemical",
+                  "Empirical",
+                  "Other"
+                ]
+              },
+              "value": {
+                "title": "Parameter value",
+                "description": "Add the parameter value (required by ROBOT).",
+                "type": "number"
+              },
+              "unitText": {
+                "title": "Parameter unit",
+                "description": "Add the parameter unit (required by ROBOT).",
+                "type": "string"
+              },
+              "scope": {
+                "title": "Parameter scope",
+                "description": "Choose from the list. Other values are kept.",
+                "type": "string",
+                "enum": [
+                  "Global",
+                  "Species-specific",
+                  "Compartment-specific",
+                  "Chemical-specific"
+                ]
+              },
+              "appliesToSpecies": {
+                "title": "Applicable species",
+                "description": "Choose an ontology term, or register it. Text is kept until then.",
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/definedterm"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/definedterm"
+                    }
+                  }
+                ]
+              },
+              "appliesToCompartments": {
+                "title": "Applicable compartments",
+                "description": "Choose an ontology term, or register it. Text is kept until then.",
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/definedterm"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/definedterm"
+                    }
+                  }
+                ]
+              },
+              "appliesToChemicals": {
+                "title": "Applicable chemicals",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              },
+              "parameterSource": {
+                "title": "Parameter source",
+                "description": "Choose from the list. Other values are kept.",
+                "type": "string",
+                "enum": [
+                  "Literature",
+                  "Experimental data",
+                  "In silico estimation",
+                  "Assumed",
+                  "Other"
+                ]
+              },
+              "sourceReference": {
+                "title": "Source reference",
+                "type": "string"
+              },
+              "notes": {
+                "title": "Parameter notes",
+                "type": "string"
+              },
+              "propertyID": {
+                "title": "Symbol",
+                "description": "The symbol of the parameter in the code of the model, such as BW.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "parameterCategory",
+              "value",
+              "unitText",
+              "scope",
+              "parameterSource"
+            ]
+          },
+          "calibration": {
+            "@type": "pbpk:Calibration",
+            "type": "object",
+            "properties": {
+              "name": {
+                "title": "Calibration name",
+                "type": "string"
+              },
+              "description": {
+                "title": "Calibration description",
+                "description": "Add the calibration description (required by ROBOT).",
+                "type": "string"
+              },
+              "method": {
+                "title": "Calibration method",
+                "description": "Choose from the list. Other values are kept.",
+                "type": "string",
+                "enum": [
+                  "Manual fitting",
+                  "Least squares optimization",
+                  "Bayesian inference",
+                  "Visual inspection",
+                  "Other"
+                ]
+              },
+              "calibrationData": {
+                "title": "Calibration data",
+                "type": "string"
+              },
+              "calibratedParameters": {
+                "title": "Calibrated parameters",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              },
+              "optimizationCriteria": {
+                "title": "Optimization criteria",
+                "type": "string"
+              },
+              "notes": {
+                "title": "Calibration notes",
+                "type": "string"
+              }
+            },
+            "required": [
+              "description",
+              "method"
+            ]
+          },
+          "evaluation": {
+            "@type": "pbpk:Evaluation",
+            "type": "object",
+            "properties": {
+              "name": {
+                "title": "Evaluation name",
+                "type": "string"
+              },
+              "description": {
+                "title": "Evaluation description",
+                "description": "Add the evaluation description (required by ROBOT).",
+                "type": "string"
+              },
+              "evaluationData": {
+                "title": "Evaluation data (reference)",
+                "type": "string"
+              },
+              "method": {
+                "title": "Evaluation method",
+                "description": "Choose from the list. Other values are kept.",
+                "type": "string",
+                "enum": [
+                  "Visual comparison",
+                  "Statistical goodness-of-fit",
+                  "Observed vs predicted regression",
+                  "Other"
+                ]
+              },
+              "performanceMetrics": {
+                "title": "Performance metrics",
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/performancemetric"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/performancemetric"
+                    }
+                  }
+                ]
+              },
+              "outcome": {
+                "title": "Evaluation outcome",
+                "description": "Add the evaluation outcome (required by ROBOT).",
+                "type": "string"
+              },
+              "limitations": {
+                "title": "Evaluation limitations",
+                "type": "string"
+              }
+            },
+            "required": [
+              "description",
+              "method",
+              "outcome"
+            ]
+          },
+          "performancemetric": {
+            "@type": "pbpk:PerformanceMetric",
+            "type": "object",
+            "properties": {
+              "name": {
+                "title": "Metric name",
+                "description": "Add the metric name (required by ROBOT).",
+                "type": "string"
+              },
+              "value": {
+                "title": "Metric value",
+                "type": "string"
+              },
+              "interpretation": {
+                "title": "Metric interpretation",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "suvanalysis": {
+            "@type": "pbpk:SUVAnalysis",
+            "type": "object",
+            "properties": {
+              "name": {
+                "title": "Analysis name",
+                "type": "string"
+              },
+              "analysisType": {
+                "title": "Analysis type",
+                "description": "Choose from the list. Other values are kept.",
+                "type": "string",
+                "enum": [
+                  "Sensitivity analysis",
+                  "Uncertainty analysis",
+                  "Variability analysis",
+                  "Combined analysis",
+                  "Other"
+                ]
+              },
+              "method": {
+                "title": "Analysis method",
+                "type": "string"
+              },
+              "analyzedParameters": {
+                "title": "Analyzed parameters",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              },
+              "outcome": {
+                "title": "Analysis results",
+                "description": "Add the analysis results (required by ROBOT).",
+                "type": "string"
+              },
+              "robustnessInterpretation": {
+                "title": "Robustness interpretation",
+                "type": "string"
+              },
+              "notes": {
+                "title": "Additional notes",
+                "type": "string"
+              }
+            },
+            "required": [
+              "analysisType",
+              "outcome"
+            ]
+          },
+          "mediaobject": {
+            "@type": "schema:MediaObject",
+            "type": "object",
+            "properties": {
+              "name": {
+                "title": "Artifact name",
+                "description": "Add the artifact name (required by ROBOT).",
+                "type": "string"
+              },
+              "artifactType": {
+                "title": "Artifact type",
+                "description": "Choose from the list. Other values are kept.",
+                "type": "string",
+                "enum": [
+                  "Model code",
+                  "Simulation script",
+                  "Parameter file",
+                  "Dataset",
+                  "Documentation",
+                  "Notebook",
+                  "Other"
+                ]
+              },
+              "encodingFormat": {
+                "title": "Artifact format",
+                "description": "Add the artifact format (required by ROBOT).",
+                "type": "string"
+              },
+              "artifactLocation": {
+                "title": "Artifact location",
+                "description": "Add the artifact location (required by ROBOT).",
+                "type": "string"
+              },
+              "contentSize": {
+                "title": "Size",
+                "description": "Such as 3.1 MB.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "artifactType",
+              "encodingFormat",
+              "artifactLocation"
+            ]
+          },
+          "scholarlyarticle": {
+            "@type": "schema:ScholarlyArticle",
+            "type": "object"
+          },
+          "monetarygrant": {
+            "@type": "schema:MonetaryGrant",
+            "type": "object"
+          }
+        }
+      }
+    },
+    {
+      "@id": "pbpk:analysisType",
+      "@type": "rdf:Property",
+      "rdfs:label": "analysisType",
+      "rdfs:comment": "Analysis type",
+      "schema:domainIncludes": {
+        "@id": "pbpk:SUVAnalysis"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:analyzedParameters",
+      "@type": "rdf:Property",
+      "rdfs:label": "analyzedParameters",
+      "rdfs:comment": "Analyzed parameters",
+      "schema:domainIncludes": {
+        "@id": "pbpk:SUVAnalysis"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:anatomicalAssumptions",
+      "@type": "rdf:Property",
+      "rdfs:label": "anatomicalAssumptions",
+      "rdfs:comment": "Anatomical assumptions",
+      "schema:domainIncludes": {
+        "@id": "pbpk:BiologicalSystem"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:applicabilityDomain",
+      "@type": "rdf:Property",
+      "rdfs:label": "applicabilityDomain",
+      "rdfs:comment": "Applicability domain",
+      "schema:domainIncludes": {
+        "@id": "schema:SoftwareSourceCode"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:appliesToChemicals",
+      "@type": "rdf:Property",
+      "rdfs:label": "appliesToChemicals",
+      "rdfs:comment": "Applicable chemicals",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Parameter"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:appliesToCompartments",
+      "@type": "rdf:Property",
+      "rdfs:label": "appliesToCompartments",
+      "rdfs:comment": "Applicable compartments",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Parameter"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:DefinedTerm"
+      }
+    },
+    {
+      "@id": "pbpk:appliesToSpecies",
+      "@type": "rdf:Property",
+      "rdfs:label": "appliesToSpecies",
+      "rdfs:comment": "Applicable species",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Parameter"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:DefinedTerm"
+      }
+    },
+    {
+      "@id": "pbpk:artifactLocation",
+      "@type": "rdf:Property",
+      "rdfs:label": "artifactLocation",
+      "rdfs:comment": "Artifact location",
+      "schema:domainIncludes": {
+        "@id": "schema:MediaObject"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:artifactType",
+      "@type": "rdf:Property",
+      "rdfs:label": "artifactType",
+      "rdfs:comment": "Artifact type",
+      "schema:domainIncludes": {
+        "@id": "schema:MediaObject"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:biologicalReference",
+      "@type": "rdf:Property",
+      "rdfs:label": "biologicalReference",
+      "rdfs:comment": "Biological reference",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Compartment"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:DefinedTerm"
+      }
+    },
+    {
+      "@id": "pbpk:calibratedParameters",
+      "@type": "rdf:Property",
+      "rdfs:label": "calibratedParameters",
+      "rdfs:comment": "Calibrated parameters",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Calibration"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:calibrationData",
+      "@type": "rdf:Property",
+      "rdfs:label": "calibrationData",
+      "rdfs:comment": "Calibration data",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Calibration"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:compartments",
+      "@type": "rdf:Property",
+      "rdfs:label": "compartments",
+      "rdfs:comment": "Compartments",
+      "schema:domainIncludes": {
+        "@id": "pbpk:BiologicalSystem"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:DefinedTerm"
+      }
+    },
+    {
+      "@id": "pbpk:confidenceStatement",
+      "@type": "rdf:Property",
+      "rdfs:label": "confidenceStatement",
+      "rdfs:comment": "Confidence statement",
+      "schema:domainIncludes": {
+        "@id": "schema:SoftwareSourceCode"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:connectionType",
+      "@type": "rdf:Property",
+      "rdfs:label": "connectionType",
+      "rdfs:comment": "Connection type",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Connection"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:connections",
+      "@type": "rdf:Property",
+      "rdfs:label": "connections",
+      "rdfs:comment": "Inter-compartmental connections",
+      "schema:domainIncludes": {
+        "@id": "schema:SoftwareSourceCode"
+      },
+      "schema:rangeIncludes": {
+        "@id": "pbpk:Connection"
+      }
+    },
+    {
+      "@id": "pbpk:evaluationData",
+      "@type": "rdf:Property",
+      "rdfs:label": "evaluationData",
+      "rdfs:comment": "Evaluation data (reference)",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Evaluation"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:hasBiologicalSystem",
+      "@type": "rdf:Property",
+      "rdfs:label": "hasBiologicalSystem",
+      "rdfs:comment": "Biological system(s)",
+      "schema:domainIncludes": {
+        "@id": "schema:SoftwareSourceCode"
+      },
+      "schema:rangeIncludes": {
+        "@id": "pbpk:BiologicalSystem"
+      }
+    },
+    {
+      "@id": "pbpk:hasCalibration",
+      "@type": "rdf:Property",
+      "rdfs:label": "hasCalibration",
+      "rdfs:comment": "Calibration activities",
+      "schema:domainIncludes": {
+        "@id": "schema:SoftwareSourceCode"
+      },
+      "schema:rangeIncludes": {
+        "@id": "pbpk:Calibration"
+      }
+    },
+    {
+      "@id": "pbpk:hasChemical",
+      "@type": "rdf:Property",
+      "rdfs:label": "hasChemical",
+      "rdfs:comment": "Chemical substance(s)",
+      "schema:domainIncludes": {
+        "@id": "schema:SoftwareSourceCode"
+      },
+      "schema:rangeIncludes": [
+        {
+          "@id": "schema:ChemicalSubstance"
+        },
+        {
+          "@id": "schema:MolecularEntity"
+        }
+      ]
+    },
+    {
+      "@id": "pbpk:hasEvaluation",
+      "@type": "rdf:Property",
+      "rdfs:label": "hasEvaluation",
+      "rdfs:comment": "Evaluation activities",
+      "schema:domainIncludes": {
+        "@id": "schema:SoftwareSourceCode"
+      },
+      "schema:rangeIncludes": {
+        "@id": "pbpk:Evaluation"
+      }
+    },
+    {
+      "@id": "pbpk:hasParameter",
+      "@type": "rdf:Property",
+      "rdfs:label": "hasParameter",
+      "rdfs:comment": "Parameters",
+      "schema:domainIncludes": {
+        "@id": "schema:SoftwareSourceCode"
+      },
+      "schema:rangeIncludes": {
+        "@id": "pbpk:Parameter"
+      }
+    },
+    {
+      "@id": "pbpk:hasSUVAnalysis",
+      "@type": "rdf:Property",
+      "rdfs:label": "hasSUVAnalysis",
+      "rdfs:comment": "SUV analyses",
+      "schema:domainIncludes": {
+        "@id": "schema:SoftwareSourceCode"
+      },
+      "schema:rangeIncludes": {
+        "@id": "pbpk:SUVAnalysis"
+      }
+    },
+    {
+      "@id": "pbpk:implementation",
+      "@type": "rdf:Property",
+      "rdfs:label": "implementation",
+      "rdfs:comment": "Model implementation reference(s)",
+      "schema:domainIncludes": {
+        "@id": "schema:SoftwareSourceCode"
+      },
+      "schema:rangeIncludes": {
+        "@id": "pbpk:Implementation"
+      }
+    },
+    {
+      "@id": "pbpk:implementationLocation",
+      "@type": "rdf:Property",
+      "rdfs:label": "implementationLocation",
+      "rdfs:comment": "Implementation location (relative path)",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Implementation"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:implementationType",
+      "@type": "rdf:Property",
+      "rdfs:label": "implementationType",
+      "rdfs:comment": "Implementation type",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Implementation"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:intendedUse",
+      "@type": "rdf:Property",
+      "rdfs:label": "intendedUse",
+      "rdfs:comment": "Intended use",
+      "schema:domainIncludes": {
+        "@id": "schema:SoftwareSourceCode"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:interpretation",
+      "@type": "rdf:Property",
+      "rdfs:label": "interpretation",
+      "rdfs:comment": "Metric interpretation",
+      "schema:domainIncludes": {
+        "@id": "pbpk:PerformanceMetric"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:lifeStage",
+      "@type": "rdf:Property",
+      "rdfs:label": "lifeStage",
+      "rdfs:comment": "Life stage(s)",
+      "schema:domainIncludes": {
+        "@id": "pbpk:BiologicalSystem"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:limitations",
+      "@type": "rdf:Property",
+      "rdfs:label": "limitations",
+      "rdfs:comment": "Limitations",
+      "schema:domainIncludes": [
+        {
+          "@id": "pbpk:Evaluation"
+        },
+        {
+          "@id": "schema:SoftwareSourceCode"
+        }
+      ],
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:mathematicalRepresentation",
+      "@type": "rdf:Property",
+      "rdfs:label": "mathematicalRepresentation",
+      "rdfs:comment": "Mathematical representation",
+      "schema:domainIncludes": {
+        "@id": "schema:SoftwareSourceCode"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:method",
+      "@type": "rdf:Property",
+      "rdfs:label": "method",
+      "rdfs:comment": "Method",
+      "schema:domainIncludes": [
+        {
+          "@id": "pbpk:Calibration"
+        },
+        {
+          "@id": "pbpk:Evaluation"
+        },
+        {
+          "@id": "pbpk:SUVAnalysis"
+        }
+      ],
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:modelStructureDescription",
+      "@type": "rdf:Property",
+      "rdfs:label": "modelStructureDescription",
+      "rdfs:comment": "Model structure description",
+      "schema:domainIncludes": {
+        "@id": "schema:SoftwareSourceCode"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:notes",
+      "@type": "rdf:Property",
+      "rdfs:label": "notes",
+      "rdfs:comment": "Notes",
+      "schema:domainIncludes": [
+        {
+          "@id": "pbpk:Calibration"
+        },
+        {
+          "@id": "pbpk:Parameter"
+        },
+        {
+          "@id": "pbpk:SUVAnalysis"
+        }
+      ],
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:optimizationCriteria",
+      "@type": "rdf:Property",
+      "rdfs:label": "optimizationCriteria",
+      "rdfs:comment": "Optimization criteria",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Calibration"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:outcome",
+      "@type": "rdf:Property",
+      "rdfs:label": "outcome",
+      "rdfs:comment": "Outcome",
+      "schema:domainIncludes": [
+        {
+          "@id": "pbpk:Evaluation"
+        },
+        {
+          "@id": "pbpk:SUVAnalysis"
+        }
+      ],
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:parameterCategory",
+      "@type": "rdf:Property",
+      "rdfs:label": "parameterCategory",
+      "rdfs:comment": "Parameter category",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Parameter"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:parameterSource",
+      "@type": "rdf:Property",
+      "rdfs:label": "parameterSource",
+      "rdfs:comment": "Parameter source",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Parameter"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:performanceMetrics",
+      "@type": "rdf:Property",
+      "rdfs:label": "performanceMetrics",
+      "rdfs:comment": "Performance metrics",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Evaluation"
+      },
+      "schema:rangeIncludes": {
+        "@id": "pbpk:PerformanceMetric"
+      }
+    },
+    {
+      "@id": "pbpk:physicochemicalNotes",
+      "@type": "rdf:Property",
+      "rdfs:label": "physicochemicalNotes",
+      "rdfs:comment": "Physicochemical notes",
+      "schema:domainIncludes": {
+        "@id": "schema:MolecularEntity"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:physiologicalScope",
+      "@type": "rdf:Property",
+      "rdfs:label": "physiologicalScope",
+      "rdfs:comment": "Physiological scope",
+      "schema:domainIncludes": {
+        "@id": "pbpk:BiologicalSystem"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:populationDescription",
+      "@type": "rdf:Property",
+      "rdfs:label": "populationDescription",
+      "rdfs:comment": "Population description",
+      "schema:domainIncludes": {
+        "@id": "pbpk:BiologicalSystem"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:reproducibilityInstructions",
+      "@type": "rdf:Property",
+      "rdfs:label": "reproducibilityInstructions",
+      "rdfs:comment": "Reproducibility instructions",
+      "schema:domainIncludes": {
+        "@id": "schema:SoftwareSourceCode"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:robustnessInterpretation",
+      "@type": "rdf:Property",
+      "rdfs:label": "robustnessInterpretation",
+      "rdfs:comment": "Robustness interpretation",
+      "schema:domainIncludes": {
+        "@id": "pbpk:SUVAnalysis"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:scope",
+      "@type": "rdf:Property",
+      "rdfs:label": "scope",
+      "rdfs:comment": "Parameter scope",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Parameter"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:sourceCompartment",
+      "@type": "rdf:Property",
+      "rdfs:label": "sourceCompartment",
+      "rdfs:comment": "Source compartment",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Connection"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:sourceReference",
+      "@type": "rdf:Property",
+      "rdfs:label": "sourceReference",
+      "rdfs:comment": "Source reference",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Parameter"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:species",
+      "@type": "rdf:Property",
+      "rdfs:label": "species",
+      "rdfs:comment": "Species",
+      "schema:domainIncludes": {
+        "@id": "pbpk:BiologicalSystem"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:DefinedTerm"
+      }
+    },
+    {
+      "@id": "pbpk:structuralCompartments",
+      "@type": "rdf:Property",
+      "rdfs:label": "structuralCompartments",
+      "rdfs:comment": "Structural compartments",
+      "schema:domainIncludes": {
+        "@id": "schema:SoftwareSourceCode"
+      },
+      "schema:rangeIncludes": {
+        "@id": "pbpk:Compartment"
+      }
+    },
+    {
+      "@id": "pbpk:targetCompartment",
+      "@type": "rdf:Property",
+      "rdfs:label": "targetCompartment",
+      "rdfs:comment": "Target compartment",
+      "schema:domainIncludes": {
+        "@id": "pbpk:Connection"
+      },
+      "schema:rangeIncludes": {
+        "@id": "schema:Text"
+      }
+    },
+    {
+      "@id": "pbpk:BiologicalSystem",
+      "@type": "rdfs:Class",
+      "rdfs:label": "BiologicalSystem",
+      "rdfs:comment": "Biological system"
+    },
+    {
+      "@id": "pbpk:Calibration",
+      "@type": "rdfs:Class",
+      "rdfs:label": "Calibration",
+      "rdfs:comment": "Calibration"
+    },
+    {
+      "@id": "pbpk:Compartment",
+      "@type": "rdfs:Class",
+      "rdfs:label": "Compartment",
+      "rdfs:comment": "Compartment"
+    },
+    {
+      "@id": "pbpk:Connection",
+      "@type": "rdfs:Class",
+      "rdfs:label": "Connection",
+      "rdfs:comment": "Connection"
+    },
+    {
+      "@id": "pbpk:Evaluation",
+      "@type": "rdfs:Class",
+      "rdfs:label": "Evaluation",
+      "rdfs:comment": "Evaluation"
+    },
+    {
+      "@id": "pbpk:Implementation",
+      "@type": "rdfs:Class",
+      "rdfs:label": "Implementation",
+      "rdfs:comment": "Implementation"
+    },
+    {
+      "@id": "pbpk:Parameter",
+      "@type": "rdfs:Class",
+      "rdfs:label": "Parameter",
+      "rdfs:comment": "Parameter"
+    },
+    {
+      "@id": "pbpk:PerformanceMetric",
+      "@type": "rdfs:Class",
+      "rdfs:label": "PerformanceMetric",
+      "rdfs:comment": "Performance metric"
+    },
+    {
+      "@id": "pbpk:SUVAnalysis",
+      "@type": "rdfs:Class",
+      "rdfs:label": "SUVAnalysis",
+      "rdfs:comment": "Sensitivity, uncertainty or variability analysis"
+    }
+  ]
+}
