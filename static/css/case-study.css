@@ -63,54 +63,111 @@
   border-radius: 0.25rem;
 }
 
-/* The map of the case study under the process flow: every page with the colour and number of its stage, as in the
-   process flow, down to the tools, models and data (static/js/case-study.js). */
-.case-study-map {
-  max-width: 1140px;
-  max-height: 60vh;
-  margin: 0.5rem auto 0;
-  overflow-y: auto;
+/* The pages of a stage roll out under the process flow from the button under the stage, in the colour of the stage
+   (static/js/case-study.js). */
+.step-item[data-step="2"], .step-rollout[data-step="2"] { --stage: var(--bs-vhpdarkpurple); }
+.step-item[data-step="3"], .step-rollout[data-step="3"] { --stage: var(--bs-vhpdarkteal); }
+.step-item[data-step="4"], .step-rollout[data-step="4"] { --stage: var(--bs-vhplightteal); }
+.step-item[data-step="5"], .step-rollout[data-step="5"] { --stage: var(--bs-vhpblue); }
+
+/* The buttons of the stages are on one line, under the longest name of a stage. */
+.case-study .step-tracker > .step-item {
+  align-self: stretch;
 }
 
-.case-study-branches {
-  list-style: none;
-  margin: 0;
-  padding-left: 1.5rem;
+.case-study .step-tracker .step-text {
+  margin-bottom: 6px;
 }
 
-.case-study-map > .case-study-branches {
-  padding: 0.5rem 0.75rem;
-}
-
-.case-study .case-study-branch {
+.case-study .step-more {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.125rem 0;
-  font-weight: 400;
-  text-decoration: none;
-}
-
-.case-study .case-study-branch.active {
-  color: var(--bs-vhppink-distinct);
-  font-weight: 700;
-}
-
-.case-study-branch-icon {
-  flex: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  color: #ffffff;
+  gap: 4px;
+  margin-top: auto;
+  padding: 2px 10px;
+  border: 1px solid #cfd4db;
+  border-radius: 1rem;
+  background: #ffffff;
+  color: #6c757d;
   font-size: 0.75rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
 }
 
-.case-study-branch[data-step="1"] .case-study-branch-icon { background-color: var(--bs-vhppink-distinct); }
-.case-study-branch[data-step="2"] .case-study-branch-icon { background-color: var(--bs-vhpdarkpurple); }
-.case-study-branch[data-step="3"] .case-study-branch-icon { background-color: var(--bs-vhpdarkteal); }
-.case-study-branch[data-step="4"] .case-study-branch-icon { background-color: var(--bs-vhplightteal); }
-.case-study-branch[data-step="5"] .case-study-branch-icon { background-color: var(--bs-vhpblue); }
+.case-study .step-more:hover,
+.case-study .step-more[aria-expanded="true"] {
+  border-color: var(--stage);
+  color: var(--stage);
+}
+
+.case-study .step-more .bi {
+  transition: transform 0.35s ease;
+}
+
+.case-study .step-more[aria-expanded="true"] .bi {
+  transform: rotate(180deg);
+}
+
+.step-rollout {
+  display: grid;
+  grid-template-rows: 0fr;
+  max-width: 1140px;
+  margin: 0 auto;
+  transition: grid-template-rows 0.35s ease;
+}
+
+.step-rollout.open {
+  grid-template-rows: 1fr;
+}
+
+.step-rollout-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.step-rollout-body {
+  position: relative;
+  margin: 12px 10px 6px;
+  padding: 12px 16px 14px;
+  background: #ffffff;
+  border: 1px solid #d0d4da;
+  border-top: 3px solid var(--stage);
+  border-radius: 0.5rem;
+  text-align: left;
+}
+
+/* The pointer of the panel, under the button of the stage */
+.step-rollout-body::before {
+  content: "";
+  position: absolute;
+  top: -11px;
+  left: calc(var(--pointer, 50%) - 8px);
+  border: 8px solid transparent;
+  border-top: 0;
+  border-bottom-color: var(--stage);
+}
+
+.step-rollout-question {
+  margin: 10px 0 6px;
+  color: var(--bs-vhppink-distinct);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.step-rollout-question:first-child {
+  margin-top: 0;
+}
+
+.step-rollout-above {
+  display: block;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-rollout,
+  .case-study .step-more .bi {
+    transition: none;
+  }
+}

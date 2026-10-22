@@ -288,28 +288,40 @@ function processFlow(container, state, found, header) {
       const item = make("div", "step-item");
       item.dataset.step = step;
       item.append(make("div", "step-icon", String(step)), make("span", "step-text", PROCESS_FLOW[step - 1]));
+      // The pages of a stage after the questions roll out from the button under the stage.
+      if (step > 1) {
+        const more = make("button", "step-more");
+        more.type = "button";
+        more.setAttribute("aria-expanded", "false");
+        more.setAttribute("aria-controls", state.id + "-rollout");
+        more.addEventListener("click", function (event) {
+          event.stopPropagation();
+          rollOut(container, header, step);
+        });
+        item.append(more);
+      }
       tracker.append(item);
     }
     header.append(tracker);
-    // The map of the case study is folded under the process flow, and unfolded with its button.
-    const toggle = make("button", "btn btn-sm btn-outline-vhpdarkpurple d-block mx-auto", "Show all steps");
-    toggle.type = "button";
-    toggle.dataset.bsToggle = "collapse";
-    toggle.dataset.bsTarget = "#" + state.id + "-map";
-    toggle.setAttribute("aria-expanded", "false");
-    toggle.setAttribute("aria-controls", state.id + "-map");
-    const map = make("div", "collapse case-study-map");
-    map.id = state.id + "-map";
-    map.addEventListener("shown.bs.collapse", function () { toggle.textContent = "Hide all steps"; });
-    map.addEventListener("hidden.bs.collapse", function () { toggle.textContent = "Show all steps"; });
-    header.append(toggle, map);
+    const rollout = make("div", "step-rollout");
+    rollout.id = state.id + "-rollout";
+    rollout.append(make("div", "step-rollout-inner"));
+    header.append(rollout);
   }
-  // The map is drawn again with the page in view, also when the document has changed, as in the editor preview.
-  const map = header.querySelector(".case-study-map");
-  map.replaceChildren(branches(container, state, state.document, 0, []));
-  for (const link of map.querySelectorAll(".case-study-branch[data-address]")) {
-    link.classList.toggle("active", link.dataset.address === (found[level]["@id"] || ""));
+  // The pages of each stage are counted again with each drawing, also when the document has changed, as in the editor
+  // preview, and the pages that are out are rolled in.
+  const counts = [];
+  for (const value of staged(state)) {
+    counts[value.stage] = (counts[value.stage] || 0) + 1;
   }
+  for (const more of header.querySelectorAll(".step-more")) {
+    const step = Number(more.closest(".step-item").dataset.step);
+    more.replaceChildren(document.createTextNode(String(counts[step] || 0) + " "), make("i", "bi bi-chevron-down"));
+    more.title = "The pages of this stage in the case study";
+    more.hidden = !counts[step];
+    more.setAttribute("aria-expanded", "false");
+  }
+  header.querySelector(".step-rollout").classList.remove("open");
   for (const item of header.querySelectorAll(".step-item")) {
     const step = Number(item.dataset.step);
     item.classList.toggle("active", step === active);
@@ -321,54 +333,94 @@ function processFlow(container, state, found, header) {
   return header;
 }
 
-// Return the map of the pages below a page: each page with the stage of the process flow at which it is chosen, the pages
-// below it, and its tools, models and data, which are chosen at stage 5. A page of the map is opened as if its branch were clicked through, and a tool, model or data
-// opens the page that lists it. The pages that have no button on the website are left out, as are the pages below a
-// greyed-out page.
-function branches(container, state, page, level, path) {
-  const list = make("ul", "case-study-branches");
-  for (const child of level < DEEPEST ? children(state, page, level) : []) {
-    const disabled = first(child, "creativeWorkStatus") === "Incomplete" && !state.options.openDisabled;
-    if (!child["@id"] || (empty(child) && first(child, "creativeWorkStatus") !== "Incomplete" && !state.options.openDisabled)) {
-      continue;
-    }
-    const entry = make("li", "");
-    const link = make(disabled ? "span" : "a", "case-study-branch");
-    link.dataset.step = stageOf(page, level);
-    link.dataset.address = child["@id"];
-    link.append(make("span", "case-study-branch-icon", link.dataset.step), document.createTextNode(label(state, child) || child["@id"]));
-    entry.append(link);
-    if (disabled) {
-      link.classList.add("opacity-25");
-      link.title = "Greyed out on the website, and not opened there";
-    } else {
-      opensAt(container, state, link, path.concat([child["@id"]]));
-      const below = branches(container, state, child, level + 1, path.concat([child["@id"]]));
-      if (below.children.length) {
-        entry.append(below);
+// Return the pages of the case study and their tools, models and data, each with the stage of the process flow at which
+// it is chosen, the addresses down to the page, the page above it and its question. The pages that have no button on
+// the website are left out, as are the pages below a greyed-out page.
+function staged(state) {
+  const found = [];
+  function walk(page, level, path, question) {
+    for (const child of level < DEEPEST ? children(state, page, level) : []) {
+      const greyed = first(child, "creativeWorkStatus") === "Incomplete";
+      if (!child["@id"] || (empty(child) && !greyed && !state.options.openDisabled)) {
+        continue;
+      }
+      const asked = level === 0 ? label(state, child) || child["@id"] : question;
+      const disabled = greyed && !state.options.openDisabled;
+      found.push({ stage: stageOf(page, level), path: path.concat([child["@id"]]), name: label(state, child) || child["@id"],
+                   above: level ? label(state, page) : "", question: asked, disabled: disabled, page: true });
+      if (!disabled) {
+        walk(child, level + 1, path.concat([child["@id"]]), asked);
       }
     }
-    list.append(entry);
+    for (const item of level ? items(state, page) : []) {
+      found.push({ stage: PROCESS_FLOW.length, path: path, name: item.name || "(no name)", above: label(state, page), question: question,
+                   disabled: false, page: false });
+    }
   }
-  for (const item of level ? items(state, page) : []) {
-    const entry = make("li", "");
-    const link = make("a", "case-study-branch");
-    link.dataset.step = PROCESS_FLOW.length;
-    link.append(make("span", "case-study-branch-icon", link.dataset.step), document.createTextNode(item.name || "(no name)"));
-    opensAt(container, state, link, path);
-    entry.append(link);
-    list.append(entry);
-  }
-  return list;
+  walk(state.document, 0, [], "");
+  return found;
 }
 
-// Make a link of the map open the page at the end of path, with the address of that page.
-function opensAt(container, state, link, path) {
-  link.href = local(path.length ? path[path.length - 1] : state.document["@id"] || "", state.options);
-  link.addEventListener("click", function (event) {
-    event.preventDefault();
-    navigate(container, path);
-  });
+// Roll out the pages of a stage under the process flow, or roll them in if they are out.
+function rollOut(container, header, step) {
+  const state = states.get(container);
+  const rollout = header.querySelector(".step-rollout");
+  const opening = !(rollout.classList.contains("open") && rollout.dataset.step === String(step));
+  for (const more of header.querySelectorAll(".step-more")) {
+    more.setAttribute("aria-expanded", String(opening && more.closest(".step-item").dataset.step === String(step)));
+  }
+  if (!opening) {
+    rollout.classList.remove("open");
+    return;
+  }
+  rollout.dataset.step = step;
+  const body = stagePages(container, state, step);
+  rollout.firstElementChild.replaceChildren(body);
+  // The pointer of the panel is under the button of the stage.
+  const item = header.querySelector('.step-item[data-step="' + step + '"]').getBoundingClientRect();
+  const box = body.getBoundingClientRect();
+  body.style.setProperty("--pointer", Math.min(Math.max(item.left + item.width / 2 - box.left, 16), box.width - 16) + "px");
+  rollout.classList.add("open");
+}
+
+// Return the panel of the pages of a stage, by question, each as a button in the colour of the stage that opens its page
+// as if its branch were clicked through. A tool, model or data opens the page that lists it.
+function stagePages(container, state, step) {
+  const body = make("div", "step-rollout-body");
+  const colour = step < PROCESS_FLOW.length ? BUTTONS[step - 1] : ITEMS;
+  const here = state.path.length ? state.path[state.path.length - 1] : "";
+  const groups = new Map();
+  for (const value of staged(state)) {
+    if (value.stage === step) {
+      groups.set(value.question, (groups.get(value.question) || []).concat([value]));
+    }
+  }
+  for (const [question, values] of groups) {
+    body.append(make("div", "step-rollout-question", question));
+    const row = make("div", "d-flex flex-wrap gap-2");
+    for (const value of values) {
+      const current = value.page && value.path[value.path.length - 1] === here;
+      const link = make(value.disabled ? "span" : "a", "btn btn-sm " + (current ? colour : colour.replace("btn-", "btn-outline-")));
+      link.append(make("b", "", value.name));
+      // The page above is named, as several pages have the same name, such as the Exposure of each question.
+      if (value.above && step > 2) {
+        link.append(make("span", "step-rollout-above", value.above));
+      }
+      if (value.disabled) {
+        link.classList.add("disabled", "opacity-25");
+        link.title = "Greyed out on the website, and not opened there";
+      } else {
+        link.href = local(value.path.length ? value.path[value.path.length - 1] : state.document["@id"] || "", state.options);
+        link.addEventListener("click", function (event) {
+          event.preventDefault();
+          navigate(container, value.path);
+        });
+      }
+      row.append(link);
+    }
+    body.append(row);
+  }
+  return body;
 }
 
 // Return the tools, methods and data of a page, by name.
