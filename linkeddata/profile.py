@@ -172,14 +172,16 @@ def official_text() -> str:
     found = Graph()
     for profile, path in sorted(profile_files().items()):
         published = json.loads(path.read_text(encoding="utf-8"))
-        # A property without a term of the official prefixes keeps the address given in its profile file.
+        # A property or a class that a profile file declares has the address given in the file, unless the file is pinned
+        # and an official term has the same name: the declared addresses of the pinned files are those of their editor.
         declared = {}
         for node in published["@graph"]:
             prefix, _, name = str(node["@id"]).partition(":")
-            if node.get("@type") == "rdf:Property" and prefix in published["@context"]:
+            if node.get("@type") in ("rdf:Property", "rdfs:Class") and "$validation" not in node and prefix in published["@context"]:
                 declared[node["rdfs:label"]] = published["@context"][prefix] + name
+        context = {**terms, **declared} if path.parent == PROFILES else {**declared, **terms}
         # "type" is the name of @type in the JSON-LD context of schema.org.
-        context = {**declared, **terms, "type": str(RDF.type), "@vocab": prefixes["schema"]}
+        context.update({"type": str(RDF.type), "@vocab": prefixes["schema"]})
         node = next(node for node in published["@graph"] if "$validation" in node)
         target = address(node["rdfs:subClassOf"]["@id"], context)
         # The list fields of the records of the class are RDF lists, as in the JSON-LD of the records.
