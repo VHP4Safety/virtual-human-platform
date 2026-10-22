@@ -35,8 +35,9 @@ def main() -> None:
             print(problem, file=sys.stderr)
         if problems:
             sys.exit(1)
-        print(f"Wrote {write_tables()}")
+        # The tables are made from the shapes, so the shapes are written first.
         print(f"Wrote {write_official()}")
+        print(f"Wrote {write_tables()}")
     elif args.command == "check":
         problems = download_vocabularies()
         if not problems:
