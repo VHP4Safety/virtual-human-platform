@@ -12,7 +12,7 @@
 profile:Study a sh:NodeShape ;
     rdfs:label "Case study" ;
     sh:name "Case study" ;
-    sh:property profile:Study-about,
+    sh:property profile:Study-studySubject,
         profile:Study-abstract,
         profile:Study-creator,
         profile:Study-description,
@@ -313,14 +313,14 @@ profile:ImageObject-contentUrl a sh:PropertyShape ;
     sh:order 1 ;
     sh:path schema:contentUrl .
 
-profile:Study-about a sh:PropertyShape ;
+profile:Study-studySubject a sh:PropertyShape ;
     sh:class schema:DefinedTerm ;
-    sh:description "The medical condition, as a SNOMED or MONDO term." ;
+    sh:description "The medical condition that the case study is about, as a SNOMED or MONDO term (the studySubject of the Bioschemas Study profile)." ;
     sh:group profile:group-about-the-case-study ;
     sh:message "Choose a SNOMED CT or MONDO term, or register it." ;
     sh:name "Condition" ;
     sh:order 3 ;
-    sh:path schema:about ;
+    sh:path schema:studySubject ;
     sh:severity sh:Warning .
 
 profile:Study-abstract a sh:PropertyShape ;
@@ -356,7 +356,7 @@ profile:Study-hasPart a sh:PropertyShape ;
     sh:group profile:group-parts ;
     sh:name "Questions and sections" ;
     sh:nodeKind sh:BlankNodeOrIRI ;
-    sh:or ( [ rdfs:label "Regulatory question" ; sh:class schema:HowTo ; sh:node profile:HowTo ]
+    sh:or ( [ rdfs:label "Regulatory question" ; sh:class schema:HowTo ; sh:node profile:HowTo ; sh:nodeKind sh:IRI ]
         [ rdfs:label "Section" ; sh:class schema:WebPageElement ; sh:node profile:WebPageElement ] ) ;
     sh:order 1 ;
     sh:path schema:hasPart .

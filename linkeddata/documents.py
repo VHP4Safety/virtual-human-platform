@@ -1,16 +1,16 @@
 """JSON-LD documents of the records."""
 
 import json
-from functools import cache, lru_cache
+from functools import lru_cache
 
 from pyld import jsonld
-from rdflib import RDF, Graph, Literal, URIRef
-from rdflib.namespace import DCTERMS, SDO, SH, VOID
+from rdflib import RDF, Graph, URIRef
+from rdflib.namespace import DCTERMS, SDO, VOID
 
 import database
 from database import records
 from database.tables import Record
-from linkeddata.profile import profile_graph, required, settings
+from linkeddata.profile import required, settings
 
 
 def context(config: dict) -> dict:
@@ -74,26 +74,14 @@ def document_of(iri: str) -> str | None:
     return json.dumps(document(records.read([iri])), indent=2)
 
 
-@cache
 def private() -> set[URIRef]:
     """Return the properties of the private fields."""
-    graph = profile_graph()
-    marked = URIRef(dict(graph.namespaces())["form"] + "private")
-    found = set()
-    for field in graph.subjects(marked, Literal(True)):
-        found.add(graph.value(field, SH.path))
-    return found
+    return {URIRef(path) for path in settings()["private"]}
 
 
-@cache
 def published_as() -> dict[URIRef, URIRef]:
     """Return the class of each field published as another class, by property."""
-    graph = profile_graph()
-    marked = URIRef(dict(graph.namespaces())["form"] + "publishedAs")
-    found = {}
-    for field, of_class in graph.subject_objects(marked):
-        found[graph.value(field, SH.path)] = of_class
-    return found
+    return {URIRef(path): URIRef(of_class) for path, of_class in settings()["published as"].items()}
 
 
 def typed(found: Graph) -> Graph:
@@ -108,18 +96,24 @@ def typed(found: Graph) -> Graph:
             found.add((node, SDO.mainEntityOfPage, node))
             if found.value(node, SDO.url) is None:
                 found.add((node, SDO.url, node))
-    for of_class, (official, fields) in required().items():
+    for of_class, profiles in required().items():
         for node in set(found.subjects(RDF.type, of_class)):
-            if fields <= set(found.predicates(node, None)):
-                found.add((node, DCTERMS.conformsTo, official))
+            for profile, needed in profiles:
+                if needed <= set(found.predicates(node, None)):
+                    found.add((node, DCTERMS.conformsTo, profile))
+    return found
+
+
+def without_private(found: Graph) -> Graph:
+    """Return found without private fields."""
+    for predicate in private():
+        found.remove((None, predicate, None))
     return found
 
 
 def public(found: Graph) -> Graph:
-    """Return found without private fields, as shown on the pages."""
-    for predicate in private():
-        found.remove((None, predicate, None))
-    return typed(found)
+    """Return found without private fields, with the statements added for publication."""
+    return typed(without_private(found))
 
 
 @lru_cache(maxsize=256)

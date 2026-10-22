@@ -42,18 +42,19 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         logo = entry.get("png_file_name")
         if present(logo) and logo != PLACEHOLDER_LOGO:
             row["image"] = link(LOGOS + logo)
-        # The stage is a process flow step, and the substage a topic.
+        # The stage is a process flow step, and the substage a topic: both are keywords of the glossary.
         if present(detail.get("stage") or entry.get("stage")):
-            row["processFlowStep"] = web_link(detail.get("stage") or entry["stage"])
+            row.setdefault("keywords", []).append(web_link(detail.get("stage") or entry["stage"]))
         if present(detail.get("substage")):
-            row["about"] = term(detail["substage"], "glossary")
+            row.setdefault("keywords", []).append(term(detail["substage"], "glossary"))
         # Regulatory questions are yes/no flags named by their codes.
         questions = []
         for flag, question in QUESTIONS.items():
             if str(entry.get(flag)).lower() == "true":
                 questions.append(link(question))
+        # A tool used for a regulatory question is part of the toolbox of the question.
         if questions:
-            row["regulatoryQuestion"] = questions
+            row["isPartOf"] = questions
         if present(detail.get("doi")):
             cited = publication(detail["doi"])
             if cited:
@@ -76,7 +77,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         if elsewhere:
             row["sameAs"] = elsewhere
         if present(elixir.get("tess")):
-            row["keywords"] = elixir["tess"]
+            row.setdefault("keywords", []).extend(elixir["tess"] if isinstance(elixir["tess"], list) else [elixir["tess"]])
         if present(instance.get("version")):
             row["softwareVersion"] = str(instance["version"])
         notes = detail.get("notes") if isinstance(detail.get("notes"), dict) else {}
@@ -139,7 +140,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         if providers:
             row["provider"] = providers
         if str(detail.get("developed-by-VHP")).lower() == "true":
-            row["creator"] = link(VHP4SAFETY)
+            row["author"] = link(VHP4SAFETY)
         contacts = []
         if isinstance(provider.get("contact"), dict):
             contacts.append(provider["contact"])

@@ -253,8 +253,8 @@ def roles(row: dict, named_roles: dict[str, list]) -> None:
     """Add the roles of the chemicals in named_roles to row."""
     for chemical in row.get("pbpk:hasChemical", []):
         for name in chemical.get("name", []):
-            if str(name).casefold() in named_roles and "pbpk:chemicalRole" not in chemical:
-                chemical["pbpk:chemicalRole"] = named_roles[str(name).casefold()]
+            if str(name).casefold() in named_roles and "chemicalRole" not in chemical:
+                chemical["chemicalRole"] = named_roles[str(name).casefold()]
 
 
 def system(described: dict, model: dict) -> list[dict]:
@@ -436,7 +436,8 @@ def chemicals(nodes: dict, others: dict) -> list[dict]:
 
 def model_row(nodes: dict, root: dict, main: dict, address: str, others: dict) -> dict:
     """Return the row of the model main at address."""
-    row = {"@id": address, "@type": "SoftwareSourceCode", **fields(nodes, main, others)}
+    # A model is a computational workflow, as the main entity of its crate.
+    row = {"@id": address, "@type": ["SoftwareSourceCode", "bioschemas:ComputationalWorkflow"], **fields(nodes, main, others)}
     for field in SHARED:
         fill(row, field, [converted(nodes, value, others, frozenset({LOCAL})) for value in values(root, field)])
     for field in LINKS:

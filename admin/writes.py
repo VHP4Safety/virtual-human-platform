@@ -45,15 +45,15 @@ def document(kind: str, address: str, body: dict) -> dict:
 
 
 def kept(found: Graph, iri: str, kind: str) -> None:
-    """Add to found the stored values of the read-only fields that it leaves out."""
+    """Add to found the stored values that it leaves out of the read-only fields and of the properties without a field."""
     node = URIRef(iri)
-    stored = None
-    for field in fields(kind):
-        if not field["read_only"] or (node, URIRef(field["iri"]), None) in found:
+    stored = records.graph([iri])
+    editable = {URIRef(field["iri"]) for field in fields(kind) if not field["read_only"]} | {RDF.type}
+    for predicate in set(stored.predicates(node, None)) - editable:
+        if (node, predicate, None) in found:
             continue
-        stored = records.graph([iri]) if stored is None else stored
-        for value in stored.objects(node, URIRef(field["iri"])):
-            found.add((node, URIRef(field["iri"]), value))
+        for value in stored.objects(node, predicate):
+            found.add((node, predicate, value))
             found += records.described(stored, value)
 
 
@@ -67,7 +67,7 @@ def classed(found: Graph, iri: str) -> None:
             if predicate == RDF.type or not records.is_part(found, part) or found.value(part, RDF.type) is not None:
                 continue
             given = list(stored.objects(part, RDF.type))
-            for field in fields(str(found.value(holder, RDF.type))):
+            for field in fields(records.class_of(found, holder)):
                 if not given and field["iri"] == str(predicate) and len(field["classes"]) == 1:
                     given = [URIRef(field["classes"][0])]
             for of_class in given:
@@ -82,7 +82,7 @@ def slug(name: str) -> str:
 def part(found: Graph, node: BNode) -> bool:
     """Return True if node is in a field of parts."""
     for holder, predicate in found.subject_predicates(node):
-        for field in fields(str(found.value(holder, RDF.type))):
+        for field in fields(records.class_of(found, holder)):
             if field["iri"] == str(predicate) and field["part"]:
                 return True
     return False
@@ -117,8 +117,8 @@ def addressed(found: Graph) -> None:
         for holder, predicate, node in list(found):
             if not isinstance(node, BNode) or not isinstance(holder, URIRef):
                 continue
-            for field in fields(str(found.value(holder, RDF.type))):
-                if field["iri"] == str(predicate) and field["addressed"]:
+            for field in fields(records.class_of(found, holder)):
+                if field["iri"] == str(predicate) and records.class_of(found, node) in field["addressed"]:
                     renamed(found, node, free(f"{holder}/{slug(str(found.value(node, SDO.name) or 'page'))}", taken))
                     pending = True
 

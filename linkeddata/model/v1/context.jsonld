@@ -9,7 +9,27 @@
     "spdx": "http://spdx.org/rdf/terms#",
     "pbpk": "https://platform.vhp4safety.nl/model/v1/pbpk#",
     "form": "https://platform.vhp4safety.nl/model/v1/form#",
-    "processFlowStep": "https://vhp4safety.github.io/glossary#VHP0000152",
-    "regulatoryQuestion": "https://vhp4safety.github.io/glossary#VHP0000151"
+    "Dataset": {
+      "@id": "schema:Dataset",
+      "@context": {
+        "creator": {
+          "@id": "schema:creator",
+          "@container": "@list"
+        }
+      }
+    },
+    "bioschemas_draft:LabProtocol": {
+      "@id": "bioschemas_draft:LabProtocol",
+      "@context": {
+        "hasPart": {
+          "@id": "schema:hasPart",
+          "@container": "@list"
+        },
+        "bioschemas_draft:reagent": {
+          "@id": "bioschemas_draft:reagent",
+          "@container": "@list"
+        }
+      }
+    }
   }
 }

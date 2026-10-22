@@ -7,7 +7,7 @@ gunicorn>=23.0.0
 nh3>=0.3.0
 Flask-Limiter==4.1.1
 flask-smorest==0.47.0
-rdfsolve[validation] @ git+https://github.com/jmillanacosta/rdfsolve@8f92c57bf98e59751b8e7cae2f7dc88f6a873ef7
+rdfsolve[validation] @ git+https://github.com/jmillanacosta/rdfsolve@84aa648ed98c4f5009eb83f450bd6b167ff0be00
 rdflib>=7.0
 pyld>=2.0
 pandas>=2.0

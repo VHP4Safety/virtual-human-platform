@@ -199,8 +199,9 @@ class Text extends Plugin {
       delete text.dataset.nodeKind;
       text.value = shown.value ? literal(shown.value, datatype) : "";
     });
-    // A text in HTML is edited in the text editor, and its HTML is shown in the box below.
-    if (datatype === HTML) {
+    // A long text, which may have HTML, is edited in the text editor, and its HTML is shown in the box below. It is kept as
+    // a plain text, and the pages show its markup.
+    if (datatype === HTML || editor.long.includes(template.path)) {
       const edit = document.createElement("button");
       edit.type = "button";
       edit.className = "text-edit";

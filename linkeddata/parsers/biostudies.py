@@ -222,21 +222,21 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             elif name == "Regulatory Question":
                 # The question is identified by the code. The address next to the code is sometimes that of the case study.
                 code = attribute["value"]
-                row.setdefault("regulatoryQuestion", []).append(link(QUESTIONS[code]) if code in QUESTIONS else value_of(attribute))
+                row.setdefault("isPartOf", []).append(link(QUESTIONS[code]) if code in QUESTIONS else value_of(attribute))
             elif name == "Case study":
                 row.setdefault("isPartOf", []).append(value_of(attribute))
             elif name == "Process Flow Step":
-                row.setdefault("processFlowStep", []).append(value_of(attribute))
+                row.setdefault("keywords", []).append(value_of(attribute))
             elif name == "Organism":
                 row.setdefault("about", []).append(value_of(attribute))
             elif name == "License":
                 stated = value_of(attribute)
                 row["license"] = licence(stated["@id"] if isinstance(stated, dict) else stated)
             elif name == "Bioassay":
-                # An assay with a link to the page of a method is read as that method; its term is the assay.
+                # An assay with a link to the page of a method is measured with that method; its term is the assay.
                 page = page_of(attribute)
                 if page and page["@id"].startswith("methods/"):
-                    row.setdefault("measurementMethod", []).append(page)
+                    row.setdefault("measurementTechnique", []).append(page)
                 if term_of(attribute) or not page:
                     row.setdefault("measurementTechnique", []).append(term_of(attribute) or value_of(attribute))
             elif name in ("Organ", "Tissue", "AOP", "AOP event") and isinstance(value_of(attribute), dict):

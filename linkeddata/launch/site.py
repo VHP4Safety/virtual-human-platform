@@ -125,7 +125,8 @@ def page(key: str, content: bytes) -> dict:
 
 def grant(section: dict) -> tuple[dict, dict] | None:
     """Return the grant and the funder of a funding text, or None."""
-    soup = BeautifulSoup(section.get("text", {}).get("@value", "") if isinstance(section.get("text"), dict) else "", "html.parser")
+    given = section.get("text")
+    soup = BeautifulSoup(given["@value"] if isinstance(given, dict) else str(given or ""), "html.parser")
     anchor = soup.find("a")
     if anchor is None:
         return None

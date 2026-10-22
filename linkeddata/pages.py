@@ -8,36 +8,47 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from markdownify import markdownify
 from markupsafe import Markup
-from rdflib import RDF, RDFS, Graph, Literal, URIRef
+from rdflib import RDF, Graph, Literal, URIRef
 from rdflib.collection import Collection
 from rdflib.namespace import SDO, VOID
+from rdfsolve.iris import local_name
 from werkzeug.datastructures import MultiDict
 
 from database import records
 from database.tables import Record
 from linkeddata import documents, void
 from linkeddata.parsers import QUESTIONS
-from linkeddata.profile import fields, jsonld_name, profile_graph, settings, shape_fields, shape_of
+from linkeddata.profile import fields, jsonld_name, readable, settings, shape_fields
 
 # The name is used as the heading of a node, and the position for its order. Neither is listed with the fields.
 HEADING = {str(SDO.name), str(SDO.position)}
 # A text in HTML, or a text longer than this, is shown as paragraphs. Other values are shown as a list.
 SHORT = 160
+# A text with a tag of markup is a text in HTML, also when it is stored as a plain text.
+MARKUP = re.compile(r"<[a-zA-Z][a-zA-Z0-9]*(\s[^<>]*)?/?>")
 # Records on one page of a listing.
 LISTED = 12
+# The glossary names each process flow step "<step> (Process Flow Step)". A tool of no step has the stage Other.
+STEP = "Process Flow Step"
+OTHER = "Other"
 MEDIA = "text/markdown; charset=utf-8; variant=GFM"
+
+
+def html(value) -> bool:
+    """Return True if value is a text in HTML."""
+    return isinstance(value, Literal) and (value.datatype == RDF.HTML or bool(MARKUP.search(str(value))))
 
 
 def text(value):
     """Return a text value for a template, with an HTML text as a dict with @value."""
-    if isinstance(value, Literal) and value.datatype == RDF.HTML:
+    if html(value):
         return {"@value": str(value)}
     return str(value) if value is not None else ""
 
 
 def kind_of(of_class: str) -> str:
-    """Return the label of of_class in the profile."""
-    return str(profile_graph().value(shape_of(of_class), RDFS.label) or "")
+    """Return the name of the kind of of_class, or the name of of_class, such as Research project or Computer language."""
+    return settings()["labels"].get(of_class) or (readable(local_name(of_class)) if of_class else "")
 
 
 def in_order(found: Graph, nodes) -> list:
@@ -67,19 +78,27 @@ def by_name(item: dict) -> str:
 
 def node_outline(found: Graph, node, names: dict, shape: str = "") -> dict:
     """Return the outline of node, by the fields of shape or else of its class, with an outline for each part."""
-    of_class = str(found.value(node, RDF.type) or "")
+    of_class = records.class_of(found, node)
     shown = {"address": None if records.is_part(found, node) else str(node), "name": str(found.value(node, SDO.name) or ""),
              "kind": kind_of(of_class), "fields": [], "parts": []}
-    for field in shape_fields(shape) if shape else fields(of_class):
+    given = shape_fields(shape) if shape else fields(of_class)
+    # A value of a property without a field, such as a value kept from an import, is shown after the fields.
+    known = {field["iri"] for field in given} | {str(RDF.type)}
+    for path in sorted({str(predicate) for predicate in found.predicates(node, None)} - known):
+        given = [*given, {"name": jsonld_name(path), "iri": path, "label": readable(local_name(path)), "shown": True, "addressed": [],
+                          "parts": {}, "node": "", "section": ""}]
+    for field in given:
         values = members(found, node, URIRef(field["iri"]))
         if field["iri"] in HEADING or not values or not field["shown"]:
             continue
         listed = any((value, RDF.first, None) in found for value in found.objects(node, URIRef(field["iri"])))
         # A node without an address is shown as a part, also in a field of links, such as a named input. A list holds parts
-        # or links, so the members that are parts are found one by one.
-        parts = [value for value in values if (field["part"] and not listed) or records.is_part(found, value)]
+        # or links, so the members that are parts are found one by one. A value with an address is a part only in a field of
+        # parts with addresses, such as the steps of a case-study question, and a link or a text in any other field.
+        parts = [value for value in values if (field["addressed"] and not listed and isinstance(value, URIRef)) or records.is_part(found, value)]
         if parts:
-            shown["parts"].append({"label": field["label"], "items": [node_outline(found, part, names, field["node"]) for part in parts]})
+            items = [node_outline(found, part, names, field["parts"].get(str(found.value(part, RDF.type)), field["node"])) for part in parts]
+            shown["parts"].append({"label": field["label"], "items": items})
         values = [value for value in values if value not in parts]
         if not values:
             continue
@@ -89,8 +108,8 @@ def node_outline(found: Graph, node, names: dict, shape: str = "") -> dict:
         long = False
         for value in values:
             if isinstance(value, Literal):
-                given.append({"text": str(value), "html": value.datatype == RDF.HTML})
-                if value.datatype == RDF.HTML or len(str(value)) > SHORT:
+                given.append({"text": str(value), "html": html(value)})
+                if html(value) or len(str(value)) > SHORT:
                     long = True
             else:
                 given.append({"link": str(value), "name": names.get(str(value)) or str(value)})
@@ -111,7 +130,7 @@ def named_on(record: Record) -> dict[str, list[dict]]:
         for field in fields(other.type):
             labels[field["iri"]] = field["label"]
         for path in paths[other.iri]:
-            found.setdefault(labels.get(path) or jsonld_name(path), []).append(
+            found.setdefault(labels.get(path) or readable(local_name(path)), []).append(
                 {"address": other.iri, "name": other.name or other.iri, "kind": kind_of(other.type)})
     for listed in found.values():
         listed.sort(key=by_name)
@@ -120,7 +139,7 @@ def named_on(record: Record) -> dict[str, list[dict]]:
 
 def outline(record: Record) -> dict:
     """Return the outline of record without private fields."""
-    found = documents.public(records.graph([record.iri]))
+    found = documents.without_private(records.graph([record.iri]))
     links = []
     for value in found.objects():
         if isinstance(value, URIRef):
@@ -211,7 +230,7 @@ def shown(found: Graph, part) -> list[dict]:
     held = documents.public(records.with_names(records.graph([str(presented)])))
     node = URIRef(str(presented))
     positions = {}
-    for field in fields(str(held.value(node, RDF.type) or "")):
+    for field in fields(records.class_of(held, node)):
         positions[field["iri"]] = field["position"]
 
     def place(prop):
@@ -256,9 +275,9 @@ def sections(found: Graph, node) -> list[dict]:
     return listed
 
 
-def kinds(term: str) -> list[dict]:
-    """Return the kinds of the glossary term term, with label, anchor and definition."""
-    found = records.kinds_of(term)
+def kinds(term: str = "", name: str = "") -> list[dict]:
+    """Return the kinds of the glossary term term, or of the term of a name, with label, anchor and definition."""
+    found = records.kinds_of(term) if term else records.kinds_named(name)
     statements = records.graph([kind.iri for kind in found])
     listed = []
     for kind in found:
@@ -430,7 +449,7 @@ RSD = "https://research-software-directory.org/software/"
 
 def plain(value) -> str:
     """Return value without HTML tags."""
-    if isinstance(value, Literal) and value.datatype == RDF.HTML:
+    if html(value):
         return Markup(str(value)).striptags()
     return str(value) if value is not None else ""
 
@@ -448,8 +467,13 @@ def addresses(found: Graph, node, path) -> list[str]:
 
 def named(found: Graph, node, path) -> list[str]:
     """Return the texts and the names of the linked records of a field of node."""
+    return names_of(found, found.objects(node, path))
+
+
+def names_of(found: Graph, values) -> list[str]:
+    """Return the texts and the names of the linked records among values, in order."""
     listed = []
-    for value in in_order(found, found.objects(node, path)):
+    for value in in_order(found, values):
         if isinstance(value, Literal):
             listed.append(plain(value))
         elif found.value(value, SDO.name) is not None:
@@ -495,7 +519,20 @@ def platform_publisher() -> URIRef:
 
 def steps() -> dict[str, dict]:
     """Return the process flow steps of the glossary, by address."""
-    return {step["iri"]: step for step in kinds(settings()["terms"]["processFlowStep"])}
+    return {step["iri"]: step for step in kinds(name=STEP)}
+
+
+def stages(found: Graph, node) -> list[str]:
+    """Return the process flow steps of node: its keywords that are steps, and the text Other."""
+    known = steps()
+    return [value for value in addresses(found, node, SDO.keywords) if value in known or value == OTHER]
+
+
+def questions() -> set[str]:
+    """Return the regulatory questions: the workflows that the case studies list as their parts."""
+    studies = [record.iri for record in records.of_kind("casestudies") if record.part_of is None]
+    parts = {str(part) for part in records.graph(studies).objects(None, SDO.hasPart)}
+    return {record.iri for record in records.kept(sorted(parts)) if record.type == str(SDO.HowTo)}
 
 
 def tool_details(record: Record) -> dict:
@@ -516,18 +553,19 @@ def tool_details(record: Record) -> dict:
     for flag, path in QUESTIONS.items():
         codes[records.address(path)] = flag.removeprefix("reg_q_")
     asked = {}
-    for question in addresses(found, node, URIRef(settings()["terms"]["regulatoryQuestion"])):
+    for question in addresses(found, node, SDO.isPartOf):
         if question in codes:
             asked[codes[question]] = "true"
     # The organisations other than the publisher are named, else the publisher.
     others = [str(found.value(value, SDO.name) or value) for value in found.objects(node, SDO.provider) if value != by]
     return {"id": record.iri.rsplit("/", 1)[-1], "service": str(found.value(node, SDO.name) or ""), "description": plain(found.value(node, SDO.description)),
             "url": url, "screenshot": local(str(found.value(node, SDO.image) or "")),
-            "developed-by-VHP": "true" if by in found.objects(node, SDO.creator) else "",
+            "developed-by-VHP": "true" if by in found.objects(node, SDO.author) else "",
             "instance": {key: value for key, value in instance.items() if value},
-            "stage": addresses(found, node, URIRef(settings()["terms"]["processFlowStep"])), "regulatory-question": asked,
+            "stage": stages(found, node), "regulatory-question": asked,
             "Other": {"wikipedia": wikipedia[0] if wikipedia else "", "rsd": after(elsewhere, RSD)},
-            "ELIXIR": {"tess": str(found.value(node, SDO.keywords) or ""), "biotools": after(elsewhere, "https://bio.tools/")},
+            "ELIXIR": {"tess": next((str(value) for value in found.objects(node, SDO.keywords) if isinstance(value, Literal) and str(value) != OTHER), ""),
+                       "biotools": after(elsewhere, "https://bio.tools/")},
             "doi": (dois(found, node) or [""])[0], "intro": parts_of(found, node, SDO.softwareHelp), "workflow": parts_of(found, node, SDO.subjectOf),
             "peertube": parts_of(found, node, SDO.video),
             "provider": {"name": ", ".join(sorted(others) or named(found, node, SDO.provider)),
@@ -540,16 +578,19 @@ def method_json(record: Record) -> dict:
     node = URIRef(record.iri)
     known = steps()
     labels = []
-    for stage in addresses(found, node, URIRef(settings()["terms"]["processFlowStep"])):
+    for stage in stages(found, node):
         labels.append(known[stage]["label"] if stage in known else stage)
+    # The keywords other than the steps are the substages, such as key events.
+    substages = names_of(found, [value for value in found.objects(node, SDO.keywords) if str(value) not in known and str(value) != OTHER])
     types = addresses(found, node, SDO.additionalType)
     return {"method": str(found.value(node, SDO.name) or ""), "method_description_content": plain(found.value(node, SDO.description)),
             "vendor_content": ", ".join(named(found, node, SDO.provider)), "catalog_number_content": str(found.value(node, SDO.identifier) or ""),
             "catalog_webpage_url": local(str(found.value(node, SDO.url) or "")), "sop": local((addresses(found, node, SDO.subjectOf) or [""])[0]),
             "type_content": (types or [""])[-1], "ontology_term_content": (types or [""])[-1], "citation_content": (dois(found, node) or [""])[0],
             "timestamp": record.updated_at or "", "vhp4safety_workflow_stage_content": ", ".join(labels),
-            "workflow_substage_content": ", ".join(named(found, node, SDO.about)), "data_producer_content": ", ".join(named(found, node, SDO.creator)),
-            "relevant_vhp4safety_regulatory_question(s)_content": ", ".join(named(found, node, URIRef(settings()["terms"]["regulatoryQuestion"])))}
+            "workflow_substage_content": ", ".join(substages),
+            "data_producer_content": ", ".join(named(found, node, SDO.author)),
+            "relevant_vhp4safety_regulatory_question(s)_content": ", ".join(named(found, node, SDO.isPartOf))}
 
 
 @lru_cache(maxsize=8)
@@ -561,33 +602,34 @@ def catalogue_filters(path: str, latest: str) -> dict:
     for step in steps().values():
         labels[step["iri"]] = step["label"]
         explained[step["label"]] = step["description"]
-    stages = sorted(labels.get(value["value"], value["value"]) for value in every["processFlowStep"] if value["count"])
-    if "Other" in stages:
-        stages.remove("Other")
-        stages.append("Other")
-    questions = {}
-    for value in every["regulatoryQuestion"]:
-        if value["count"]:
-            questions[value["name"]] = value["value"]
-    held = records.graph(list(questions.values()))
+    stated = sorted(labels.get(value["value"], value["value"]) for value in every["keywords"] if value["count"] and (value["value"] in labels or value["value"] == OTHER))
+    if OTHER in stated:
+        stated.remove(OTHER)
+        stated.append(OTHER)
+    asked = questions()
+    named_questions = {}
+    for value in every["isPartOf"]:
+        if value["count"] and value["value"] in asked:
+            named_questions[value["name"]] = value["value"]
+    held = records.graph(list(named_questions.values()))
     parts = records.graph([str(step) for step in held.objects(None, SDO.step)])
     texts = {}
     names = {}
     opened = {}
-    for name, iri in questions.items():
+    for name, iri in named_questions.items():
         texts[name] = str(held.value(URIRef(iri), SDO.text) or "")
         names[iri] = name
         opened[iri] = []
         # The steps of a question that are not greyed out are opened by their process flow step.
         for step in held.objects(URIRef(iri), SDO.step):
-            if str(parts.value(step, SDO.creativeWorkStatus) or "") != "disabled" and str(parts.value(step, SDO.additionalType)) in labels:
+            if str(parts.value(step, SDO.creativeWorkStatus) or "") != "Incomplete" and str(parts.value(step, SDO.additionalType)) in labels:
                 opened[iri].append(labels[str(parts.value(step, SDO.additionalType))].lower())
     cases = {}
-    for question in records.kept(list(questions.values())):
+    for question in records.kept(list(named_questions.values())):
         if question.part_of:
             cases[question.iri] = question.part_of
-    return {"stages": stages, "stage_explanations": explained, "reg_questions": questions, "reg_question_explanations": texts,
-            "reg_question_cases": {name: cases.get(iri, "").rsplit("/", 1)[-1] for name, iri in questions.items()},
+    return {"stages": stated, "stage_explanations": explained, "reg_questions": named_questions, "reg_question_explanations": texts,
+            "reg_question_cases": {name: cases.get(iri, "").rsplit("/", 1)[-1] for name, iri in named_questions.items()},
             "case_studies": sorted({case.rsplit("/", 1)[-1] for case in cases.values()}), "steps": {label: iri for iri, label in labels.items()},
             "cases": cases, "reg_q_labels": names, "reg_q_urls": {iri: "/" + records.path(iri) for iri in names}, "reg_q_steps": opened}
 
@@ -596,19 +638,17 @@ def filtered(path: str, arguments, size: int = LISTED) -> tuple[dict, dict]:
     """Return one page of a listing and the values of its filters."""
     filters = catalogue_filters(path, records.latest_change())
     chosen = arguments.copy()
-    chosen.setlist("processFlowStep", arguments.getlist("processFlowStep") + [filters["steps"].get(stage, stage) for stage in arguments.getlist("stage")])
+    chosen.setlist("keywords", arguments.getlist("keywords") + [filters["steps"].get(stage, stage) for stage in arguments.getlist("stage")])
     asked = [filters["reg_questions"][name] for name in arguments.getlist("reg_q") if name in filters["reg_questions"]]
     studies = sorted({case for case in filters["cases"].values() if case.rsplit("/", 1)[-1].title() in arguments.getlist("case_study")})
-    given = [field["name"] for field in fields(settings()["kinds"][path])]
-    if arguments.getlist("case_study") and "isPartOf" in given:
-        chosen.setlist("isPartOf", arguments.getlist("isPartOf") + (studies or [""]))
-    elif arguments.getlist("case_study"):
+    # A record of a case study is part of one of its questions, or of the case study itself, as a dataset can be.
+    if arguments.getlist("case_study"):
         within = [iri for iri, case in filters["cases"].items() if case in studies]
-        asked = [iri for iri in asked if iri in within] if arguments.getlist("reg_q") else within
+        asked = [iri for iri in asked if iri in within] if arguments.getlist("reg_q") else within + studies
     # If no question fits the filters, a value of no record is requested, so that no record is found.
-    if (arguments.getlist("reg_q") or (arguments.getlist("case_study") and "isPartOf" not in given)) and not asked:
+    if (arguments.getlist("reg_q") or arguments.getlist("case_study")) and not asked:
         asked = [""]
-    chosen.setlist("regulatoryQuestion", arguments.getlist("regulatoryQuestion") + asked)
+    chosen.setlist("isPartOf", arguments.getlist("isPartOf") + asked)
     return listing(path, chosen, size), filters
 
 
@@ -625,7 +665,7 @@ def catalogue_listing(path: str, arguments) -> dict:
         run = local(str(shown.value(node, SDO.installUrl) or "")) or (url if hosted else "")
         listed.append({"id": item["address"].rsplit("/", 1)[-1], "service": item["name"], "description": plain(shown.value(node, SDO.description)),
                        "png": local(str(shown.value(node, SDO.image) or "")), "inst_url": run or "no_url", "main_url": url or "no_url",
-                       "vhp_deved": by in shown.objects(node, SDO.creator), "vhp_hosted": hosted,
+                       "vhp_deved": by in shown.objects(node, SDO.author), "vhp_hosted": hosted,
                        "meta_data": "/" + records.path(item["address"]) + ".md"})
     return {**filters, path: listed, "selected_stages": arguments.getlist("stage"), "selected_case_studies": arguments.getlist("case_study"),
             "selected_questions": arguments.getlist("reg_q"), "page": found["page"], "page_size": LISTED, "total": found["total"],
@@ -643,10 +683,10 @@ def dataset(found: Graph, node, known: dict) -> dict:
     if source.startswith("https://zenodo.org/records/"):
         links["archive"] = "https://zenodo.org/api/records/" + source.rstrip("/").rsplit("/", 1)[-1] + "/files-archive"
         parsed["is_rocrate"] = any(file["name"].lower() == "ro-crate-metadata.json" for file in crate_files)
-    metadata = {"case_study": [case.rsplit("/", 1)[-1] for case in addresses(found, node, SDO.isPartOf)],
-                "regulatory_question": addresses(found, node, URIRef(settings()["terms"]["regulatoryQuestion"])),
-                "flow_step": [known[stage]["label"] if stage in known else stage
-                              for stage in addresses(found, node, URIRef(settings()["terms"]["processFlowStep"]))],
+    asked = questions()
+    metadata = {"case_study": [case.rsplit("/", 1)[-1] for case in addresses(found, node, SDO.isPartOf) if case not in asked],
+                "regulatory_question": [question for question in addresses(found, node, SDO.isPartOf) if question in asked],
+                "flow_step": [known[stage]["label"] if stage in known else stage for stage in stages(found, node)],
                 "rocrate_url": crate_files[0]["url"] if crate_files else None, "raw_data": {}, "resource_type": {"type": type_of},
                 "publication_date": published}
     return {"id": str(node).rsplit("/", 1)[-1], "accession": str(node).rsplit("/", 1)[-1], "type": type_of, "title": str(found.value(node, SDO.name) or ""),
@@ -779,7 +819,8 @@ def uses(iris: list[str]) -> dict[str, dict]:
     """Return the case studies, questions and steps that use each record in iris."""
     studies = [record.iri for record in records.of_kind("casestudies") if record.part_of is None]
     found = records.graph(studies)
-    asked = URIRef(settings()["terms"]["regulatoryQuestion"])
+    # A case study lists its questions as its parts.
+    asked = SDO.hasPart
     above = {}
     for upper, lower in found.subject_objects(SDO.step):
         above[lower] = upper

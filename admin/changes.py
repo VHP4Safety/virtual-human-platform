@@ -68,7 +68,7 @@ def compared(before: Graph, after: Graph, old, new, kind: str | None, names: dic
 
 def edges(before: Graph, after: Graph, record: URIRef) -> dict:
     """Return the statements of a record before and after a change, as edges."""
-    kind = after.value(record, RDF.type) or before.value(record, RDF.type)
+    kind = records.class_of(after, record) or records.class_of(before, record) or None
     linked = [str(record)]
     for value in set(before.objects()) | set(after.objects()):
         if isinstance(value, URIRef):

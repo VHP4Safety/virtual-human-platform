@@ -38,7 +38,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         if present(detail.get("data_producer_content")):
             person = "people/" + slug(detail["data_producer_content"])
             others.setdefault(person, {"@id": person, "@type": "Person", "name": str(detail["data_producer_content"]).strip()})
-            row["creator"] = link(person)
+            row["author"] = link(person)
         if present(detail.get("citation_content")):
             cited = publication(detail["citation_content"])
             if cited:
@@ -53,7 +53,7 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
         for part in parts(detail.get("vhp4safety_workflow_stage_content")):
             steps.append(term(part, "glossary", "Process Flow Step"))
         if steps:
-            row["processFlowStep"] = steps
+            row.setdefault("keywords", []).extend(steps)
         about = []
         for part in parts(detail.get("workflow_substage_content")):
             about.append(term(part, "glossary"))
@@ -68,9 +68,10 @@ def parse(contents: dict[str, bytes]) -> list[dict]:
             row["additionalType"] = types
         # The question is linked at the address of its page.
         if present(detail.get("case_study_content")) and present(detail.get("regulatory_question_content")):
-            row["regulatoryQuestion"] = link(f"casestudies/{detail['case_study_content']}/{detail['regulatory_question_content']}")
+            row["isPartOf"] = link(f"casestudies/{detail['case_study_content']}/{detail['regulatory_question_content']}")
+        # The topics of a method, such as its key events, are keywords.
         if about:
-            row["about"] = about
+            row.setdefault("keywords", []).extend(about)
         if present(detail.get("issue_number")):
             row["isBasedOn"] = link(ISSUES + str(detail["issue_number"]))
         if present(detail.get("vendor_content")):

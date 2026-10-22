@@ -18,15 +18,15 @@ from rdfsolve.api import Client
 from rdfsolve.client.sql_tables import merge
 from rdfsolve.mining.wikibase_strategy import WikibaseScopeStrategy
 from rdfsolve.sparql_helper import EndpointError
-from rdflib import RDF, Graph, Literal, URIRef
-from rdflib.namespace import SDO, SH
+from rdflib import RDF, RDFS, Graph, Literal, URIRef
+from rdflib.namespace import SDO
 from sqlalchemy import delete, func, insert, select
 
 import database
 from database import records
 from database.tables import PLATFORM, Note, Record, Revision, Source, now
 from linkeddata import checks, crates, documents
-from linkeddata.profile import MODEL_DIR, fields, profile_graph, profile_text, settings
+from linkeddata.profile import MODEL_DIR, fields, hierarchy, known, known_terms, settings, shape_fields, shapes, shapes_text
 
 SOURCES_DIR = Path(__file__).parent / "sources"
 ROOT = Path(__file__).parent.parent
@@ -94,10 +94,10 @@ def members(url: str, endings: list[str]) -> dict[str, bytes]:
 
 
 def convert(rows: list[dict], base: str) -> ox.Dataset:
-    """Return the statements of the parsed rows in the terms of the profile."""
+    """Return the statements of the parsed rows in the terms of the vocabularies and the profiles."""
     document = {"@context": {**documents.context(settings()), "@base": base}, "@graph": rows}
     # The cells of an RDF list (rdf:first, rdf:rest) are kept for the list fields.
-    kept = {str(path) for path in profile_graph().objects(None, SH.path)} | {str(RDF.type), str(RDF.first), str(RDF.rest)}
+    kept = known_terms() | {str(RDF.type), str(RDF.first), str(RDF.rest)}
     found = ox.Dataset()
     for quad in ox.parse(json.dumps(document).encode(), format=ox.RdfFormat.JSON_LD):
         if quad.predicate.value in kept:
@@ -173,7 +173,7 @@ def one_per_identifier(found: list[tuple[list[dict], Graph]]) -> list[tuple[list
         for subject, predicate, value in statements:
             own.add((moved(subject), predicate, moved(value)))
         if iri in joined:
-            joined[iri] = (joined[iri][0], merge(joined[iri][1], own, profile_text()).graph)
+            joined[iri] = (joined[iri][0], merge(joined[iri][1], own, shapes_text()).graph)
         else:
             joined[iri] = ([{**row, "iri": iri} if row["iri"] == listed[0]["iri"] else row for row in listed], own)
     return list(joined.values())
@@ -239,7 +239,7 @@ def merge_into(other: Record, kept: Record, reason: str, without: set = frozense
     for subject, predicate, given in records.blank_parts(records.read([other.iri]), other.iri):
         if predicate not in without:
             statements.add((moved(subject), predicate, moved(given)))
-    joined = merge(records.read([kept.iri]), records.described(statements, kept.iri), profile_text()).graph
+    joined = merge(records.read([kept.iri]), records.described(statements, kept.iri), shapes_text()).graph
     if other.name and other.name != kept.name and str(SDO.alternateName) in {field["iri"] for field in fields(kept.type)}:
         joined.add((target, SDO.alternateName, Literal(other.name)))
     joined.add((target, SDO.sameAs, URIRef(other.iri)))
@@ -287,7 +287,7 @@ def store(source: Source, found: list[tuple[list[dict], Graph]]) -> None:
         for listed, statements in found:
             iri = listed[0]["iri"]
             if iri in given:
-                merged = merge(records.read([iri]), statements, profile_text())
+                merged = merge(records.read([iri]), statements, shapes_text())
                 if merged.added:
                     records.save(db, merged.graph, iri)
             elif iri not in written:
@@ -324,14 +324,33 @@ def linked_terms() -> list[str]:
         given = set(db.scalars(select(Record.iri).where(Record.source.in_(vocabularies))))
     found = records.graph(iris)
     terms = set()
-    for node, of_class in found.subject_objects(RDF.type):
-        for field in fields(str(of_class)):
-            if str(SDO.DefinedTerm) not in field["classes"]:
-                continue
-            for value in found.objects(node, URIRef(field["iri"])):
-                if isinstance(value, URIRef) and str(value) not in given:
-                    terms.add(str(value))
-    return sorted(terms)
+    for iri in iris:
+        terms_of(found, URIRef(iri), fields(str(found.value(URIRef(iri), RDF.type) or "")), terms)
+    return sorted(terms - given)
+
+
+def terms_of(found: Graph, node, given: list[dict], terms: set[str]) -> None:
+    """Add to terms the addresses of the terms that node links to, by the fields given, and those of its parts."""
+    by_path = {field["iri"]: field for field in given}
+    for predicate, value in found.predicate_objects(node):
+        field = by_path.get(str(predicate))
+        if records.is_part(found, value):
+            shape = field["parts"].get(str(found.value(value, RDF.type)), field["node"]) if field else ""
+            terms_of(found, value, shape_fields(shape) if shape else fields(records.class_of(found, value)), terms)
+        # A record or a part of the platform, such as a method as a measurement technique, is not a term.
+        elif isinstance(value, URIRef) and not str(value).startswith(settings()["base"]) and termed(field, str(predicate)):
+            terms.add(str(value))
+
+
+def termed(field: dict | None, path: str) -> bool:
+    """Return True if the values of a field, or of a property without a field, are terms: the field takes terms, or the
+    property ranges over terms in the vocabularies. An additional type is a class of another vocabulary, such as a MeSH term."""
+    if path == str(SDO.additionalType):
+        return True
+    if field is not None:
+        return str(SDO.DefinedTerm) in field["classes"]
+    above = {str(SDO.DefinedTerm), *map(str, hierarchy().transitive_objects(SDO.DefinedTerm, RDFS.subClassOf))}
+    return bool(above & set(known().objects(path, str(SDO.rangeIncludes))))
 
 
 def identified(spec: dict) -> list[tuple[str, str]]:
@@ -496,7 +515,7 @@ def enrich(spec: dict) -> None:
         for iri in sorted(contents):
             record = db.get(Record, iri)
             current = records.read([iri])
-            merged = merge(current, records.described(given, iri), profile_text())
+            merged = merge(current, records.described(given, iri), shapes_text())
             for subject, predicate, kept, offered in merged.conflicts:
                 notes.append(Note(source=spec["name"], iri=subject, field=predicate, value=offered, component="enrichment",
                                   reason=f"{spec['title']} gives {offered}; the record keeps {kept}."))
@@ -539,7 +558,7 @@ def drifted(spec: dict) -> list[dict]:
         if row.get("@type") == "DefinedTerm":
             pinned[row["@id"]] = row.get("name") or ""
     used = set()
-    for node in profile_graph().all_nodes():
+    for node in shapes().all_nodes():
         if str(node) in pinned:
             used.add(str(node))
     with database.session() as db:

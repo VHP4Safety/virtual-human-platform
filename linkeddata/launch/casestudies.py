@@ -84,8 +84,9 @@ def step(levels: list[dict], depth: int, path: list[str], item: dict, address: s
     """Return the rows of the page linked from an item and of the pages below it."""
     node = at(levels, depth, path)
     row = {"@id": address, "@type": "HowTo", "name": item.get("label") or node.get("navTitle"), "position": position}
+    # A disabled page has no content yet: in schema.org, its status in the lifecycle of the work is Incomplete.
     if present(item.get("state")):
-        row["creativeWorkStatus"] = item["state"]
+        row["creativeWorkStatus"] = "Incomplete" if item["state"] == "disabled" else item["state"]
     if present(item.get("description")):
         row["disambiguatingDescription"] = item["description"]
     if present(item.get("glossaryUrl")):
@@ -154,17 +155,19 @@ def parse(files: dict[str, bytes]) -> list[dict]:
         condition = (about.get("about") or {}).get("@id", "")
         prefix, _, local = condition.partition(":")
         if condition:
-            row["about"] = link(prefixes[prefix] + local if prefix in prefixes else condition)
+            row["studySubject"] = link(prefixes[prefix] + local if prefix in prefixes else condition)
         levels = []
         while f"step{len(levels) + 2}Contents" in data:
             levels.append(data[f"step{len(levels) + 2}Contents"])
         made = set()
+        asked = 0
         for question in first.get("questions") or []:
             if question.get("type") != "regulatory-question" or not present(question.get("value")):
                 continue
             here = f"{address}/{question['value']}"
-            row.setdefault("regulatoryQuestion", []).append(link(here))
-            found = {"@id": here, "@type": "HowTo", "name": question.get("label"), "position": len(row["regulatoryQuestion"])}
+            asked += 1
+            row.setdefault("hasPart", []).append(link(here))
+            found = {"@id": here, "@type": "HowTo", "name": question.get("label"), "position": asked}
             if present(question.get("description")):
                 found["text"] = html(question["description"])
             rows.append(found)

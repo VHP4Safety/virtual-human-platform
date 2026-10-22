@@ -76,14 +76,14 @@ GLOSSARY = "https://vhp4safety.github.io/glossary#"
 NEW_TOOL = {"tool": {"summary": "A new tool", "value": {
     "@type": "SoftwareApplication", "name": "AOP-Builder", "description": "Builds AOPs from the literature.",
     "url": {"@id": "https://github.com/VHP4Safety/aop-builder"},
-    "processFlowStep": [{"@id": GLOSSARY + "VHP0000156"}]}}}
+    "keywords": [{"@id": GLOSSARY + "VHP0000156"}]}}}
 CASE_STUDY = {"casestudy": {"summary": "A case study with one question, at /api/casestudies/kidney", "value": {
     "@type": "bioschemas_draft:Study", "name": "Kidney case study", "description": "To study kidney disease.",
-    "regulatoryQuestion": [{"@type": "HowTo", "name": "Question 1: Cisplatin dose", "position": 1}]}}}
+    "hasPart": [{"@type": "HowTo", "name": "Question 1: Cisplatin dose", "position": 1}]}}}
 # Examples of the records that are read.
 TOOL = {"@id": BASE + "tools/aopwikiapi", "@type": "SoftwareApplication", "name": "AOP-Wiki API",
         "description": "A REST API for the AOP-Wiki RDF data that returns AOPs, Key Events and stressors as JSON or CSV.",
-        "about": {"@id": GLOSSARY + "VHP0000023"}, "license": {"@id": "https://spdx.org/licenses/MIT"},
+        "keywords": {"@id": GLOSSARY + "VHP0000023"}, "license": {"@id": "https://spdx.org/licenses/MIT"},
         "dct:conformsTo": {"@id": "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"}}
 TOOL_TURTLE = f"""@prefix dct: <http://purl.org/dc/terms/> .
 @prefix glossary: <{GLOSSARY}> .
@@ -429,7 +429,7 @@ LISTED = "One page of records, in the format requested in the Accept header."
 @blueprint.doc(description=(
     "Return one page of records, sorted by name, in the format of the Accept header. Find records by name or "
     "address with search. Filter records by the field names of /api/shapes.ttl, such as "
-    "/api/tools?processFlowStep=https://vhp4safety.github.io/glossary%23VHP0000156. Give several values of one "
+    "/api/tools?keywords=https://vhp4safety.github.io/glossary%23VHP0000156. Give several values of one "
     "field to find the records with any of them, and several fields to find the records that match all of them."
 ))
 def listed(given, kind, pagination_parameters):

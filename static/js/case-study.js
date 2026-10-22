@@ -111,9 +111,10 @@ function label(state, node) {
   return first(node, "name");
 }
 
-// Return the pages one level down, which are questions or steps.
+// Return the pages one level down, which are questions or steps. The questions of a case study are its parts that are pages of
+// their own; its other parts are the sections of its page.
 function children(state, page, level) {
-  return parts(state, page, level === 0 ? "regulatoryQuestion" : "step");
+  return parts(state, page, level === 0 ? "hasPart" : "step").filter(function (node) { return level !== 0 || !isPart(String(node["@id"] || "_:")); });
 }
 
 // Return true if a step has no content and no steps with content.
@@ -139,8 +140,10 @@ function isPart(id) {
 // Return the stage of a page in the process flow, from 1 to 5.
 export function stageOf(page, level) {
   let steps = false;
-  for (const child of all(page, level === 0 ? "regulatoryQuestion" : "step")) {
-    steps = steps || !empty(child);
+  for (const child of all(page, level === 0 ? "hasPart" : "step")) {
+    if (level !== 0 || (child && typeof child === "object" && !isPart(String(child["@id"] || "_:")))) {
+      steps = steps || !empty(child);
+    }
   }
   if (!steps && (all(page, "tool").length || all(page, "supply").length)) {
     return 5;
@@ -343,7 +346,7 @@ function column(button) {
 function buttons(container, state, page, level) {
   const row = make("div", "row py-3");
   for (const child of children(state, page, level)) {
-    const disabled = first(child, "creativeWorkStatus") === "disabled";
+    const disabled = first(child, "creativeWorkStatus") === "Incomplete";
     const hidden = empty(child) && !disabled;
     if (hidden && !state.options.openDisabled) {
       continue;

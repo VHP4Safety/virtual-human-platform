@@ -1306,3 +1306,171 @@ profile:group-on-the-platform a sh:PropertyGroup ;
     rdfs:label "On the platform" ;
     sh:order 11 .
 
+# The terms that the profile adds for PBPK models. A chemical role is the chemicalRole of schema.org.
+pbpk:analysisType a rdf:Property ; rdfs:label "Analysis type" ;
+    schema:domainIncludes pbpk:SUVAnalysis ; schema:rangeIncludes schema:Text .
+
+pbpk:analyzedParameters a rdf:Property ; rdfs:label "Analyzed parameters" ;
+    schema:domainIncludes pbpk:SUVAnalysis ; schema:rangeIncludes schema:Text .
+
+pbpk:anatomicalAssumptions a rdf:Property ; rdfs:label "Anatomical assumptions" ;
+    schema:domainIncludes pbpk:BiologicalSystem ; schema:rangeIncludes schema:Text .
+
+pbpk:applicabilityDomain a rdf:Property ; rdfs:label "Applicability domain" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:Text .
+
+pbpk:appliesToChemicals a rdf:Property ; rdfs:label "Applicable chemicals" ;
+    schema:domainIncludes pbpk:Parameter ; schema:rangeIncludes schema:Text .
+
+pbpk:appliesToCompartments a rdf:Property ; rdfs:label "Applicable compartments" ;
+    schema:domainIncludes pbpk:Parameter ; schema:rangeIncludes schema:DefinedTerm .
+
+pbpk:appliesToSpecies a rdf:Property ; rdfs:label "Applicable species" ;
+    schema:domainIncludes pbpk:Parameter ; schema:rangeIncludes schema:DefinedTerm .
+
+pbpk:artifactLocation a rdf:Property ; rdfs:label "Artifact location" ;
+    schema:domainIncludes schema:MediaObject ; schema:rangeIncludes schema:Text .
+
+pbpk:artifactType a rdf:Property ; rdfs:label "Artifact type" ;
+    schema:domainIncludes schema:MediaObject ; schema:rangeIncludes schema:Text .
+
+pbpk:biologicalReference a rdf:Property ; rdfs:label "Biological reference" ;
+    schema:domainIncludes pbpk:Compartment ; schema:rangeIncludes schema:DefinedTerm .
+
+pbpk:calibratedParameters a rdf:Property ; rdfs:label "Calibrated parameters" ;
+    schema:domainIncludes pbpk:Calibration ; schema:rangeIncludes schema:Text .
+
+pbpk:calibrationData a rdf:Property ; rdfs:label "Calibration data" ;
+    schema:domainIncludes pbpk:Calibration ; schema:rangeIncludes schema:Text .
+
+pbpk:compartments a rdf:Property ; rdfs:label "Compartments" ;
+    schema:domainIncludes pbpk:BiologicalSystem ; schema:rangeIncludes schema:DefinedTerm .
+
+pbpk:confidenceStatement a rdf:Property ; rdfs:label "Confidence statement" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:Text .
+
+pbpk:connectionType a rdf:Property ; rdfs:label "Connection type" ;
+    schema:domainIncludes pbpk:Connection ; schema:rangeIncludes schema:Text .
+
+pbpk:connections a rdf:Property ; rdfs:label "Inter-compartmental connections" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:Connection .
+
+pbpk:evaluationData a rdf:Property ; rdfs:label "Evaluation data (reference)" ;
+    schema:domainIncludes pbpk:Evaluation ; schema:rangeIncludes schema:Text .
+
+pbpk:hasBiologicalSystem a rdf:Property ; rdfs:label "Biological system(s)" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:BiologicalSystem .
+
+pbpk:hasCalibration a rdf:Property ; rdfs:label "Calibration activities" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:Calibration .
+
+pbpk:hasChemical a rdf:Property ; rdfs:label "Chemical substance(s)" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:MolecularEntity, schema:ChemicalSubstance .
+
+pbpk:hasEvaluation a rdf:Property ; rdfs:label "Evaluation activities" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:Evaluation .
+
+pbpk:hasParameter a rdf:Property ; rdfs:label "Parameters" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:Parameter .
+
+pbpk:hasSUVAnalysis a rdf:Property ; rdfs:label "SUV analyses" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:SUVAnalysis .
+
+pbpk:implementation a rdf:Property ; rdfs:label "Model implementation reference(s)" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:Implementation .
+
+pbpk:implementationLocation a rdf:Property ; rdfs:label "Implementation location (relative path)" ;
+    schema:domainIncludes pbpk:Implementation ; schema:rangeIncludes schema:Text .
+
+pbpk:implementationType a rdf:Property ; rdfs:label "Implementation type" ;
+    schema:domainIncludes pbpk:Implementation ; schema:rangeIncludes schema:Text .
+
+pbpk:intendedUse a rdf:Property ; rdfs:label "Intended use" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:Text .
+
+pbpk:interpretation a rdf:Property ; rdfs:label "Metric interpretation" ;
+    schema:domainIncludes pbpk:PerformanceMetric ; schema:rangeIncludes schema:Text .
+
+pbpk:lifeStage a rdf:Property ; rdfs:label "Life stage(s)" ;
+    schema:domainIncludes pbpk:BiologicalSystem ; schema:rangeIncludes schema:Text .
+
+pbpk:limitations a rdf:Property ; rdfs:label "Limitations" ;
+    schema:domainIncludes pbpk:Evaluation, schema:SoftwareSourceCode ; schema:rangeIncludes schema:Text .
+
+pbpk:mathematicalRepresentation a rdf:Property ; rdfs:label "Mathematical representation" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:Text .
+
+pbpk:method a rdf:Property ; rdfs:label "Method" ;
+    schema:domainIncludes pbpk:Calibration, pbpk:Evaluation, pbpk:SUVAnalysis ; schema:rangeIncludes schema:Text .
+
+pbpk:modelStructureDescription a rdf:Property ; rdfs:label "Model structure description" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:Text .
+
+pbpk:notes a rdf:Property ; rdfs:label "Notes" ;
+    schema:domainIncludes pbpk:Calibration, pbpk:Parameter, pbpk:SUVAnalysis ; schema:rangeIncludes schema:Text .
+
+pbpk:optimizationCriteria a rdf:Property ; rdfs:label "Optimization criteria" ;
+    schema:domainIncludes pbpk:Calibration ; schema:rangeIncludes schema:Text .
+
+pbpk:outcome a rdf:Property ; rdfs:label "Outcome" ;
+    schema:domainIncludes pbpk:Evaluation, pbpk:SUVAnalysis ; schema:rangeIncludes schema:Text .
+
+pbpk:parameterCategory a rdf:Property ; rdfs:label "Parameter category" ;
+    schema:domainIncludes pbpk:Parameter ; schema:rangeIncludes schema:Text .
+
+pbpk:parameterSource a rdf:Property ; rdfs:label "Parameter source" ;
+    schema:domainIncludes pbpk:Parameter ; schema:rangeIncludes schema:Text .
+
+pbpk:performanceMetrics a rdf:Property ; rdfs:label "Performance metrics" ;
+    schema:domainIncludes pbpk:Evaluation ; schema:rangeIncludes pbpk:PerformanceMetric .
+
+pbpk:physicochemicalNotes a rdf:Property ; rdfs:label "Physicochemical notes" ;
+    schema:domainIncludes schema:MolecularEntity ; schema:rangeIncludes schema:Text .
+
+pbpk:physiologicalScope a rdf:Property ; rdfs:label "Physiological scope" ;
+    schema:domainIncludes pbpk:BiologicalSystem ; schema:rangeIncludes schema:Text .
+
+pbpk:populationDescription a rdf:Property ; rdfs:label "Population description" ;
+    schema:domainIncludes pbpk:BiologicalSystem ; schema:rangeIncludes schema:Text .
+
+pbpk:reproducibilityInstructions a rdf:Property ; rdfs:label "Reproducibility instructions" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes schema:Text .
+
+pbpk:robustnessInterpretation a rdf:Property ; rdfs:label "Robustness interpretation" ;
+    schema:domainIncludes pbpk:SUVAnalysis ; schema:rangeIncludes schema:Text .
+
+pbpk:scope a rdf:Property ; rdfs:label "Parameter scope" ;
+    schema:domainIncludes pbpk:Parameter ; schema:rangeIncludes schema:Text .
+
+pbpk:sourceCompartment a rdf:Property ; rdfs:label "Source compartment" ;
+    schema:domainIncludes pbpk:Connection ; schema:rangeIncludes schema:Text .
+
+pbpk:sourceReference a rdf:Property ; rdfs:label "Source reference" ;
+    schema:domainIncludes pbpk:Parameter ; schema:rangeIncludes schema:Text .
+
+pbpk:species a rdf:Property ; rdfs:label "Species" ;
+    schema:domainIncludes pbpk:BiologicalSystem ; schema:rangeIncludes schema:DefinedTerm .
+
+pbpk:structuralCompartments a rdf:Property ; rdfs:label "Structural compartments" ;
+    schema:domainIncludes schema:SoftwareSourceCode ; schema:rangeIncludes pbpk:Compartment .
+
+pbpk:targetCompartment a rdf:Property ; rdfs:label "Target compartment" ;
+    schema:domainIncludes pbpk:Connection ; schema:rangeIncludes schema:Text .
+
+pbpk:Compartment a rdfs:Class ; rdfs:label "Compartment" .
+
+pbpk:Connection a rdfs:Class ; rdfs:label "Connection" .
+
+pbpk:Implementation a rdfs:Class ; rdfs:label "Implementation" .
+
+pbpk:BiologicalSystem a rdfs:Class ; rdfs:label "Biological system" .
+
+pbpk:Parameter a rdfs:Class ; rdfs:label "Parameter" .
+
+pbpk:Calibration a rdfs:Class ; rdfs:label "Calibration" .
+
+pbpk:Evaluation a rdfs:Class ; rdfs:label "Evaluation" .
+
+pbpk:PerformanceMetric a rdfs:Class ; rdfs:label "Performance metric" .
+
+pbpk:SUVAnalysis a rdfs:Class ; rdfs:label "Sensitivity, uncertainty or variability analysis" .

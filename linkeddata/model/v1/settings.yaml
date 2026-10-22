@@ -137,7 +137,7 @@ kinds:
     class: schema:DataCatalog
     label: Platform
   models:
-    class: schema:SoftwareSourceCode
+    class: bioschemas:ComputationalWorkflow
     label: Model
   training:
     class: schema:LearningResource
@@ -145,3 +145,15 @@ kinds:
   compound:
     class: schema:MolecularEntity
     label: Compound
+# The properties whose values are shown to editors only, not on the pages and not in their data.
+private: [schema:email]
+# The class that the values of a property also have on the pages and in their data, as schema.org expects: a licence
+# is a CreativeWork. The records keep their own class.
+published as:
+  schema:license: schema:CreativeWork
+# The fields of a class that are kept as imported, and not edited: the experimental design of a BioStudies study.
+read only:
+  schema:Dataset: [schema:hasPart]
+# The fields of a class that are kept in the data and shown to editors, but not shown on the pages.
+hidden:
+  bioschemas_draft:Study: [schema:creator]

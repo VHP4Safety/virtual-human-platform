@@ -2,6 +2,7 @@
 
 import json
 
+from rdflib.namespace import SDO
 from sqlalchemy import select
 
 import database
@@ -20,8 +21,8 @@ def test_rdf():
     fitting = writes.document(TOOL, BASE + "tools/t", {"name": "T", "description": "Does T.", "url": {"@id": "https://t.org/"}})
     found, problems, _ = checks.checked(fitting)
     assert not problems and documents.document(found, BASE + "tools/t")["url"] == {"@id": "https://t.org/"}
-    _, problems, _ = checks.checked(writes.document(TOOL, BASE + "tools/t", {"name": "T", "installUrl": "not a link"}))
-    assert set(problems) == {"installUrl", "description"}
+    _, problems, warnings = checks.checked(writes.document(TOOL, BASE + "tools/t", {"name": "T", "url": "not a link"}))
+    assert (set(problems), "url" in warnings) == ({"description"}, True)
 
 
 def test_fields():
@@ -47,10 +48,10 @@ def test_imports(monkeypatch, tmp_path):
     assert imports.import_all(once=True) == []
     tool = records.get(BASE + "tools/aop-builder")
     found = records.graph([BASE + "tools/aop-builder", BASE + "tools/x"])
-    assert (tool.name, documents.stored_values(found, tool.iri, "processFlowStep")) == ("AOP-Builder", [STEP])
+    assert (tool.name, documents.stored_values(found, tool.iri, "keywords")) == ("AOP-Builder", [STEP])
     assert records.get(BASE + "people/test-author").name == "Test Author"
     assert (records.get(BASE + "people/test-lab"), records.get(BASE + "organizations/test-lab").type) == (None, "https://schema.org/Organization")
     with database.session() as db:
         assert db.get(Source, "tools").fetched_at
-        assert (BASE + "tools/x", "Other") in [(note.iri, note.value) for note in db.scalars(select(Note))]
-    assert documents.stored_values(found, BASE + "tools/x", "processFlowStep") == ["Other"]
+        assert (BASE + "tools/x", str(SDO.description)) in [(note.iri, note.field) for note in db.scalars(select(Note))]
+    assert documents.stored_values(found, BASE + "tools/x", "keywords") == ["Other"]

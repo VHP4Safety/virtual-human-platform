@@ -15,7 +15,7 @@ import database
 from database import records
 from database.tables import Record
 from linkeddata import documents
-from linkeddata.profile import jsonld_name, profile_text, settings
+from linkeddata.profile import jsonld_name, settings, shapes_text
 
 DESCRIPTION = ".well-known/void"
 # The fields of the catalogue record, with their terms in the general metadata of VoID.
@@ -74,7 +74,7 @@ def partitions(void: Graph, dataset: URIRef, base: str) -> None:
     published = select(Record.iri).where(Record.iri.startswith(base), Record.part_of.is_(None), Record.removed_at.is_(None), Record.moved_to.is_(None))
     left_out = {str(field) for field in documents.private()}
     with database.engine().connect() as connection:
-        found = layout(profile_text()).void(connection, published, name=lambda *iris: str(name(*iris)), left_out=left_out)
+        found = layout(shapes_text()).void(connection, published, name=lambda *iris: str(name(*iris)), left_out=left_out)
     for partition in found:
         void.add((dataset, VOID.classPartition, partition.to_rdf(void)))
         given = named.pop(URIRef(partition.class_uri), None)

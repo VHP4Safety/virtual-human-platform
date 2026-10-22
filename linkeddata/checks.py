@@ -32,7 +32,9 @@ def official(result, results: Graph) -> tuple | None:
     if results.value(result, SH.sourceShape) not in official_fields():
         return None
     shape, path, needs = official_fields()[results.value(result, SH.sourceShape)]
-    named = "Bioschemas " + " ".join(str(shape).split("/")[-2:]) if "bioschemas.org/profiles/" in str(shape) else "schema.org"
+    # A profile is named by its name and version, such as Bioschemas Dataset 1.0-RELEASE or PBPKModel 0.1-DRAFT.
+    profile = str(shape).split("#")[0]
+    named = ("Bioschemas " if "bioschemas.org/" in profile else "") + " ".join(profile.split("/")[-2:]) if "/profiles/" in profile else "schema.org"
     if "MinCount" not in str(results.value(result, SH.sourceConstraintComponent)):
         return path, f"{meaning(str(results.value(result, SH.sourceConstraintComponent)))[:-1]} for {named}."
     return path, f"{'Required' if needs else 'Recommended'} by {named}."
@@ -131,17 +133,15 @@ def checked(new: dict) -> tuple[Graph, dict[str, list[str]], dict[str, list[str]
         if node != record:
             continue
         form = {}
-        for field in fields(str(found.value(focus, RDF.type))):
+        for field in fields(records.class_of(found, focus)):
             form[field["iri"]] = field
         given = official(result, results)
         if given and not in_form(found, focus, given[0]):
             continue
         path = str(given[0] if given else results.value(result, SH.resultPath))
         field = " > ".join(trail + [jsonld_name(path)])
-        message = form[path]["message"] if path in form and form[path]["message"] else meaning(str(results.value(result, SH.sourceConstraintComponent)))
-        warning = form[path]["warning"] if path in form else results.value(result, SH.resultSeverity) != SH.Violation
-        if given:
-            message, warning = given[1], True
+        message = form[path]["message"] if path in form and form[path]["message"] else (given[1] if given else meaning(str(results.value(result, SH.sourceConstraintComponent))))
+        warning = results.value(result, SH.resultSeverity) != SH.Violation
         found_in = warnings if warning else problems
         if message not in found_in.setdefault(field, []):
             found_in[field].append(message)

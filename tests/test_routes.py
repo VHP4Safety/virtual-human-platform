@@ -13,7 +13,7 @@ ORCID = "0000-0002-1825-0097"
 BASE = "https://platform.vhp4safety.nl/"
 TOOL = "https://schema.org/SoftwareApplication"
 STEP = "https://vhp4safety.github.io/glossary#VHP0000156"
-FITTING = {"name": "T", "description": "Does T.", "url": {"@id": "https://t.org/"}, "processFlowStep": [{"@id": STEP}]}
+FITTING = {"name": "T", "description": "Does T.", "url": {"@id": "https://t.org/"}, "keywords": [{"@id": STEP}]}
 NEW = "/api/tools/new"
 
 
@@ -60,8 +60,8 @@ def test_api(site):
     bearer = {"Authorization": "Bearer " + tokens.create(ORCID, "Test Editor", ["tools"])}
     created = site.put(NEW, json={"@type": "SoftwareApplication", **FITTING}, headers=bearer)
     assert created.status_code == 201 and "Does T." in site.get(NEW, headers={"Accept": "text/turtle"}).data.decode()
-    warned = site.put(NEW, json={"name": "N", "installUrl": "not a link"}, headers=bearer)
-    assert warned.status_code == 200 and {"installUrl", "description"} <= set(warned.json["warnings"])
+    warned = site.put(NEW, json={"name": "N", "url": "not a link"}, headers=bearer)
+    assert warned.status_code == 200 and {"url", "description"} <= set(warned.json["warnings"])
     assert "not a link" in site.get(NEW, headers={"Accept": "text/turtle"}).data.decode()
     stale = {**bearer, "If-Match": "an older version"}
     assert site.put(NEW, json=FITTING, headers=stale).status_code == 412
@@ -76,12 +76,12 @@ def test_api(site):
 
 def test_pages(site):
     add_records()
-    assert json.loads(site.get("/tools/t.jsonld").data)["processFlowStep"] == {"@id": STEP}
+    assert json.loads(site.get("/tools/t.jsonld").data)["keywords"] == {"@id": STEP}
     assert b"schema:SoftwareApplication" in site.get("/tools/t", headers={"Accept": "text/turtle"}).data
     assert "Does T." in site.get("/tools").data.decode()
     assert "<h1>Publications</h1>" in site.get("/publications").data.decode()
-    assert site.get("/api/tools", query_string={"processFlowStep": STEP}).json["@graph"][0]["name"] == "T"
-    assert {"value": STEP, "count": 1} in [{"value": item["value"], "count": item["count"]} for item in site.get("/api/tools/facets").json["processFlowStep"]]
+    assert site.get("/api/tools", query_string={"keywords": STEP}).json["@graph"][0]["name"] == "T"
+    assert {"value": STEP, "count": 1} in [{"value": item["value"], "count": item["count"]} for item in site.get("/api/tools/facets").json["keywords"]]
     assert "tools" in site.get("/api/docs/openapi.json").json["paths"]["/api/{kind}"]["parameters"][0]["schema"]["enum"]
     writes.retire(BASE + "tools/t", "Test Editor", ORCID)
     assert site.get("/tools/t").status_code == 410

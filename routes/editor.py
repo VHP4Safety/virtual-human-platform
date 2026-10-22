@@ -58,6 +58,7 @@ def edit(kind: str):
         links=editor.links(),
         mixed=editor.mixed(),
         ordered=editor.ordered(),
+        long=editor.long_texts(records.latest_change()),
         classes={of_class: name for name, of_class in settings()["kinds"].items()},
         form_token=form_token(),
         # A model has the RO-Crate in Zenodo while it is an imported record, and else a draft crate.

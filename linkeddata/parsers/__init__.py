@@ -32,13 +32,12 @@ QUESTIONS = {
 MISSING = {"", "_No response_", "No response", "NA", "Unknown", "Unknown at this timepoint", "no_url", "[TODO]", "[DRAFT]"}
 
 
-HTML = "http://www.w3.org/1999/02/22-rdf-syntax-ns#HTML"
 MARKUP = re.compile(r"<\s*/?[a-zA-Z][^>]*>")
 
 
 def marked(value):
-    """Return a text, typed as HTML if it has markup."""
-    return {"@value": str(value).replace(UPSTREAM, settings()["base"]), "@type": HTML} if MARKUP.search(str(value)) else str(value)
+    """Return a text, with the platform addresses of its links if it has markup. The pages show its markup."""
+    return str(value).replace(UPSTREAM, settings()["base"]) if MARKUP.search(str(value)) else str(value)
 
 
 def present(value) -> bool:

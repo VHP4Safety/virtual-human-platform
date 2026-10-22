@@ -12,7 +12,7 @@ from sqlalchemy import column, func, literal, or_, select, table, true, union_al
 
 import database
 from database.tables import Record
-from linkeddata.profile import fields, hierarchy, profile_text, settings, terms
+from linkeddata.profile import fields, hierarchy, settings, shapes_text, terms
 
 # HTML texts that cannot be parsed are reported by the checks, so the rdflib warning on each read is turned off.
 logging.getLogger("rdflib.term").setLevel(logging.ERROR)
@@ -108,9 +108,12 @@ def earlier_addresses(iri: str) -> list[str]:
 def kinds_of(term: str) -> list[Record]:
     """Return the kinds of the glossary term term, sorted by address."""
     named = get(term)
-    if named is None or not named.name:
-        return []
-    statement = select(Record).where(Record.name.endswith(f" ({named.name})"), Record.removed_at.is_(None), Record.moved_to.is_(None))
+    return kinds_named(named.name) if named is not None and named.name else []
+
+
+def kinds_named(name: str) -> list[Record]:
+    """Return the kinds of the glossary term of a name, which the glossary names "<kind> (<name>)", sorted by address."""
+    statement = select(Record).where(Record.name.endswith(f" ({name})"), Record.removed_at.is_(None), Record.moved_to.is_(None))
     with database.session() as db:
         return list(db.scalars(statement.order_by(Record.iri)))
 
@@ -119,7 +122,7 @@ def kinds_of(term: str) -> list[Record]:
 def tables() -> dict:
     """Return the release tables by name."""
     found = {}
-    for name, columns in sql_tables.layout(profile_text()).columns().items():
+    for name, columns in sql_tables.layout(shapes_text()).columns().items():
         found[name] = table(name, *[column(name_of_column) for name_of_column in columns])
     return found
 
@@ -135,11 +138,19 @@ def read(records: list[str]) -> Graph:
             listed = result.all()
             if listed:
                 found[name] = pd.DataFrame(listed, columns=list(result.keys()), dtype="string")
-    return sql_tables.from_tables(found, profile_text())
+    return sql_tables.from_tables(found, shapes_text())
 
 
 # The address of a part under its record, <record>#<field>-<n>, made with rdfsolve (sql_tables.tables with skolemized bnodes).
 PART = re.compile(r"^(?P<record>[^#]+)#[A-Za-z_][A-Za-z0-9_]*-[0-9]+$")
+
+
+def class_of(found: Graph, node) -> str:
+    """Return the class of node: the class of a kind when node has several, such as ComputationalWorkflow for a model that
+    is SoftwareSourceCode too, else its class."""
+    given = sorted(str(value) for value in found.objects(node, RDF.type))
+    kinds = set(settings()["kinds"].values())
+    return next((value for value in given if value in kinds), given[0] if given else "")
 
 
 def is_part(found: Graph, node) -> bool:
@@ -174,7 +185,7 @@ def save(db, found: Graph, record: str, before: Graph | None = None) -> None:
     if before is None:
         before = read([record])
     delete(db, record)
-    for name, frame in sql_tables.tables(found, profile_text(), empty=False, skolem=True, before=before).items():
+    for name, frame in sql_tables.tables(found, shapes_text(), empty=False, skolem=True, before=before).items():
         frame["record"] = record
         frame.to_sql(name, db.connection(), index=False, if_exists="append")
 
@@ -210,7 +221,7 @@ def rows(found: Graph, iri: str, kind: str, source: str) -> list[dict]:
     # A part address (<record>#<field>-<n>) has no row and no page.
     for subject in described(found, iri).subjects():
         if isinstance(subject, URIRef) and not PART.match(str(subject)) and str(subject) not in listed and found.value(subject, RDF.type) is not None:
-            listed[str(subject)] = str(found.value(subject, RDF.type))
+            listed[str(subject)] = class_of(found, subject)
     found_rows = []
     for subject, of_class in listed.items():
         name = found.value(URIRef(subject), SDO.name)
@@ -249,9 +260,10 @@ def with_names(found: Graph) -> Graph:
     return named
 
 
+@cache
 def within(of_class: str) -> list[str]:
-    """Return of_class and its subclasses in the profile."""
-    return sql_tables.layout(profile_text()).within(of_class, hierarchy())
+    """Return of_class and the classes below it in the vocabularies, such as a ResearchProject for an Organization."""
+    return [of_class, *sorted({str(below) for below in hierarchy().transitive_subjects(RDFS.subClassOf, URIRef(of_class))} - {of_class})]
 
 
 def sources(of_class: str, path: str) -> list[dict]:
@@ -260,8 +272,11 @@ def sources(of_class: str, path: str) -> list[dict]:
     found = []
     in_statements = False
     for each in within(of_class):
-        of_layout = sql_tables.layout(profile_text()).classes[each]
-        if path in of_layout.several:
+        # The values of a class without a table of its own are in the table of statements.
+        of_layout = sql_tables.layout(shapes_text()).classes.get(each)
+        if of_layout is None:
+            in_statements = True
+        elif path in of_layout.several:
             own = tables()[of_layout.field_table(of_layout.several[path])]
             found.append({"table": own, "value": own.c.value, "term": own.c.term, "where": true()})
         elif path in of_layout.single:
@@ -288,7 +303,7 @@ def values(of_class: str, path: str) -> list[tuple[str, str]]:
 def places() -> list[tuple]:
     """Return each table and column with values in the layout, with its property."""
     found = [(tables()[sql_tables.STATEMENTS], "value", None)]
-    for of_layout in sql_tables.layout(profile_text()).classes.values():
+    for of_layout in sql_tables.layout(shapes_text()).classes.values():
         own = tables()[of_layout.name]
         for path, name in of_layout.single.items():
             found.append((own, name, path))
@@ -384,8 +399,8 @@ def facets(of_class: str, paths: list[str], filters: dict, search: str = "") -> 
 
 
 def browsed(field: dict) -> bool:
-    """Return True if a listing can be filtered by field."""
-    return bool(field["values"] or field["classes"]) and not field["part"] and not field["fixed"]
+    """Return True if a listing can be filtered by field: a field of links or listed values, or of several texts or links, such as keywords."""
+    return bool(field["values"] or field["links"] or (field["open"] and not field["single"])) and not field["part"] and not field["fixed"]
 
 
 def filters(of_class: str, given: dict) -> dict:
