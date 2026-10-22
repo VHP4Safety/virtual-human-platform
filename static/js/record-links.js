@@ -808,9 +808,15 @@ class RecordLink extends Plugin {
               asked.vocabulary = vocabulary["@id"];
             }
             const found = await api("GET", "/api/search?" + query(asked));
+            // Records of the same name, such as the Exposure steps of several case-study questions, are told apart by their address.
+            const names = found["@graph"].map(function (record) { return record.name; });
             for (const record of found["@graph"]) {
               seen.add(record["@id"]);
-              option([make("span", "record-link-kind", classes[of_class]), record.name], function () { choose(record["@id"], record.name); });
+              const content = [make("span", "record-link-kind", classes[of_class]), record.name];
+              if (names.indexOf(record.name) !== names.lastIndexOf(record.name)) {
+                content.push(make("small", "text-muted ms-2", new URL(record["@id"]).pathname));
+              }
+              option(content, function () { choose(record["@id"], record.name); });
             }
           }
           // The registry of the vocabulary is searched only on request (this option, or Enter), with one request.
