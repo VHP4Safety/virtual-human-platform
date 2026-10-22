@@ -83,6 +83,13 @@
 <https://bioschemas.org/profiles/FormalParameter/1.0-RELEASE> rdfs:isDefinedBy <https://raw.githubusercontent.com/BioSchemas/specifications/88f238dd97b61584eba749a38f7d201e343b9d91/FormalParameter/jsonld/FormalParameter_v1.0-RELEASE.json> .
 <https://raw.githubusercontent.com/BioSchemas/specifications/88f238dd97b61584eba749a38f7d201e343b9d91/FormalParameter/jsonld/FormalParameter_v1.0-RELEASE.json> form:file "bioschemas-FormalParameter-1.0-RELEASE-88f238d.json" ; form:sha256 "d03b7a3cbc817df549acb9f622b0298d8346e1ef2ed95038b54793fd85ec8415" .
 
+# The case-study profiles are published with the case-study crate, in the file format of the Bioschemas profiles.
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT> rdfs:isDefinedBy <https://raw.githubusercontent.com/jmillanacosta/ui-casestudy-config/8c8f3f50e8fb73aa9dbe1e9feeb136e6985ac567/profile/CaseStudy_v0.1-DRAFT.json> .
+<https://raw.githubusercontent.com/jmillanacosta/ui-casestudy-config/8c8f3f50e8fb73aa9dbe1e9feeb136e6985ac567/profile/CaseStudy_v0.1-DRAFT.json> form:file "vhp4safety-CaseStudy-0.1-DRAFT-8c8f3f5.json" ; form:sha256 "484ac485874bd28c3f9b010d1b6e07a9e8fca5dce59994341c584f43d2b584b6" .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT> rdfs:isDefinedBy <https://raw.githubusercontent.com/jmillanacosta/ui-casestudy-config/8c8f3f50e8fb73aa9dbe1e9feeb136e6985ac567/profile/CaseStudyWorkflow_v0.1-DRAFT.json> .
+<https://raw.githubusercontent.com/jmillanacosta/ui-casestudy-config/8c8f3f50e8fb73aa9dbe1e9feeb136e6985ac567/profile/CaseStudyWorkflow_v0.1-DRAFT.json> form:file "vhp4safety-CaseStudyWorkflow-0.1-DRAFT-8c8f3f5.json" ; form:sha256 "73ece96a3c220277d519b049c112602516c123725dcd40cde756cf30efc9f60a" .
+
 <https://raw.githubusercontent.com/cygri/void/5b2ca68b7897c2613d4269fd725f1812dce21267/rdfs/void.ttl> form:file "void-5b2ca68.ttl" ; form:sha256 "52f249226d826b1731e9b46a1943afeda48186fcf8f37a0c819c217c031f8064" .
 
 <https://www.w3.org/2000/01/rdf-schema.ttl> form:file "rdfs.ttl" ; form:sha256 "ecee3a011b7c13ea2a7e40b0a208bfe6be53d69fdd53ee035e09e9f9e5108ad6" .

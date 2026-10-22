@@ -563,6 +563,38 @@
         <https://bioschemas.org/profiles/TrainingMaterial/1.0-RELEASE#workTranslation> ;
     sh:targetClass schema:LearningResource .
 
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT> a sh:NodeShape ;
+    sh:property <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#abstract>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#description>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#description-recommended>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#hasPart>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#hasPart-recommended>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#headline>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#image>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#name>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#name-required>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#text> ;
+    sh:targetClass bioschemas_draft:Study .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT> a sh:NodeShape ;
+    sh:property <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#additionalType>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#creativeWorkStatus>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#description>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#disambiguatingDescription>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#hasPart>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#headline>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#input>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#name>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#name-required>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#output>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#position>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#position-recommended>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#step>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#supply>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#text>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#tool> ;
+    sh:targetClass schema:HowTo .
+
 <https://bioschemas.org/profiles/ChemicalSubstance/0.4-RELEASE#alternateName> a sh:PropertyShape ;
     sh:description "An alias for the item." ;
     sh:name "alternateName" ;
@@ -7588,6 +7620,393 @@
     sh:path schema:workTranslation ;
     sh:severity sh:Warning .
 
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#abstract> a sh:PropertyShape ;
+    sh:description "The text above the regulatory questions on its page, in HTML." ;
+    sh:maxCount 1 ;
+    sh:name "abstract" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:abstract ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#definitions/question> sh:class schema:HowTo ;
+    sh:nodeKind sh:BlankNodeOrIRI .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#definitions/section> sh:class schema:WebPageElement ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#definitions/section/name>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#definitions/section/position>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#definitions/section/text>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#definitions/section/text-required> .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#definitions/section/name> a sh:PropertyShape ;
+    sh:description "The heading of the section." ;
+    sh:maxCount 1 ;
+    sh:name "name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#definitions/section/position> a sh:PropertyShape ;
+    sh:description "The order of the section on the page. 1 is first." ;
+    sh:maxCount 1 ;
+    sh:name "position" ;
+    sh:or ( [ sh:datatype xsd:integer ] ) ;
+    sh:path schema:position ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#definitions/section/text> a sh:PropertyShape ;
+    sh:description "The text of the section, in HTML." ;
+    sh:maxCount 1 ;
+    sh:name "text" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:text ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#definitions/section/text-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "text" ;
+    sh:path schema:text ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#description> a sh:PropertyShape ;
+    sh:description "The aim of the case study, in one sentence." ;
+    sh:maxCount 1 ;
+    sh:name "description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#description-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "description" ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#hasPart> a sh:PropertyShape ;
+    sh:description "The regulatory questions of the case study, each with the workflow that answers it, and the sections of its page." ;
+    sh:name "hasPart" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#definitions/question> <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#definitions/section> ) ;
+    sh:path schema:hasPart ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#hasPart-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "hasPart" ;
+    sh:path schema:hasPart ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#headline> a sh:PropertyShape ;
+    sh:description "The heading of its page, if it differs from the name." ;
+    sh:maxCount 1 ;
+    sh:name "headline" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:headline ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#image> a sh:PropertyShape ;
+    sh:description "The icon of the case study, shown on the case studies page." ;
+    sh:maxCount 1 ;
+    sh:name "image" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:path schema:image ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#name> a sh:PropertyShape ;
+    sh:description "The name of the case study." ;
+    sh:maxCount 1 ;
+    sh:name "name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#text> a sh:PropertyShape ;
+    sh:description "The text of its page in HTML, if it is not in sections." ;
+    sh:maxCount 1 ;
+    sh:name "text" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:text ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#additionalType> a sh:PropertyShape ;
+    sh:description "For the steps of a question: the step of the VHP4Safety process flow, a term of the VHP4Safety glossary." ;
+    sh:maxCount 1 ;
+    sh:name "additionalType" ;
+    sh:or ( [ sh:in ( <https://vhp4safety.github.io/glossary#VHP0000153> <https://vhp4safety.github.io/glossary#VHP0000154> <https://vhp4safety.github.io/glossary#VHP0000155> <https://vhp4safety.github.io/glossary#VHP0000156> <https://vhp4safety.github.io/glossary#VHP0000158> ) ;
+                sh:nodeKind sh:IRI ] ) ;
+    sh:path schema:additionalType ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#creativeWorkStatus> a sh:PropertyShape ;
+    sh:description "Incomplete: its page has no content yet, so its button is greyed out and the page cannot be opened." ;
+    sh:maxCount 1 ;
+    sh:name "creativeWorkStatus" ;
+    sh:or ( [ sh:in ( "Incomplete" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:creativeWorkStatus ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/parameter/description> a sh:PropertyShape ;
+    sh:description "A description, in HTML." ;
+    sh:maxCount 1 ;
+    sh:name "description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/parameter/name> a sh:PropertyShape ;
+    sh:description "The name of the input or output." ;
+    sh:maxCount 1 ;
+    sh:name "name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/parameter/name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/section> sh:class schema:WebPageElement ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/section/name>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/section/position>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/section/text>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/section/text-required> .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/section/name> a sh:PropertyShape ;
+    sh:description "The heading of the section." ;
+    sh:maxCount 1 ;
+    sh:name "name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/section/position> a sh:PropertyShape ;
+    sh:description "The order of the section on the page. 1 is first." ;
+    sh:maxCount 1 ;
+    sh:name "position" ;
+    sh:or ( [ sh:datatype xsd:integer ] ) ;
+    sh:path schema:position ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/section/text> a sh:PropertyShape ;
+    sh:description "The text of the section, in HTML." ;
+    sh:maxCount 1 ;
+    sh:name "text" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:text ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/section/text-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "text" ;
+    sh:path schema:text ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/supply> sh:class schema:HowToSupply ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/supply/description>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/supply/item>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/supply/item-required>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/supply/name>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/supply/position> .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/supply/description> a sh:PropertyShape ;
+    sh:description "The description under the label." ;
+    sh:maxCount 1 ;
+    sh:name "description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/supply/item> a sh:PropertyShape ;
+    sh:description "The dataset: a link to its record, or its name if it has no record yet." ;
+    sh:maxCount 1 ;
+    sh:name "item" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:path schema:item ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/supply/item-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "item" ;
+    sh:path schema:item ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/supply/name> a sh:PropertyShape ;
+    sh:description "The label of its button." ;
+    sh:maxCount 1 ;
+    sh:name "name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/supply/position> a sh:PropertyShape ;
+    sh:description "The order of its button among the tools and data of the step. 1 is first." ;
+    sh:maxCount 1 ;
+    sh:name "position" ;
+    sh:or ( [ sh:datatype xsd:integer ] ) ;
+    sh:path schema:position ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/tool> sh:class schema:HowToTool ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/tool/description>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/tool/item>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/tool/item-required>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/tool/name>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/tool/position> .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/tool/description> a sh:PropertyShape ;
+    sh:description "The description under the label." ;
+    sh:maxCount 1 ;
+    sh:name "description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/tool/item> a sh:PropertyShape ;
+    sh:description "The tool, method or model: a link to its record, or its name if it has no record yet." ;
+    sh:maxCount 1 ;
+    sh:name "item" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:path schema:item ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/tool/item-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "item" ;
+    sh:path schema:item ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/tool/name> a sh:PropertyShape ;
+    sh:description "The label of its button." ;
+    sh:maxCount 1 ;
+    sh:name "name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/tool/position> a sh:PropertyShape ;
+    sh:description "The order of its button among the tools and data of the step. 1 is first." ;
+    sh:maxCount 1 ;
+    sh:name "position" ;
+    sh:or ( [ sh:datatype xsd:integer ] ) ;
+    sh:path schema:position ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/workflow> sh:class schema:HowTo ;
+    sh:nodeKind sh:BlankNodeOrIRI .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#description> a sh:PropertyShape ;
+    sh:description "Shown under the heading of its page." ;
+    sh:maxCount 1 ;
+    sh:name "description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#disambiguatingDescription> a sh:PropertyShape ;
+    sh:description "For a step: shown under the title on its button." ;
+    sh:maxCount 1 ;
+    sh:name "disambiguatingDescription" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:disambiguatingDescription ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#hasPart> a sh:PropertyShape ;
+    sh:description "The sections of its page." ;
+    sh:name "hasPart" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/section> ) ;
+    sh:path schema:hasPart ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#headline> a sh:PropertyShape ;
+    sh:description "The heading of its page, if it differs from the title." ;
+    sh:maxCount 1 ;
+    sh:name "headline" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:headline ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#input> a sh:PropertyShape ;
+    sh:description "The input of a step, such as an estimated daily intake: a dataset, or a name if there is no record of it yet." ;
+    sh:name "input" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/dataset> <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/parameter> ) ;
+    sh:path bioschemas:input ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#name> a sh:PropertyShape ;
+    sh:description "Shown on its button, as the heading of its page, and in the way back to it." ;
+    sh:maxCount 1 ;
+    sh:name "name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#output> a sh:PropertyShape ;
+    sh:description "The output of a step, such as an exposure calculation: a dataset, or a name if there is no record of it yet." ;
+    sh:name "output" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/dataset> <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/parameter> ) ;
+    sh:path bioschemas:output ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#position> a sh:PropertyShape ;
+    sh:description "The order among the questions of the case study, or among the steps of the workflow above it. 1 is first." ;
+    sh:maxCount 1 ;
+    sh:name "position" ;
+    sh:or ( [ sh:datatype xsd:integer ] ) ;
+    sh:path schema:position ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#position-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "position" ;
+    sh:path schema:position ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#step> a sh:PropertyShape ;
+    sh:description "The steps of the workflow, each a workflow of its own at an address under this one. For a question, these are its process flow steps." ;
+    sh:name "step" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/workflow> ) ;
+    sh:path schema:step ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#supply> a sh:PropertyShape ;
+    sh:description "Each dataset used at this step, with the label and the description of its button." ;
+    sh:name "supply" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/supply> ) ;
+    sh:path schema:supply ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#text> a sh:PropertyShape ;
+    sh:description "For a question: the question. For a step: the text of its page above its sections, in HTML." ;
+    sh:maxCount 1 ;
+    sh:name "text" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:path schema:text ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#tool> a sh:PropertyShape ;
+    sh:description "Each tool, method or model used at this step, with the label and the description of its button." ;
+    sh:name "tool" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/tool> ) ;
+    sh:path schema:tool ;
+    sh:severity sh:Warning .
+
 <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE#definitions/formalParameter> sh:class bioschemas:FormalParameter ;
     sh:nodeKind sh:BlankNodeOrIRI ;
     sh:property <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE#definitions/formalParameter/identifier>,
@@ -7752,6 +8171,15 @@
 <https://bioschemas.org/profiles/TrainingMaterial/1.0-RELEASE#definitions/thing> sh:class schema:Thing ;
     sh:nodeKind sh:BlankNodeOrIRI ;
     sh:property <https://bioschemas.org/profiles/TrainingMaterial/1.0-RELEASE#definitions/thing/name> .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/dataset> sh:class schema:Dataset ;
+    sh:nodeKind sh:BlankNodeOrIRI .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/parameter> sh:class bioschemas:FormalParameter ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/parameter/description>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/parameter/name>,
+        <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#definitions/parameter/name-required> .
 
 <https://bioschemas.org/profiles/ChemicalSubstance/0.4-RELEASE#definitions/bioChemEntity> sh:class schema:BioChemEntity ;
     sh:nodeKind sh:BlankNodeOrIRI ;
