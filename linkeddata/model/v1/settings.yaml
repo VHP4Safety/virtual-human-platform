@@ -145,8 +145,8 @@ kinds:
   compound:
     class: schema:MolecularEntity
     label: Compound
-# The properties whose values are shown to editors only, not on the pages and not in their data.
-private: [schema:email]
+# The properties whose values are shown to editors only, not on the pages and not in their data. Emails are published.
+private: []
 # The class that the values of a property also have on the pages and in their data, as schema.org expects: a licence
 # is a CreativeWork. The records keep their own class.
 published as:
