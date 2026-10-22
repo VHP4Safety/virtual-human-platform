@@ -1,0 +1,15 @@
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix prof: <http://www.w3.org/ns/dx/prof/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix role: <http://www.w3.org/ns/dx/prof/role/> .
+
+<https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT> a prof:Profile ;
+    rdfs:label "VHP4Safety case study 0.1-DRAFT" ;
+    rdfs:comment "A profile of the RO-Crate of the VHP4Safety case studies. Each case study is a Study with its regulatory questions, each a workflow (HowTo) whose steps are workflows of their own, with the tools, methods, models and data used at each step, and the sections of its page. It adds to the Bioschemas Study profile." ;
+    prof:hasResource [ a prof:ResourceDescriptor ;
+            dct:format <https://w3id.org/mediatype/text/turtle> ;
+            prof:hasArtifact <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT/CaseStudy.ttl> ;
+            prof:hasRole role:validation ] ;
+    prof:hasToken "vhp4safety-casestudy-0.1-draft" ;
+    prof:isProfileOf <https://w3id.org/ro/crate/1.2> .
+

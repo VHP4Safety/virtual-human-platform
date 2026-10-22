@@ -187,7 +187,10 @@ To change the form, change the profile. The terms of the profile:
   the order of the menu. `context.jsonld` is the JSON-LD context of the records: the prefixes, and the JSON names of
   the properties of other vocabularies. `profile/` has the shapes of the platform, in modules, with the additions of
   the platform to the vocabularies, such as the PBPK terms. `profiles/` has the profiles that the platform publishes,
-  in the file format of the Bioschemas profiles.
+  in SHACL, in the layout of rocrate-validator: `profiles/<name>/<version>/` has the description of the profile
+  (`profile.ttl`, in the Profiles Vocabulary) and its shapes, served at `/profiles/<name>/<version>`. The profiles of
+  crates (PBPKModel, CaseStudy) are written in the terms of the RO-Crate context, such as `http://schema.org/name`,
+  and the shapes of the platform read them as the official terms of the same name (`https://schema.org/name`).
 
 At an import:
 

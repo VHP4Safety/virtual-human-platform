@@ -6,6 +6,7 @@ import os
 from functools import cache
 from operator import itemgetter
 from pathlib import Path
+from urllib.parse import urlparse
 
 import requests
 import yaml
@@ -26,7 +27,8 @@ TABLES = Path(__file__).parent.parent / "database" / RELEASE / "tables.sql"
 OFFICIAL = MODEL_DIR / "bioschemas-profiles.shacl"
 # The prefixes of the terms of the official profiles. A term of an earlier prefix is taken before a term of the same name.
 OFFICIAL_PREFIXES = ("schema", "bioschemas", "bioschemas_draft")
-# The profiles that the platform publishes, in the file format of the Bioschemas profiles: <name>_v<version>.json.
+# The profiles that the platform publishes, in SHACL, in the layout of rocrate-validator: profiles/<name>/<version>/ has the
+# description of the profile (profile.ttl, in the Profiles Vocabulary) and its shapes.
 PROFILES = MODEL_DIR / "profiles"
 # The settings of the release that are not shapes, and the JSON-LD context of the records with the prefixes and the JSON names.
 SETTINGS = MODEL_DIR / "settings.yaml"
@@ -35,6 +37,7 @@ CONTEXT = MODEL_DIR / "context.jsonld"
 
 FORM = Namespace("https://platform.vhp4safety.nl/model/v1/form#")
 DASH = Namespace("http://datashapes.org/dash#")
+PROF = Namespace("http://www.w3.org/ns/dx/prof/")
 
 
 @cache
@@ -155,33 +158,51 @@ def list_terms(of_class: str) -> dict[str, dict[str, str]]:
 
 
 def profile_files() -> dict[str, Path]:
-    """Return the file of each profile by address: the pinned official files and the platform profiles."""
-    found = {profile: MODEL_DIR / "vocabularies" / name for profile, name in settings()["profiles"].items()}
-    for path in PROFILES.glob("*.json"):
-        published = json.loads(path.read_text(encoding="utf-8"))
-        prefix, _, name = next(node for node in published["@graph"] if "$validation" in node)["@id"].partition(":")
-        found[f"{published['@context'][prefix]}{name}/{path.stem.rpartition('_v')[2]}"] = path
+    """Return the pinned file of each official profile, by address."""
+    return {profile: MODEL_DIR / "vocabularies" / name for profile, name in settings()["profiles"].items()}
+
+
+def platform_profiles() -> dict[str, list[Path]]:
+    """Return the shapes files of each profile of the platform, by address."""
+    found = {}
+    for described in sorted(PROFILES.glob("*/*/profile.ttl")):
+        graph = Graph().parse(described, format="turtle")
+        for profile in graph.subjects(RDF.type, PROF.Profile):
+            found[str(profile)] = [described.parent / str(artifact).rsplit("/", 1)[-1] for artifact in graph.objects(None, PROF.hasArtifact)]
+    return found
+
+
+def official_terms(graph: Graph, terms: dict[str, str]) -> Graph:
+    """Return graph with each term of the host and the name of an official term read as that term, such as http://schema.org/name."""
+
+    def official(node):
+        given = terms.get(local_name(str(node))) if isinstance(node, URIRef) else None
+        if given and urlparse(given).netloc == urlparse(str(node)).netloc:
+            return URIRef(given)
+        return node
+
+    found = Graph()
+    for subject, predicate, value in graph:
+        found.add((official(subject), official(predicate), official(value)))
     return found
 
 
 def official_text() -> str:
-    """Return the Turtle of the shapes of the official profiles, made with rdfsolve from their files."""
+    """Return the Turtle of the shapes of the official profiles, made with rdfsolve from their files, and of the platform profiles."""
     prefixes = settings()["prefixes"]
     known = Vocabulary([vocabulary(path) for path in vocabularies()])
     terms = vocabulary_context(known, [prefixes[name] for name in OFFICIAL_PREFIXES])
     found = Graph()
     for profile, path in sorted(profile_files().items()):
         published = json.loads(path.read_text(encoding="utf-8"))
-        # A property or a class that a profile file declares has the address given in the file, unless the file is pinned
-        # and an official term has the same name: the declared addresses of the pinned files are those of their editor.
+        # A property without a term of the official prefixes keeps the address given in its profile file.
         declared = {}
         for node in published["@graph"]:
             prefix, _, name = str(node["@id"]).partition(":")
-            if node.get("@type") in ("rdf:Property", "rdfs:Class") and "$validation" not in node and prefix in published["@context"]:
+            if node.get("@type") == "rdf:Property" and prefix in published["@context"]:
                 declared[node["rdfs:label"]] = published["@context"][prefix] + name
-        context = {**terms, **declared} if path.parent == PROFILES else {**declared, **terms}
         # "type" is the name of @type in the JSON-LD context of schema.org.
-        context.update({"type": str(RDF.type), "@vocab": prefixes["schema"]})
+        context = {**declared, **terms, "type": str(RDF.type), "@vocab": prefixes["schema"]}
         node = next(node for node in published["@graph"] if "$validation" in node)
         target = address(node["rdfs:subClassOf"]["@id"], context)
         # The list fields of the records of the class are RDF lists, as in the JSON-LD of the records.
@@ -189,11 +210,18 @@ def official_text() -> str:
         shape = json_schema_shape(node["$validation"], shape=str(profile), target_class=target, context=context,
                                   levels={"required": "Violation", "recommended": "Warning"}, vocabulary=known)
         shape.to_rdf(found)
-    for name in OFFICIAL_PREFIXES:
-        found.bind(name, prefixes[name])
-    header = ("# Made from the files of the official profiles by python -m linkeddata model. Do not edit.\n"
-              "# The severities are set by the platform, as JSON Schema has none: a missing required property is a Violation,\n"
-              "# and a missing recommended property or a value that does not fit is a Warning.\n")
+    for profile, paths in sorted(platform_profiles().items()):
+        given = Graph()
+        for path in paths:
+            given.parse(path, format="turtle")
+        found += official_terms(given, terms)
+    for name, namespace in prefixes.items():
+        found.bind(name, namespace)
+    header = ("# Made from the files of the official profiles and of the platform profiles by python -m linkeddata model. Do not edit.\n"
+              "# The severities of the official profiles are set by the platform, as JSON Schema has none: a missing required property\n"
+              "# is a Violation, and a missing recommended property or a value that does not fit is a Warning. The platform profiles\n"
+              "# are in SHACL, with their own severities, and a term of the host and the name of an official term, such as\n"
+              "# http://schema.org/name in a profile of crates, is read as that term.\n")
     return header + found.serialize(format="turtle")
 
 

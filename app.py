@@ -1134,8 +1134,9 @@ def image(name: str):
 ################################################################################
 ### Profiles that the platform publishes
 @app.route("/profiles/<name>/<version>")
-def published_profile(name: str, version: str):
-    response = send_from_directory(PROFILES, f"{name}_v{version}.json", mimetype="application/ld+json")
+@app.route("/profiles/<name>/<version>/<file>")
+def published_profile(name: str, version: str, file: str = "profile.ttl"):
+    response = send_from_directory(PROFILES, f"{name}/{version}/{file}", mimetype="text/turtle")
     response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
