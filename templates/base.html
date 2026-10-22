@@ -188,9 +188,6 @@
     <!-- Data Button -->
     <button class="btn btn-vhpblue text-nowrap" style="width: 150px;" onclick="location.href='/data'" type="button">Data</button>
 
-    <!-- Models Button -->
-    <button class="btn btn-vhpblue text-nowrap" style="width: 150px;" onclick="location.href='/models'" type="button">Models</button>
-
   </div>
 </nav>
 
@@ -259,7 +256,8 @@
       </div>
       <div class="collapse" id="collapseTools">
         <div class="d-flex flex-column ps-3 gap-2">
-          <!-- Tools links -->
+          <!-- Tools links, after the models -->
+          <button class="btn btn-light text-start" onclick="location.href='/models'" data-bs-dismiss="offcanvas">Models</button>
            {% for tool in tools_menu %}
             <button class="btn btn-light text-start" onclick="location.href='/tools/{{tool.id}}'" data-bs-dismiss="offcanvas">{{tool.title}}</button>
           {% endfor%}
@@ -286,9 +284,6 @@
 
       <!-- Data button -->
       <button class="btn btn-vhpblue" onclick="location.href='/data'" data-bs-dismiss="offcanvas">Data</button>
-
-      <!-- Models button -->
-      <button class="btn btn-vhpblue" onclick="location.href='/models'" data-bs-dismiss="offcanvas">Models</button>
 
       <!-- Glossary Toggle Switch (mobile) -->
       <div class="form-check form-switch mt-2" data-vhp-glossary-skip>
@@ -386,6 +381,8 @@
       // Store contextprocessor vars for dropdown menu
       window.TOOLS_MENU = (function(){ try { return {{ tools_menu | tojson | safe }}; } catch(e) { return []; } })();
       window.TOOLS_MENU = Array.isArray(window.TOOLS_MENU) ? window.TOOLS_MENU : [];
+      // The Tools menu starts with the models, which have a page of their own.
+      window.TOOLS_DROPDOWN = [{id: "models", title: "Models", main_url: "/models"}].concat(window.TOOLS_MENU);
       window.METHODS_MENU = (function(){ try { return {{ methods_menu | tojson | safe }}; } catch(e) { return []; } })();
       window.METHODS_MENU = Array.isArray(window.METHODS_MENU) ? window.METHODS_MENU : [];
       window.DATA_MENU = (function(){ try { return {{ data_menu | tojson | safe }}; } catch(e) { return []; } })();

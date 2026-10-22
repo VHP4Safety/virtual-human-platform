@@ -257,6 +257,6 @@
   }
 
   // Symmetrically initialize both menus (they share the same behavior)
-  autoInitMenu('toolsMenu', 'toolsMenuBtn', {items: 'TOOLS_MENU',moreClasses:"text-vhpblue", urlPrefix:"/tools/"});
+  autoInitMenu('toolsMenu', 'toolsMenuBtn', {items: 'TOOLS_DROPDOWN',moreClasses:"text-vhpblue", urlPrefix:"/tools/"});
   autoInitMenu('methodsMenu', 'methodsMenuBtn', {items: 'METHODS_MENU', moreClasses:"text-vhpdarkpurple", urlPrefix:"/methods/"});
 })();
