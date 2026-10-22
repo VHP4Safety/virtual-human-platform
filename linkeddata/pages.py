@@ -29,7 +29,7 @@ MARKUP = re.compile(r"<[a-zA-Z][a-zA-Z0-9]*(\s[^<>]*)?/?>")
 # Records on one page of a listing.
 LISTED = 12
 # The glossary names each process flow step "<step> (Process Flow Step)". A tool of no step has the stage Other.
-STEP = "Process Flow Step"
+# The text of the stage column of the sources for a tool or a method of no process flow step in particular.
 OTHER = "Other"
 MEDIA = "text/markdown; charset=utf-8; variant=GFM"
 
@@ -275,9 +275,9 @@ def sections(found: Graph, node) -> list[dict]:
     return listed
 
 
-def kinds(term: str = "", name: str = "") -> list[dict]:
-    """Return the kinds of the glossary term term, or of the term of a name, with label, anchor and definition."""
-    found = records.kinds_of(term) if term else records.kinds_named(name)
+def kinds(term: str) -> list[dict]:
+    """Return the kinds of the glossary term term, with label, anchor and definition."""
+    found = records.kinds_of(term)
     statements = records.graph([kind.iri for kind in found])
     listed = []
     for kind in found:
@@ -518,14 +518,23 @@ def platform_publisher() -> URIRef:
 
 
 def steps() -> dict[str, dict]:
-    """Return the process flow steps of the glossary, by address."""
-    return {step["iri"]: step for step in kinds(name=STEP)}
+    """Return the process flow steps by address, in their order: the values that the case-study profile allows as the step
+    of the process flow of a step of a question, with the label and the definition of their glossary terms."""
+    question = next(shape for field in fields(settings()["kinds"]["casestudies"]) for of_class, shape in field["parts"].items() if of_class == str(SDO.HowTo))
+    allowed = next(field["values"] for field in shape_fields(question) if field["iri"] == str(SDO.additionalType))
+    found = records.graph(allowed)
+    listed = {}
+    for iri in allowed:
+        label = str(found.value(URIRef(iri), SDO.name) or iri).rsplit(" (", 1)[0]
+        descriptions = documents.stored_values(found, iri, "description")
+        listed[iri] = {"iri": iri, "label": label, "slug": label.lower().replace(" ", "-"), "description": descriptions[0] if descriptions else ""}
+    return listed
 
 
 def stages(found: Graph, node) -> list[str]:
-    """Return the process flow steps of node: its keywords that are steps, and the text Other."""
+    """Return the process flow steps of node: its keywords that are steps."""
     known = steps()
-    return [value for value in addresses(found, node, SDO.keywords) if value in known or value == OTHER]
+    return [value for value in addresses(found, node, SDO.keywords) if value in known]
 
 
 def questions() -> set[str]:
@@ -579,9 +588,9 @@ def method_json(record: Record) -> dict:
     known = steps()
     labels = []
     for stage in stages(found, node):
-        labels.append(known[stage]["label"] if stage in known else stage)
+        labels.append(known[stage]["label"])
     # The keywords other than the steps are the substages, such as key events.
-    substages = names_of(found, [value for value in found.objects(node, SDO.keywords) if str(value) not in known and str(value) != OTHER])
+    substages = names_of(found, [value for value in found.objects(node, SDO.keywords) if str(value) not in known])
     types = addresses(found, node, SDO.additionalType)
     return {"method": str(found.value(node, SDO.name) or ""), "method_description_content": plain(found.value(node, SDO.description)),
             "vendor_content": ", ".join(named(found, node, SDO.provider)), "catalog_number_content": str(found.value(node, SDO.identifier) or ""),
@@ -602,10 +611,7 @@ def catalogue_filters(path: str, latest: str) -> dict:
     for step in steps().values():
         labels[step["iri"]] = step["label"]
         explained[step["label"]] = step["description"]
-    stated = sorted(labels.get(value["value"], value["value"]) for value in every["keywords"] if value["count"] and (value["value"] in labels or value["value"] == OTHER))
-    if OTHER in stated:
-        stated.remove(OTHER)
-        stated.append(OTHER)
+    stated = sorted(labels[value["value"]] for value in every["keywords"] if value["count"] and value["value"] in labels)
     asked = questions()
     named_questions = {}
     for value in every["isPartOf"]:
@@ -686,7 +692,7 @@ def dataset(found: Graph, node, known: dict) -> dict:
     asked = questions()
     metadata = {"case_study": [case.rsplit("/", 1)[-1] for case in addresses(found, node, SDO.isPartOf) if case not in asked],
                 "regulatory_question": [question for question in addresses(found, node, SDO.isPartOf) if question in asked],
-                "flow_step": [known[stage]["label"] if stage in known else stage for stage in stages(found, node)],
+                "flow_step": [known[stage]["label"] for stage in stages(found, node)],
                 "rocrate_url": crate_files[0]["url"] if crate_files else None, "raw_data": {}, "resource_type": {"type": type_of},
                 "publication_date": published}
     return {"id": str(node).rsplit("/", 1)[-1], "accession": str(node).rsplit("/", 1)[-1], "type": type_of, "title": str(found.value(node, SDO.name) or ""),
