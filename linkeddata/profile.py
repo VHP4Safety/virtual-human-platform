@@ -10,7 +10,7 @@ from pathlib import Path
 import requests
 import yaml
 from rdflib import RDF, BNode, Graph, Literal, Namespace, URIRef
-from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SH, VOID
+from rdflib.namespace import DC, DCTERMS, OWL, RDFS, SH
 from rdfsolve.client.sql_tables import layout
 from rdfsolve.iris import curie, local_name
 from rdfsolve.schema_models.readers.json_schema import address, json_schema_shape, vocabulary_context
@@ -28,6 +28,9 @@ OFFICIAL = MODEL_DIR / "bioschemas-profiles.shacl"
 OFFICIAL_PREFIXES = ("schema", "bioschemas", "bioschemas_draft")
 # The profiles that the platform publishes, in the file format of the Bioschemas profiles: <name>_v<version>.json.
 PROFILES = MODEL_DIR / "profiles"
+# The settings of the release that are not shapes, and the JSON-LD context of the records with the prefixes and the JSON names.
+SETTINGS = MODEL_DIR / "settings.yaml"
+CONTEXT = MODEL_DIR / "context.jsonld"
 
 
 FORM = Namespace("https://platform.vhp4safety.nl/model/v1/form#")
@@ -37,27 +40,27 @@ DASH = Namespace("http://datashapes.org/dash#")
 @cache
 def settings() -> dict:
     """Return the settings of the model."""
-    graph = profile_graph()
-    header = graph.value(None, RDF.type, OWL.Ontology)
+    given = yaml.safe_load(SETTINGS.read_text(encoding="utf-8"))
+    context = json.loads(CONTEXT.read_text(encoding="utf-8"))["@context"]
+    # A name whose address ends in / or # is a prefix, and any other name is the JSON name of a property.
+    prefixes = {name: iri for name, iri in context.items() if not name.startswith("@") and iri.endswith(("/", "#"))}
+    terms = {name: iri for name, iri in context.items() if not name.startswith("@") and name not in prefixes}
     files = {}
-    # The files of the official profiles (rdfs:isDefinedBy) are pinned in the same way as the vocabularies.
-    for imported in [*graph.objects(header, OWL.imports), *graph.objects(None, RDFS.isDefinedBy)]:
-        files[str(graph.value(imported, FORM.file))] = {"url": str(imported), "sha256": str(graph.value(imported, FORM.sha256))}
+    # The files of the official profiles are pinned in the same way as the vocabularies.
+    for pinned in [*given["vocabularies"], *given["profiles"].values()]:
+        files[pinned["file"]] = {"url": pinned["url"], "sha256": pinned["sha256"]}
     for path in sorted((Path(__file__).parent / "sources").glob("*.yaml")):
         spec = yaml.safe_load(path.read_text(encoding="utf-8"))
         if "pinned" in spec:
             files[spec["vocabulary"]] = {"url": spec["pinned"]["url"], "sha256": str(spec["pinned"]["sha256"])}
-    kinds = []
-    for shape, path in graph.subject_objects(FORM.path):
-        kinds.append((int(graph.value(shape, SH.order) or 0), str(path), str(graph.value(shape, SH.targetClass))))
-    prefixes = {}
-    for declared in graph.objects(header, SH.declare):
-        prefixes[str(graph.value(declared, SH.prefix))] = str(graph.value(declared, SH.namespace))
-    terms = {}
-    for iri, name in graph.subject_objects(FORM["term"]):
-        terms[str(name)] = str(iri)
-    return {"title": str(graph.value(header, RDFS.label)), "base": str(graph.value(header, VOID.uriSpace)), "vocabularies": files,
-            "kinds": {path: of_class for _, path, of_class in sorted(kinds)}, "prefixes": prefixes, "terms": dict(sorted(terms.items()))}
+    kinds = {}
+    for path, kind in given["kinds"].items():
+        prefix, _, name = kind["class"].partition(":")
+        kinds[path] = prefixes[prefix] + name
+    base = os.environ.get("PLATFORM_BASE", given["base"]).rstrip("/") + "/"
+    profiles = {profile: pinned["file"] for profile, pinned in given["profiles"].items()}
+    return {"title": given["title"], "base": base, "vocabularies": files, "profiles": profiles, "kinds": kinds, "prefixes": prefixes,
+            "terms": dict(sorted(terms.items()))}
 
 
 def jsonld_name(iri: str) -> str:
@@ -132,10 +135,7 @@ def profile_text() -> str:
 @cache
 def profile_graph() -> Graph:
     """Return the profile as a graph."""
-    graph = Graph().parse(data=profile_text(), format="turtle")
-    if os.environ.get("PLATFORM_BASE"):
-        graph.set((graph.value(None, RDF.type, OWL.Ontology), VOID.uriSpace, Literal(os.environ["PLATFORM_BASE"].rstrip("/") + "/")))
-    return graph
+    return Graph().parse(data=profile_text(), format="turtle")
 
 
 def list_terms(of_class: str) -> dict[str, dict[str, str]]:
@@ -156,10 +156,7 @@ def list_terms(of_class: str) -> dict[str, dict[str, str]]:
 
 def profile_files() -> dict[str, Path]:
     """Return the file of each profile by address: the pinned official files and the platform profiles."""
-    graph = profile_graph()
-    found = {}
-    for profile, source in graph.subject_objects(RDFS.isDefinedBy):
-        found[str(profile)] = MODEL_DIR / "vocabularies" / str(graph.value(source, FORM.file))
+    found = {profile: MODEL_DIR / "vocabularies" / name for profile, name in settings()["profiles"].items()}
     for path in PROFILES.glob("*.json"):
         published = json.loads(path.read_text(encoding="utf-8"))
         prefix, _, name = next(node for node in published["@graph"] if "$validation" in node)["@id"].partition(":")

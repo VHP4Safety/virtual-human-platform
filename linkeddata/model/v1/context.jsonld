@@ -1,0 +1,15 @@
+{
+  "@context": {
+    "@vocab": "https://schema.org/",
+    "schema": "https://schema.org/",
+    "bioschemas_draft": "https://bioschemas.org/draft_terms/",
+    "bioschemas": "https://bioschemas.org/terms/",
+    "dct": "http://purl.org/dc/terms/",
+    "void": "http://rdfs.org/ns/void#",
+    "spdx": "http://spdx.org/rdf/terms#",
+    "pbpk": "https://platform.vhp4safety.nl/model/v1/pbpk#",
+    "form": "https://platform.vhp4safety.nl/model/v1/form#",
+    "processFlowStep": "https://vhp4safety.github.io/glossary#VHP0000152",
+    "regulatoryQuestion": "https://vhp4safety.github.io/glossary#VHP0000151"
+  }
+}

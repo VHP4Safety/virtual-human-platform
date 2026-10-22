@@ -105,8 +105,8 @@ of the platform: schema.org terms have no prefix (`name`), and other vocabularie
 
 ## The application profile
 
-`model/v1/profile/` is the application profile of the platform, in SHACL, in modules: `ontology.ttl` (the header),
-`text.ttl`, and one file for each kind of record with the shapes of its parts (`tools.ttl`, `casestudies.ttl`,
+`model/v1/profile/` is the application profile of the platform, in SHACL, in modules: `text.ttl`, and one file for
+each kind of record with the shapes of its parts (`tools.ttl`, `casestudies.ttl`,
 `models.ttl`, ...). Each class has one node shape, named after the class (`form:SoftwareApplication`). Its property
 shapes are the fields of its records. The profile sets:
 
@@ -119,7 +119,7 @@ write is not stopped by problems. The problems are returned as warnings for each
 the profile.
 
 The records are also checked against the shapes of the official Bioschemas profiles. Each profile version is a file of
-the Bioschemas specifications with a JSON Schema (`$validation`), pinned in the header (`rdfs:isDefinedBy`). The
+the Bioschemas specifications with a JSON Schema (`$validation`), pinned in `model/v1/settings.yaml`. The
 shapes are made from these files with rdfsolve by `python -m linkeddata model`, and written to
 `model/v1/bioschemas-profiles.shacl`. The properties are given the addresses of schema.org and of the Bioschemas
 terms. For a property without such a term, the address in its profile file is used. The values are read with the
@@ -130,12 +130,12 @@ official shapes are reported only for the fields of the form.
 
 To use another version of an official profile:
 
-1. pin its file in `profile/ontology.ttl` (`rdfs:isDefinedBy`, `form:file`, `form:sha256`), and name the version on
-   the node shape of the class (`dct:conformsTo`);
+1. pin its file in `model/v1/settings.yaml` (`profiles`: the address of the file, its name and its SHA-256), and
+   name the version on the node shape of the class (`dct:conformsTo`);
 2. run `python -m linkeddata model`;
 3. review the change of `model/v1/bioschemas-profiles.shacl`, and commit it.
 
-The classes of the node shapes with `form:path` are record classes (kinds). Each record has its own address and
+The classes of the kinds in `model/v1/settings.yaml` are record classes. Each record has its own address and
 page. A node of another class in an `sh:node` field is a part of its record, and it is written with its record:
 
 - a page section has no address (`sh:nodeKind sh:BlankNode`);
@@ -144,8 +144,8 @@ page. A node of another class in an `sh:node` field is a part of its record, and
 
 Vocabulary terms, such as the terms of the VHP4Safety glossary, are records at their own addresses
 (`schema:DefinedTerm`, in a `schema:DefinedTermSet` at `/vocabularies/<name>`), so that records can link to them.
-The properties of the glossary (Process Flow Step, Regulatory Question) are named in JSON-LD by their `form:term` in
-the profile.
+The properties of the glossary (Process Flow Step, Regulatory Question) are named in JSON-LD by their names in
+`model/v1/context.jsonld`.
 
 The forms of the editor are made by shacl-form (`@ulb-darmstadt/shacl-form`) from the profile only:
 
@@ -157,13 +157,10 @@ The forms of the editor are made by shacl-form (`@ulb-darmstadt/shacl-form`) fro
 
 To change the form, change the profile. The terms of the profile:
 
-- `form:path`, `sh:order` (on a node shape): the records of the class are a kind, with pages at `/<path>/<name>`, in
-  this order among the kinds;
 - `sh:group`, `sh:order`, `sh:name`, `sh:description`: the section, place, label and help of a field; `sh:message`:
   the text shown if a value is missing or does not fit; `dash:singleLine false`: a longer text;
 - `form:private true`: not shown on the pages and not in their data; shown to editors;
 - `form:shown false`: kept in the data, not shown on the pages; shown to editors;
-- `form:term`: the JSON-LD name of a property of another vocabulary, such as a property of the glossary;
 - `form:publishedAs`: an additional class of the values on the pages and in their data, as expected by schema.org
   (a licence is a CreativeWork); the records keep their own class;
 - `form:shows` (data, on a page section): the fields of the presented record (`schema:about`) that are shown in the
@@ -183,12 +180,14 @@ To change the form, change the profile. The terms of the profile:
 - **`launch/`**: the sources that are read once, with `python -m linkeddata launch`, with their parsers, and the
   corrections of `launch.yaml`. The pinned vocabularies change only with a new pin, so they are also read at launch.
   A launch is refused on a database with imported records.
-- **`model/v1/`**: the model. `profile/` has the one model, in modules. Its header (`ontology.ttl`) has the base
-  address of the identifiers (`void:uriSpace`, replaced by `PLATFORM_BASE` if it is set), the vocabularies of the
-  model (`owl:imports`: schema.org, the Bioschemas types, VoID and the VHP4Safety glossary, each pinned by
-  `form:file` and `form:sha256` and downloaded into `vocabularies/` if missing; this folder is not committed), and
-  the prefixes of the JSON-LD (`sh:declare`). The classes by kind (`form:path`) are set in its shapes, with the
-  additions of the platform to the vocabularies, such as the PBPK terms.
+- **`model/v1/`**: the model. `settings.yaml` has the base address of the identifiers (replaced by `PLATFORM_BASE` if
+  it is set), the vocabularies of the model (schema.org, the Bioschemas types, VoID and the VHP4Safety glossary) and
+  the files of the official profiles, each pinned by its file name and SHA-256 and downloaded into `vocabularies/` if
+  missing (this folder is not committed), and the kinds: the address of their pages, their class and their name, in
+  the order of the menu. `context.jsonld` is the JSON-LD context of the records: the prefixes, and the JSON names of
+  the properties of other vocabularies. `profile/` has the shapes of the platform, in modules, with the additions of
+  the platform to the vocabularies, such as the PBPK terms. `profiles/` has the profiles that the platform publishes,
+  in the file format of the Bioschemas profiles.
 
 At an import:
 
