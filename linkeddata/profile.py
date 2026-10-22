@@ -189,7 +189,10 @@ def official_text() -> str:
         shape.to_rdf(found)
     for name in OFFICIAL_PREFIXES:
         found.bind(name, prefixes[name])
-    return "# Made from the files of the official profiles by python -m linkeddata model. Do not edit.\n" + found.serialize(format="turtle")
+    header = ("# Made from the files of the official profiles by python -m linkeddata model. Do not edit.\n"
+              "# The severities are set by the platform, as JSON Schema has none: a missing required property is a Violation,\n"
+              "# and a missing recommended property or a value that does not fit is a Warning.\n")
+    return header + found.serialize(format="turtle")
 
 
 def write_official() -> Path:

@@ -1,4 +1,6 @@
 # Made from the files of the official profiles by python -m linkeddata model. Do not edit.
+# The severities are set by the platform, as JSON Schema has none: a missing required property is a Violation,
+# and a missing recommended property or a value that does not fit is a Warning.
 @prefix bioschemas: <https://bioschemas.org/terms/> .
 @prefix bioschemas_draft: <https://bioschemas.org/draft_terms/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
