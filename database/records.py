@@ -346,22 +346,20 @@ def nodes_with(of_class: str, path: str, wanted: list[str]):
     return selects[0] if len(selects) == 1 else union_all(*selects)
 
 
-def chosen(of_class: str, filters: dict, search: str = "", more: tuple[str, ...] = ()):
-    """Return the select of the records of of_class, and of the classes in more, found by filters and search."""
-    classes = [of_class, *more]
-    every = [each for given in classes for each in within(given)]
+def chosen(of_class: str, filters: dict, search: str = ""):
+    """Return the select of the records of of_class found by filters and search."""
     statement = select(Record.iri, Record.name).where(
-        Record.type.in_(every), Record.removed_at.is_(None), Record.moved_to.is_(None), Record.part_of.is_(None))
+        Record.type.in_(within(of_class)), Record.removed_at.is_(None), Record.moved_to.is_(None), Record.part_of.is_(None))
     if search:
         statement = statement.where(or_(Record.name.icontains(search, autoescape=True), Record.iri.contains(search, autoescape=True)))
     for path, wanted in filters.items():
-        statement = statement.where(or_(*[Record.iri.in_(nodes_with(given, path, wanted)) for given in classes]))
+        statement = statement.where(Record.iri.in_(nodes_with(of_class, path, wanted)))
     return statement
 
 
-def page(of_class: str, filters: dict, search: str, first: int, size: int, more: tuple[str, ...] = ()) -> tuple[int, list[str]]:
-    """Return the number of records found and the addresses of one page of them, also of the classes in more."""
-    statement = chosen(of_class, filters, search, more).add_columns(func.count().over().label("total"))
+def page(of_class: str, filters: dict, search: str, first: int, size: int) -> tuple[int, list[str]]:
+    """Return the number of records found and the addresses of one page of them."""
+    statement = chosen(of_class, filters, search).add_columns(func.count().over().label("total"))
     statement = statement.order_by(func.lower(Record.name).nulls_last(), Record.iri).limit(size).offset(first)
     found = []
     total = 0
@@ -371,21 +369,21 @@ def page(of_class: str, filters: dict, search: str, first: int, size: int, more:
             total = row.total
         if not found and first:
             # For a page after the last page, no row is returned, so the count is selected separately.
-            total = connection.scalar(select(func.count()).select_from(chosen(of_class, filters, search, more).subquery()))
+            total = connection.scalar(select(func.count()).select_from(chosen(of_class, filters, search).subquery()))
     return total, found
 
 
-def facets(of_class: str, paths: list[str], filters: dict, search: str = "", more: tuple[str, ...] = ()) -> dict[str, dict[tuple[str, bool], int]]:
-    """Return the number of records found for each value of each field in paths, also of the classes in more."""
-    every = chosen(of_class, filters, search, more).with_only_columns(Record.iri).cte("chosen").prefix_with("MATERIALIZED")
+def facets(of_class: str, paths: list[str], filters: dict, search: str = "") -> dict[str, dict[tuple[str, bool], int]]:
+    """Return the number of records found for each value of each field in paths."""
+    every = chosen(of_class, filters, search).with_only_columns(Record.iri).cte("chosen").prefix_with("MATERIALIZED")
     branches = []
     for number, path in enumerate(paths):
         records = every
         if path in filters:
             others = dict(filters)
             del others[path]
-            records = chosen(of_class, others, search, more).with_only_columns(Record.iri).cte(f"chosen_but_{number}").prefix_with("MATERIALIZED")
-        for source in [each for given in (of_class, *more) for each in sources(given, path)]:
+            records = chosen(of_class, others, search).with_only_columns(Record.iri).cte(f"chosen_but_{number}").prefix_with("MATERIALIZED")
+        for source in sources(of_class, path):
             iri = (source["term"] == "@id").label("iri")
             branches.append(select(literal(path).label("path"), source["value"].label("value"), iri, func.count().label("records"))
                             .where(source["table"].c.iri.in_(select(records.c.iri)), source["where"]).group_by(source["value"], iri))
@@ -414,10 +412,10 @@ def filters(of_class: str, given: dict) -> dict:
     return found
 
 
-def counted(of_class: str, given: dict, more: tuple[str, ...] = ()) -> dict:
-    """Return the values of each filter field of of_class with their counts, by field name, also of the classes in more."""
+def counted(of_class: str, given: dict) -> dict:
+    """Return the values of each filter field of of_class with their counts, by field name."""
     browsed_fields = [field for field in fields(of_class) if browsed(field)]
-    counts = facets(of_class, [field["iri"] for field in browsed_fields], filters(of_class, given), given["search"], more)
+    counts = facets(of_class, [field["iri"] for field in browsed_fields], filters(of_class, given), given["search"])
     every = []
     for field in browsed_fields:
         every.extend(field["values"])

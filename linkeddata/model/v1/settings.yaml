@@ -103,9 +103,6 @@ kinds:
   tools:
     class: schema:SoftwareApplication
     label: Tool
-    # The public page of the tools also lists the models, which stay a kind of their own in the data, the API and the
-    # editor.
-    listed with: [models]
   methods:
     class: bioschemas_draft:LabProtocol
     label: Method

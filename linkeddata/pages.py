@@ -319,13 +319,8 @@ def kind_names() -> dict[str, str]:
     return {path: named.get(of_class) or path.capitalize() for path, of_class in settings()["kinds"].items()}
 
 
-def listed_with(path: str) -> tuple[str, ...]:
-    """Return the classes of the kinds that the pages of the kind at path also list, such as the models on the tools page."""
-    return tuple(settings()["kinds"][other] for other in settings()["listed with"].get(path, []))
-
-
 def listing(path: str, arguments, size: int = LISTED) -> dict:
-    """Return one page of records of the kind at path, and of the kinds listed with it, with the filter counts."""
+    """Return one page of records of the kind at path, with the filter counts."""
     of_class = settings()["kinds"][path]
     given = {"search": arguments.get("search", "").strip()}
     browsed = []
@@ -334,12 +329,12 @@ def listing(path: str, arguments, size: int = LISTED) -> dict:
             browsed.append(field)
             given[field["name"]] = arguments.getlist(field["name"])
     number = max(arguments.get("page", 1, type=int), 1)
-    total, iris = records.page(of_class, records.filters(of_class, given), given["search"], (number - 1) * size, size, listed_with(path))
+    total, iris = records.page(of_class, records.filters(of_class, given), given["search"], (number - 1) * size, size)
     found = documents.public(records.graph(iris))
     listed = []
     for iri in iris:
         listed.append({"address": iri, "name": str(found.value(URIRef(iri), SDO.name) or iri), "description": text(found.value(URIRef(iri), SDO.description))})
-    counts = records.counted(of_class, given, listed_with(path))
+    counts = records.counted(of_class, given)
     filters = []
     for field in browsed:
         values = [value for value in counts[field["name"]] if value["count"] or value["value"] in given[field["name"]]]
@@ -601,7 +596,7 @@ def method_json(record: Record) -> dict:
 @lru_cache(maxsize=8)
 def catalogue_filters(path: str, latest: str) -> dict:
     """Return the filter values of the listing at path, cached until latest changes."""
-    every = records.counted(settings()["kinds"][path], {"search": ""}, listed_with(path))
+    every = records.counted(settings()["kinds"][path], {"search": ""})
     labels = {}
     explained = {}
     for step in steps().values():
@@ -658,8 +653,7 @@ def filtered(path: str, arguments, size: int = LISTED) -> tuple[dict, dict]:
 
 
 def catalogue_listing(path: str, arguments) -> dict:
-    """Return one page of tools or methods as a listing of the cloud catalogue, with the records of the kinds listed with
-    them, such as the models with the tools."""
+    """Return one page of tools or methods as a listing of the cloud catalogue."""
     found, filters = filtered(path, arguments)
     shown = documents.public(records.graph([item["address"] for item in found["listed"]]))
     by = platform_publisher()
@@ -672,9 +666,7 @@ def catalogue_listing(path: str, arguments) -> dict:
         listed.append({"id": item["address"].rsplit("/", 1)[-1], "service": item["name"], "description": plain(shown.value(node, SDO.description)),
                        "png": local(str(shown.value(node, SDO.image) or "")), "inst_url": run or "no_url", "main_url": url or "no_url",
                        "vhp_deved": by in shown.objects(node, SDO.author), "vhp_hosted": hosted,
-                       "meta_data": "/" + records.path(item["address"]) + ".md", "page": "/" + records.path(item["address"]),
-                       # A record of a kind listed with the kind of the page, such as a model, is named by its kind.
-                       "kind": "" if records.class_of(shown, node) == settings()["kinds"][path] else kind_of(records.class_of(shown, node))})
+                       "meta_data": "/" + records.path(item["address"]) + ".md"})
     return {**filters, path: listed, "selected_stages": arguments.getlist("stage"), "selected_case_studies": arguments.getlist("case_study"),
             "selected_questions": arguments.getlist("reg_q"), "page": found["page"], "page_size": LISTED, "total": found["total"],
             "has_prev": found["page"] > 1, "has_next": found["page"] < found["pages"], "search_query": found["search"]}
