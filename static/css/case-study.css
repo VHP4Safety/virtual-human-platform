@@ -62,3 +62,55 @@
   outline-offset: 4px;
   border-radius: 0.25rem;
 }
+
+/* The map of the case study under the process flow: every page with the colour and number of its stage, as in the
+   process flow, down to the tools, models and data (static/js/case-study.js). */
+.case-study-map {
+  max-width: 1140px;
+  max-height: 60vh;
+  margin: 0.5rem auto 0;
+  overflow-y: auto;
+}
+
+.case-study-branches {
+  list-style: none;
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.case-study-map > .case-study-branches {
+  padding: 0.5rem 0.75rem;
+}
+
+.case-study .case-study-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.125rem 0;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.case-study .case-study-branch.active {
+  color: var(--bs-vhppink-distinct);
+  font-weight: 700;
+}
+
+.case-study-branch-icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.case-study-branch[data-step="1"] .case-study-branch-icon { background-color: var(--bs-vhppink-distinct); }
+.case-study-branch[data-step="2"] .case-study-branch-icon { background-color: var(--bs-vhpdarkpurple); }
+.case-study-branch[data-step="3"] .case-study-branch-icon { background-color: var(--bs-vhpdarkteal); }
+.case-study-branch[data-step="4"] .case-study-branch-icon { background-color: var(--bs-vhplightteal); }
+.case-study-branch[data-step="5"] .case-study-branch-icon { background-color: var(--bs-vhpblue); }

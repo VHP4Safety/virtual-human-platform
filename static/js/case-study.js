@@ -291,6 +291,24 @@ function processFlow(container, state, found, header) {
       tracker.append(item);
     }
     header.append(tracker);
+    // The map of the case study is folded under the process flow, and unfolded with its button.
+    const toggle = make("button", "btn btn-sm btn-outline-vhpdarkpurple d-block mx-auto", "Show all steps");
+    toggle.type = "button";
+    toggle.dataset.bsToggle = "collapse";
+    toggle.dataset.bsTarget = "#" + state.id + "-map";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-controls", state.id + "-map");
+    const map = make("div", "collapse case-study-map");
+    map.id = state.id + "-map";
+    map.addEventListener("shown.bs.collapse", function () { toggle.textContent = "Hide all steps"; });
+    map.addEventListener("hidden.bs.collapse", function () { toggle.textContent = "Show all steps"; });
+    header.append(toggle, map);
+  }
+  // The map is drawn again with the page in view, also when the document has changed, as in the editor preview.
+  const map = header.querySelector(".case-study-map");
+  map.replaceChildren(branches(container, state, state.document, 0, []));
+  for (const link of map.querySelectorAll(".case-study-branch[data-address]")) {
+    link.classList.toggle("active", link.dataset.address === (found[level]["@id"] || ""));
   }
   for (const item of header.querySelectorAll(".step-item")) {
     const step = Number(item.dataset.step);
@@ -301,6 +319,56 @@ function processFlow(container, state, found, header) {
     item.onclick = item.classList.contains("completed") ? function () { navigate(container, state.path.slice(0, above[step])); } : null;
   }
   return header;
+}
+
+// Return the map of the pages below a page: each page with the stage of the process flow at which it is chosen, the pages
+// below it, and its tools, models and data, which are chosen at stage 5. A page of the map is opened as if its branch were clicked through, and a tool, model or data
+// opens the page that lists it. The pages that have no button on the website are left out, as are the pages below a
+// greyed-out page.
+function branches(container, state, page, level, path) {
+  const list = make("ul", "case-study-branches");
+  for (const child of level < DEEPEST ? children(state, page, level) : []) {
+    const disabled = first(child, "creativeWorkStatus") === "Incomplete" && !state.options.openDisabled;
+    if (!child["@id"] || (empty(child) && first(child, "creativeWorkStatus") !== "Incomplete" && !state.options.openDisabled)) {
+      continue;
+    }
+    const entry = make("li", "");
+    const link = make(disabled ? "span" : "a", "case-study-branch");
+    link.dataset.step = stageOf(page, level);
+    link.dataset.address = child["@id"];
+    link.append(make("span", "case-study-branch-icon", link.dataset.step), document.createTextNode(label(state, child) || child["@id"]));
+    entry.append(link);
+    if (disabled) {
+      link.classList.add("opacity-25");
+      link.title = "Greyed out on the website, and not opened there";
+    } else {
+      opensAt(container, state, link, path.concat([child["@id"]]));
+      const below = branches(container, state, child, level + 1, path.concat([child["@id"]]));
+      if (below.children.length) {
+        entry.append(below);
+      }
+    }
+    list.append(entry);
+  }
+  for (const item of level ? items(state, page) : []) {
+    const entry = make("li", "");
+    const link = make("a", "case-study-branch");
+    link.dataset.step = PROCESS_FLOW.length;
+    link.append(make("span", "case-study-branch-icon", link.dataset.step), document.createTextNode(item.name || "(no name)"));
+    opensAt(container, state, link, path);
+    entry.append(link);
+    list.append(entry);
+  }
+  return list;
+}
+
+// Make a link of the map open the page at the end of path, with the address of that page.
+function opensAt(container, state, link, path) {
+  link.href = local(path.length ? path[path.length - 1] : state.document["@id"] || "", state.options);
+  link.addEventListener("click", function (event) {
+    event.preventDefault();
+    navigate(container, path);
+  });
 }
 
 // Return the tools, methods and data of a page, by name.
