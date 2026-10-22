@@ -119,6 +119,7 @@
                     </div>
                     <div class="card-body">
                         <h2 class="card-title mb-0">{{ item.service }}
+                            {% if item.kind %}<span class="badge text-bg-light border fw-normal align-middle">{{ item.kind }}</span>{% endif %}
                             {% if item.vhp_deved %}
                                 <img src="/static/images/logos/icon/PNG/300ppi/VHP_Icon_HexaHead_300.png" alt="Developed by VHP" class="vhp-badge ms-1" data-bs-toggle="tooltip" data-bs-title="Developed by VHP">
                             {% endif %}
@@ -135,7 +136,7 @@
                         <div class="btn-group d-flex" role="group" aria-label="Tool example">
 
                              <!-- Catalog Page -->
-                            <a href="{{ url_for('tools') }}/{{ item.id }}" class="btn btn-vhpblue" data-bs-toggle="tooltip" data-bs-title="View tool details"><i class="bi bi-info-circle"></i></a>
+                            <a href="{{ item.page }}" class="btn btn-vhpblue" data-bs-toggle="tooltip" data-bs-title="View {{ (item.kind or 'tool')|lower }} details"><i class="bi bi-info-circle"></i></a>
 
                              <!-- Go to tool -->
                             {% if item.inst_url != "no_url" %}

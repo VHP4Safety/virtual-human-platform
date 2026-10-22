@@ -78,7 +78,8 @@ def settings() -> dict:
     return {"title": given["title"], "base": base, "vocabularies": files, "profiles": profiles, "kinds": kinds, "labels": labels,
             "prefixes": prefixes, "terms": dict(sorted(terms.items())), "lists": lists, "private": {expanded(path) for path in given.get("private", [])},
             "published as": {expanded(path): expanded(of_class) for path, of_class in given.get("published as", {}).items()},
-            "read only": by_class["read only"], "hidden": by_class["hidden"], "read only in the editor": set(given.get("read only in the editor", []))}
+            "read only": by_class["read only"], "hidden": by_class["hidden"], "read only in the editor": set(given.get("read only in the editor", [])),
+            "listed with": {path: kind["listed with"] for path, kind in given["kinds"].items() if kind.get("listed with")}}
 
 
 def jsonld_name(iri: str) -> str:
