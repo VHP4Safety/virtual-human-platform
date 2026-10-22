@@ -12504,8 +12504,7 @@ pbpk:outcome a rdf:Property ;
         <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#HowTo-step>,
         <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#HowTo-supply>,
         <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#HowTo-text>,
-        <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#HowTo-tool> ;
-    sh:targetClass schema:HowTo .
+        <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#HowTo-tool> .
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#FormalParameter> a sh:NodeShape ;
     rdfs:label "Input or output" ;

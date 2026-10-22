@@ -63,8 +63,7 @@ profile:HowTo a sh:NodeShape ;
         profile:HowTo-step,
         profile:HowTo-supply,
         profile:HowTo-text,
-        profile:HowTo-tool ;
-    sh:targetClass schema:HowTo .
+        profile:HowTo-tool  .
 
 profile:HowTo-additionalType a sh:PropertyShape ;
     sh:description "Only for the steps of a question, such as Exposure: the step of the process flow, also used as the name of the button." ;
