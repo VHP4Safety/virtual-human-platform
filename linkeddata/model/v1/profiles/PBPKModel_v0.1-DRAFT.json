@@ -4,7 +4,6 @@
     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
     "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
     "bioschemastypes": "https://discovery.biothings.io/view/bioschemastypes/",
-    "bioschemas": "https://bioschemas.org/terms/",
     "pbpk": "https://platform.vhp4safety.nl/model/v1/pbpk#",
     "vhp4safety": "https://platform.vhp4safety.nl/profiles/"
   },
@@ -13,7 +12,7 @@
       "@id": "vhp4safety:PBPKModel",
       "@type": "rdfs:Class",
       "rdfs:label": "PBPKModel",
-      "rdfs:comment": "A physiologically based kinetic (PBK/PBPK) model, as the main entity of its RO-Crate: a ComputationalWorkflow with the fields that ROBOT requires of a PBPK model. It adds to the Bioschemas ComputationalWorkflow profile, which applies too. Version: 0.1-DRAFT.",
+      "rdfs:comment": "A physiologically based kinetic (PBK/PBPK) model, as the main entity of its RO-Crate: a ComputationalWorkflow with the fields that ROBOT requires of a PBPK model, in the sections of ROBOT. It adds to the Bioschemas ComputationalWorkflow profile, which applies too. Version: 0.1-DRAFT.",
       "rdfs:subClassOf": {
         "@id": "bioschemastypes:ComputationalWorkflow"
       },
@@ -23,21 +22,26 @@
         "properties": {
           "name": {
             "title": "Model name",
+            "group": "General Model Information",
             "description": "Add the model name (required by ROBOT).",
             "type": "string"
           },
           "version": {
             "title": "Model version",
+            "group": "General Model Information",
             "description": "Add the model version (required by ROBOT).",
             "type": "string"
           },
           "description": {
             "title": "Model description",
+            "group": "General Model Information",
             "description": "Add the model description (required by ROBOT).",
-            "type": "string"
+            "type": "string",
+            "contentMediaType": "text/html"
           },
           "creator": {
             "title": "Model author(s)",
+            "group": "General Model Information",
             "description": "Add the model author(s) (required by ROBOT).",
             "anyOf": [
               {
@@ -63,6 +67,7 @@
           },
           "programmingLanguage": {
             "title": "Software platform",
+            "group": "General Model Information",
             "description": "Add the software platform (required by ROBOT).",
             "anyOf": [
               {
@@ -78,6 +83,7 @@
           },
           "codeRepository": {
             "title": "Model availability (URLs/DOIs)",
+            "group": "General Model Information",
             "description": "Add the model availability (URLs/DOIs) (required by ROBOT).",
             "anyOf": [
               {
@@ -95,16 +101,19 @@
           },
           "license": {
             "title": "License",
+            "group": "General Model Information",
             "description": "Add the license, chosen from SPDX. Other values are kept.",
             "$ref": "#/definitions/definedterm"
           },
           "applicationCategory": {
             "title": "Intended application category",
+            "group": "General Model Information",
             "description": "Add the intended application category (required by ROBOT).",
             "type": "string"
           },
           "alternateName": {
             "title": "Other name",
+            "group": "General Model Information",
             "description": "Such as the name of the model in its PBPK description, if the crate names the file of the model.",
             "anyOf": [
               {
@@ -120,11 +129,14 @@
           },
           "modelStructureDescription": {
             "title": "Model structure description",
+            "group": "Model Structure and Mathematical Representation",
             "description": "Add the model structure description (required by ROBOT).",
-            "type": "string"
+            "type": "string",
+            "contentMediaType": "text/html"
           },
           "structuralCompartments": {
             "title": "Structural compartments",
+            "group": "Model Structure and Mathematical Representation",
             "description": "Add the structural compartments (required by ROBOT).",
             "anyOf": [
               {
@@ -140,6 +152,7 @@
           },
           "connections": {
             "title": "Inter-compartmental connections",
+            "group": "Model Structure and Mathematical Representation",
             "description": "Add the inter-compartmental connections (required by ROBOT).",
             "anyOf": [
               {
@@ -155,6 +168,7 @@
           },
           "mathematicalRepresentation": {
             "title": "Mathematical representation",
+            "group": "Model Structure and Mathematical Representation",
             "description": "Choose from the list. Other values are kept.",
             "type": "string",
             "enum": [
@@ -166,6 +180,7 @@
           },
           "implementation": {
             "title": "Model implementation reference(s)",
+            "group": "Model Structure and Mathematical Representation",
             "description": "Add the model implementation reference(s) (required by ROBOT).",
             "anyOf": [
               {
@@ -181,6 +196,7 @@
           },
           "input": {
             "title": "Inputs",
+            "group": "Model Structure and Mathematical Representation",
             "description": "The inputs of the model, such as doses or physiological parameters (input in RO-Crate).",
             "anyOf": [
               {
@@ -196,6 +212,7 @@
           },
           "output": {
             "title": "Outputs",
+            "group": "Model Structure and Mathematical Representation",
             "description": "The outputs of the model, such as concentration-time profiles (output in RO-Crate).",
             "anyOf": [
               {
@@ -211,6 +228,7 @@
           },
           "hasChemical": {
             "title": "Chemical substance(s)",
+            "group": "Chemical(s) Description",
             "description": "Add the chemical substance(s) (required by ROBOT).",
             "anyOf": [
               {
@@ -236,6 +254,7 @@
           },
           "hasBiologicalSystem": {
             "title": "Biological system(s)",
+            "group": "Biological System Description",
             "description": "Add the biological system(s) (required by ROBOT).",
             "anyOf": [
               {
@@ -251,6 +270,7 @@
           },
           "hasParameter": {
             "title": "Parameters",
+            "group": "Parameterisation",
             "description": "Add the parameters (required by ROBOT).",
             "anyOf": [
               {
@@ -266,6 +286,7 @@
           },
           "hasCalibration": {
             "title": "Calibration activities",
+            "group": "Calibration and Parameter Estimation",
             "anyOf": [
               {
                 "$ref": "#/definitions/calibration"
@@ -280,6 +301,7 @@
           },
           "hasEvaluation": {
             "title": "Evaluation activities",
+            "group": "Model Evaluation and Validation",
             "description": "Add the evaluation activities (required by ROBOT).",
             "anyOf": [
               {
@@ -295,6 +317,7 @@
           },
           "hasSUVAnalysis": {
             "title": "SUV analyses",
+            "group": "Sensitivity, Uncertainty, and Variability Analyses",
             "anyOf": [
               {
                 "$ref": "#/definitions/suvanalysis"
@@ -309,26 +332,35 @@
           },
           "intendedUse": {
             "title": "Intended use",
+            "group": "Model Applicability and Limitations",
             "description": "Add the intended use (required by ROBOT).",
-            "type": "string"
+            "type": "string",
+            "contentMediaType": "text/html"
           },
           "applicabilityDomain": {
             "title": "Applicability domain",
+            "group": "Model Applicability and Limitations",
             "description": "Add the applicability domain (required by ROBOT).",
-            "type": "string"
+            "type": "string",
+            "contentMediaType": "text/html"
           },
           "confidenceStatement": {
             "title": "Confidence statement",
+            "group": "Model Applicability and Limitations",
             "description": "Add the confidence statement (required by ROBOT).",
-            "type": "string"
+            "type": "string",
+            "contentMediaType": "text/html"
           },
           "limitations": {
             "title": "Known limitations",
+            "group": "Model Applicability and Limitations",
             "description": "Add the known limitations (required by ROBOT).",
-            "type": "string"
+            "type": "string",
+            "contentMediaType": "text/html"
           },
           "hasPart": {
             "title": "Digital artifacts",
+            "group": "Electronic Files and Reproducibility",
             "description": "Add the digital artifacts (required by ROBOT).",
             "anyOf": [
               {
@@ -344,11 +376,14 @@
           },
           "reproducibilityInstructions": {
             "title": "Reproducibility instructions",
+            "group": "Electronic Files and Reproducibility",
             "description": "Add the reproducibility instructions (required by ROBOT).",
-            "type": "string"
+            "type": "string",
+            "contentMediaType": "text/html"
           },
           "contributor": {
             "title": "Contributors",
+            "group": "On the platform",
             "anyOf": [
               {
                 "$ref": "#/definitions/person"
@@ -373,6 +408,7 @@
           },
           "citation": {
             "title": "Publications",
+            "group": "On the platform",
             "description": "The publications that describe the model, with links to their DOIs on their pages.",
             "anyOf": [
               {
@@ -388,6 +424,7 @@
           },
           "funding": {
             "title": "Funded by",
+            "group": "On the platform",
             "anyOf": [
               {
                 "$ref": "#/definitions/monetarygrant"
@@ -402,6 +439,7 @@
           },
           "about": {
             "title": "Topics",
+            "group": "On the platform",
             "description": "The topics of the model, such as its chemicals (ChEBI) and organisms.",
             "anyOf": [
               {
@@ -417,6 +455,7 @@
           },
           "keywords": {
             "title": "Keywords",
+            "group": "On the platform",
             "description": "Choose a vocabulary term, or register it. Text is kept until then.",
             "anyOf": [
               {
@@ -432,6 +471,7 @@
           },
           "runtimePlatform": {
             "title": "Runtime",
+            "group": "On the platform",
             "description": "Such as R 4.1.0, or Berkeley Madonna 10.6.1.",
             "anyOf": [
               {
@@ -447,6 +487,7 @@
           },
           "softwareRequirements": {
             "title": "Requirements",
+            "group": "On the platform",
             "description": "The packages required by the model, with their versions.",
             "anyOf": [
               {
@@ -462,17 +503,20 @@
           },
           "datePublished": {
             "title": "Published",
+            "group": "On the platform",
             "type": "string",
             "format": "date"
           },
           "isBasedOn": {
             "title": "Source record",
+            "group": "On the platform",
             "description": "The Zenodo record from which this record is made.",
             "type": "string",
             "format": "uri"
           },
           "sameAs": {
             "title": "DOI and other addresses",
+            "group": "On the platform",
             "anyOf": [
               {
                 "type": "string",
@@ -600,7 +644,8 @@
               },
               "description": {
                 "title": "Compartment description",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               }
             },
             "required": [
@@ -681,7 +726,8 @@
               },
               "description": {
                 "title": "Description",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               }
             },
             "required": [
@@ -729,7 +775,8 @@
               },
               "physicochemicalNotes": {
                 "title": "Physicochemical notes",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               },
               "alternateName": {
                 "title": "Other names",
@@ -868,7 +915,8 @@
               },
               "physicochemicalNotes": {
                 "title": "Physicochemical notes",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               },
               "alternateName": {
                 "title": "Other names",
@@ -981,7 +1029,8 @@
               "physiologicalScope": {
                 "title": "Physiological scope",
                 "description": "Add the physiological scope (required by ROBOT).",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               },
               "compartments": {
                 "title": "Compartments",
@@ -1000,11 +1049,13 @@
               },
               "populationDescription": {
                 "title": "Population description",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               },
               "anatomicalAssumptions": {
                 "title": "Anatomical assumptions",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               }
             },
             "required": [
@@ -1114,11 +1165,13 @@
               },
               "sourceReference": {
                 "title": "Source reference",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               },
               "notes": {
                 "title": "Parameter notes",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               },
               "propertyID": {
                 "title": "Symbol",
@@ -1146,7 +1199,8 @@
               "description": {
                 "title": "Calibration description",
                 "description": "Add the calibration description (required by ROBOT).",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               },
               "method": {
                 "title": "Calibration method",
@@ -1162,7 +1216,8 @@
               },
               "calibrationData": {
                 "title": "Calibration data",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               },
               "calibratedParameters": {
                 "title": "Calibrated parameters",
@@ -1180,11 +1235,13 @@
               },
               "optimizationCriteria": {
                 "title": "Optimization criteria",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               },
               "notes": {
                 "title": "Calibration notes",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               }
             },
             "required": [
@@ -1203,11 +1260,13 @@
               "description": {
                 "title": "Evaluation description",
                 "description": "Add the evaluation description (required by ROBOT).",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               },
               "evaluationData": {
                 "title": "Evaluation data (reference)",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               },
               "method": {
                 "title": "Evaluation method",
@@ -1237,11 +1296,13 @@
               "outcome": {
                 "title": "Evaluation outcome",
                 "description": "Add the evaluation outcome (required by ROBOT).",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               },
               "limitations": {
                 "title": "Evaluation limitations",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               }
             },
             "required": [
@@ -1265,7 +1326,8 @@
               },
               "interpretation": {
                 "title": "Metric interpretation",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               }
             },
             "required": [
@@ -1294,7 +1356,8 @@
               },
               "method": {
                 "title": "Analysis method",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               },
               "analyzedParameters": {
                 "title": "Analyzed parameters",
@@ -1313,15 +1376,18 @@
               "outcome": {
                 "title": "Analysis results",
                 "description": "Add the analysis results (required by ROBOT).",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               },
               "robustnessInterpretation": {
                 "title": "Robustness interpretation",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               },
               "notes": {
                 "title": "Additional notes",
-                "type": "string"
+                "type": "string",
+                "contentMediaType": "text/html"
               }
             },
             "required": [

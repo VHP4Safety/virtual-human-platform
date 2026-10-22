@@ -685,6 +685,18 @@
         <https://platform.vhp4safety.nl/profiles/CaseStudyWorkflow/0.1-DRAFT#tool> ;
     sh:targetClass schema:HowTo .
 
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT> a sh:NodeShape ;
+    sh:property <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#alternateName>,
+        <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#amount>,
+        <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#description>,
+        <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#funder>,
+        <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#funder-recommended>,
+        <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#identifier>,
+        <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#name>,
+        <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#name-required>,
+        <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#url> ;
+    sh:targetClass schema:MonetaryGrant .
+
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT> a sh:NodeShape ;
     sh:property <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#about>,
         <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#alternateName>,
@@ -748,6 +760,15 @@
         <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#version>,
         <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#version-required> ;
     sh:targetClass bioschemas:ComputationalWorkflow .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT> a sh:NodeShape ;
+    sh:property <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#about>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#description>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#hasPart>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#mainEntity>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#name>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#url> ;
+    sh:targetClass schema:WebPage .
 
 <https://bioschemas.org/profiles/ChemicalSubstance/0.4-RELEASE#alternateName> a sh:PropertyShape ;
     sh:description "An alias for the item." ;
@@ -10456,9 +10477,135 @@
     sh:path schema:tool ;
     sh:severity sh:Warning .
 
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#alternateName> a sh:PropertyShape ;
+    sh:group <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Acronym" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 3 ;
+    sh:path schema:alternateName ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#amount> a sh:PropertyShape ;
+    sh:group <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Amount" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#definitions/monetaryamount> ) ;
+    sh:order 5 ;
+    sh:path schema:amount ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#definitions/monetaryamount> sh:class schema:MonetaryAmount ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#definitions/monetaryamount/currency>,
+        <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#definitions/monetaryamount/currency-required>,
+        <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#definitions/monetaryamount/value>,
+        <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#definitions/monetaryamount/value-required> .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#definitions/monetaryamount/currency> a sh:PropertyShape ;
+    sh:description "A three-letter currency code, such as EUR." ;
+    sh:maxCount 1 ;
+    sh:name "Currency" ;
+    sh:or ( [ sh:nodeKind sh:Literal ;
+                sh:pattern "^[A-Z]{3}$" ] ) ;
+    sh:order 2 ;
+    sh:path schema:currency ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#definitions/monetaryamount/currency-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "currency" ;
+    sh:path schema:currency ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#definitions/monetaryamount/value> a sh:PropertyShape ;
+    sh:description "One number needed." ;
+    sh:maxCount 1 ;
+    sh:name "Value" ;
+    sh:or ( [ sh:datatype xsd:integer ] [ sh:datatype xsd:decimal ] [ sh:datatype xsd:double ] ) ;
+    sh:order 1 ;
+    sh:path schema:value ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#definitions/monetaryamount/value-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "value" ;
+    sh:path schema:value ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#definitions/organization> sh:class schema:Organization ;
+    sh:nodeKind sh:BlankNodeOrIRI .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#description> a sh:PropertyShape ;
+    sh:group <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 7 ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#funder> a sh:PropertyShape ;
+    sh:description "Add the funder." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#group-recommended> ;
+    sh:name "Funder" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#definitions/organization> ) ;
+    sh:order 4 ;
+    sh:path schema:funder ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#funder-recommended> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "funder" ;
+    sh:path schema:funder ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#group-recommended> a sh:PropertyGroup ;
+    rdfs:label "Recommended" ;
+    sh:order 2 .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#group-required> a sh:PropertyGroup ;
+    rdfs:label "Required" ;
+    sh:order 1 .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#identifier> a sh:PropertyShape ;
+    sh:group <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Grant number" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:identifier ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#name> a sh:PropertyShape ;
+    sh:description "One name needed." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#group-required> ;
+    sh:maxCount 1 ;
+    sh:name "Name" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#name-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "name" ;
+    sh:path schema:name ;
+    sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#url> a sh:PropertyShape ;
+    sh:description "The page of the grant at the funder." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Page" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 6 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#about> a sh:PropertyShape ;
     sh:description "The topics of the model, such as its chemicals (ChEBI) and organisms." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-on-the-platform> ;
     sh:name "Topics" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/definedterm> ) ;
     sh:order 32 ;
@@ -10467,7 +10614,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#alternateName> a sh:PropertyShape ;
     sh:description "Such as the name of the model in its PBPK description, if the crate names the file of the model." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-general-model-information> ;
     sh:name "Other name" ;
     sh:or ( [ sh:nodeKind sh:Literal ] ) ;
     sh:order 9 ;
@@ -10476,7 +10623,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#applicabilityDomain> a sh:PropertyShape ;
     sh:description "Add the applicability domain (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-model-applicability-and-limitations> ;
     sh:maxCount 1 ;
     sh:name "Applicability domain" ;
     sh:or ( [ sh:nodeKind sh:Literal ] ) ;
@@ -10492,7 +10639,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#applicationCategory> a sh:PropertyShape ;
     sh:description "Add the intended application category (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-general-model-information> ;
     sh:maxCount 1 ;
     sh:name "Intended application category" ;
     sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
@@ -10508,7 +10655,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#citation> a sh:PropertyShape ;
     sh:description "The publications that describe the model, with links to their DOIs on their pages." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-on-the-platform> ;
     sh:name "Publications" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/scholarlyarticle> ) ;
     sh:order 30 ;
@@ -10517,7 +10664,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#codeRepository> a sh:PropertyShape ;
     sh:description "Add the model availability (URLs/DOIs) (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-general-model-information> ;
     sh:name "Model availability (URLs/DOIs)" ;
     sh:or ( [ sh:nodeKind sh:IRI ] ) ;
     sh:order 6 ;
@@ -10532,7 +10679,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#confidenceStatement> a sh:PropertyShape ;
     sh:description "Add the confidence statement (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-model-applicability-and-limitations> ;
     sh:maxCount 1 ;
     sh:name "Confidence statement" ;
     sh:or ( [ sh:nodeKind sh:Literal ] ) ;
@@ -10548,7 +10695,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#connections> a sh:PropertyShape ;
     sh:description "Add the inter-compartmental connections (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-model-structure-and-mathematical-representation> ;
     sh:name "Inter-compartmental connections" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/connection> ) ;
     sh:order 12 ;
@@ -10562,7 +10709,7 @@
     sh:severity sh:Violation .
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#contributor> a sh:PropertyShape ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-on-the-platform> ;
     sh:name "Contributors" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/person> <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/organization> ) ;
     sh:order 29 ;
@@ -10571,7 +10718,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#creator> a sh:PropertyShape ;
     sh:description "Add the model author(s) (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-general-model-information> ;
     sh:name "Model author(s)" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/person> <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/organization> ) ;
     sh:order 4 ;
@@ -10585,7 +10732,7 @@
     sh:severity sh:Violation .
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#datePublished> a sh:PropertyShape ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-on-the-platform> ;
     sh:maxCount 1 ;
     sh:name "Published" ;
     sh:or ( [ sh:datatype xsd:date ] [ sh:datatype xsd:gYearMonth ] [ sh:datatype xsd:gYear ] ) ;
@@ -11755,7 +11902,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#description> a sh:PropertyShape ;
     sh:description "Add the model description (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-general-model-information> ;
     sh:maxCount 1 ;
     sh:name "Model description" ;
     sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
@@ -11770,16 +11917,40 @@
     sh:severity sh:Violation .
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#funding> a sh:PropertyShape ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-on-the-platform> ;
     sh:name "Funded by" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/monetarygrant> ) ;
     sh:order 31 ;
     sh:path schema:funding ;
     sh:severity sh:Warning .
 
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-biological-system-description> a sh:PropertyGroup ;
+    rdfs:label "Biological System Description" ;
+    sh:order 4 .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-calibration-and-parameter-estimation> a sh:PropertyGroup ;
+    rdfs:label "Calibration and Parameter Estimation" ;
+    sh:order 6 .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-chemical-s-description> a sh:PropertyGroup ;
+    rdfs:label "Chemical(s) Description" ;
+    sh:order 3 .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-model-evaluation-and-validation> a sh:PropertyGroup ;
+    rdfs:label "Model Evaluation and Validation" ;
+    sh:order 7 .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-parameterisation> a sh:PropertyGroup ;
+    rdfs:label "Parameterisation" ;
+    sh:order 5 .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-sensitivity-uncertainty-and-variability-analyses> a sh:PropertyGroup ;
+    rdfs:label "Sensitivity, Uncertainty, and Variability Analyses" ;
+    sh:order 8 .
+
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasBiologicalSystem> a sh:PropertyShape ;
     sh:description "Add the biological system(s) (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-biological-system-description> ;
     sh:name "Biological system(s)" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/biologicalsystem> ) ;
     sh:order 18 ;
@@ -11793,7 +11964,7 @@
     sh:severity sh:Violation .
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasCalibration> a sh:PropertyShape ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-calibration-and-parameter-estimation> ;
     sh:name "Calibration activities" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/calibration> ) ;
     sh:order 20 ;
@@ -11802,7 +11973,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasChemical> a sh:PropertyShape ;
     sh:description "Add the chemical substance(s) (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-chemical-s-description> ;
     sh:name "Chemical substance(s)" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/molecularentity> <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/chemicalsubstance> ) ;
     sh:order 17 ;
@@ -11817,7 +11988,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasEvaluation> a sh:PropertyShape ;
     sh:description "Add the evaluation activities (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-model-evaluation-and-validation> ;
     sh:name "Evaluation activities" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/evaluation> ) ;
     sh:order 21 ;
@@ -11832,7 +12003,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasParameter> a sh:PropertyShape ;
     sh:description "Add the parameters (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-parameterisation> ;
     sh:name "Parameters" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/parameter> ) ;
     sh:order 19 ;
@@ -11847,7 +12018,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasPart> a sh:PropertyShape ;
     sh:description "Add the digital artifacts (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-electronic-files-and-reproducibility> ;
     sh:name "Digital artifacts" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/mediaobject> ) ;
     sh:order 27 ;
@@ -11861,7 +12032,7 @@
     sh:severity sh:Violation .
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#hasSUVAnalysis> a sh:PropertyShape ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-sensitivity-uncertainty-and-variability-analyses> ;
     sh:name "SUV analyses" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/suvanalysis> ) ;
     sh:order 22 ;
@@ -11870,7 +12041,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#implementation> a sh:PropertyShape ;
     sh:description "Add the model implementation reference(s) (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-model-structure-and-mathematical-representation> ;
     sh:name "Model implementation reference(s)" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/implementation> ) ;
     sh:order 14 ;
@@ -11885,7 +12056,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#input> a sh:PropertyShape ;
     sh:description "The inputs of the model, such as doses or physiological parameters (input in RO-Crate)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-model-structure-and-mathematical-representation> ;
     sh:name "Inputs" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/formalparameter> ) ;
     sh:order 15 ;
@@ -11894,7 +12065,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#intendedUse> a sh:PropertyShape ;
     sh:description "Add the intended use (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-model-applicability-and-limitations> ;
     sh:maxCount 1 ;
     sh:name "Intended use" ;
     sh:or ( [ sh:nodeKind sh:Literal ] ) ;
@@ -11910,7 +12081,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#isBasedOn> a sh:PropertyShape ;
     sh:description "The Zenodo record from which this record is made." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-on-the-platform> ;
     sh:maxCount 1 ;
     sh:name "Source record" ;
     sh:or ( [ sh:nodeKind sh:IRI ] ) ;
@@ -11920,7 +12091,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#keywords> a sh:PropertyShape ;
     sh:description "Choose a vocabulary term, or register it. Text is kept until then." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-on-the-platform> ;
     sh:name "Keywords" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/definedterm> ) ;
     sh:order 33 ;
@@ -11929,7 +12100,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#license> a sh:PropertyShape ;
     sh:description "Add the license, chosen from SPDX. Other values are kept." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-general-model-information> ;
     sh:maxCount 1 ;
     sh:name "License" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/definedterm> ) ;
@@ -11945,7 +12116,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#limitations> a sh:PropertyShape ;
     sh:description "Add the known limitations (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-model-applicability-and-limitations> ;
     sh:maxCount 1 ;
     sh:name "Known limitations" ;
     sh:or ( [ sh:nodeKind sh:Literal ] ) ;
@@ -11961,7 +12132,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#mathematicalRepresentation> a sh:PropertyShape ;
     sh:description "Choose from the list. Other values are kept." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-model-structure-and-mathematical-representation> ;
     sh:maxCount 1 ;
     sh:name "Mathematical representation" ;
     sh:or ( [ sh:in ( "Ordinary differential equations" "Algebraic equations" "Hybrid ODE-algebraic system" "Other" ) ;
@@ -11978,7 +12149,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#modelStructureDescription> a sh:PropertyShape ;
     sh:description "Add the model structure description (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-model-structure-and-mathematical-representation> ;
     sh:maxCount 1 ;
     sh:name "Model structure description" ;
     sh:or ( [ sh:nodeKind sh:Literal ] ) ;
@@ -11994,7 +12165,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#name> a sh:PropertyShape ;
     sh:description "Add the model name (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-general-model-information> ;
     sh:maxCount 1 ;
     sh:name "Model name" ;
     sh:or ( [ sh:nodeKind sh:Literal ] ) ;
@@ -12010,7 +12181,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#output> a sh:PropertyShape ;
     sh:description "The outputs of the model, such as concentration-time profiles (output in RO-Crate)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-model-structure-and-mathematical-representation> ;
     sh:name "Outputs" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/formalparameter> ) ;
     sh:order 16 ;
@@ -12019,7 +12190,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#programmingLanguage> a sh:PropertyShape ;
     sh:description "Add the software platform (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-general-model-information> ;
     sh:name "Software platform" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/computerlanguage> ) ;
     sh:order 5 ;
@@ -12034,7 +12205,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#reproducibilityInstructions> a sh:PropertyShape ;
     sh:description "Add the reproducibility instructions (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-electronic-files-and-reproducibility> ;
     sh:maxCount 1 ;
     sh:name "Reproducibility instructions" ;
     sh:or ( [ sh:nodeKind sh:Literal ] ) ;
@@ -12050,7 +12221,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#runtimePlatform> a sh:PropertyShape ;
     sh:description "Such as R 4.1.0, or Berkeley Madonna 10.6.1." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-on-the-platform> ;
     sh:name "Runtime" ;
     sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
     sh:order 34 ;
@@ -12058,7 +12229,7 @@
     sh:severity sh:Warning .
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#sameAs> a sh:PropertyShape ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-on-the-platform> ;
     sh:name "DOI and other addresses" ;
     sh:or ( [ sh:nodeKind sh:IRI ] ) ;
     sh:order 38 ;
@@ -12067,7 +12238,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#softwareRequirements> a sh:PropertyShape ;
     sh:description "The packages required by the model, with their versions." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-on-the-platform> ;
     sh:name "Requirements" ;
     sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
     sh:order 35 ;
@@ -12076,7 +12247,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#structuralCompartments> a sh:PropertyShape ;
     sh:description "Add the structural compartments (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-model-structure-and-mathematical-representation> ;
     sh:name "Structural compartments" ;
     sh:or ( <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/compartment> ) ;
     sh:order 11 ;
@@ -12091,7 +12262,7 @@
 
 <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#version> a sh:PropertyShape ;
     sh:description "Add the model version (required by ROBOT)." ;
-    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> ;
+    sh:group <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-general-model-information> ;
     sh:maxCount 1 ;
     sh:name "Model version" ;
     sh:or ( [ sh:nodeKind sh:Literal ] ) ;
@@ -12104,6 +12275,233 @@
     sh:name "version" ;
     sh:path schema:version ;
     sh:severity sh:Violation .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#about> a sh:PropertyShape ;
+    sh:description "A term with kinds that are explained on the page, such as Process Flow Step." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#group-optional> ;
+    sh:name "Terms explained" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/definedterm> ) ;
+    sh:order 4 ;
+    sh:path schema:about ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/definedterm> sh:class schema:DefinedTerm ;
+    sh:nodeKind sh:BlankNodeOrIRI .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/imageobject> sh:class schema:ImageObject ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/imageobject/caption>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/imageobject/contentUrl>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/imageobject/contentUrl-required> .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/imageobject/caption> a sh:PropertyShape ;
+    sh:description "Also read out in place of the image." ;
+    sh:maxCount 1 ;
+    sh:name "Caption" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:caption ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/imageobject/contentUrl> a sh:PropertyShape ;
+    sh:description "One image address needed." ;
+    sh:maxCount 1 ;
+    sh:name "Image" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 1 ;
+    sh:path schema:contentUrl ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/imageobject/contentUrl-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "contentUrl" ;
+    sh:path schema:contentUrl ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/learningresource> sh:class schema:LearningResource ;
+    sh:nodeKind sh:BlankNodeOrIRI .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/monetarygrant> sh:class schema:MonetaryGrant ;
+    sh:nodeKind sh:BlankNodeOrIRI .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/videoobject> sh:class schema:VideoObject ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/videoobject/duration>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/videoobject/embedUrl>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/videoobject/embedUrl-required>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/videoobject/name>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/videoobject/thumbnailUrl> .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/videoobject/duration> a sh:PropertyShape ;
+    sh:description "An ISO 8601 duration, such as PT5M38S." ;
+    sh:maxCount 1 ;
+    sh:name "Duration" ;
+    sh:or ( [ sh:nodeKind sh:Literal ;
+                sh:pattern "^P" ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 4 ;
+    sh:path schema:duration ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/videoobject/embedUrl> a sh:PropertyShape ;
+    sh:description "The address of the player of the video, such as https://video.edu.nl/videos/embed/<id>." ;
+    sh:maxCount 1 ;
+    sh:name "Player" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:embedUrl ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/videoobject/embedUrl-required> a sh:PropertyShape ;
+    sh:minCount 1 ;
+    sh:name "embedUrl" ;
+    sh:path schema:embedUrl ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/videoobject/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Title" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/videoobject/thumbnailUrl> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Thumbnail" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 3 ;
+    sh:path schema:thumbnailUrl ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/about> a sh:PropertyShape ;
+    sh:description "The record that is presented in the section, with the shown fields. Or, for a grant without shown fields, the records that name the grant, such as its publications." ;
+    sh:maxCount 1 ;
+    sh:name "Presents" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/monetarygrant> <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/organization> <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/learningresource> ) ;
+    sh:order 8 ;
+    sh:path schema:about ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/creativeWorkStatus> a sh:PropertyShape ;
+    sh:description "Empty: the section is shown. hidden: the section is kept in the data, but not shown on the page." ;
+    sh:maxCount 1 ;
+    sh:name "Status" ;
+    sh:or ( [ sh:in ( "hidden" ) ;
+                sh:nodeKind sh:Literal ] ) ;
+    sh:order 6 ;
+    sh:path schema:creativeWorkStatus ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/hasPart> a sh:PropertyShape ;
+    sh:description "Its own sections, shown as its items." ;
+    sh:name "Sections" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement> ) ;
+    sh:order 7 ;
+    sh:path schema:hasPart ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/image> a sh:PropertyShape ;
+    sh:description "Shown after the text." ;
+    sh:name "Figures" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/imageobject> ) ;
+    sh:order 4 ;
+    sh:path schema:image ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/name> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Heading" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/position> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Position" ;
+    sh:or ( [ sh:datatype xsd:integer ] ) ;
+    sh:order 3 ;
+    sh:path schema:position ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/shows> a sh:PropertyShape ;
+    sh:description "The fields of the presented record that are shown in the section, such as its description or its research lines." ;
+    sh:name "Shows" ;
+    sh:or ( [ sh:in ( schema:description schema:text schema:image schema:video schema:subjectOf schema:subOrganization schema:member schema:funding schema:funder schema:amount schema:identifier ) ;
+                sh:nodeKind sh:IRI ] ) ;
+    sh:order 10 ;
+    sh:path <https://platform.vhp4safety.nl/model/v1/form#shows> ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/text> a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Text" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 2 ;
+    sh:path schema:text ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/url> a sh:PropertyShape ;
+    sh:description "Where the section is read, such as a section of a tutorial on the documentation site." ;
+    sh:maxCount 1 ;
+    sh:name "Address" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 9 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/video> a sh:PropertyShape ;
+    sh:name "Videos" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/videoobject> ) ;
+    sh:order 5 ;
+    sh:path schema:video ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#description> a sh:PropertyShape ;
+    sh:group <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Description" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 2 ;
+    sh:path schema:description ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#hasPart> a sh:PropertyShape ;
+    sh:description "Sections of a platform page, each with a heading, a text and a position. The sections of a section are its items." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#group-optional> ;
+    sh:name "Sections" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement> ) ;
+    sh:order 5 ;
+    sh:path schema:hasPart ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#mainEntity> a sh:PropertyShape ;
+    sh:description "Its description, videos, figures, research lines, grants and partners are shown, and the publications of its grants." ;
+    sh:group <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "About" ;
+    sh:or ( <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/organization> ) ;
+    sh:order 6 ;
+    sh:path schema:mainEntity ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#name> a sh:PropertyShape ;
+    sh:group <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Title" ;
+    sh:or ( [ sh:nodeKind sh:Literal ] ) ;
+    sh:order 1 ;
+    sh:path schema:name ;
+    sh:severity sh:Warning .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#url> a sh:PropertyShape ;
+    sh:group <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#group-optional> ;
+    sh:maxCount 1 ;
+    sh:name "Address elsewhere" ;
+    sh:or ( [ sh:nodeKind sh:IRI ] ) ;
+    sh:order 3 ;
+    sh:path schema:url ;
+    sh:severity sh:Warning .
 
 <https://bioschemas.org/profiles/ChemicalSubstance/0.4-RELEASE#group-recommended> a sh:PropertyGroup ;
     rdfs:label "Recommended" ;
@@ -12345,6 +12743,26 @@
         <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/propertyvalue/value>,
         <https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#definitions/propertyvalue/value-required> .
 
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-electronic-files-and-reproducibility> a sh:PropertyGroup ;
+    rdfs:label "Electronic Files and Reproducibility" ;
+    sh:order 10 .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/organization> sh:class schema:Organization ;
+    sh:nodeKind sh:BlankNodeOrIRI .
+
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement> sh:class schema:WebPageElement ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/about>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/creativeWorkStatus>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/hasPart>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/image>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/name>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/position>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/shows>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/text>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/url>,
+        <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#definitions/webpageelement/video> .
+
 <https://bioschemas.org/profiles/ChemicalSubstance/0.4-RELEASE#definitions/bioChemEntity> sh:class schema:BioChemEntity ;
     sh:nodeKind sh:BlankNodeOrIRI ;
     sh:property <https://bioschemas.org/profiles/ChemicalSubstance/0.4-RELEASE#definitions/bioChemEntity/identifier>,
@@ -12528,6 +12946,10 @@
     rdfs:label "Optional" ;
     sh:order 3 .
 
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-model-applicability-and-limitations> a sh:PropertyGroup ;
+    rdfs:label "Model Applicability and Limitations" ;
+    sh:order 9 .
+
 <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE#definitions/creativeWork> sh:class schema:CreativeWork ;
     sh:nodeKind sh:BlankNodeOrIRI ;
     sh:property <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE#definitions/creativeWork/identifier>,
@@ -12576,6 +12998,10 @@
         <https://bioschemas.org/profiles/TrainingMaterial/1.0-RELEASE#definitions/creativework/name>,
         <https://bioschemas.org/profiles/TrainingMaterial/1.0-RELEASE#definitions/creativework/url> .
 
+<https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#group-optional> a sh:PropertyGroup ;
+    rdfs:label "Optional" ;
+    sh:order 3 .
+
 <https://bioschemas.org/profiles/CourseInstance/1.0-RELEASE#group-recommended> a sh:PropertyGroup ;
     rdfs:label "Recommended" ;
     sh:order 2 .
@@ -12621,6 +13047,10 @@
         <https://bioschemas.org/profiles/TrainingMaterial/1.0-RELEASE#definitions/definedterm/termCode>,
         <https://bioschemas.org/profiles/TrainingMaterial/1.0-RELEASE#definitions/definedterm/url> .
 
+<https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#group-optional> a sh:PropertyGroup ;
+    rdfs:label "Optional" ;
+    sh:order 3 .
+
 <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE#group-recommended> a sh:PropertyGroup ;
     rdfs:label "Recommended" ;
     sh:order 2 .
@@ -12639,6 +13069,10 @@
 <https://bioschemas.org/profiles/Study/0.3-DRAFT#group-required> a sh:PropertyGroup ;
     rdfs:label "Required" ;
     sh:order 1 .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-model-structure-and-mathematical-representation> a sh:PropertyGroup ;
+    rdfs:label "Model Structure and Mathematical Representation" ;
+    sh:order 2 .
 
 <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE#definitions/organization> sh:class schema:Organization ;
     sh:nodeKind sh:BlankNodeOrIRI ;
@@ -12677,6 +13111,10 @@
         <https://bioschemas.org/profiles/MolecularEntity/0.5-RELEASE#definitions/definedTerm/termCode>,
         <https://bioschemas.org/profiles/MolecularEntity/0.5-RELEASE#definitions/definedTerm/url> .
 
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-general-model-information> a sh:PropertyGroup ;
+    rdfs:label "General Model Information" ;
+    sh:order 1 .
+
 <https://bioschemas.org/profiles/ChemicalSubstance/0.4-RELEASE#group-optional> a sh:PropertyGroup ;
     rdfs:label "Optional" ;
     sh:order 3 .
@@ -12702,6 +13140,10 @@
 <https://bioschemas.org/profiles/Person/0.3-DRAFT#group-optional> a sh:PropertyGroup ;
     rdfs:label "Optional" ;
     sh:order 3 .
+
+<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-on-the-platform> a sh:PropertyGroup ;
+    rdfs:label "On the platform" ;
+    sh:order 11 .
 
 <https://bioschemas.org/profiles/Organization/0.3-DRAFT#group-optional> a sh:PropertyGroup ;
     rdfs:label "Optional" ;
@@ -12755,10 +13197,6 @@
     rdfs:label "Recommended" ;
     sh:order 2 .
 
-<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-optional> a sh:PropertyGroup ;
-    rdfs:label "Optional" ;
-    sh:order 3 .
-
 <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE#group-optional> a sh:PropertyGroup ;
     rdfs:label "Optional" ;
     sh:order 3 .
@@ -12766,8 +13204,4 @@
 <https://bioschemas.org/profiles/MolecularEntity/0.5-RELEASE#group-optional> a sh:PropertyGroup ;
     rdfs:label "Optional" ;
     sh:order 3 .
-
-<https://platform.vhp4safety.nl/profiles/PBPKModel/0.1-DRAFT#group-required> a sh:PropertyGroup ;
-    rdfs:label "Required" ;
-    sh:order 1 .
 
