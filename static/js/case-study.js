@@ -558,9 +558,10 @@ function accordionItem(state, accordion, key, title, content, open) {
 function sections(state, page) {
   const accordion = make("div", "accordion");
   accordion.id = state.id + "-sections";
-  // A hidden section is not shown on the website, and it is greyed out in the preview.
+  // A hidden section is not shown on the website, and it is greyed out in the preview. A question is a page of its own,
+  // not a section.
   const found = parts(state, page, "hasPart").filter(function (section) {
-    return first(section, "creativeWorkStatus") !== "hidden" || state.options.openDisabled;
+    return isPart(String(section["@id"] || "_:")) && (first(section, "creativeWorkStatus") !== "hidden" || state.options.openDisabled);
   });
   found.forEach(function (section, count) {
     const key = (page["@id"] || "") + " " + count;
