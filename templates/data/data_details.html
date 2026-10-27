@@ -182,12 +182,13 @@
             {% set ns_bio.tissue = a.value %}
 
           {% elif a.name == 'Bioassay' %}
-            {% set ba = namespace(url=None, bao_url=None, ontology=None) %}
+            {% set ba = namespace(url=None, bao_url=None, ontology=None, term_id=None) %}
             {% for q in a.valqual or [] %}
               {% if q.name == 'URL' %}{% set ba.url = q.value %}{% endif %}
-              {% if q.name == 'TermId' %}{% set ba.bao_url = 'https://www.bioassayontology.org/bao#' ~ q.value %}{% endif %}
+              {% if q.name == 'TermId' %}{% set ba.term_id = q.value %}{% endif %}
               {% if q.name == 'Ontology' %}{% set ba.ontology = q.value %}{% endif %}
             {% endfor %}
+            {% if ba.ontology and ba.term_id %}{% set ba.bao_url = 'https://www.ebi.ac.uk/ols4/ontologies/' ~ ba.ontology|lower ~ '/classes?short_form=' ~ ba.term_id %}{% endif %}
             {% set _ = ns_bio.bioassays.append({'value': a.value, 'url': ba.url, 'bao_url': ba.bao_url, 'ontology': ba.ontology}) %}
 
           {% elif a.name == 'AOP' %}
