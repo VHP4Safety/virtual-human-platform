@@ -52,13 +52,25 @@ def markdown_of(record: tables.Record) -> Response:
     return Response(body, content_type=pages.MEDIA, headers={"Vary": "Accept"})
 
 
-DESCRIPTION = """OAS 3.1 specification for the VHP4Safety Platform.
+DESCRIPTION = """The records of the VHP4Safety platform: tools, methods, case studies, data, models, publications, people,
+organisations, training and the terms they use. Reading needs no token.
 
-The GET operations below can be used to read the platform data in JSON-LD, Turtle, N-Triples or Markdown.
+To answer a question, start here:
+
+1. Search all records by name or address: `GET /api/search?text=aop`. Each result has its address (`@id`), its
+   class (`@type`) and its name.
+2. Read the record: `GET /api/<kind>/<name>`, such as `GET /api/tools/aopwikiapi`, in JSON-LD, Turtle, N-Triples or
+   Markdown, by the Accept header. The page of the record is at its `@id`.
+3. To list the records of one kind, or filter them by a field: `GET /api/tools`, or
+   `GET /api/tools?keywords=https://vhp4safety.github.io/glossary%23VHP0000156`. Count the records for each field value
+   with `GET /api/tools/facets`.
+
+The fields of each kind are in `GET /api/shapes.ttl`, all records are in one file at `GET /api/dump`, and the entry
+points are at `GET /api`.
 
 Writes need a write token or the login of an editor.
 
-[The platform](/) · [Write tokens](/account/tokens/) · [Record editor](/admin/)"""
+[The platform](/) · [llms.txt](/llms.txt) · [Write tokens](/account/tokens/) · [Record editor](/admin/)"""
 
 # In the documentation, the operations of the blueprint are grouped under its name, and the others under TAGS.
 blueprint = Blueprint("records", __name__, url_prefix="/api", description="Read, list, filter and search records.")

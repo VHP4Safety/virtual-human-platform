@@ -202,3 +202,9 @@ def test_responses_described(site):
             for media, content in (response.get("content") or {}).items():
                 if "json" in media:
                     assert described(content.get("schema") or {}), f"{method} {path} {code} {media}"
+
+
+def test_start_described(site):
+    """The description of the API says where to start: search first, then read the record, with real addresses."""
+    text = site.get("/api/docs/openapi.json").json["info"]["description"]
+    assert text.index("GET /api/search?text=") < text.index("GET /api/tools/aopwikiapi") < text.index("GET /api/tools/facets")
