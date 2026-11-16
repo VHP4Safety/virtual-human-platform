@@ -190,7 +190,7 @@ def markdown(record: Record, formats: dict[str, str], licence: str) -> str:
 def agents_line() -> str:
     """Return the line that names the entry points for agents and scripts, at the end of a Markdown page."""
     found = entry_points()
-    return (f"Agents and scripts: search at <{found['search']}>, the API at <{records.address('api')}>, "
+    return (f"Agents and scripts: search at <{found['search']}>, the API at <{found['index']}>, "
             f"OpenAPI at <{found['openapi']}>, all records at <{found['dump']}>, and where to start at <{found['llms']}>.")
 
 
@@ -200,6 +200,7 @@ def entry_points() -> dict:
     return {
         "title": settings()["title"],
         "start": "Search first, then read the record at its address.",
+        "index": records.address("api"),
         "search": records.address("api/search?text=aop"),
         "record": records.address("api/tools/aopwikiapi"),
         "kinds": {kind: records.address("api/" + kind) for kind in settings()["kinds"]},
@@ -227,7 +228,7 @@ def llms() -> str:
         about.append(f"Licence of the records: {platform['license']}.{free}")
     start = [f"- [Search all records]({index['search']}): the address (@id), class (@type) and name of each record with the text",
              f"- [Read one record]({index['record']}): the record in JSON-LD; its page address with .md gives it in Markdown",
-             f"- [Index of the API]({records.address('api')}): the listing of each kind, the downloads and these addresses",
+             f"- [Index of the API]({index['index']}): the listing of each kind, the downloads and these addresses",
              f"- [OpenAPI description]({index['openapi']}): every operation, with examples"]
     data = [f"- [All records]({index['dump']}): one file, in N-Triples or Turtle",
             f"- [SHACL shapes]({index['shapes']}): the fields of each kind of record",

@@ -146,7 +146,7 @@ def test_api_index(site):
         assert (answer.status_code, answer.mimetype) == (200, "application/json"), path
     found = site.get(local(anchor)).json
     assert set(found["kinds"]) == set(settings()["kinds"]) and found["start"].startswith("Search first")
-    for name in ("search", "openapi", "documentation", "dump", "terms", "shapes", "void", "catalog", "llms", "kinds"):
+    for name in ("index", "search", "openapi", "documentation", "dump", "terms", "shapes", "void", "catalog", "llms", "kinds"):
         for address in found[name].values() if name == "kinds" else [found[name]]:
             assert site.get(local(address)).status_code == 200, address
 
@@ -224,3 +224,13 @@ def test_copy_not_indexed(site, monkeypatch, copy):
     assert ("User-agent: ClaudeBot\nUser-agent: GPTBot\nUser-agent: Google-Extended\nUser-agent: CCBot\nDisallow: /\n" in robots) == copy
     # Search crawlers still read the pages, to see the noindex header.
     assert "User-agent: *\nAllow: /\n" in robots
+
+
+def test_docs_page(site):
+    """The documentation page of the API names the OpenAPI description in its text, as agents do not run its script."""
+    page = BeautifulSoup(site.get("/api/docs/").data, "html.parser")
+    for script in page.find_all("script"):
+        script.decompose()
+    text = page.get_text(" ")
+    assert all(BASE + end in text for end in ("api/docs/openapi.json", "api/search?text=aop", "llms.txt")), text
+    assert page.find("link", rel="service-desc")["href"] == "/api/docs/openapi.json"

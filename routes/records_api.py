@@ -351,6 +351,7 @@ ADDRESS = {"type": "string", "format": "uri"}
 INDEX = {"type": "object", "required": ["title", "start", "search", "kinds", "openapi"], "properties": {
     "title": {"type": "string", "description": "The name of the platform."},
     "start": {"type": "string", "description": "Where to start, to answer a question."},
+    "index": {**ADDRESS, "description": "This index of the API."},
     "search": {**ADDRESS, "description": "An example search of all records; the text is in the text parameter."},
     "record": {**ADDRESS, "description": "An example record. Each record is at api/<kind>/<name>, and its page is at <kind>/<name>."},
     "kinds": {"type": "object", "description": "The listing of each kind of record, by kind.", "additionalProperties": ADDRESS},

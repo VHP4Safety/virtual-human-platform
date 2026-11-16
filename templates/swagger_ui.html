@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+{# The Swagger UI page of flask-smorest, with the addresses of the API in its text: agents read the text of a page, and
+   do not run the script that loads the OpenAPI description. #}
+  <head>
+    <title>{{title}}</title>
+    <meta name="description" content="The API of the platform: the OpenAPI description, the index of the API, search and llms.txt." />
+    {% if noindex %}<meta name="robots" content="noindex" />{% endif %}
+    <link rel="service-desc" href="{{ spec_url }}" type="application/vnd.oai.openapi+json" />
+    <link href="{{swagger_ui_url}}swagger-ui.css" rel="stylesheet" type="text/css"/>
+  </head>
+
+ <body>
+
+   <div id="agents" style="font-family: sans-serif; font-size: 14px; margin: 16px 20px 0;">
+     <p>The OpenAPI description of this API is at <a href="{{ entry_points.openapi }}">{{ entry_points.openapi }}</a>.
+       To answer a question, search first, at <a href="{{ entry_points.search }}">{{ entry_points.search }}</a>, then read
+       the record at its address. The entry points are at <a href="{{ entry_points.index }}">{{ entry_points.index }}</a>
+       and in <a href="{{ entry_points.llms }}">{{ entry_points.llms }}</a>.</p>
+   </div>
+
+   <div id="swagger-ui-container"></div>
+
+   <script src="{{swagger_ui_url}}swagger-ui-standalone-preset.js"></script>
+   <script src="{{swagger_ui_url}}swagger-ui-bundle.js"></script>
+   <script>
+
+     config = {
+       url: "{{ spec_url }}",
+       dom_id: '#swagger-ui-container'
+     }
+
+     var override_config = {{ swagger_ui_config | tojson }};
+     for (var attrname in override_config) { config[attrname] = override_config[attrname]; }
+
+     window.onload = function() {
+       window.ui = SwaggerUIBundle(config)
+     }
+   </script>
+
+ </body>
+
+</html>
