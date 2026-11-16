@@ -2,6 +2,7 @@
 
 import json
 
+from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import SDO
 from sqlalchemy import select
 
@@ -9,7 +10,7 @@ import database
 from admin import writes
 from database import records
 from database.tables import Note, Source
-from linkeddata import checks, documents, imports
+from linkeddata import checks, documents, imports, pages
 from linkeddata.profile import download_vocabularies, official_problems, tables_problems, terms_problems
 
 BASE = "https://platform.vhp4safety.nl/"
@@ -27,6 +28,22 @@ def test_rdf():
 
 def test_fields():
     assert download_vocabularies() + terms_problems() + tables_problems() + official_problems() == []
+
+
+def test_dataset_reads_nothing(monkeypatch):
+    """A dataset of a listing is made from the steps and the questions that the listing reads once for all its datasets."""
+    def read(*_):
+        raise AssertionError("read for one dataset")
+
+    for name in ("steps", "questions"):
+        monkeypatch.setattr(pages, name, read)
+    monkeypatch.setattr(records, "graph", read)
+    node = URIRef(BASE + "data/d")
+    found = Graph()
+    found.add((node, SDO.name, Literal("D")))
+    found.add((node, SDO.keywords, URIRef(STEP)))
+    shown = pages.dataset(found, node, {STEP: {"label": "Step"}}, set())
+    assert (shown["title"], shown["metadata"]["flow_step"]) == ("D", ["Step"])
 
 
 def test_imports(monkeypatch, tmp_path):
