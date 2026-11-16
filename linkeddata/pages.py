@@ -531,9 +531,8 @@ def steps() -> dict[str, dict]:
     return listed
 
 
-def stages(found: Graph, node) -> list[str]:
-    """Return the process flow steps of node: its keywords that are steps."""
-    known = steps()
+def stages(found: Graph, node, known: dict) -> list[str]:
+    """Return the process flow steps of node: its keywords that are in known, the steps by address."""
     return [value for value in addresses(found, node, SDO.keywords) if value in known]
 
 
@@ -571,7 +570,7 @@ def tool_details(record: Record) -> dict:
             "url": url, "screenshot": local(str(found.value(node, SDO.image) or "")),
             "developed-by-VHP": "true" if by in found.objects(node, SDO.author) else "",
             "instance": {key: value for key, value in instance.items() if value},
-            "stage": stages(found, node), "regulatory-question": asked,
+            "stage": stages(found, node, steps()), "regulatory-question": asked,
             "Other": {"wikipedia": wikipedia[0] if wikipedia else "", "rsd": after(elsewhere, RSD)},
             "ELIXIR": {"tess": next((str(value) for value in found.objects(node, SDO.keywords) if isinstance(value, Literal) and str(value) != OTHER), ""),
                        "biotools": after(elsewhere, "https://bio.tools/")},
@@ -587,7 +586,7 @@ def method_json(record: Record) -> dict:
     node = URIRef(record.iri)
     known = steps()
     labels = []
-    for stage in stages(found, node):
+    for stage in stages(found, node, known):
         labels.append(known[stage]["label"])
     # The keywords other than the steps are the substages, such as key events.
     substages = names_of(found, [value for value in found.objects(node, SDO.keywords) if str(value) not in known])
@@ -678,8 +677,9 @@ def catalogue_listing(path: str, arguments) -> dict:
             "has_prev": found["page"] > 1, "has_next": found["page"] < found["pages"], "search_query": found["search"]}
 
 
-def dataset(found: Graph, node, known: dict) -> dict:
-    """Return a dataset as a data page of the cloud catalogue."""
+def dataset(found: Graph, node, known: dict, asked: set[str]) -> dict:
+    """Return a dataset as a data page of the cloud catalogue, with known, the steps, and asked, the regulatory questions,
+    which a listing reads once for all its datasets."""
     source = str(found.value(node, SDO.isBasedOn) or "")
     type_of = "study" if "/biostudies/" in source else "dataset"
     doi_url = ([address for address in addresses(found, node, SDO.identifier) + addresses(found, node, SDO.sameAs) if "doi.org/" in address] or [""])[0]
@@ -689,10 +689,9 @@ def dataset(found: Graph, node, known: dict) -> dict:
     if source.startswith("https://zenodo.org/records/"):
         links["archive"] = "https://zenodo.org/api/records/" + source.rstrip("/").rsplit("/", 1)[-1] + "/files-archive"
         parsed["is_rocrate"] = any(file["name"].lower() == "ro-crate-metadata.json" for file in crate_files)
-    asked = questions()
     metadata = {"case_study": [case.rsplit("/", 1)[-1] for case in addresses(found, node, SDO.isPartOf) if case not in asked],
                 "regulatory_question": [question for question in addresses(found, node, SDO.isPartOf) if question in asked],
-                "flow_step": [known[stage]["label"] for stage in stages(found, node)],
+                "flow_step": [known[stage]["label"] for stage in stages(found, node, known)],
                 "rocrate_url": crate_files[0]["url"] if crate_files else None, "raw_data": {}, "resource_type": {"type": type_of},
                 "publication_date": published}
     return {"id": str(node).rsplit("/", 1)[-1], "accession": str(node).rsplit("/", 1)[-1], "type": type_of, "title": str(found.value(node, SDO.name) or ""),
@@ -707,10 +706,10 @@ def data_listing(arguments) -> dict:
     # All records found are read at once, as the studies and the Zenodo records are paged separately.
     found, filters = filtered("data", every, records.page(settings()["kinds"]["data"], {}, "", 0, 1)[0] or 1)
     shown = documents.public(records.graph([item["address"] for item in found["listed"]]))
-    known = steps()
+    known, asked = steps(), questions()
     listed = []
     for item in found["listed"]:
-        listed.append(dataset(shown, URIRef(item["address"]), known))
+        listed.append(dataset(shown, URIRef(item["address"]), known, asked))
     listed.sort(key=itemgetter("release_date"), reverse=True)
     number = max(arguments.get("page", 1, type=int), 1)
     half = LISTED // 2
@@ -729,7 +728,7 @@ def catalogue_details(record: Record) -> dict:
     """Return a dataset or a model as a data page of the cloud catalogue."""
     found = documents.public(records.with_names(records.graph([record.iri])))
     node = URIRef(record.iri)
-    shown = dataset(found, node, steps())
+    shown = dataset(found, node, steps(), questions())
     if record.type != settings()["kinds"]["data"]:
         shown["type"] = kind_of(record.type).lower()
     creators = members(found, node, SDO.creator)
@@ -890,7 +889,7 @@ def model_listing(search: str, page: int, size: int, filters: list[tuple[str, st
     found = listing("models", MultiDict({"search": search}), records.page(settings()["kinds"]["models"], {}, "", 0, 1)[0] or 1)
     used = uses([item["address"] for item in found["listed"]])
     shown = documents.public(records.graph([item["address"] for item in found["listed"]]))
-    known = steps()
+    known, asked = steps(), questions()
     listed = []
     for item in found["listed"]:
         use = used[item["address"]]
@@ -898,7 +897,7 @@ def model_listing(search: str, page: int, size: int, filters: list[tuple[str, st
                   "regulatory_question": {labels.get(question, "") for question in use["regulatory_question"]}}
         if any(value not in chosen[field] for field, value in filters):
             continue
-        model = dataset(shown, URIRef(item["address"]), known)
+        model = dataset(shown, URIRef(item["address"]), known, asked)
         path = "/" + records.path(item["address"])
         model.update(type=kind_of(settings()["kinds"]["models"]).lower(), url=path, meta_data=path + ".md",
                      links={"archive": path + "/ro-crate-metadata.json"})

@@ -133,6 +133,9 @@ def read(records: list[str]) -> Graph:
         return Graph()
     found = {}
     with database.engine().connect() as connection:
+        # The tables are read in one read transaction, which ends when the connection is given back. Each statement
+        # outside a transaction takes and gives back the lock of the file, which is slow on a network file system.
+        connection.exec_driver_sql("BEGIN")
         for name, of_table in tables().items():
             result = connection.execute(select(of_table).where(of_table.c.record.in_(records)))
             listed = result.all()
