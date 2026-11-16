@@ -336,7 +336,9 @@ def registered() -> None:
 
 
 @blueprint.get("/registries", tags=["vocabularies"])
+@blueprint.doc(operationId="listRegistries")
 @blueprint.response(200, {"type": "object"}, example=PROVIDERS)
+@blueprint.doc(description="Return the title of each vocabulary registry, by the name that the other registry operations take.")
 def registries():
     """List the vocabulary registries."""
     registered()
@@ -344,6 +346,7 @@ def registries():
 
 
 @blueprint.get("/registries/<registry>/vocabularies", tags=["vocabularies"])
+@blueprint.doc(operationId="listRegistryVocabularies")
 @blueprint.arguments(Registry, location="query")
 @blueprint.response(200, {"type": "array"}, example=[{"id": "uberon", "title": "Uber-anatomy ontology", "namespace": "http://purl.obolibrary.org/obo/UBERON_",
                                                      "description": "An integrated cross-species anatomy ontology.", "prefix": "UBERON"}])
@@ -358,6 +361,7 @@ def registry_vocabularies(given, registry):
 
 
 @blueprint.get("/registries/terms", tags=["vocabularies"])
+@blueprint.doc(operationId="searchRegistryTerms")
 @blueprint.arguments(Registry, location="query")
 @blueprint.response(200, {"type": "object"}, example={"registry": "ols", "title": PROVIDERS["ols"], "terms": [
     {"@id": "http://purl.obolibrary.org/obo/UBERON_0002107", "name": "liver", "description": "An exocrine gland which secretes bile.", "code": "UBERON:0002107"}]})
@@ -400,6 +404,7 @@ INDEX = {"type": "object", "required": ["title", "start", "search", "kinds", "op
 
 # The index is at /api and at /api/, as the API catalog anchors the API at /api.
 @blueprint.get("/", strict_slashes=False)
+@blueprint.doc(operationId="getApiIndex")
 @blueprint.response(200, INDEX, content_type="application/json")
 @blueprint.doc(description="Return the addresses where agents and scripts start: search, the record kinds, the downloads and the "
                "descriptions of the API. The API catalog at /.well-known/api-catalog points here.")
@@ -409,6 +414,7 @@ def index():
 
 
 @blueprint.get("/search")
+@blueprint.doc(operationId="searchRecords")
 @blueprint.arguments(Search, location="query")
 @blueprint.response(200, {"type": "object"}, content_type="application/ld+json", example={"@graph": [
     {"@id": BASE + "tools/aopwikiapi", "@type": "SoftwareApplication", "name": "AOP-Wiki API"},
@@ -454,6 +460,7 @@ LISTED = "One page of records, in the format requested in the Accept header."
 
 
 @blueprint.route(KIND, methods=["GET"], parameters=OF_KIND)
+@blueprint.doc(operationId="listRecords")
 @blueprint.response(200, {"type": "object"}, content_type="application/ld+json", description=LISTED, example={"@graph": [TOOL]})
 @blueprint.alt_response(200, schema={"type": "string"}, content_type="text/turtle", success=True, description=LISTED, example=TOOL_TURTLE)
 @blueprint.alt_response(200, schema={"type": "string"}, content_type="application/n-triples", success=True, description=LISTED,
@@ -496,6 +503,7 @@ def listed(given, kind, pagination_parameters):
 
 
 @blueprint.get(KIND + "/facets", parameters=OF_KIND)
+@blueprint.doc(operationId="countFieldValues")
 @blueprint.arguments(Query, location="query", unknown=INCLUDE)
 @blueprint.response(200, {"type": "object", "additionalProperties": {"type": "array", "items": {"$ref": "#/components/schemas/FacetValue"}}},
                     description="The values of each field, by the name of the field.",
@@ -516,6 +524,7 @@ def vocabulary_kind(kind: str) -> bool:
 
 
 @blueprint.post(KIND, tags=["editing"], parameters=OF_KIND)
+@blueprint.doc(operationId="addRecord")
 @blueprint.arguments(Record, content_type="application/ld+json", examples=NEW_TOOL)
 @blueprint.response(201, Done, description="Added.")
 @blueprint.doc(**WRITE)
@@ -548,6 +557,7 @@ def added(body, kind):
 
 
 @blueprint.get("/<path:path>", parameters=AT_PATH)
+@blueprint.doc(operationId="getRecord")
 @blueprint.doc(responses=formats("The record, in the format requested in the Accept header.", {
     "application/ld+json": TOOL, "text/turtle": TOOL_TURTLE,
     "application/n-triples": f'<{BASE}tools/aopwikiapi> <https://schema.org/name> "AOP-Wiki API" .\n', "text/markdown": TOOL_MARKDOWN}))
@@ -574,6 +584,7 @@ def read(path):
 
 
 @blueprint.put("/<path:path>", tags=["editing"], parameters=AT_PATH)
+@blueprint.doc(operationId="replaceRecord")
 @blueprint.arguments(Writing, location="query")
 @blueprint.arguments(Record, content_type="application/ld+json", examples=CASE_STUDY)
 @blueprint.response(200, Done, description="Replaced. With preview=true, the changes and the warnings are returned, and nothing is stored.")
@@ -599,6 +610,7 @@ def replace(given, body, path):
 
 
 @blueprint.delete("/<path:path>", tags=["editing"], parameters=AT_PATH)
+@blueprint.doc(operationId="removeRecord")
 @blueprint.arguments(Removal, location="query")
 @blueprint.response(200, Done, description="Removed.")
 @blueprint.doc(security=TOKEN)
@@ -621,6 +633,7 @@ def remove(given, path):
 
 
 @blueprint.post("/move", tags=["editing"])
+@blueprint.doc(operationId="moveRecord")
 @blueprint.arguments(Move)
 @blueprint.response(200, Done, description="Moved.")
 @blueprint.doc(security=TOKEN)
@@ -641,9 +654,13 @@ def move(body):
 
 
 @blueprint.post("/restore", tags=["editing"])
+@blueprint.doc(operationId="restoreRecord")
 @blueprint.arguments(Restore)
 @blueprint.response(200, Done, description="Restored.")
-@blueprint.doc(security=TOKEN)
+@blueprint.doc(security=TOKEN, description=(
+    "Restore the removed record at the address and its parts, with the values they had when they were removed. A moved "
+    "record is not restored, as its old address redirects to the new one."
+))
 def restore(body):
     """Restore a removed record."""
     record = found_record(body["record"])
@@ -655,6 +672,7 @@ def restore(body):
 
 
 @blueprint.post("/images", tags=["editing"])
+@blueprint.doc(operationId="uploadImage")
 @blueprint.response(201, Image, description="Uploaded.")
 @blueprint.doc(security=TOKEN)
 @blueprint.doc(description=(
@@ -681,6 +699,7 @@ def upload_image():
 
 
 @blueprint.get("/dump", tags=["downloads"])
+@blueprint.doc(operationId="downloadRecords")
 @blueprint.doc(responses=formats("All records, in the format requested in the Accept header.", {
     "application/n-triples": f'<{BASE}tools/aopwikiapi> <https://schema.org/name> "AOP-Wiki API" .\n', "text/turtle": TOOL_TURTLE}))
 @blueprint.doc(description=(
@@ -694,6 +713,7 @@ def dump():
 
 
 @blueprint.get("/dump/terms", tags=["downloads"])
+@blueprint.doc(operationId="downloadTerms")
 @blueprint.doc(responses=formats("The vocabulary terms, in the format requested in the Accept header.", {
     "application/n-triples": f'<{GLOSSARY}VHP0000023> <https://schema.org/name> "Adverse Outcome Pathway" .\n',
     "text/turtle": f'<{GLOSSARY}VHP0000023> a <https://schema.org/DefinedTerm> ;\n    <https://schema.org/name> "Adverse Outcome Pathway" .\n'}))
@@ -708,6 +728,7 @@ def dump_terms():
 
 
 @blueprint.get("/shapes.ttl", tags=["downloads"])
+@blueprint.doc(operationId="getShapes")
 @blueprint.doc(responses=formats("The shapes, in Turtle.", {"text/turtle": """@prefix schema: <https://schema.org/> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .

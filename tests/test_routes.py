@@ -172,3 +172,17 @@ def test_agents_line(site):
         assert BASE + "llms.txt" in text and BASE + "api/search?text=aop" in text, path
     markdown = site.get("/tools/t.md").data.decode()
     assert all(BASE + end in markdown for end in ("llms.txt", "api/search?text=aop", "api/docs/openapi.json", "api/dump")), markdown[-400:]
+
+
+def operations(spec: dict) -> list[tuple[str, str, dict]]:
+    """Return the method, the path and the description of each operation of an OpenAPI document."""
+    return [(method, path, operation) for path, methods in spec["paths"].items() for method, operation in methods.items() if method != "parameters"]
+
+
+def test_operations_named(site):
+    """Each operation has an operationId, a summary and a description, as tool generators make one tool per operation."""
+    found = operations(site.get("/api/docs/openapi.json").json)
+    ids = [operation.get("operationId") for _, _, operation in found]
+    assert all(ids) and len(set(ids)) == len(ids), ids
+    for method, path, operation in found:
+        assert operation.get("summary") and operation.get("description"), f"{method} {path}"
