@@ -1,3 +1,12 @@
+Version 1.0-7-SNAPSHOT (2026-11-16)
+--------------------------------------------------------------------------------
+- Added MCP info to the website (for services for which it is defined)
+- CI: publish :pseudo image on pushes to the pseudo branch
+- Link bioassay ontology badges to OLS4 and skip badges without a term id
+- Publish Docker image when a version tag is pushed
+- Update regulatory question links and improve button styling in data cards
+- Link case-study pills to  enabled case-study steps
+
 Version 1.0-6 (2026-09-12)
 --------------------------------------------------------------------------------
 - Add sitewide Organization JSON-LD
