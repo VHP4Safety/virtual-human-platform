@@ -380,6 +380,53 @@ def registry_terms(given):
     return jsonify({"registry": registry, "title": PROVIDERS.get(registry), "terms": found})
 
 
+ADDRESS = {"type": "string", "format": "uri"}
+INDEX = {"type": "object", "required": ["title", "start", "search", "kinds", "openapi"], "properties": {
+    "title": {"type": "string", "description": "The name of the platform."},
+    "start": {"type": "string", "description": "Where to start, to answer a question."},
+    "search": {**ADDRESS, "description": "An example search of all records; the text is in the text parameter."},
+    "record": {**ADDRESS, "description": "An example record. Each record is at api/<kind>/<name>, and its page is at <kind>/<name>."},
+    "kinds": {"type": "object", "description": "The listing of each kind of record, by kind.", "additionalProperties": ADDRESS},
+    "openapi": {**ADDRESS, "description": "The OpenAPI description of all operations."},
+    "documentation": {**ADDRESS, "description": "The documentation of the operations, in HTML."},
+    "dump": {**ADDRESS, "description": "All records in one file, in N-Triples or Turtle."},
+    "terms": {**ADDRESS, "description": "The vocabulary terms that the records use, in one file."},
+    "shapes": {**ADDRESS, "description": "The SHACL shapes: the fields of each kind of record."},
+    "void": {**ADDRESS, "description": "The VoID description of the dataset, with its licence."},
+    "catalog": {**ADDRESS, "description": "The API catalog of the platform (RFC 9727)."},
+    "llms": {**ADDRESS, "description": "What the platform holds and where to start, in Markdown (llms.txt)."},
+}}
+
+
+def index_of_api() -> dict:
+    """Return the entry points of the API, at the addresses of the platform."""
+    return {
+        "title": settings()["title"],
+        "start": "Search first, then read the record at its address.",
+        "search": records.address("api/search?text=aop"),
+        "record": records.address("api/tools/aopwikiapi"),
+        "kinds": {kind: records.address("api/" + kind) for kind in settings()["kinds"]},
+        "openapi": records.address("api/docs/openapi.json"),
+        "documentation": records.address("api/docs") + "/",
+        "dump": records.address("api/dump"),
+        "terms": records.address("api/dump/terms"),
+        "shapes": records.address("api/shapes.ttl"),
+        "void": records.address(".well-known/void"),
+        "catalog": records.address(".well-known/api-catalog"),
+        "llms": records.address("llms.txt"),
+    }
+
+
+# The index is at /api and at /api/, as the API catalog anchors the API at /api.
+@blueprint.get("/", strict_slashes=False)
+@blueprint.response(200, INDEX, content_type="application/json")
+@blueprint.doc(description="Return the addresses where agents and scripts start: search, the record kinds, the downloads and the "
+               "descriptions of the API. The API catalog at /.well-known/api-catalog points here.")
+def index():
+    """List the entry points of the API."""
+    return jsonify(index_of_api())
+
+
 @blueprint.get("/search")
 @blueprint.arguments(Search, location="query")
 @blueprint.response(200, {"type": "object"}, content_type="application/ld+json", example={"@graph": [

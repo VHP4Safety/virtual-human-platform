@@ -7,6 +7,7 @@ from urllib.parse import parse_qs, urlparse
 from PIL import Image as Picture
 
 from admin import tokens, writes
+from linkeddata.profile import settings
 from routes import account
 
 ORCID = "0000-0002-1825-0097"
@@ -125,3 +126,22 @@ def test_pages(site):
     writes.retire(BASE + "tools/t", "Test Editor", ORCID)
     assert site.get("/tools/t").status_code == 410
 
+
+
+def local(address: str) -> str:
+    """Return the path of an address of the platform, to request it from the test site."""
+    return address.removeprefix(BASE[:-1])
+
+
+def test_api_index(site):
+    """The API catalog anchors the API at its index, which links the entry points of agents and scripts."""
+    add_records()
+    anchor = site.get("/.well-known/api-catalog").json["linkset"][0]["anchor"]
+    for path in (local(anchor), "/api", "/api/"):
+        answer = site.get(path)
+        assert (answer.status_code, answer.mimetype) == (200, "application/json"), path
+    found = site.get(local(anchor)).json
+    assert set(found["kinds"]) == set(settings()["kinds"]) and found["start"].startswith("Search first")
+    for name in ("search", "openapi", "documentation", "dump", "terms", "shapes", "void", "catalog", "kinds"):
+        for address in found[name].values() if name == "kinds" else [found[name]]:
+            assert site.get(local(address)).status_code == 200, address
