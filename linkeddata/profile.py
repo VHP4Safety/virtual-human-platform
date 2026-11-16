@@ -75,7 +75,9 @@ def settings() -> dict:
     by_class = {}
     for key in ("read only", "hidden"):
         by_class[key] = {expanded(of_class): {expanded(path) for path in paths} for of_class, paths in given.get(key, {}).items()}
-    return {"title": given["title"], "base": base, "vocabularies": files, "profiles": profiles, "kinds": kinds, "labels": labels,
+    released = given["base"].rstrip("/") + "/"
+    # A copy at another address, such as a test site, is kept out of search indexes and training sets.
+    return {"title": given["title"], "base": base, "release base": released, "copy": base != released, "vocabularies": files, "profiles": profiles, "kinds": kinds, "labels": labels,
             "prefixes": prefixes, "terms": dict(sorted(terms.items())), "lists": lists, "private": {expanded(path) for path in given.get("private", [])},
             "published as": {expanded(path): expanded(of_class) for path, of_class in given.get("published as", {}).items()},
             "read only": by_class["read only"], "hidden": by_class["hidden"], "read only in the editor": set(given.get("read only in the editor", []))}

@@ -3,6 +3,8 @@
 import io
 import json
 import re
+
+import pytest
 from urllib.parse import parse_qs, urlparse
 
 from bs4 import BeautifulSoup
@@ -208,3 +210,17 @@ def test_start_described(site):
     """The description of the API says where to start: search first, then read the record, with real addresses."""
     text = site.get("/api/docs/openapi.json").json["info"]["description"]
     assert text.index("GET /api/search?text=") < text.index("GET /api/tools/aopwikiapi") < text.index("GET /api/tools/facets")
+
+
+@pytest.mark.parametrize("copy", [False, True])
+def test_copy_not_indexed(site, monkeypatch, copy):
+    """A copy at another address, such as a test site, is kept out of search indexes and training sets; the platform is not."""
+    add_records()
+    monkeypatch.setitem(settings(), "copy", copy)
+    for path in ("/tools", "/tools/t", "/api/search?text=t", "/llms.txt"):
+        assert (site.get(path).headers.get("X-Robots-Tag") == "noindex") == copy, path
+    assert ('<meta name="robots" content="noindex" />' in site.get("/tools").data.decode()) == copy
+    robots = site.get("/robots.txt").data.decode()
+    assert ("User-agent: ClaudeBot\nUser-agent: GPTBot\nUser-agent: Google-Extended\nUser-agent: CCBot\nDisallow: /\n" in robots) == copy
+    # Search crawlers still read the pages, to see the noindex header.
+    assert "User-agent: *\nAllow: /\n" in robots

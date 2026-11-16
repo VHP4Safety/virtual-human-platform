@@ -10,6 +10,7 @@
          supplies sensible defaults for any page that does not. -->
     <title>{{ page_title }}</title>
     <meta name="description" content="{{ meta_description }}" />
+    {% if noindex %}<meta name="robots" content="noindex" />{% endif %}
     <link rel="canonical" href="{{ canonical_url }}" />
     {% for media, href in (record_formats or {}).items() %}
     <link rel="describedby" type="{{ media }}" href="{{ href }}" />

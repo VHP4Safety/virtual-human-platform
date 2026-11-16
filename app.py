@@ -96,6 +96,9 @@ def add_security_headers(response):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     response.headers.setdefault("Content-Security-Policy", "object-src 'none'; base-uri 'self'")
+    # A copy at another address, such as a test site, does not compete with the platform in search results.
+    if settings()["copy"]:
+        response.headers["X-Robots-Tag"] = "noindex"
     return response
 
 
@@ -163,6 +166,7 @@ def inject_seo_defaults():
         "page_title": DEFAULT_PAGE_TITLE,
         "meta_description": void.platform()["abstract"],
         "canonical_url": g.record.iri if "record" in g else records.address(request.path.strip("/")),
+        "noindex": settings()["copy"],
     }
 
 
@@ -240,6 +244,14 @@ def robots():
         "\n"
         f"Sitemap: {records.address('sitemap.xml')}\n"
     )
+    # A copy at another address is not crawled for training. Search crawlers still read its pages, to see the noindex
+    # header, and agents that fetch a page for a person still read it.
+    if settings()["copy"]:
+        robotsContent = (
+            f"# A copy of the platform for tests. The platform is at {settings()['release base']}\n\n"
+            "User-agent: ClaudeBot\nUser-agent: GPTBot\nUser-agent: Google-Extended\nUser-agent: CCBot\nDisallow: /\n\n"
+            + robotsContent
+        )
     return Response(robotsContent, mimetype="text/plain")
 
 
