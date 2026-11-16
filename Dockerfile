@@ -29,8 +29,9 @@ RUN python -m linkeddata check
 COPY entrypoint.sh /usr/src/app/entrypoint.sh
 RUN chmod +x /usr/src/app/entrypoint.sh
 
-# The database and the records repository are kept in /data (a volume)
-ENV PLATFORM_STATE=/data/state PLATFORM_RECORDS=/data/records
+# The database and the records repository are kept in /data (a volume). The database uses the rollback journal,
+# which is safe when /data is on a network file system, such as GlusterFS on the cluster.
+ENV PLATFORM_STATE=/data/state PLATFORM_RECORDS=/data/records PLATFORM_JOURNAL=delete
 
 # Run as an unprivileged user
 RUN useradd --create-home app && mkdir -p /data && chown app /data

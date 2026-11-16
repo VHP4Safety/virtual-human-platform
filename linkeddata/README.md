@@ -293,5 +293,8 @@ The settings are environment variables:
 | `ORCID_CLIENT_ID`, `ORCID_CLIENT_SECRET` | the credentials of the platform for the ORCID public API; the redirect URI is `<platform>/orcid/callback/` |
 | `SECRET_KEY` | the key that signs the sign-in sessions |
 | `PLATFORM_STATE` | the folder of the database |
+| `PLATFORM_JOURNAL` | `wal` (the default) or `delete`, the journal of the database. Use `delete` when `PLATFORM_STATE` is on a network file system, such as GlusterFS, where the write-ahead log corrupts the database. The Docker image sets `delete` |
+| `GITHUB_TOKEN` | a GitHub token for the requests to `api.github.com` of the imports. Without it, GitHub answers 60 requests an hour from one address, about two launches; a token without permissions reads the public repositories |
+| `PLATFORM_LAUNCH` | with `1`, the Docker image runs `launch` at a start without a database, before it serves the platform (see [Deployment with Docker](../README.md#deployment-with-docker)) |
 | `PLATFORM_BASE` | the base address of a deployment at another address, such as `https://pseudo.platform.vhp4safety.nl/`. It replaces the base address of the profile (`void:uriSpace`). The records are stored with their full addresses, so set it before `launch` and do not change it after |
 | `PLATFORM_RECORDS` | the records repository, written with `export` and pushed with `push` (such as `VHP4Safety/platform-data`) |

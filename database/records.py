@@ -14,7 +14,7 @@ import database
 from database.tables import Record
 from linkeddata.profile import fields, hierarchy, settings, shapes_text, terms
 
-# HTML texts that cannot be parsed are reported by the checks, so the rdflib warning on each read is turned off.
+# HTML texts that cannot be parsed are already reported with the checks.
 logging.getLogger("rdflib.term").setLevel(logging.ERROR)
 
 
@@ -141,13 +141,12 @@ def read(records: list[str]) -> Graph:
     return sql_tables.from_tables(found, shapes_text())
 
 
-# The address of a part under its record, <record>#<field>-<n>, made with rdfsolve (sql_tables.tables with skolemized bnodes).
+# The address of <record>#<field>-<n> (skolemized bnodes).
 PART = re.compile(r"^(?P<record>[^#]+)#[A-Za-z_][A-Za-z0-9_]*-[0-9]+$")
 
 
 def class_of(found: Graph, node) -> str:
-    """Return the class of node: the class of a kind when node has several, such as ComputationalWorkflow for a model that
-    is SoftwareSourceCode too, else its class."""
+    """Return the class of node."""
     given = sorted(str(value) for value in found.objects(node, RDF.type))
     kinds = set(settings()["kinds"].values())
     return next((value for value in given if value in kinds), given[0] if given else "")

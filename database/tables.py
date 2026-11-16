@@ -1,4 +1,4 @@
-"""Define the tables of the records, revisions, notes, sources, tokens and images."""
+"""Define the tables for records, revisions, notes, sources, tokens and images."""
 
 from datetime import datetime, timezone
 

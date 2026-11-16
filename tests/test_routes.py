@@ -38,6 +38,39 @@ def test_account(site, monkeypatch):
     assert "vhp_" in site.post("/account/tokens/", data={"kinds": "tools", "days": "30", "form_token": form_token}).data.decode()
 
 
+def test_unlisted_orcid(site, monkeypatch):
+    """An ORCID sign-in proves the iD; an iD that is not in PLATFORM_EDITORS may not edit or make tokens."""
+    class Answer:
+        status_code = 200
+
+        def json(self):
+            return {"orcid": "0000-0001-0000-0001", "name": "Not An Editor"}
+
+    monkeypatch.setattr(account.requests, "post", lambda *a, **k: Answer())
+    state = parse_qs(urlparse(site.get("/login/orcid/").headers["Location"]).query)["state"][0]
+    site.get(f"/orcid/callback/?code=c&state={state}")
+    assert "not on the list of editors" in site.get("/account/tokens/").data.decode()
+    with site.session_transaction() as session:
+        form_token = session["form_token"]
+    assert "vhp_" not in site.post("/account/tokens/", data={"kinds": "tools", "days": "30", "form_token": form_token}).data.decode()
+    assert site.get("/admin/").status_code == 302
+    assert site.put(NEW, json={"@type": "SoftwareApplication", **FITTING}, headers={"X-Form-Token": form_token}).status_code == 401
+
+
+def test_removed_editor(site, monkeypatch):
+    """An editor taken out of PLATFORM_EDITORS loses the sign-in and the tokens at the next request."""
+    secret = tokens.create(ORCID, "Test Editor", ["tools"])
+    site.get("/login/")
+    with site.session_transaction() as session:
+        form_token = session["form_token"]
+    site.post("/login/token/", data={"token": secret, "form_token": form_token})
+    assert site.get("/admin/").status_code == 200
+    monkeypatch.setenv("PLATFORM_EDITORS", "0000-0001-0000-0001")
+    assert site.get("/admin/").status_code == 302
+    bearer = {"Authorization": "Bearer " + secret}
+    assert site.put(NEW, json={"@type": "SoftwareApplication", **FITTING}, headers=bearer).status_code == 401
+
+
 def test_editor_and_changes(site):
     add_records()
     site.get("/login/")

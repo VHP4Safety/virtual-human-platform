@@ -14,6 +14,11 @@ from database.tables import Base
 from linkeddata.profile import RELEASE, TABLES
 
 STATE_DIR = Path(os.environ.get("PLATFORM_STATE", "instance"))
+# The write-ahead log on a local disk. On a network file system, such as GlusterFS, the shared memory of the
+# write-ahead log corrupts the database, so the rollback journal ("delete") is used there.
+JOURNAL = os.environ.get("PLATFORM_JOURNAL", "wal").lower()
+if JOURNAL not in ("wal", "delete"):
+    raise RuntimeError(f"PLATFORM_JOURNAL is {JOURNAL!r}, where it is wal or delete.")
 _engines = {}
 # The engine is made once, by the first request of any thread.
 _making = threading.Lock()
@@ -56,7 +61,7 @@ def engine() -> Engine:
                     raise RuntimeError(" ".join(problems))
             STATE_DIR.mkdir(parents=True, exist_ok=True)
             made = create_engine(f"sqlite:///{path}", connect_args={"timeout": 30})
-            event.listen(made, "connect", write_ahead_log)
+            event.listen(made, "connect", journal)
             Base.metadata.create_all(made)
             with made.begin() as connection:
                 for statement in TABLES.read_text(encoding="utf-8").split(";"):
@@ -66,10 +71,15 @@ def engine() -> Engine:
     return _engines[path]
 
 
-def write_ahead_log(connection, _record) -> None:
-    """Use the write-ahead log of SQLite, so that pages are read while a record is written."""
+def journal(connection, _record) -> None:
+    """Use the journal of PLATFORM_JOURNAL. With the write-ahead log, pages are read while a record is written."""
     cursor = connection.cursor()
-    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute(f"PRAGMA journal_mode={JOURNAL}")
+    if JOURNAL == "delete":
+        # A write larger than the page cache writes into the file before its end, which locks out the readers until
+        # it ends, such as the reads of an import on other connections in its own write. Without that, the readers
+        # read the last committed records until the commit, as with the write-ahead log.
+        cursor.execute("PRAGMA cache_spill=OFF")
     cursor.close()
 
 

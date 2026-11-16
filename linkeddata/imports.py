@@ -4,6 +4,7 @@ import hashlib
 import importlib
 import io
 import json
+import os
 import re
 import unicodedata
 import zipfile
@@ -40,6 +41,9 @@ def fetch(url: str, accept: str | None = None) -> bytes:
     headers = {"User-Agent": "VHP4Safety platform build"}
     if accept:
         headers["Accept"] = accept
+    # Without a token, GitHub answers 60 requests an hour from one address, about two launches.
+    if url.startswith("https://api.github.com/") and os.environ.get("GITHUB_TOKEN"):
+        headers["Authorization"] = f"Bearer {os.environ['GITHUB_TOKEN']}"
     response = requests.get(url, timeout=60, headers=headers)
     response.raise_for_status()
     return response.content

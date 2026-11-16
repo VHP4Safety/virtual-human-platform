@@ -16,6 +16,7 @@ COMMANDS = """
                                                 against the release of the model
     python -m linkeddata import                 import the weekly sources into the database
     python -m linkeddata launch                 import all sources and make the corrections, once, at launch
+                                                (exits with 3 when some sources are not imported or corrected)
     python -m linkeddata export                 write the platform records to the records repository
     python -m linkeddata push                   push the records repository to its remote
     python -m linkeddata backup                 copy the database to PLATFORM_STATE/backups (the latest 14 are kept)
@@ -62,8 +63,9 @@ def main() -> None:
             sys.exit(f"Not launched: {refusal}")
         for problem in problems:
             print(f"Not imported or corrected: {problem}", file=sys.stderr)
+        # A launch that ended without some sources exits with 3, so that it is told apart from a launch that failed.
         if problems:
-            sys.exit(1)
+            sys.exit(3)
     elif args.command == "export":
         print("Exported" if export.export() else "Nothing changed")
     elif args.command == "push":

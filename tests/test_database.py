@@ -8,15 +8,33 @@ from sqlalchemy import text
 
 import database
 from admin import writes
-from database import export, images
+from database import export, images, records
 
 BASE = "https://platform.vhp4safety.nl/"
 TOOL = "https://schema.org/SoftwareApplication"
 
 
-def test_backup():
+@pytest.mark.parametrize("journal", ["wal", "delete"])
+def test_journal(journal, monkeypatch):
+    monkeypatch.setattr(database, "JOURNAL", journal)
+    writes.save(writes.document(TOOL, BASE + "tools/x", {"name": "X"}), TOOL, "Test Editor", "0000-0002-1825-0097")
     with database.engine().connect() as connection:
-        assert connection.execute(text("PRAGMA journal_mode")).scalar() == "wal"
+        assert connection.execute(text("PRAGMA journal_mode")).scalar() == journal
+    # The rollback journal leaves no shared memory file, which is not safe on a network file system.
+    assert (database.STATE_DIR / "platform.sqlite-shm").exists() == (journal == "wal")
+
+
+def test_read_during_write(monkeypatch):
+    """An import reads records on another connection in its write, which is larger than the page cache."""
+    monkeypatch.setattr(database, "JOURNAL", "delete")
+    writes.save(writes.document(TOOL, BASE + "tools/x", {"name": "X"}), TOOL, "Test Editor", "0000-0002-1825-0097")
+    with database.session() as db, db.begin():
+        db.execute(text("CREATE TABLE filler (data BLOB)"))
+        db.execute(text("INSERT INTO filler VALUES (randomblob(8000000))"))
+        assert len(records.read([BASE + "tools/x"]))
+
+
+def test_backup():
     for _ in range(3):
         copy = database.backup(keep=2)
     assert len(list(copy.parent.glob("platform-*.sqlite"))) == 2

@@ -149,6 +149,13 @@ docker exec <container> python -m linkeddata launch
 The application will be available at [http://localhost:5000/](http://localhost:5000/). The database is kept in the
 volume `/data`, and the launch makes the first records.
 
+With `-e PLATFORM_LAUNCH=1`, the container makes the launch itself at a start without a database, before it serves
+the platform, so the `docker exec` is not needed. The launch is made in `/data/state.launching`, which becomes
+`/data/state` only at its end: a launch that is stopped is made again at the next start, and a kept database is
+never launched again. Keep `/data` on a mount that outlives the container, such as a bind mount, so that a new image
+starts on the same database. `SECRET_KEY`, `ORCID_CLIENT_ID`, `ORCID_CLIENT_SECRET` and `GITHUB_TOKEN` can be given
+as Docker secrets of their names in lower case, such as `/run/secrets/secret_key`.
+
 ### Published images
 
 Every published GitHub Release builds the image and pushes it to Docker Hub as
