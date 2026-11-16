@@ -62,8 +62,11 @@ def engine() -> Engine:
             STATE_DIR.mkdir(parents=True, exist_ok=True)
             made = create_engine(f"sqlite:///{path}", connect_args={"timeout": 30})
             event.listen(made, "connect", journal)
-            Base.metadata.create_all(made)
             with made.begin() as connection:
+                # The tables are made in one transaction, not one transaction for each statement, which is slow on a
+                # network file system.
+                connection.exec_driver_sql("BEGIN")
+                Base.metadata.create_all(connection)
                 for statement in TABLES.read_text(encoding="utf-8").split(";"):
                     if statement.strip():
                         connection.exec_driver_sql(statement)

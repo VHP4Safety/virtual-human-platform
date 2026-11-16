@@ -4,7 +4,7 @@ import io
 
 import pytest
 from PIL import Image as Picture
-from sqlalchemy import event, text
+from sqlalchemy import Engine, event, text
 
 import database
 from admin import writes
@@ -51,6 +51,25 @@ def test_read_in_one_transaction():
     assert not outside
     # The transaction ends with the read, so that a write is not kept waiting.
     writes.save(writes.document(TOOL, BASE + "tools/y", {"name": "Y"}), TOOL, "Test Editor", "0000-0002-1825-0097")
+
+
+def test_tables_in_one_transaction():
+    """The tables of a database are made in one transaction, not one transaction for each statement."""
+    outside = []
+
+    def listen(connection, cursor, statement, *_):
+        if statement.lstrip().upper().startswith("CREATE") and not cursor.connection.in_transaction:
+            outside.append(statement)
+
+    event.listen(Engine, "before_cursor_execute", listen)
+    try:
+        made = database.engine()
+    finally:
+        event.remove(Engine, "before_cursor_execute", listen)
+    assert not outside
+    with made.connect() as connection:
+        found = {name for (name,) in connection.exec_driver_sql("SELECT name FROM sqlite_master WHERE type = 'table'")}
+    assert {"records", "revisions", "tokens"} <= found and len(found) > 250
 
 
 def test_backup():
