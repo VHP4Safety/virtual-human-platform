@@ -186,3 +186,19 @@ def test_operations_named(site):
     assert all(ids) and len(set(ids)) == len(ids), ids
     for method, path, operation in found:
         assert operation.get("summary") and operation.get("description"), f"{method} {path}"
+
+
+def described(schema: dict) -> bool:
+    """Return True if a JSON schema names its fields: properties, a reference, typed values of a map, or items that do."""
+    if schema.get("type") == "array":
+        return described(schema.get("items") or {})
+    return bool(schema.get("properties") or schema.get("$ref") or isinstance(schema.get("additionalProperties"), dict))
+
+
+def test_responses_described(site):
+    """Each JSON response has a schema with its fields, so that an agent knows them before the call."""
+    for method, path, operation in operations(site.get("/api/docs/openapi.json").json):
+        for code, response in operation["responses"].items():
+            for media, content in (response.get("content") or {}).items():
+                if "json" in media:
+                    assert described(content.get("schema") or {}), f"{method} {path} {code} {media}"

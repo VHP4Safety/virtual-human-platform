@@ -335,9 +335,53 @@ def registered() -> None:
         abort(401, message="Login or write token needed.")
 
 
+ADDRESS = {"type": "string", "format": "uri"}
+INDEX = {"type": "object", "required": ["title", "start", "search", "kinds", "openapi"], "properties": {
+    "title": {"type": "string", "description": "The name of the platform."},
+    "start": {"type": "string", "description": "Where to start, to answer a question."},
+    "search": {**ADDRESS, "description": "An example search of all records; the text is in the text parameter."},
+    "record": {**ADDRESS, "description": "An example record. Each record is at api/<kind>/<name>, and its page is at <kind>/<name>."},
+    "kinds": {"type": "object", "description": "The listing of each kind of record, by kind.", "additionalProperties": ADDRESS},
+    "openapi": {**ADDRESS, "description": "The OpenAPI description of all operations."},
+    "documentation": {**ADDRESS, "description": "The documentation of the operations, in HTML."},
+    "dump": {**ADDRESS, "description": "All records in one file, in N-Triples or Turtle."},
+    "terms": {**ADDRESS, "description": "The vocabulary terms that the records use, in one file."},
+    "shapes": {**ADDRESS, "description": "The SHACL shapes: the fields of each kind of record."},
+    "void": {**ADDRESS, "description": "The VoID description of the dataset, with its licence."},
+    "catalog": {**ADDRESS, "description": "The API catalog of the platform (RFC 9727)."},
+    "llms": {**ADDRESS, "description": "What the platform holds and where to start, in Markdown (llms.txt)."},
+}}
+
+# The fields of the JSON responses, so that agents and tool generators know them before the call.
+CONTEXT = {"type": "object", "description": "The JSON-LD context: the prefixes and the JSON names of the fields."}
+FOUND = {"type": "object", "required": ["@id", "@type", "name"], "properties": {
+    "@id": {**ADDRESS, "description": "The address of the record, part or term. The page of a record is at this address, and the record in JSON-LD is at api/ followed by its page path."},
+    "@type": {"type": "string", "description": "The class of the record, by its JSON-LD name, such as SoftwareApplication."},
+    "name": {"type": "string", "description": "The name, or the address when there is no name."},
+}}
+SEARCHED = {"type": "object", "required": ["@context", "@graph"], "properties": {
+    "@context": CONTEXT, "@graph": {"type": "array", "items": FOUND, "description": "The records, parts and terms found."}}}
+LISTING = {"type": "object", "required": ["@context", "@graph"], "properties": {
+    "@context": CONTEXT, "@graph": {"type": "array", "items": {"$ref": "#/components/schemas/Record"}, "description": "The records of the page, with their fields."}}}
+REGISTRIES = {"type": "object", "description": "The title of each registry, by its name.", "additionalProperties": {"type": "string"}}
+VOCABULARY = {"type": "object", "properties": {
+    "id": {"type": "string", "description": "The identifier of the vocabulary in the registry."},
+    "title": {"type": "string"},
+    "namespace": {**ADDRESS, "description": "The start of the addresses of the terms."},
+    "description": {"type": "string"},
+    "prefix": {"type": "string", "description": "The prefix of the compact identifiers of the terms."},
+}}
+TERMS = {"type": "object", "required": ["registry", "terms"], "properties": {
+    "registry": {"type": ["string", "null"], "description": "The name of the registry that serves the namespace, or null."},
+    "title": {"type": ["string", "null"], "description": "The title of the registry."},
+    "terms": {"type": "array", "items": {"type": "object", "required": ["@id", "name"], "properties": {
+        "@id": ADDRESS, "name": {"type": "string"}, "description": {"type": "string"}, "code": {"type": "string", "description": "The compact identifier, such as UBERON:0002107."}}}},
+}}
+
+
 @blueprint.get("/registries", tags=["vocabularies"])
 @blueprint.doc(operationId="listRegistries")
-@blueprint.response(200, {"type": "object"}, example=PROVIDERS)
+@blueprint.response(200, REGISTRIES, example=PROVIDERS)
 @blueprint.doc(description="Return the title of each vocabulary registry, by the name that the other registry operations take.")
 def registries():
     """List the vocabulary registries."""
@@ -348,7 +392,7 @@ def registries():
 @blueprint.get("/registries/<registry>/vocabularies", tags=["vocabularies"])
 @blueprint.doc(operationId="listRegistryVocabularies")
 @blueprint.arguments(Registry, location="query")
-@blueprint.response(200, {"type": "array"}, example=[{"id": "uberon", "title": "Uber-anatomy ontology", "namespace": "http://purl.obolibrary.org/obo/UBERON_",
+@blueprint.response(200, {"type": "array", "items": VOCABULARY}, example=[{"id": "uberon", "title": "Uber-anatomy ontology", "namespace": "http://purl.obolibrary.org/obo/UBERON_",
                                                      "description": "An integrated cross-species anatomy ontology.", "prefix": "UBERON"}])
 @blueprint.doc(description="Return up to 50 vocabularies with the text in the identifier or the title.")
 def registry_vocabularies(given, registry):
@@ -363,7 +407,7 @@ def registry_vocabularies(given, registry):
 @blueprint.get("/registries/terms", tags=["vocabularies"])
 @blueprint.doc(operationId="searchRegistryTerms")
 @blueprint.arguments(Registry, location="query")
-@blueprint.response(200, {"type": "object"}, example={"registry": "ols", "title": PROVIDERS["ols"], "terms": [
+@blueprint.response(200, TERMS, example={"registry": "ols", "title": PROVIDERS["ols"], "terms": [
     {"@id": "http://purl.obolibrary.org/obo/UBERON_0002107", "name": "liver", "description": "An exocrine gland which secretes bile.", "code": "UBERON:0002107"}]})
 @blueprint.doc(description=(
     "Return the terms of the namespace with the text in the name. The terms are read from the registry of the "
@@ -384,22 +428,6 @@ def registry_terms(given):
     return jsonify({"registry": registry, "title": PROVIDERS.get(registry), "terms": found})
 
 
-ADDRESS = {"type": "string", "format": "uri"}
-INDEX = {"type": "object", "required": ["title", "start", "search", "kinds", "openapi"], "properties": {
-    "title": {"type": "string", "description": "The name of the platform."},
-    "start": {"type": "string", "description": "Where to start, to answer a question."},
-    "search": {**ADDRESS, "description": "An example search of all records; the text is in the text parameter."},
-    "record": {**ADDRESS, "description": "An example record. Each record is at api/<kind>/<name>, and its page is at <kind>/<name>."},
-    "kinds": {"type": "object", "description": "The listing of each kind of record, by kind.", "additionalProperties": ADDRESS},
-    "openapi": {**ADDRESS, "description": "The OpenAPI description of all operations."},
-    "documentation": {**ADDRESS, "description": "The documentation of the operations, in HTML."},
-    "dump": {**ADDRESS, "description": "All records in one file, in N-Triples or Turtle."},
-    "terms": {**ADDRESS, "description": "The vocabulary terms that the records use, in one file."},
-    "shapes": {**ADDRESS, "description": "The SHACL shapes: the fields of each kind of record."},
-    "void": {**ADDRESS, "description": "The VoID description of the dataset, with its licence."},
-    "catalog": {**ADDRESS, "description": "The API catalog of the platform (RFC 9727)."},
-    "llms": {**ADDRESS, "description": "What the platform holds and where to start, in Markdown (llms.txt)."},
-}}
 
 
 # The index is at /api and at /api/, as the API catalog anchors the API at /api.
@@ -416,7 +444,7 @@ def index():
 @blueprint.get("/search")
 @blueprint.doc(operationId="searchRecords")
 @blueprint.arguments(Search, location="query")
-@blueprint.response(200, {"type": "object"}, content_type="application/ld+json", example={"@graph": [
+@blueprint.response(200, SEARCHED, content_type="application/ld+json", example={"@graph": [
     {"@id": BASE + "tools/aopwikiapi", "@type": "SoftwareApplication", "name": "AOP-Wiki API"},
     {"@id": GLOSSARY + "VHP0000318", "@type": "DefinedTerm", "name": "AOP-Wiki API"}]})
 @blueprint.doc(description="Return the records, parts and terms with the text in the name or the address.")
@@ -461,7 +489,7 @@ LISTED = "One page of records, in the format requested in the Accept header."
 
 @blueprint.route(KIND, methods=["GET"], parameters=OF_KIND)
 @blueprint.doc(operationId="listRecords")
-@blueprint.response(200, {"type": "object"}, content_type="application/ld+json", description=LISTED, example={"@graph": [TOOL]})
+@blueprint.response(200, LISTING, content_type="application/ld+json", description=LISTED, example={"@graph": [TOOL]})
 @blueprint.alt_response(200, schema={"type": "string"}, content_type="text/turtle", success=True, description=LISTED, example=TOOL_TURTLE)
 @blueprint.alt_response(200, schema={"type": "string"}, content_type="application/n-triples", success=True, description=LISTED,
                         example=f'<{BASE}tools/aopwikiapi> <https://schema.org/name> "AOP-Wiki API" .\n')
