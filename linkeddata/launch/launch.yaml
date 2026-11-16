@@ -39,3 +39,16 @@ corrections:
   - record: organizations/vhp4safety-project
     why: The VHP4Safety project has one record.
     to: organizations/vhp4safety
+  # One person has one record. The sources write a name with or without the initials; the record with the ORCID iD is kept.
+  - record: people/egon-willighagen
+    why: Egon Willighagen has one record, with his ORCID iD.
+    to: people/egon-l-willighagen
+  - record: people/aldert-h-piersma
+    why: Aldert Piersma has one record, with his ORCID iD.
+    to: people/aldert-piersma
+  - record: people/thijs-moerenhout
+    why: Thijs Moerenhout has one record, with his ORCID iD.
+    to: people/thijs-m-j-a-moerenhout
+  - record: people/marc-a-t-teunis
+    why: Marc Teunis has one record.
+    to: people/marc-teunis
