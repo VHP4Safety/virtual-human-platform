@@ -787,6 +787,31 @@ def model_shapes():
     return Response(shapes().serialize(format="turtle"), mimetype="text/turtle")
 
 
+def hint(code: int) -> str:
+    """Return what an agent can try after an error with the status code."""
+    found = pages.entry_points()
+    if code in (404, 410):
+        return f"Search the records at {found['search']}, or see the entry points at {found['index']}."
+    if code in (401, 403):
+        return ("Reading needs no token. A write needs a write token for the kind of the record, sent as "
+                f"Authorization: Bearer <token>; editors make tokens at {records.address('account/tokens')}/.")
+    if code in (400, 422):
+        return f"Check the parameters and the body against the operation in {found['openapi']}."
+    if code == 429:
+        return "Too many requests: wait a minute, then try again."
+    return f"See the operations in {found['openapi']}, and the entry points at {found['index']}."
+
+
+def problem_details(problem: HTTPException, payload: dict, code: int, headers: dict) -> Response:
+    """Return an error as problem details (RFC 9457) with a hint, keeping the code, message and errors of flask-smorest."""
+    body = {"type": "about:blank", "title": problem.name, "status": code, "detail": payload.get("message") or problem.description,
+            "hint": hint(code)}
+    for name in ("code", "message", "errors"):
+        if name in payload:
+            body[name] = payload[name]
+    return Response(json.dumps(body), status=code, headers=headers, content_type="application/problem+json")
+
+
 def register(app) -> None:
     """Add the API to the app, with the OpenAPI document at /api/docs/ and the error pages of the app."""
     app.config.update(
@@ -804,12 +829,12 @@ def register(app) -> None:
     )
     api = Api(app)
 
-    # Errors are returned in JSON by flask-smorest. For pages requested by browsers, an HTML error page is returned
-    # with the same status code.
+    # Errors are returned as problem details (RFC 9457), with the fields of flask-smorest. For pages requested by
+    # browsers, an HTML error page is returned with the same status code.
     @app.errorhandler(HTTPException)
     def error_page(problem: HTTPException):
         if request.path.startswith("/api/") or not any(media == "text/html" for media, _ in request.accept_mimetypes):
-            return api.handle_http_exception(problem)
+            return problem_details(problem, *api.handle_http_exception(problem))
         return render_template("error.html", error=problem, page_title=f"{problem.code} {problem.name} — VHP4Safety",
                                meta_description=problem.description or problem.name), problem.code
     api.spec.components.security_scheme("token", {"type": "http", "scheme": "bearer", "description": "A write token, sent as `Authorization: Bearer <token>`. Make tokens at `/account/tokens/`. A token is valid for the kinds chosen for it, for 90 days by default."})

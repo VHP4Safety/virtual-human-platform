@@ -234,3 +234,14 @@ def test_docs_page(site):
     text = page.get_text(" ")
     assert all(BASE + end in text for end in ("api/docs/openapi.json", "api/search?text=aop", "llms.txt")), text
     assert page.find("link", rel="service-desc")["href"] == "/api/docs/openapi.json"
+
+
+def test_problem_details(site):
+    """An error of the API is a problem detail (RFC 9457) that says what to try next, with the fields the editor reads."""
+    missing = site.get("/api/tools/nothing-here")
+    assert (missing.status_code, missing.mimetype) == (404, "application/problem+json")
+    assert (missing.json["status"], missing.json["title"]) == (404, "Not Found") and BASE + "api/search?text=" in missing.json["hint"]
+    refused = site.put(NEW, json={"@type": "SoftwareApplication", **FITTING})
+    assert refused.status_code == 401 and refused.json["message"] and "token" in refused.json["hint"]
+    wrong = site.get("/api/search", query_string={"limit": "many"})
+    assert wrong.status_code == 422 and wrong.json["errors"] and BASE + "api/docs/openapi.json" in wrong.json["hint"]
