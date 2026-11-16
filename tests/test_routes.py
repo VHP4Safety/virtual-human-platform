@@ -5,6 +5,7 @@ import json
 import re
 from urllib.parse import parse_qs, urlparse
 
+from bs4 import BeautifulSoup
 from PIL import Image as Picture
 
 from admin import tokens, writes
@@ -161,3 +162,13 @@ def test_llms(site):
     for link in links:
         if link.startswith(BASE) and not link.endswith("/aopwikiapi"):
             assert site.get(local(link)).status_code == 200, link
+
+
+def test_agents_line(site):
+    """The text of each page and of each Markdown page names the entry points, as agents read the text, not the headers."""
+    add_records()
+    for path in ("/tools", "/tools/t"):
+        text = BeautifulSoup(site.get(path).data, "html.parser").get_text(" ")
+        assert BASE + "llms.txt" in text and BASE + "api/search?text=aop" in text, path
+    markdown = site.get("/tools/t.md").data.decode()
+    assert all(BASE + end in markdown for end in ("llms.txt", "api/search?text=aop", "api/docs/openapi.json", "api/dump")), markdown[-400:]

@@ -183,12 +183,40 @@ def markdown(record: Record, formats: dict[str, str], licence: str) -> str:
     lines = markdown_lines(found, 1)
     lines.insert(1, f"<{found['address']}>")
     data = " · ".join(f"[{name}]({address})" for name, address in formats.items())
-    lines.append(f"---\n\nData: {data}" + (f"  \nLicence: <{licence}>" if licence else ""))
+    lines.append(f"---\n\nData: {data}" + (f"  \nLicence: <{licence}>" if licence else "") + f"  \n{agents_line()}")
     return "\n\n".join(lines) + "\n"
 
 
-def llms(index: dict) -> str:
-    """Return llms.txt (llmstxt.org): what the platform holds and where agents start, from index, the entry points of the API."""
+def agents_line() -> str:
+    """Return the line that names the entry points for agents and scripts, at the end of a Markdown page."""
+    found = entry_points()
+    return (f"Agents and scripts: search at <{found['search']}>, the API at <{records.address('api')}>, "
+            f"OpenAPI at <{found['openapi']}>, all records at <{found['dump']}>, and where to start at <{found['llms']}>.")
+
+
+def entry_points() -> dict:
+    """Return the addresses where agents and scripts start, at the address of this platform: the index of the API, which
+    llms.txt, the end of each page and the end of each Markdown page also name."""
+    return {
+        "title": settings()["title"],
+        "start": "Search first, then read the record at its address.",
+        "search": records.address("api/search?text=aop"),
+        "record": records.address("api/tools/aopwikiapi"),
+        "kinds": {kind: records.address("api/" + kind) for kind in settings()["kinds"]},
+        "openapi": records.address("api/docs/openapi.json"),
+        "documentation": records.address("api/docs") + "/",
+        "dump": records.address("api/dump"),
+        "terms": records.address("api/dump/terms"),
+        "shapes": records.address("api/shapes.ttl"),
+        "void": records.address(".well-known/void"),
+        "catalog": records.address(".well-known/api-catalog"),
+        "llms": records.address("llms.txt"),
+    }
+
+
+def llms() -> str:
+    """Return llms.txt (llmstxt.org): what the platform holds and where agents start."""
+    index = entry_points()
     platform = void.platform()
     about = ["To answer a question, search first, then read the record at its address.",
              "Record kinds: " + ", ".join(index["kinds"]) + ".",

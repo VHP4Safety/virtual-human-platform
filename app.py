@@ -247,7 +247,7 @@ def robots():
 ### llms.txt tells agents what the platform holds and where to start (llmstxt.org)
 @app.route("/llms.txt")
 def llms():
-    return Response(pages.llms(records_api.index_of_api()), content_type=pages.MEDIA, headers={"Access-Control-Allow-Origin": "*"})
+    return Response(pages.llms(), content_type=pages.MEDIA, headers={"Access-Control-Allow-Origin": "*"})
 
 
 ################################################################################
@@ -1102,8 +1102,9 @@ def conditional(response) -> None:
 
 @app.context_processor
 def publisher_context() -> dict:
-    """Return the publisher of the platform and the licence of the records for the templates."""
-    return {"publisher_document": void.platform()["publisher"], "records_license": void.platform()["license"]}
+    """Return the publisher of the platform, the licence of the records and the entry points of agents for the templates."""
+    return {"publisher_document": void.platform()["publisher"], "records_license": void.platform()["license"],
+            "entry_points": pages.entry_points()}
 
 
 @app.context_processor

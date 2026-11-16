@@ -398,25 +398,6 @@ INDEX = {"type": "object", "required": ["title", "start", "search", "kinds", "op
 }}
 
 
-def index_of_api() -> dict:
-    """Return the entry points of the API, at the addresses of the platform."""
-    return {
-        "title": settings()["title"],
-        "start": "Search first, then read the record at its address.",
-        "search": records.address("api/search?text=aop"),
-        "record": records.address("api/tools/aopwikiapi"),
-        "kinds": {kind: records.address("api/" + kind) for kind in settings()["kinds"]},
-        "openapi": records.address("api/docs/openapi.json"),
-        "documentation": records.address("api/docs") + "/",
-        "dump": records.address("api/dump"),
-        "terms": records.address("api/dump/terms"),
-        "shapes": records.address("api/shapes.ttl"),
-        "void": records.address(".well-known/void"),
-        "catalog": records.address(".well-known/api-catalog"),
-        "llms": records.address("llms.txt"),
-    }
-
-
 # The index is at /api and at /api/, as the API catalog anchors the API at /api.
 @blueprint.get("/", strict_slashes=False)
 @blueprint.response(200, INDEX, content_type="application/json")
@@ -424,7 +405,7 @@ def index_of_api() -> dict:
                "descriptions of the API. The API catalog at /.well-known/api-catalog points here.")
 def index():
     """List the entry points of the API."""
-    return jsonify(index_of_api())
+    return jsonify(pages.entry_points())
 
 
 @blueprint.get("/search")
