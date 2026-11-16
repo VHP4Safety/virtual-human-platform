@@ -306,6 +306,27 @@
           </div>
           {% endif %}
 
+          {% if tool_details.mcp %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="doc-heading-technical-mcp">
+              <button class="accordion-button collapsed" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#doc-collapse-technical-mcp"
+                      aria-expanded="false" aria-controls="doc-collapse-technical-mcp">
+                MCP
+              </button>
+            </h2>
+            <div id="doc-collapse-technical-mcp" class="accordion-collapse collapse"
+                 aria-labelledby="doc-heading-technical-mcp"
+                 data-bs-parent="#tool-documentation-accordion">
+              <div class="accordion-body">
+                <ul>
+                  {% if tool_details.mcp.URL %}<li>MCP URL: {{ tool_details.mcp.URL }}</li>{% endif %}
+                </ul>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
           {% if tool_details.Other and tool_details.Other.rsd %}
           <div class="accordion-item">
             <h2 class="accordion-header" id="doc-heading-other">
