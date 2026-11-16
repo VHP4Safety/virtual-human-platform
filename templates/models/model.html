@@ -1,8 +1,9 @@
 {% extends "base.html" %}
+{% import "records/_outline.html" as outlined %}
 {% block content %}
 
 <link rel="stylesheet" href="/static/css/data.css" />
-<script src="https://cdn.jsdelivr.net/npm/citation-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/citation-js@0.9.0" integrity="sha384-wop5NlY7ORa1+WSchJbyKhM2UGNF+nuCoelh0sH4SAaS31ho6ehlpFyULYk/Q9dC" crossorigin="anonymous"></script>
 
 {% with record = data.norm_metadata %}
 {# ---------------------------
@@ -122,7 +123,7 @@
                           {% else %}
                             {{ val(f.name) }}
                           {% endif %}
-                          {% if f.size %} <span class="text-muted">({{ bytes_mb(f.size) }})</span>{% endif %}
+                          {% if f.size %} <span class="text-muted">({{ bytes_mb(f.size, f.size) }})</span>{% endif %}
                           {% if f.checksum %}<br><span class="d-lg-block d-none text-muted">{{ f.checksum }}</span>{% endif %}
                           </span>
                         </li>
@@ -134,6 +135,16 @@
                 </div>
               </div>
 
+              {% if outline %}
+              <div class="card mt-3 overflow-hidden">
+                <div class="card-header py-2"><h5 class="m-0">Model details</h5></div>
+                <div class="card-body">
+                  {{ outlined.fields_table(outline.fields, left_out=("name", "description")) }}
+                  {{ outlined.parts(outline.parts, 2) }}
+                </div>
+              </div>
+              {% endif %}
+
       </div>
       <!-- second tab -->
       <div class="tab-pane" id="simple-tabpanel-1" role="tabpanel" aria-labelledby="simple-tab-1">
@@ -141,7 +152,7 @@
 
         <div>
                 {% if record.description %}
-            <p class="text-secondary">{{ record.description | safe }}</p>
+            <p class="text-secondary">{{ record.description | sanitize_html }}</p>
         {% endif %}
         </div>
 
@@ -152,7 +163,7 @@
               <div class="accordion-body">
                 <div id="bibliography"></div>
               </div>
-          <script src="https://cdn.jsdelivr.net/npm/citation-js"></script>
+          <script src="https://cdn.jsdelivr.net/npm/citation-js@0.9.0" integrity="sha384-wop5NlY7ORa1+WSchJbyKhM2UGNF+nuCoelh0sH4SAaS31ho6ehlpFyULYk/Q9dC" crossorigin="anonymous"></script>
           <script>var Cite = require('citation-js')</script>
           <script>
             const cite = new Cite();
@@ -172,6 +183,36 @@
             })
           </script>
           {% endif %}
+                  {% if record.publications and record.publications|length > 0 %}
+                    <ul class="list-group list-group-flush">
+                      {% for pub in record.publications %}
+                        <li class="list-group-item publication-entry d-flex align-items-start gap-2" data-doi="{{ pub.doi or '' }}">
+                          <i class="bi bi-book text-vhpblue pt-1"></i>
+                          <div class="w-100 small">
+                            <div class="pub-citation">
+                              <p class="mb-0 text-muted">Loading citation…</p>
+                            </div>
+                            {% if pub.doi %}
+                              <div class="text-muted mt-1 text-break">
+                                <i class="bi bi-link-45deg text-vhpblue"></i>
+                                <a href="https://doi.org/{{ pub.doi }}" target="_blank" rel="noopener">https://doi.org/{{ pub.doi }}</a>
+                              </div>
+                            {% elif pub.pmid %}
+                              <div class="text-muted mt-1">
+                                PMID: <a href="https://pubmed.ncbi.nlm.nih.gov/{{ pub.pmid }}/" target="_blank" rel="noopener">{{ pub.pmid }}</a>
+                              </div>
+                            {% elif pub.url %}
+                              <div class="text-muted mt-1 text-break">
+                                <a href="{{ pub.url }}" target="_blank" rel="noopener">{{ pub.url }}</a>
+                              </div>
+                            {% endif %}
+                          </div>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <p class="text-muted mb-0 p-3">No linked publications available.</p>
+                  {% endif %}
                 </div>
               </div>
 
@@ -228,6 +269,44 @@
                   {% endif %}
                 </div>
               </div>
+
+              <div class="card mt-3 overflow-hidden">
+                <div class="card-header py-2">
+                  <h5 class="m-0">Funding</h5>
+                </div>
+
+                <div class="card-body p-0">
+                  {% if record.funding and record.funding|length > 0 %}
+                    <ul class="list-group list-group-flush">
+                      {% for f in record.funding %}
+                        <li class="list-group-item d-flex align-items-start gap-2">
+                          <i class="bi bi-bank text-vhpblue"></i>
+
+                          <span class="small">
+                            <span class="fw-semibold">{{ val(f.funder) }}</span>
+                            {% if f.acronym %} <span class="text-muted">({{ f.acronym }})</span>{% endif %}
+
+                            {% if f.code %}
+                              <br>
+                              <span class="text-muted">{{ f.code }}</span>
+                            {% endif %}
+
+                            {% if f.url %}
+                              <br>
+                              <a href="{{ f.url }}" target="_blank" rel="noopener"
+                                class="d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                                <span>Project</span>
+                              </a>
+                            {% endif %}
+                          </span>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <p class="text-muted mb-0 p-3">No funding information available.</p>
+                  {% endif %}
+                </div>
       </div>
     </div>
   </div>
@@ -313,6 +392,7 @@
 
 
 
+{% include "records/_data_links.html" %}
 </section>
 
 

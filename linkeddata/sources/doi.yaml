@@ -1,0 +1,9 @@
+name: doi
+title: DOI registration agencies (Crossref, DataCite)
+# Publications are enriched with the doi.org citation of their DOI (the sameAs under https://doi.org/).
+enriches: publications
+identifier: https://doi.org/
+keys: ^10\.\d{4,9}/\S+$
+answer: https://doi.org/{key}
+accept: application/vnd.citationstyles.csl+json
+parser: doi

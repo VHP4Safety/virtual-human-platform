@@ -122,9 +122,9 @@ jobs:
           set -euo pipefail
           docker run -d --name vhp_publish_test -p 5050:5050 "$IMAGE:ci-test"
 
-          # Wait for Flask to report that it is listening.
+          # Wait for gunicorn to report that it is listening.
           for _ in $(seq 1 30); do
-            if docker logs vhp_publish_test 2>&1 | grep -q "Running on http://"; then
+            if docker logs vhp_publish_test 2>&1 | grep -q "Listening at: http://"; then
               break
             fi
             sleep 2
@@ -137,15 +137,15 @@ jobs:
             exit 1
           fi
 
-          if ! docker logs vhp_publish_test 2>&1 | grep -q "Running on http://"; then
-            echo "Flask never reported that it was listening." >&2
+          if ! docker logs vhp_publish_test 2>&1 | grep -q "Listening at: http://"; then
+            echo "gunicorn never reported that it was listening." >&2
             exit 1
           fi
 
-          # The home page calls out to GitHub and cloud.vhp4safety.nl, so an
-          # outage there should not block a release. Reported, never fatal.
-          status=$(curl -s -o /dev/null -w '%{http_code}' -m 30 http://localhost:5050/ || echo "no response")
-          echo "GET / returned: $status"
+          # The OpenAPI document is made from the profile, without requests to other sites.
+          status=$(curl -s -o /dev/null -w '%{http_code}' -m 30 http://localhost:5050/api/docs/openapi.json || echo "no response")
+          echo "GET /api/docs/openapi.json returned: $status"
+          [ "$status" = "200" ]
 
       - name: Stop test container
         if: always()

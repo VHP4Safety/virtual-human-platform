@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{# The records of a kind, found by name and filtered by the filter fields of the kind. #}
+
+{% macro page_link_of(number) -%}
+?{{ (listing.query + [("page", number)])|urlencode }}
+{%- endmacro %}
+
+{% block content %}
+<section class="container py-md-5 py-3">
+  <h1>{{ listing.name or listing.path|capitalize }}</h1>
+  {% if listing.description %}
+  <div class="text-secondary mb-3">{% if listing.description is mapping %}{{ listing.description["@value"]|sanitize_html }}{% else %}<p>{{ listing.description }}</p>{% endif %}</div>
+  {% endif %}
+  <form method="get" class="row g-4">
+    <div class="col-md-3">
+      <div class="input-group input-group-sm mb-3">
+        <input class="form-control" name="search" value="{{ listing.search }}" placeholder="Search by name" aria-label="Search by name">
+        <button class="btn btn-vhpblue" title="Search"><i class="bi bi-search"></i></button>
+      </div>
+      {% for field in listing.filters %}
+      <fieldset class="mb-3">
+        <legend class="h6">{{ field.label }}</legend>
+        {% for value in field["values"] %}
+        <div class="form-check small">
+          <input class="form-check-input" type="checkbox" name="{{ field.name }}" value="{{ value.value }}" id="{{ field.name }}-{{ loop.index }}"{% if value.value in listing.chosen[field.name] %} checked{% endif %} onchange="this.form.submit()">
+          <label class="form-check-label" for="{{ field.name }}-{{ loop.index }}">{{ value.name }} <span class="text-secondary">({{ value.count }})</span></label>
+        </div>
+        {% endfor %}
+      </fieldset>
+      {% endfor %}
+      {% if listing.filters %}<noscript><button class="btn btn-sm btn-outline-secondary">Apply</button></noscript>{% endif %}
+    </div>
+    <div class="col-md-9">
+      <p class="small text-secondary">{{ listing.total }} record{{ "" if listing.total == 1 else "s" }}</p>
+      <div class="list-group list-group-flush">
+        {% for item in listing.listed %}
+        <a class="list-group-item list-group-item-action" href="{{ item.address|page_link }}">
+          <span class="fw-semibold link-vhpblue">{{ item.name }}</span>
+          {% if item.description %}<span class="d-block small text-secondary">{{ (item.description["@value"] if item.description is mapping else item.description)|striptags|truncate(240) }}</span>{% endif %}
+        </a>
+        {% else %}
+        <p class="text-secondary">No records found.</p>
+        {% endfor %}
+      </div>
+      {% if listing.pages > 1 %}
+      <nav class="mt-3" aria-label="Pages">
+        <ul class="pagination pagination-sm">
+          <li class="page-item{% if listing.page <= 1 %} disabled{% endif %}"><a class="page-link" href="{{ page_link_of(listing.page - 1) }}" aria-label="Previous"><i class="bi bi-caret-left-fill"></i></a></li>
+          <li class="page-item active" aria-current="page"><span class="page-link">{{ listing.page }} / {{ listing.pages }}</span></li>
+          <li class="page-item{% if listing.page >= listing.pages %} disabled{% endif %}"><a class="page-link" href="{{ page_link_of(listing.page + 1) }}" aria-label="Next"><i class="bi bi-caret-right-fill"></i></a></li>
+        </ul>
+      </nav>
+      {% endif %}
+    </div>
+  </form>
+</section>
+{% endblock %}

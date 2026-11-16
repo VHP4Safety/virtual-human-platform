@@ -104,8 +104,13 @@
         }
       }
     }
-    matches.sort((a, b) => a.start - b.start);
-    return matches.filter((m, i) => i === 0 || m.start >= matches[i - 1].end);
+    // Of overlapping matches, the longest match that starts first is kept, such as "AOP-Wiki RDF" over "RDF".
+    matches.sort((a, b) => a.start - b.start || b.end - a.end);
+    const kept = [];
+    for (const m of matches) {
+      if (!kept.length || m.start >= kept[kept.length - 1].end) kept.push(m);
+    }
+    return kept;
   }
 
   function tooltipHtml(term) {
@@ -191,7 +196,6 @@
 
   function setGlossaryVisible(visible) {
     glossaryActive = visible;
-    localStorage.setItem('vhp-glossary-active', visible ? '1' : '0');
     document.querySelectorAll('[data-vhp-glossary]').forEach(span => {
       span.classList.toggle('bg-vhplight-blue', visible);
       span.classList.toggle('bg-opacity-50', visible);
@@ -210,8 +214,9 @@
     if (visible) initTooltips();
   }
 
+  // The hint is shown until the switch is used once.
   function showHint(toggle) {
-    if (localStorage.getItem('vhp-glossary-hint-seen')) return;
+    if (localStorage.getItem('vhp-glossary-active') !== null) return;
     const wrapper = toggle.closest('.form-check') || toggle;
     const hint = new bootstrap.Popover(wrapper, {
       content:   'Toggle to highlight glossary terms on the page',
@@ -221,7 +226,6 @@
       container: wrapper.closest('.navbar') || 'body',
     });
     hint.show();
-    localStorage.setItem('vhp-glossary-hint-seen', '1');
     const dismiss = () => { hint.dispose(); toggle.removeEventListener('change', dismiss); };
     toggle.addEventListener('change', dismiss);
     setTimeout(dismiss, 4000);
@@ -247,6 +251,7 @@
       const toggle = document.getElementById('glossary-toggle');
       if (toggle) {
         toggle.addEventListener('change', () => {
+          localStorage.setItem('vhp-glossary-active', toggle.checked ? '1' : '0');
           setGlossaryVisible(toggle.checked);
         });
         showHint(toggle);

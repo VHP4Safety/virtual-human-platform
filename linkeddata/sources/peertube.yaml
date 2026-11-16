@@ -1,0 +1,6 @@
+name: peertube
+title: VHP4Safety videos on video.edu.nl (PeerTube)
+url: https://video.edu.nl/api/v1/accounts/vhp4safety/videos?count=100
+# The response for each video, with its full description, by its identifier.
+entries: https://video.edu.nl/api/v1/videos/{key}
+parser: peertube

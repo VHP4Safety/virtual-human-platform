@@ -1,0 +1,47 @@
+{% extends "editor/base.html" %}
+{% block content %}
+{# The statements are shown as a diagram, with an arrow from each field to its value. A part (a section, a listed
+   tool) has its own arrows. #}
+{% macro edges_of(edges) %}
+<ul class="graph-edges">
+  {% for edge in edges %}
+  <li class="graph-edge graph-{{ edge.status }}">
+    <span class="graph-property">{{ edge.label }} <code class="small">{{ edge.property }}</code></span>
+    <i class="bi bi-arrow-right text-secondary"></i>
+    {% if edge.parts is defined %}
+    <span class="graph-value"><i class="bi bi-box text-secondary"></i> {{ edge.type }}{% if edge.value %}: {{ edge.value }}{% endif %}</span>
+    {% elif edge.link and (edge.value.startswith("https://") or edge.value.startswith("http://")) %}
+    <span class="graph-value"><a class="link-vhpblue" href="{{ edge.value|page_link }}" title="{{ edge.value }}">{{ edge.name or edge.value }}</a>{% if edge.name %} <span class="small text-secondary text-break">{{ edge.value }}</span>{% endif %}</span>
+    {% else %}
+    <span class="graph-value graph-text">“{{ edge.value }}”</span>
+    {% endif %}
+    {% if edge.status == "added" %}<span class="badge text-bg-success">added</span>{% elif edge.status == "removed" %}<span class="badge text-bg-danger">removed</span>{% endif %}
+    {% if edge.parts is defined %}{{ edges_of(edge.parts) }}{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}
+<div class="container-fluid px-lg-4 py-4">
+  <p class="mb-2"><a class="link-vhpblue small" href="{{ url_for('changes.changes') }}"><i class="bi bi-arrow-left"></i> All changes</a></p>
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+    <h1 class="h3 text-vhppurple mb-0">{{ graph.record_name }}</h1>
+    {% with action=change.action %}{% include "changes/_action.html" %}{% endwith %}
+  </div>
+  <p class="text-secondary">By {{ change.name }}{% if change.orcid %} (<a class="link-secondary" href="https://orcid.org/{{ change.orcid }}">{{ change.orcid }}</a>){% endif %} on {{ change.created_at[:16]|replace("T", " ") }} UTC ·
+    <a class="link-vhpblue" href="{{ graph.record|page_link }}">Record page</a> ·
+    <a class="link-vhpblue" href="{{ url_for('changes.changes', record=graph.record) }}">All changes to this record</a></p>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="graph">
+        <div class="graph-node">
+          <i class="bi bi-box text-vhppurple"></i>
+          <a class="fw-semibold link-vhppurple" href="{{ graph.record|page_link }}">{{ graph.record_name }}</a>
+          <span class="small text-secondary">{{ graph.type }} · {{ graph.record|page_link }}</span>
+        </div>
+        {{ edges_of(graph.edges) }}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

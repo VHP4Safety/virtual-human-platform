@@ -118,7 +118,7 @@ let pages = [];
 
           const highlightedTitle = escapeHtml(title).replace(regex, `<mark>$1</mark>`);
 
-          return `<a class="list-group-item" href="${r.item.url}" style="text-decoration:none; color:inherit;">
+          return `<a class="list-group-item" href="${escapeAttr(url)}" style="text-decoration:none; color:inherit;">
                       ${highlightedTitle}
                     </a>`;
         })

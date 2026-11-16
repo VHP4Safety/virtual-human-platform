@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{# A page of the platform, made from its record. #}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
+{% endblock %}
+
+{% macro html(value) -%}
+  {%- if value is mapping %}{{ value["@value"]|sanitize_html }}{% elif value %}<p>{{ value }}</p>{% endif -%}
+{%- endmacro %}
+
+{% macro media(part) %}
+{% for figure in part.figures %}
+<figure class="mt-3 mb-0">
+  <img src="{{ figure.address|page_link }}" alt="{{ figure.caption or '' }}" class="img-fluid d-block" loading="lazy">
+</figure>
+{% endfor %}
+{% for video in part.videos %}
+<div class="mt-3 ratio ratio-16x9">
+  <iframe title="{{ video.name or '' }}" allow="fullscreen" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" class="border-0"></iframe>
+  <a class="btn btn-light border d-flex flex-column align-items-center justify-content-center" href="{{ video.player }}"
+     onclick="this.previousElementSibling.src = this.href; this.remove(); return false;">
+    <i class="bi bi-play-circle fs-1"></i>{{ video.name or "Video" }}
+    <span class="small text-secondary">The video is loaded from {{ video.player.split("/")[2] }} only after a click.</span>
+  </a>
+</div>
+{% endfor %}
+{% endmacro %}
+
+{% macro item(id, heading, open=false) %}
+<div class="accordion-item">
+  <h2 class="accordion-header" id="{{ id }}-heading">
+    <button class="accordion-button{% if not open %} collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#{{ id }}" aria-expanded="{{ 'true' if open else 'false' }}" aria-controls="{{ id }}">{{ heading }}</button>
+  </h2>
+  <div id="{{ id }}" class="accordion-collapse collapse{% if open %} show{% endif %}" aria-labelledby="{{ id }}-heading">
+    <div class="accordion-body" style="text-align: justify;">{{ caller() }}</div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro shown(blocks) %}
+{% for block in blocks %}
+{% if block.text %}{{ html(block.text) }}{% endif %}
+{% if block.figures or block.videos %}{{ media(block) }}{% endif %}
+{% if block.entries %}<ol>{% for entry in block.entries %}<li>{{ entry.name }}{% if entry.description %}: {{ entry.description }}{% endif %}</li>{% endfor %}</ol>{% endif %}
+{% if block.links %}<ul class="list-unstyled">{% for found in block.links %}<li><a class="link-vhpblue" href="{{ found.address|page_link }}">{{ found.name }}</a></li>{% endfor %}</ul>{% endif %}
+{% endfor %}
+{% endmacro %}
+
+{% macro outputs(listed) %}
+{% if listed %}
+<ul class="list-unstyled mt-3 mb-0">
+  {% for output in listed %}
+  <li class="mb-1"><span class="badge text-bg-light border fw-normal me-1">{{ output.kind }}</span><a class="link-vhpblue" href="{{ output.address|page_link }}">{{ output.name }}</a></li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endmacro %}
+
+{% macro listed_item(found) %}
+{% if found.kinds or found.published %}
+<p class="mb-2">{% for value in found.kinds %}<span class="badge bg-vhplight-blue text-secondary rounded-pill me-1">{{ value }}</span>{% endfor %}{% if found.published %}<span class="small text-muted">Published {{ found.published }}</span>{% endif %}</p>
+{% endif %}
+{{ html(found.description) }}
+{{ media(found) }}
+{% if found.authors %}<p class="small text-muted">By {% for author in found.authors %}<a class="link-vhpblue" href="{{ author.address|page_link }}">{{ author.name }}</a>{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
+<div class="d-flex flex-wrap gap-2">
+  {% if found.url %}<a class="btn btn-vhpblue" href="{{ found.url }}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right pe-1"></i>Open</a>{% endif %}
+  {% for mentioned in found.mentions %}<a class="btn btn-outline-vhpblue" href="{{ mentioned.address|page_link }}"><i class="bi bi-tools pe-1"></i>{{ mentioned.name }}</a>{% endfor %}
+  <a class="btn btn-outline-secondary" href="{{ found.address|page_link }}"><i class="bi bi-info-circle pe-1"></i>Details</a>
+</div>
+{% endmacro %}
+
+{% block content %}
+<section class="container py-md-5 py-3">
+  <h1>{{ page.name }}</h1>
+  {% if page.description %}<p class="text-secondary fs-5">{{ page.description }}</p>{% endif %}
+
+  {% if page.tabbed %}
+  <div class="card">
+    <div class="card-header">
+      <ul class="nav nav-tabs card-header-tabs" role="tablist">
+        {% for section in page.sections %}
+        <li class="nav-item" role="presentation">
+          <a class="nav-link text-start{% if loop.first %} active{% endif %}" id="tab-{{ loop.index }}" data-bs-toggle="tab" href="#tabpanel-{{ loop.index }}" role="tab" aria-controls="tabpanel-{{ loop.index }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ section.heading }}</a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="card-body">
+      <div class="tab-content">
+        {% for section in page.sections %}
+        {% set tab = loop.index %}
+        <div class="tab-pane{% if loop.first %} active{% endif %}" id="tabpanel-{{ tab }}" role="tabpanel" aria-labelledby="tab-{{ tab }}">
+          {{ html(section.text) }}
+          {{ media(section) }}
+          {{ shown(section.shown) }}
+          <div class="accordion accordion-flush" id="accordion-{{ tab }}">
+            {% for part in section.sections %}
+            {% call item("item-" ~ tab ~ "-" ~ loop.index, part.heading or "") %}{{ html(part.text) }}{{ media(part) }}{{ shown(part.shown) }}{{ outputs(part.outputs) }}{% endcall %}
+            {% endfor %}
+            {% if loop.first %}{% for found in listed|default([]) %}
+            {% call item("record-" ~ loop.index, found.name) %}{{ listed_item(found) }}{% endcall %}
+            {% endfor %}{% endif %}
+          </div>
+          {{ outputs(section.outputs) }}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  {% for section in page.sections %}
+  {% if section.heading %}<h2 class="h4 mt-4">{{ section.heading }}</h2>{% endif %}
+  {{ html(section.text) }}
+  {{ media(section) }}
+  {{ shown(section.shown) }}
+  {{ outputs(section.outputs) }}
+  {% endfor %}
+  {% endif %}
+
+  {% if page.kinds %}
+  <div class="accordion accordion-flush" id="kinds-accordion">
+    {% for kind in page.kinds %}
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="definition-{{ kind.slug }}"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ kind.slug }}" aria-expanded="false" aria-controls="collapse-{{ kind.slug }}">{{ kind.label }}</button></h2>
+      <div id="collapse-{{ kind.slug }}" class="accordion-collapse collapse" aria-labelledby="definition-{{ kind.slug }}" data-bs-parent="#kinds-accordion">
+        <div class="accordion-body">{{ kind.description }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% include "records/_data_links.html" %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+{# The accordion item named by the fragment of the address (#definition-toxicokinetics) is opened. #}
+<script>
+  (function () {
+    function openFromHash() {
+      let target = null;
+      try {
+        target = window.location.hash ? document.querySelector(window.location.hash) : null;
+      } catch (error) {
+        return;
+      }
+      const button = target && target.querySelector('[data-bs-toggle="collapse"]');
+      const panel = button && document.querySelector(button.getAttribute("data-bs-target"));
+      if (panel) {
+        bootstrap.Collapse.getOrCreateInstance(panel).show();
+      }
+    }
+    window.addEventListener("DOMContentLoaded", openFromHash);
+    window.addEventListener("hashchange", openFromHash);
+  })();
+</script>
+{% endblock %}

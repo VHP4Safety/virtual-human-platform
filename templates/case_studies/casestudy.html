@@ -1,133 +1,57 @@
-{% extends "base.html" %} {% block content %}
-<link rel="stylesheet" href="/static/css/casestudies.css" />
-<!-- Breadcrumbs  -->
-<nav class="navbar navbar-expand-lg bg-body-tertiary" style="--bs-breadcrumb-divider:'/'" aria-label="breadcrumb">
-  <ol class="breadcrumb p-3 m-0" id="breadcrumbs">
-</nav>
+{% extends "base.html" %}
+{% import "records/_outline.html" as outlined %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/casestudies.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/case-study.css') }}" />
 
-
-<!-- Sticky Workflow Header -->
-  <div class="workflow-header">
-    <h5>Process Flow</h5>
-    <div class="step-tracker">
-      <div class="step-item" data-step="1" data-type="regulatory-question">
-        <div class="step-icon">1</div>
-        <span class="step-text">Regulatory Question</span>
-      </div>
-      <div class="step-line"></div>
-
-      <div class="step-item" data-step="2" data-type="workflow-step">
-        <div class="step-icon">2</div>
-        <span class="step-text">Safety Assessment Workflow Step</span>
-      </div>
-      <div class="step-line"></div>
-
-      <div class="step-item" data-step="3" data-type="process-flow-step">
-        <div class="step-icon">3</div>
-        <span class="step-text">Case Study Step</span>
-      </div>
-      <div class="step-line"></div>
-
-      <div class="step-item" data-step="4" data-type="workflow-substep">
-        <div class="step-icon">4</div>
-        <span class="step-text">Case Study Substep</span>
-      </div>
-      <div class="step-line"></div>
-
-      <div class="step-item" data-step="5" data-type="tool">
-        <div class="step-icon">5</div>
-        <span class="step-text">Tools, Models and Data</span>
+<div id="case-study" data-document="{{ case_document }}" data-at="{{ page_address }}">
+  {# The case study for readers without scripts, such as search engines and agents. With scripts it is not shown,
+     and the page is drawn in its place. #}
+  <div class="container py-md-5 py-3 case-study-fallback">
+    {{ outlined.article(case_outline, 1) }}
       </div>
     </div>
-  </div>
-
-<!-- Steps Wrapper -->
-<div class="overflow-x-hidden d-flex flex-row py-md-5 py-3" id="stepsWrapper">
-  <!-- Step 1 -->
-  <div class="w-100 min-vw-100">
-    <div class="container">
-      <div id="step1-content">
-        <!-- Content will be injected here -->
-      </div>
-    </div>
-    <div class="container">
-      <div id="step1-bottom-content">
-        <!-- Content will be injected here -->
-      </div>
-    </div>
-  </div>
-  <!-- Step 2 -->
-  <div class="w-100 min-vw-100">
-    <div class="container">
-      <!-- Dynamic content for Step 2 -->
-      <div id="step2-content">
-        <!-- Content will be injected here -->
-      </div>
-    </div>
-    <div class="container">
-      <div id="step2-bottom-content">
-        <!-- Content will be injected here -->
-      </div>
-    </div>
-  </div>
-  <!-- Step 3 -->
-  <div class="w-100 min-vw-100">
-    <div class="container">
-      <div id="step3-content">
-        <!-- Content will be injected here -->
-      </div>
-    </div>
-    <div class="container">
-      <div id="step3-bottom-content">
-        <!-- Content will be injected here -->
-      </div>
-    </div>
-  </div>
-  <!-- Step 4 -->
-  <div class="w-100 min-vw-100">
-    <div class="container">
-      <div id="step4-content">
-        <!-- Content will be injected here -->
-      </div>
-    </div>
-    <div class="container">
-      <div id="step4-bottom-content">
-        <!-- Content will be injected here -->
-      </div>
-    </div>
-  </div>
-  <!-- Step 5 -->
-  <div class="w-100 min-vw-100">
-    <div class="container">
-      <div id="step5-content">
-        <!-- Content will be injected here -->
-      </div>
-    </div>
-    <div class="container">
-      <div id="step5-bottom-content">
-        <!-- Content will be injected here -->
-      </div>
-    </div>
-  </div>
-  <!-- Step 6 -->
-  <div class="w-100 min-vw-100">
-    <div class="container">
-      <div id="step6-content">
-        <!-- Content will be injected here -->
-      </div>
-    </div>
-    <div class="container">
-      <div id="step6-bottom-content">
-        <!-- Content will be injected here -->
-      </div>
-    </div>
-  </div>
-</div>
+<noscript><style>.case-study-fallback { display: block; }</style></noscript>
+{% if case_json %}<script type="application/ld+json" id="case-document">{{ case_json|tojson }}</script>{% endif %}
 
 <!-- Feedback button to link to the GitHub issue page so users can submit issues/feedback -->
 <a href="https://github.com/VHP4Safety/ui-casestudy-config/issues/new">
   <button class="btn btn-vhppink-distinct ms-2" style="position: fixed; bottom: 20px; right: 20px;">Give Us feedback</button>
 </a>
 
-<script src="/static/js/casestudies.js"></script>
+<script type="module">
+  import { renderCaseStudy } from "{{ url_for('static', filename='js/case-study.js') }}";
+
+  // The address of the page in view is kept in the address bar, so that it can be shared, and the previous page is
+  // opened with the back button.
+  const container = document.getElementById("case-study");
+  const base = {{ config_base|tojson }};
+  // The JSON-LD of the case study is in the page. It is requested only if the page has none.
+  const given = document.getElementById("case-document") || document.getElementById("record-document");
+  let caseStudy = given ? JSON.parse(given.textContent) : null;
+  if (!caseStudy) {
+    const response = await fetch(container.dataset.document, { headers: { Accept: "application/ld+json" } });
+    caseStudy = response.ok ? await response.json() : null;
+  }
+  if (caseStudy) {
+    const show = function (address, arrive) {
+      renderCaseStudy(container, caseStudy, {
+        base: base,
+        at: address,
+        arrive: arrive,
+        onNavigate: function (shown) {
+          const path = shown.startsWith(base) ? "/" + shown.slice(base.length) : shown;
+          if (path !== window.location.pathname) {
+            window.history.pushState({}, "", path);
+          }
+        },
+      });
+    };
+    // As on the platform, a page further in is reached from the case study page, with a slide into place.
+    show(container.dataset.at, true);
+    window.addEventListener("popstate", function () {
+      show(base + window.location.pathname.replace(/^\//, ""), false);
+    });
+  }
+</script>
 {% endblock %}

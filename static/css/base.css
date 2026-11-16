@@ -1,5 +1,4 @@
 /* Font Import */
-@import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap");
 
 /* Offset anchor-link / scrollIntoView jumps so targets clear the fixed navbar
    (matches the body padding-top below, which reserves space for the navbar). */

@@ -8,12 +8,12 @@
 {% block content %}
   <!-- Workflow description -->
   <section class="container py-md-5 py-3" id="about-section">
-    <h1 class="text-vhppurple">Safety Assessment Workflow</h1>
+    <h1 class="text-vhppurple">{{ page.name }}</h1>
     <p class="text-secondary fs-5">
-      The Virtual Human Platform uses a generic safety assessment workflow as a five-step process to collect information critical for risk characterisation.
+      {{ page.description }}
     </p>
 
-    <p>Each step in the generic Safety Assessment Workflow represents a critical process where relevant information is gathered to enable innovative, user-driven risk characterisation. The workflow steps are not strictly sequential. The risk characterisation outcome depends on the specific tools applied, the nature and quality of the information collected, and the way uncertainties are addressed and balanced. The workflow aligns with international concepts, such as the WHO human health risk assessment toolkit and the ASPA workflow. Expand a step below to learn more.</p>
+    {% for section in page.sections %}{% if section.text is mapping %}{{ section.text["@value"]|sanitize_html }}{% elif section.text %}<p>{{ section.text }}</p>{% endif %}{% endfor %}
     <div class="accordion accordion-flush" id="process-flow-accordion">
       {% for v in process_flow_steps.values() %}
         <div class="accordion-item">
@@ -24,6 +24,7 @@
         </div>
       {% endfor %}
     </div>
+    {% include "records/_data_links.html" %}
   </section>
 {% endblock %}
 

@@ -1,0 +1,6 @@
+name: nwopen
+title: NWO projects (NWOpen API)
+# The NWO projects that are followed, each by the platform address of its grant (linkeddata/parsers/nwopen.py).
+files:
+  grants/nwa-orc-1292-19-272: https://nwopen-api.nwo.nl/NWOpen-API/api/Projects?project_id=NWA.1292.19.272
+parser: nwopen

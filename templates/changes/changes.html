@@ -1,0 +1,34 @@
+{% extends "editor/base.html" %}
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+  <h1 class="h3 text-vhppurple mb-1">Changes</h1>
+  {% if record %}
+  <p class="text-secondary">Changes to <a class="link-vhpblue" href="{{ record|page_link }}">{{ names.get(record) or record|page_link }}</a>. <a class="link-vhpblue" href="{{ url_for('changes.changes') }}">All changes</a></p>
+  {% else %}
+  <p class="text-secondary">Record changes listed here, most recent first.</p>
+  {% endif %}
+
+  <div class="card">
+    {% if changes %}
+    <div class="table-responsive">
+      <table class="table mb-0 align-middle">
+        <thead><tr><th>Date (UTC)</th><th>Record</th><th>Change</th><th>Editor</th><th></th></tr></thead>
+        <tbody>
+          {% for change in changes %}
+          <tr>
+            <td class="text-nowrap small">{{ change.created_at[:16]|replace("T", " ") }}</td>
+            <td><a class="link-vhpblue" href="{{ change.record_iri|page_link }}">{{ names.get(change.record_iri) or change.record_iri }}</a></td>
+            <td>{% with action=change.action %}{% include "changes/_action.html" %}{% endwith %}</td>
+            <td class="small">{{ change.name }}{% if change.orcid %}<br><a class="link-secondary" href="https://orcid.org/{{ change.orcid }}">{{ change.orcid }}</a>{% endif %}</td>
+            <td class="text-end"><a class="btn btn-sm btn-outline-vhpblue" href="{{ url_for('changes.change', number=change.id) }}">Details</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card-body text-secondary">No changes yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,6 @@
+name: trl
+title: Technology readiness levels (Wikidata)
+# The pinned technology readiness levels of the model, as Wikidata items.
+vocabulary: wikidata-technology-readiness-levels.json
+pinned: {url: "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q1478071|Q120669280|Q120669304|Q120669316|Q120669327|Q120669340|Q120669350|Q120669358|Q120669370|Q120669377&props=labels|descriptions|aliases&languages=en&format=json", sha256: 4cbfbf529f38c1951a01d4d708f30650d805c41c23f3e12a349bc3509dd67146}
+parser: wikidata

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% import "records/_outline.html" as outlined %}
+{% block content %}
+<section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
+  <div class="pb-2 d-flex flex-wrap gap-4 align-items-start">
+    <div class="flex-grow-1">
+      <h1><span class="text-vhpblue">{{ record.name or record.iri }}</span></h1>
+      {% if record.description %}
+      <p class="text-secondary fs-5">{{ record.description }}</p>
+      {% endif %}
+    </div>
+    {% if record.image and (record.image.startswith("https://") or record.image.startswith("http://")) %}
+    <img src="{{ record.image|page_link }}" alt="{{ record.name or '' }}" class="rounded border" style="max-height: 160px; max-width: 320px; object-fit: contain">
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      {{ outlined.fields_table(outline.fields, left_out=("name", "description")) }}
+      {{ outlined.parts(outline.parts, 2) }}
+    </div>
+  </div>
+
+  {{ outlined.named_on(outline.named_on) }}
+
+  {% include "records/_data_links.html" %}
+</section>
+{% endblock %}

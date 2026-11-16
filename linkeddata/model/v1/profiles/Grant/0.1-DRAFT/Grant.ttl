@@ -1,0 +1,102 @@
+# The shapes of the profile https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT.
+@prefix dash: <http://datashapes.org/dash#> .
+@prefix profile: <https://platform.vhp4safety.nl/profiles/Grant/0.1-DRAFT#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <https://schema.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+profile:MonetaryGrant a sh:NodeShape ;
+    rdfs:label "Grant" ;
+    sh:name "Grant" ;
+    sh:property profile:MonetaryGrant-alternateName,
+        profile:MonetaryGrant-amount,
+        profile:MonetaryGrant-description,
+        profile:MonetaryGrant-funder,
+        profile:MonetaryGrant-identifier,
+        profile:MonetaryGrant-name,
+        profile:MonetaryGrant-url ;
+    sh:targetClass schema:MonetaryGrant .
+
+profile:MonetaryAmount a sh:NodeShape ;
+    rdfs:label "Amount" ;
+    sh:name "Amount" ;
+    sh:property profile:MonetaryAmount-currency,
+        profile:MonetaryAmount-value .
+
+profile:MonetaryAmount-currency a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:message "A three-letter currency code, such as EUR." ;
+    sh:minCount 1 ;
+    sh:name "Currency" ;
+    sh:order 2 ;
+    sh:path schema:currency ;
+    sh:pattern "^[A-Z]{3}$" .
+
+profile:MonetaryAmount-value a sh:PropertyShape ;
+    sh:datatype xsd:decimal ;
+    sh:maxCount 1 ;
+    sh:message "One number needed." ;
+    sh:minCount 1 ;
+    sh:name "Value" ;
+    sh:order 1 ;
+    sh:path schema:value .
+
+profile:MonetaryGrant-alternateName a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Acronym" ;
+    sh:order 2 ;
+    sh:path schema:alternateName .
+
+profile:MonetaryGrant-amount a sh:PropertyShape ;
+    sh:class schema:MonetaryAmount ;
+    sh:maxCount 1 ;
+    sh:name "Amount" ;
+    sh:node profile:MonetaryAmount ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:order 4 ;
+    sh:path schema:amount .
+
+profile:MonetaryGrant-description a sh:PropertyShape ;
+    dash:singleLine false ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Description" ;
+    sh:order 6 ;
+    sh:path schema:description .
+
+profile:MonetaryGrant-funder a sh:PropertyShape ;
+    sh:class schema:Organization ;
+    sh:message "Add the funder." ;
+    sh:minCount 1 ;
+    sh:name "Funder" ;
+    sh:order 3 ;
+    sh:path schema:funder ;
+    sh:severity sh:Warning .
+
+profile:MonetaryGrant-identifier a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Grant number" ;
+    sh:order 2 ;
+    sh:path schema:identifier .
+
+profile:MonetaryGrant-name a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:message "One name needed." ;
+    sh:minCount 1 ;
+    sh:name "Name" ;
+    sh:order 1 ;
+    sh:path schema:name .
+
+profile:MonetaryGrant-url a sh:PropertyShape ;
+    sh:description "The page of the grant at the funder." ;
+    sh:maxCount 1 ;
+    sh:name "Page" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 5 ;
+    sh:path schema:url .
+

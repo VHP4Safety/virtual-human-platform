@@ -1,0 +1,163 @@
+{% extends "editor/base.html" %}
+{% set editing = selected and (not record or not record.removed_at) %}
+{# A stored record of a kind kept as it is in the editor, such as a model, is shown and not edited. #}
+{% set saving = editing and not read_only %}
+{# While a record is edited, the page has the height of the window. The form is scrolled above the footer, and Save
+   is in the footer, so that it is never over the form. #}
+{% block body_class %}{% if editing %}editor-app{% endif %}{% endblock %}
+{% block footer_bar %}
+{% if saving %}
+<div class="container-fluid px-lg-4 editor-save">
+  <div class="alert alert-danger small py-2 mb-0 d-none" id="save-problems" role="alert"></div>
+  <button type="button" class="btn btn-success" id="save" disabled><i class="bi bi-check-lg"></i> Save</button>
+  <button type="button" class="btn btn-light border d-none" id="discard"><i class="bi bi-arrow-counterclockwise"></i> Discard changes</button>
+</div>
+{% endif %}
+{% endblock %}
+{% block content %}
+{% set names = kind_names() %}
+<div class="container-fluid px-lg-4 py-4">
+  <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+    <h1 class="h3 text-vhppurple mb-0">{{ names[kind] }}</h1>
+    <ul class="nav nav-pills">
+      {% for other in kinds %}
+      <li class="nav-item"><a class="nav-link{% if other == kind %} active bg-vhppurple{% else %} link-vhppurple{% endif %}" href="{{ url_for('admin.edit', kind=other) }}">{{ names[other] }}</a></li>
+      {% endfor %}
+    </ul>
+    <span class="flex-grow-1"></span>
+    {% if selected and (not record or not record.removed_at) %}
+    <button type="button" class="btn btn-sm btn-outline-vhppurple d-none" id="show-preview"><i class="bi bi-layout-sidebar-reverse"></i> Preview</button>
+    {% endif %}
+  </div>
+
+  <div class="editor-layout" id="layout">
+    <aside class="editor-side card" id="side" data-pane="{{ 'sections' if selected and kind == 'casestudies' else 'records' }}">
+      <div class="editor-side-tabs" role="tablist">
+        <button type="button" role="tab" data-pane="records">Records</button>
+        {% if kind == "casestudies" %}<button type="button" role="tab" data-pane="sections"{% if not selected %} disabled{% endif %}>Sections</button>{% endif %}
+      </div>
+      <div class="editor-side-panes">
+        <section class="editor-side-pane" id="records-pane" aria-label="Records">
+          <h2 class="editor-side-title">Records</h2>
+          <form class="input-group input-group-sm mb-2" method="get">
+            <input class="form-control" name="new" required placeholder="New record name" aria-label="New record name">
+            <button class="btn btn-vhpblue" title="Its address is made from the name"><i class="bi bi-plus-lg"></i> Add</button>
+          </form>
+          <div class="list-group list-group-flush small">
+            {% for item in records %}
+            <a class="list-group-item list-group-item-action d-flex align-items-center gap-2{% if item.record.iri == selected %} active{% endif %}" href="?record={{ item.record.iri|urlencode }}">
+              <span class="me-auto">{{ item.record.name or item.record.iri }}{% if item.record.removed_at %} <span class="badge text-bg-secondary">removed</span>{% endif %}</span>
+              {% if item.notes %}<i class="bi bi-exclamation-triangle text-warning" title="{{ item.notes }} values do not fit"></i>{% endif %}
+              <span class="small text-nowrap" title="Fields filled">{{ item.filled }}/{{ item.fields }}</span>
+            </a>
+            {% endfor %}
+          </div>
+        </section>
+        {% if kind == "casestudies" %}
+        <section class="editor-side-pane" id="sections-pane" aria-label="Sections">
+          <h2 class="editor-side-title">Sections</h2>
+          <nav class="record-index small" id="record-index">
+            <p class="text-secondary mb-0">{% if selected %}Loading…{% else %}Choose a record.{% endif %}</p>
+          </nav>
+        </section>
+        {% endif %}
+      </div>
+    </aside>
+
+    <div id="main-column">
+      {% if selected %}
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <code class="me-auto align-self-center">{{ selected }}</code>
+        {% if record %}
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('changes.changes', record=selected) }}"><i class="bi bi-clock-history"></i> Changes</a>
+        {% if read_only %}
+        <span class="small text-secondary align-self-center">Kept as it is in the editor; a write token of the <a class="link-vhpblue" href="/api/docs/">API</a> changes it.</span>
+        {% elif record.removed_at %}
+        <button class="btn btn-sm btn-outline-vhpblue" data-action="restore"><i class="bi bi-arrow-counterclockwise"></i> Restore</button>
+        {% else %}
+        <button class="btn btn-sm btn-outline-secondary" data-action="move"><i class="bi bi-pencil"></i> Move</button>
+        <button class="btn btn-sm btn-outline-danger" data-action="remove"><i class="bi bi-trash"></i> Remove</button>
+        {% endif %}
+        {% endif %}
+      </div>
+      {% if crate %}
+      <p class="small text-secondary mb-3"><i class="bi bi-box-seam"></i>
+        {% if crate == "zenodo" %}
+        <a class="link-vhpblue" href="{{ selected|page_link }}/ro-crate-metadata.json" target="_blank" rel="noopener">RO-Crate from Zenodo</a>, served unchanged.
+        {% if not read_only %}
+        After a save, this model is a platform record, and its RO-Crate is a draft made from the record.
+        <button type="button" class="btn btn-sm btn-outline-vhppurple ms-1" data-action="own">Make a platform record</button>
+        {% endif %}
+        {% else %}
+        <a class="link-vhpblue" href="{{ selected|page_link }}/ro-crate-metadata.json" target="_blank" rel="noopener">RO-Crate draft</a>, not in Zenodo:
+        made from this record, as a start for the curation of a crate.
+        {% endif %}
+      </p>
+      {% endif %}
+      {% if draft_vocabulary is not none %}
+      <div class="d-flex flex-wrap align-items-center gap-2 small mb-3">
+        <span class="badge text-bg-warning">Draft</span>
+        <span class="text-secondary">A term proposed for its vocabulary and not yet in it, at a platform address. At the next import after the
+          vocabulary has the term, this draft is merged into it: by the address in Other addresses (such as the VHP ID from the glossary
+          request), or else by the same label.</span>
+        <span class="d-none align-items-center gap-2" id="term-request">
+          <label class="text-secondary text-nowrap" for="term-table">Table of the glossary</label>
+          <button type="button" class="btn btn-sm btn-outline-vhppurple text-nowrap" data-action="request">Request it on GitHub</button>
+        </span>
+      </div>
+      {% endif %}
+      <div class="alert d-none" id="message" role="status"></div>
+      {% if not record or not record.removed_at %}
+      <div class="card"><div class="card-body">
+        <shacl-form data-shapes-url="{{ url_for('admin.form') }}" data-shape-subject="{{ shape }}"
+                    {% if record %}data-values-url="{{ url_for('records.read', path=selected.removeprefix(base)) }}"{% elif values %}data-values="{{ values }}"{% endif %}
+                    data-values-subject="{{ selected }}" data-generate-node-shape-reference="" data-collapse="open"{% if read_only %} data-mode="view"{% endif %}></shacl-form>
+      </div></div>
+      {% endif %}
+      {% else %}
+      <p class="text-secondary">Choose or add a record.</p>
+      {% endif %}
+    </div>
+
+    {% if selected and (not record or not record.removed_at) %}
+    <aside class="editor-preview card d-none" id="preview-column" aria-label="Preview">
+      <div class="card-header bg-white d-flex align-items-center gap-2">
+        <div class="btn-group btn-group-sm" role="tablist">
+          <button type="button" class="btn btn-outline-vhppurple" role="tab" data-view="page"{% if not selected.startswith(base) %} disabled title="Not a page of the platform"{% endif %}><i class="bi bi-window"></i> Page</button>
+          <button type="button" class="btn btn-outline-vhppurple" role="tab" data-view="data"><i class="bi bi-diagram-3"></i> Linked data</button>
+        </div>
+        <span class="small text-secondary text-truncate me-auto" id="preview-caption"></span>
+        <button type="button" class="btn btn-sm btn-vhppurple text-nowrap" id="update-preview" title="Show the changes typed in the form"><i class="bi bi-arrow-repeat"></i> Update view</button>
+        {% if record and selected.startswith(base) %}<a class="link-secondary" href="{{ selected|page_link }}" target="_blank" rel="noopener" title="Published page"><i class="bi bi-box-arrow-up-right"></i></a>{% endif %}
+        <button type="button" class="btn-close" id="hide-preview" aria-label="Hide the preview"></button>
+      </div>
+      <div class="editor-preview-body" id="page-view">
+        {% if kind == "casestudies" %}
+        <div id="case-study" data-component="{{ url_for('static', filename='js/case-study.js') }}">
+          <p class="text-secondary p-3 mb-0">{% if record %}Loading…{% else %}Shown here once the form is filled.{% endif %}</p>
+        </div>
+        {% else %}
+        <iframe class="page-frame" id="page-frame" title="The record's page"></iframe>
+        {% endif %}
+      </div>
+      <div class="editor-preview-body card-body d-none" id="rdf-view">
+          <div class="alert alert-danger small py-2 d-none"><div class="fw-semibold mb-1">Not ready to save</div><ul class="mb-0 ps-3" id="rdf-problems"></ul></div>
+          <div class="alert alert-warning small py-2 d-none"><div class="fw-semibold mb-1">Check before saving</div><ul class="mb-0 ps-3" id="rdf-warnings"></ul></div>
+          <div id="rdf-graph"></div>
+          <p class="small text-secondary mb-0 mt-3">
+            {% if record %}<a class="link-secondary" href="{{ url_for('records.read', path=selected.removeprefix(base)) }}" target="_blank" rel="noopener">(Click to see published data)</a>{% endif %}</p>
+      </div>
+    </aside>
+    {% endif %}
+  </div>
+</div>
+{% if kind == "casestudies" and selected and (not record or not record.removed_at) %}
+<link href="{{ url_for('static', filename='css/casestudies.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/case-study.css') }}" rel="stylesheet">
+{% endif %}
+<script type="application/json" id="editor">{{ {"graph": selected, "base": base, "version": record.updated_at if record else none, "token": form_token, "links": links, "mixed": mixed, "ordered": ordered, "long": long, "classes": classes, "caseStudy": kind == "casestudies", "draftVocabulary": draft_vocabulary}|tojson }}</script>
+<script src="https://cdn.jsdelivr.net/npm/jsonld@8.3.3/dist/jsonld.min.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@ulb-darmstadt/shacl-form@3.7.3/dist/bundle.js"></script>
+<script type="module" src="{{ url_for('static', filename='js/record-links.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/editor.js') }}"></script>
+{% endblock %}

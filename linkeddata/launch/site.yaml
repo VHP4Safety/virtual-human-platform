@@ -1,0 +1,15 @@
+name: site
+title: Website pages
+# Templates of the website pages, and the partner list. They are read once, at launch (linkeddata/launch/site.py).
+files:
+  home: https://raw.githubusercontent.com/VHP4Safety/virtual-human-platform/36575d738685a90303a78e7e315aac5235873669/templates/home.html
+  base: https://raw.githubusercontent.com/VHP4Safety/virtual-human-platform/36575d738685a90303a78e7e315aac5235873669/templates/base.html
+  explore_our_work: linkeddata/launch/site/explore_our_work.html
+  training: linkeddata/launch/site/training.html
+  impact: linkeddata/launch/site/impact.html
+  SafetyAssessmentWorkflow: https://raw.githubusercontent.com/VHP4Safety/virtual-human-platform/36575d738685a90303a78e7e315aac5235873669/templates/safety_assessment_workflow.html
+  terms_of_service: https://raw.githubusercontent.com/VHP4Safety/virtual-human-platform/36575d738685a90303a78e7e315aac5235873669/templates/legal/terms_of_service.html
+  privacypolicy: https://raw.githubusercontent.com/VHP4Safety/virtual-human-platform/36575d738685a90303a78e7e315aac5235873669/templates/legal/privacypolicy.html
+  casestudies: https://raw.githubusercontent.com/VHP4Safety/virtual-human-platform/36575d738685a90303a78e7e315aac5235873669/templates/case_studies/casestudies.html
+  partners: https://raw.githubusercontent.com/VHP4Safety/virtual-human-platform/36575d738685a90303a78e7e315aac5235873669/static/images/partners/partners.txt
+parser: site

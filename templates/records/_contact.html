@@ -1,0 +1,24 @@
+{# The contacts of a tool or a method. #}
+{% macro contact(ask, ask_label, people, organisations) %}
+<dl class="row mb-0">
+  {% if ask %}
+  <dt class="col-sm-4">Questions and issues</dt>
+  <dd class="col-sm-8"><a class="link-vhpblue" href="{{ ask }}" target="_blank" rel="noopener"><i class="bi bi-github"></i> {{ ask_label }}</a></dd>
+  {% endif %}
+  {% for role, found in organisations if found %}
+  <dt class="col-sm-4">{{ role }}</dt>
+  <dd class="col-sm-8">
+    {% for organization in found if organization is mapping %}
+    {% if organization.url %}<a class="link-vhpblue" href="{{ organization.url }}" target="_blank" rel="noopener">{{ organization.name }}</a>{% else %}{{ organization.name }}{% endif %}{% if not loop.last %}<br>{% endif %}
+    {% endfor %}
+  </dd>
+  {% endfor %}
+  {% if people %}
+  <dt class="col-sm-4">People</dt>
+  <dd class="col-sm-8">{% for person in people if person is mapping %}{{ person.name }}{% if not loop.last %}<br>{% endif %}{% endfor %}</dd>
+  {% endif %}
+</dl>
+{% if not ask and not people and not organisations|selectattr(1)|list %}
+<p class="text-secondary mb-0">No contact is given yet.</p>
+{% endif %}
+{% endmacro %}

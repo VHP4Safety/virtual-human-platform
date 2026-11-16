@@ -1,0 +1,4 @@
+name: zenodo
+title: Zenodo community vhp4safety
+url: https://zenodo.org/api/records?communities=vhp4safety&type=dataset&size=25&sort=newest
+parser: zenodo

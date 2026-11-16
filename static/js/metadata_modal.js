@@ -128,14 +128,14 @@
         // Get the markdown text
         const markdownText = await response.text();
 
-        // Check if marked.js is available
-        if (typeof marked === 'undefined') {
-          console.error('[MetadataModal] marked.js library not found');
+        // Check if marked.js and DOMPurify are available
+        if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') {
+          console.error('[MetadataModal] marked.js or DOMPurify not found');
           throw new Error('Markdown parser not available');
         }
 
-        // Parse markdown to HTML using marked.js
-        const htmlContent = marked.parse(markdownText);
+        // Parse markdown to HTML using marked.js; scripts and event handlers are removed
+        const htmlContent = DOMPurify.sanitize(marked.parse(markdownText));
 
         // Display rendered HTML
         this.elements.metadataContent.innerHTML = htmlContent;

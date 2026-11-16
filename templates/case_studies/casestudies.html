@@ -10,41 +10,19 @@
       </p>
     </div>
     <div class="row row-cols-1 row-cols-md-3 g-4 mt-3">
+      {% for case in case_studies %}
       <div class="col">
-        <a href="/casestudies/kidney" class="text-decoration-none">
+        <a href="{{ case.address|page_link }}" class="text-decoration-none">
           <div class="card h-100 text-center card-button card-button-vhppink-distinct border-2">
-            <img src="/static/images/image43_hexagon.svg" class="card-img-top p-4 mg-fluid" alt="Kidney case study" style="max-width: 120px; margin: 0 auto;" />
+            {% if case.icon %}<img src="{{ case.icon|page_link }}" class="card-img-top p-4 img-fluid" alt="{{ case.name }}" style="max-width: 120px; margin: 0 auto;" />{% endif %}
             <div class="card-body pt-0">
-              <h5 class="card-title">Kidney case study</h5>
-              <p class="card-text fw-normal">To study kidney disease and pharmacovigilance.</p>
+              <h5 class="card-title">{{ case.name }}</h5>
+              <p class="card-text fw-normal">{{ case.aim }}</p>
             </div>
           </div>
         </a>
       </div>
-
-      <div class="col">
-        <a href="/casestudies/parkinson" class="text-decoration-none">
-          <div class="card h-100 text-center card-button card-button-vhppink-distinct border-2">
-            <img src="/static/images/image45_hexagon.svg" class="card-img-top p-4 img-fluid" alt="Parkinson case study" style="max-width: 120px; margin: 0 auto;" />
-            <div class="card-body pt-0">
-              <h5 class="card-title">Parkinson case study</h5>
-              <p class="card-text fw-normal">To study life course pesticide exposure and neurodegenerative disease.</p>
-            </div>
-          </div>
-        </a>
-      </div>
-
-      <div class="col">
-        <a href="/casestudies/thyroid" class="text-decoration-none">
-          <div class="card h-100 text-center card-button card-button-vhppink-distinct border-2">
-            <img src="/static/images/image47_hexagon.svg" class="card-img-top p-4 mg-fluid" alt="Thyroid case study" style="max-width: 120px; margin: 0 auto;" />
-            <div class="card-body pt-0">
-              <h5 class="card-title">Thyroid case study</h5>
-              <p class="card-text fw-normal">To study health effects discriminated by age and sex on thyroid-mediated neurodevelopment.</p>
-            </div>
-          </div>
-        </a>
-      </div>
+      {% endfor %}
     </div>
   </section>
 {% endblock %}

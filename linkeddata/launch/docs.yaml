@@ -1,0 +1,10 @@
+name: docs
+title: VHP4Safety documentation, tutorials
+# The repository tree of the documentation at one commit. The tutorial sources and their latest changes are
+# listed by the parser, under these addresses (linkeddata/launch/docs.py).
+url: https://api.github.com/repos/VHP4Safety/vhp4safety-docs/git/trees/8b798e06a14ef0b71833bc5ec3d4af47544ec0c2?recursive=1
+documents:
+  source: https://raw.githubusercontent.com/VHP4Safety/vhp4safety-docs/8b798e06a14ef0b71833bc5ec3d4af47544ec0c2/
+  changes: https://api.github.com/repos/VHP4Safety/vhp4safety-docs/commits?sha=8b798e06a14ef0b71833bc5ec3d4af47544ec0c2&path=
+  repository: https://api.github.com/repos/VHP4Safety/vhp4safety-docs
+parser: docs

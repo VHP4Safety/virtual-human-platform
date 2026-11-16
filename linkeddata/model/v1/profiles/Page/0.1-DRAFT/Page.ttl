@@ -1,0 +1,241 @@
+# The shapes of the profile https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT.
+@prefix dash: <http://datashapes.org/dash#> .
+@prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
+@prefix profile: <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <https://schema.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+profile:AboutPage a sh:NodeShape ;
+    rdfs:label "About page" ;
+    sh:name "About page" ;
+    sh:node profile:WebPage ;
+    sh:property profile:AboutPage-mainEntity ;
+    sh:targetClass schema:AboutPage .
+
+form:shows a rdf:Property ;
+    rdfs:label "Shows" ;
+    schema:domainIncludes schema:WebPageElement ;
+    schema:rangeIncludes rdf:Property .
+
+profile:AboutPage-mainEntity a sh:PropertyShape ;
+    sh:class schema:Organization ;
+    sh:description "Its description, videos, figures, research lines, grants and partners are shown, and the publications of its grants." ;
+    sh:maxCount 1 ;
+    sh:name "About" ;
+    sh:order 6 ;
+    sh:path schema:mainEntity .
+
+profile:ImageObject a sh:NodeShape ;
+    rdfs:label "Figure" ;
+    sh:name "Figure" ;
+    sh:property profile:ImageObject-caption,
+        profile:ImageObject-contentUrl .
+
+profile:ImageObject-caption a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "Also read out in place of the image." ;
+    sh:maxCount 1 ;
+    sh:name "Caption" ;
+    sh:order 2 ;
+    sh:path schema:caption .
+
+profile:ImageObject-contentUrl a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:message "One image address needed." ;
+    sh:minCount 1 ;
+    sh:name "Image" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 1 ;
+    sh:path schema:contentUrl .
+
+profile:VideoObject a sh:NodeShape ;
+    rdfs:label "Video" ;
+    sh:name "Video" ;
+    sh:property profile:VideoObject-duration,
+        profile:VideoObject-embedUrl,
+        profile:VideoObject-name,
+        profile:VideoObject-thumbnailUrl .
+
+profile:VideoObject-duration a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "An ISO 8601 duration, such as PT5M38S." ;
+    sh:maxCount 1 ;
+    sh:name "Duration" ;
+    sh:order 4 ;
+    sh:path schema:duration ;
+    sh:pattern "^P" .
+
+profile:VideoObject-embedUrl a sh:PropertyShape ;
+    sh:description "The address of the player of the video, such as https://video.edu.nl/videos/embed/<id>." ;
+    sh:maxCount 1 ;
+    sh:message "The address of the player needed." ;
+    sh:minCount 1 ;
+    sh:name "Player" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 2 ;
+    sh:path schema:embedUrl .
+
+profile:VideoObject-name a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Title" ;
+    sh:order 1 ;
+    sh:path schema:name .
+
+profile:VideoObject-thumbnailUrl a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Thumbnail" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 3 ;
+    sh:path schema:thumbnailUrl .
+
+profile:WebPage a sh:NodeShape ;
+    rdfs:label "Page" ;
+    sh:name "Page" ;
+    sh:property profile:WebPage-about,
+        profile:WebPage-description,
+        profile:WebPage-hasPart,
+        profile:WebPage-name,
+        profile:WebPage-url ;
+    sh:targetClass schema:WebPage .
+
+profile:WebPage-about a sh:PropertyShape ;
+    sh:class schema:DefinedTerm ;
+    sh:description "A term with kinds that are explained on the page, such as Process Flow Step." ;
+    sh:name "Terms explained" ;
+    sh:order 4 ;
+    sh:path schema:about .
+
+profile:WebPage-description a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Description" ;
+    sh:order 2 ;
+    sh:path schema:description .
+
+profile:WebPage-hasPart a sh:PropertyShape ;
+    sh:class schema:WebPageElement ;
+    sh:description "Sections of a platform page, each with a heading, a text and a position. The sections of a section are its items." ;
+    sh:name "Sections" ;
+    sh:node profile:WebPageElement ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:order 5 ;
+    sh:path schema:hasPart .
+
+profile:WebPage-name a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Title" ;
+    sh:order 1 ;
+    sh:path schema:name .
+
+profile:WebPage-url a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Address elsewhere" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 3 ;
+    sh:path schema:url .
+
+profile:WebPageElement-about a sh:PropertyShape ;
+    sh:description "The record that is presented in the section, with the shown fields. Or, for a grant without shown fields, the records that name the grant, such as its publications." ;
+    sh:maxCount 1 ;
+    sh:name "Presents" ;
+    sh:or ( [ rdfs:label "Grant" ;
+                sh:class schema:MonetaryGrant ] [ rdfs:label "Organisation or project" ;
+                sh:class schema:Organization ] [ rdfs:label "Training material" ;
+                sh:class schema:LearningResource ] ) ;
+    sh:order 8 ;
+    sh:path schema:about .
+
+profile:WebPageElement-creativeWorkStatus a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "Empty: the section is shown. hidden: the section is kept in the data, but not shown on the page." ;
+    sh:in ( "hidden" ) ;
+    sh:maxCount 1 ;
+    sh:name "Status" ;
+    sh:order 6 ;
+    sh:path schema:creativeWorkStatus .
+
+profile:WebPageElement-hasPart a sh:PropertyShape ;
+    sh:class schema:WebPageElement ;
+    sh:description "Its own sections, shown as its items." ;
+    sh:name "Sections" ;
+    sh:node profile:WebPageElement ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:order 7 ;
+    sh:path schema:hasPart .
+
+profile:WebPageElement-image a sh:PropertyShape ;
+    sh:class schema:ImageObject ;
+    sh:description "Shown after the text." ;
+    sh:name "Figures" ;
+    sh:node profile:ImageObject ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:order 4 ;
+    sh:path schema:image .
+
+profile:WebPageElement-name a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Heading" ;
+    sh:order 1 ;
+    sh:path schema:name .
+
+profile:WebPageElement-position a sh:PropertyShape ;
+    sh:datatype xsd:integer ;
+    sh:maxCount 1 ;
+    sh:name "Position" ;
+    sh:order 3 ;
+    sh:path schema:position .
+
+profile:WebPageElement-shows a sh:PropertyShape ;
+    sh:description "The fields of the presented record that are shown in the section, such as its description or its research lines." ;
+    sh:in ( schema:description schema:text schema:image schema:video schema:subjectOf schema:subOrganization schema:member schema:funding schema:funder schema:amount schema:identifier ) ;
+    sh:message "Choose from the list. Other values are kept." ;
+    sh:name "Shows" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 10 ;
+    sh:path form:shows ;
+    sh:severity sh:Warning .
+
+profile:WebPageElement-text a sh:PropertyShape ;
+    dash:singleLine false ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Text" ;
+    sh:order 2 ;
+    sh:path schema:text .
+
+profile:WebPageElement-url a sh:PropertyShape ;
+    sh:description "Where the section is read, such as a section of a tutorial on the documentation site." ;
+    sh:maxCount 1 ;
+    sh:name "Address" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 9 ;
+    sh:path schema:url .
+
+profile:WebPageElement-video a sh:PropertyShape ;
+    sh:class schema:VideoObject ;
+    sh:name "Videos" ;
+    sh:node profile:VideoObject ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:order 5 ;
+    sh:path schema:video .
+
+profile:WebPageElement a sh:NodeShape ;
+    rdfs:label "Section" ;
+    sh:name "Section" ;
+    sh:property profile:WebPageElement-about,
+        profile:WebPageElement-creativeWorkStatus,
+        profile:WebPageElement-hasPart,
+        profile:WebPageElement-image,
+        profile:WebPageElement-name,
+        profile:WebPageElement-position,
+        profile:WebPageElement-shows,
+        profile:WebPageElement-text,
+        profile:WebPageElement-url,
+        profile:WebPageElement-video .
+

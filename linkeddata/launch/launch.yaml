@@ -1,0 +1,41 @@
+# Corrections made once by python -m linkeddata launch, after the import of every source.
+# Each correction is saved as a revision with its reason (why). Fields are named as in JSON-LD, and values as stored.
+# With "to", the record is moved to that address, and merged with the record there, if there is one. "as" is the
+# class of a new record at that address. Links to the old address are changed to the new address.
+corrections:
+  - record: casestudies/kidney
+    why: Datasets are moved from tools to data.
+    move:
+      - {field: tool, to: supply, as: HowToSupply, values: ["Clinical data", "Cell viability data"]}
+  - record: casestudies/parkinson
+    why: Datasets are moved from tools to data.
+    move:
+      - field: tool
+        to: supply
+        as: HowToSupply
+        values: ["Rotenone transcriptomic data (LUHMES cells)", "Epidemiological data", "Dietary exposure dataset for pesticides",
+                 "Environmental exposure dataset for pesticides", "Occupational exposure dataset for pesticides"]
+  - record: casestudies/thyroid
+    why: HTML characters are escaped, and a stray document end is removed.
+    replace:
+      - {field: text, from: "D2&3", to: "D2&amp;3"}
+      - {field: text, from: "(**p<0.01)", to: "(**p&lt;0.01)"}
+      - {field: text, from: "A BER < 1", to: "A BER &lt; 1"}
+      - {field: text, from: "***p<0.001, ****p<0.0001", to: "***p&lt;0.001, ****p&lt;0.0001"}
+      - {field: text, from: "</table></body></html>", to: "</table>"}
+  - record: people/the-copasi-project
+    why: The COPASI project is an organisation, and its email field holds its website.
+    to: organizations/the-copasi-project
+    as: Organization
+    move:
+      - {field: email, to: url, address: true, values: ["http://copasi.org/About/Team/"]}
+  - record: people/insilica-co
+    why: Insilica is an organisation.
+    to: organizations/insilica-co
+    as: Organization
+  - record: people/vhp4safety-support
+    why: The support contact of VHP4Safety is the record of the project.
+    to: organizations/vhp4safety
+  - record: organizations/vhp4safety-project
+    why: The VHP4Safety project has one record.
+    to: organizations/vhp4safety

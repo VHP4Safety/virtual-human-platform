@@ -1,0 +1,9 @@
+name: ror
+title: Research Organization Registry (ROR)
+# Organisations without a ROR identifier are looked up by name. Only a match chosen with confidence, with the asked
+# name among its names, is used (linkeddata/parsers/ror.py).
+enriches: organizations
+by: name
+identifier: https://ror.org/
+answer: https://api.ror.org/v2/organizations?affiliation={key}
+parser: ror

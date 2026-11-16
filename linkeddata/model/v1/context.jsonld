@@ -1,0 +1,35 @@
+{
+  "@context": {
+    "@vocab": "https://schema.org/",
+    "schema": "https://schema.org/",
+    "bioschemas_draft": "https://bioschemas.org/draft_terms/",
+    "bioschemas": "https://bioschemas.org/terms/",
+    "dct": "http://purl.org/dc/terms/",
+    "void": "http://rdfs.org/ns/void#",
+    "spdx": "http://spdx.org/rdf/terms#",
+    "pbpk": "https://platform.vhp4safety.nl/model/v1/pbpk#",
+    "form": "https://platform.vhp4safety.nl/model/v1/form#",
+    "Dataset": {
+      "@id": "schema:Dataset",
+      "@context": {
+        "creator": {
+          "@id": "schema:creator",
+          "@container": "@list"
+        }
+      }
+    },
+    "bioschemas_draft:LabProtocol": {
+      "@id": "bioschemas_draft:LabProtocol",
+      "@context": {
+        "hasPart": {
+          "@id": "schema:hasPart",
+          "@container": "@list"
+        },
+        "bioschemas_draft:reagent": {
+          "@id": "bioschemas_draft:reagent",
+          "@container": "@list"
+        }
+      }
+    }
+  }
+}

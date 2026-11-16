@@ -3,25 +3,7 @@
 <link rel="stylesheet" href="/static/css/tool.css" />
 <link rel="stylesheet" property="stylesheet" href="https://elixirtess.github.io/TeSS_widgets/css/tess-widget.css"/>
 <!-- Terminology Service Suite CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ts4nfdi/terminology-service-suite@gh-pages/js-modules/latest/terminology-service-suite.min.css"/>
-
-<!-- Bioschemas / schema.org annotation -->
-<script type="application/ld+json">
-  {
-    "@context": "https://schema.org/",
-    "@type": "SoftwareApplication",
-    "http://purl.org/dc/terms/conformsTo": {
-      "@type": "CreativeWork", "@id": "https://bioschemas.org/profiles/Study/0.3-DRAFT"
-    },
-    "@id" : "https://vhp4safety.github.io/cloud/service/{{ (method_details.id if method_details is defined else method_json.id) }}",
-    "description": "{{ (method_json.get('method_description_content') or method_json.get('description') or method_details.get('method_description_content') or method_details.get('description') or '') | e }}",
-    {% if (method_json.get('instance') and method_json.get('instance').get('url')) or (method_details.instance and method_details.instance.url) %}
-    "url": "{{ (method_json.get('instance', {}).get('url') or (method_details.instance.url if method_details.instance is defined else method_details.get('url', ''))) }}",
-    {% endif %}
-    "name": "{{ (method_json.get('method') or method_json.get('method_name_content') or method_details.get('method') or method_details.get('service') ) | e }}"
-  }
-</script>
-
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ts4nfdi/terminology-service-suite@3298f2d4c938b8a108ef8dd32b8baa6dfaeba33c/js-modules/latest/terminology-service-suite.min.css" integrity="sha384-CRw3xuZVsoeRqhmRBujMUtmHrdhRKj9esQLPz1mmaQOMSZyz4lVGvR5xTTbB6vfj" crossorigin="anonymous"/>
 
 <section class="container py-5">
     {# 
@@ -142,7 +124,7 @@
               <!-- Metadata / MD file -->
               {% set md = method_json.get('meta_data') or method_details.get('meta_data') or '' %}
               {% if md %}
-                <button type="button" class="btn btn-outline-vhpblue w-100" onclick="showMetadata('{{ md }}', '{{ title | e }}')">View metadata</button>
+                <button type="button" class="btn btn-outline-vhpblue w-100" onclick='showMetadata({{ (md or "") | tojson }}, {{ (title or "") | tojson }})'>View metadata</button>
               {% endif %}
             </div>
 
@@ -228,7 +210,7 @@
         <div id="bibliography">
           <p><a href="{{ doi_url }}" target="_blank" class="text-primary">{{ doi }}</a></p>
         </div>
-        <script src="https://cdn.jsdelivr.net/npm/citation-js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/citation-js@0.9.0" integrity="sha384-wop5NlY7ORa1+WSchJbyKhM2UGNF+nuCoelh0sH4SAaS31ho6ehlpFyULYk/Q9dC" crossorigin="anonymous"></script>
         <script>
         (function() {
           var Cite = require('citation-js');
@@ -330,7 +312,7 @@ function initTeSSWidgets() {
 <!-- Terminology Service Suite -->
 {% set ontology_iri_script = (method_json.get('ontology_term_content') or method_details.get('ontology_term_content') or '') %}
 {% if ontology_iri_script and ontology_iri_script.startswith('http') %}
-<script src="https://cdn.jsdelivr.net/gh/ts4nfdi/terminology-service-suite@gh-pages/js-modules/latest/terminology-service-suite.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/ts4nfdi/terminology-service-suite@3298f2d4c938b8a108ef8dd32b8baa6dfaeba33c/js-modules/latest/terminology-service-suite.min.js" integrity="sha384-y/NCSfOa5MId2pwU2uZSe53yVaT15IFlFEtMv8VA1SuJSSImNZGfL0PUy4Dblj3o" crossorigin="anonymous"></script>
 <script src="/static/js/ontology_widget.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -339,5 +321,6 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 {% endif %}
 
+{% include "records/_data_links.html" %}
 </section>
 {% endblock %}

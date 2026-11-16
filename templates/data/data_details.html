@@ -2,37 +2,9 @@
 {% block content %}
 
 <link rel="stylesheet" href="/static/css/data.css" />
-<script src="https://cdn.jsdelivr.net/npm/citation-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/citation-js@0.9.0" integrity="sha384-wop5NlY7ORa1+WSchJbyKhM2UGNF+nuCoelh0sH4SAaS31ho6ehlpFyULYk/Q9dC" crossorigin="anonymous"></script>
 
 {% with record = data.norm_metadata %}
-{# ---------------------------
-   Schema.org / Bioschemas JSON-LD
-   --------------------------- #}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org/",
-  "@type": "Dataset",
-  "http://purl.org/dc/terms/conformsTo": {
-    "@type": "CreativeWork", "@id": "https://bioschemas.org/profiles/Dataset/1.0-RELEASE"
-  },
-  "@id": {{ (record.doi_url or record.url) | tojson }},
-  "name": {{ (record.title or '') | tojson }},
-  "description": {{ (record.description or '') | tojson }},
-  "url": {{ (record.url or '') | tojson }}{% if record.doi %},
-  "identifier": {{ record.doi | tojson }}{% endif %}{% if record.license %},
-  "license": {{ record.license | tojson }}{% endif %}{% if record.authors and record.authors|length > 0 %},
-  "creator": [
-    {% for a in record.authors %}
-    {
-      "@type": "Person",
-      "name": {{ (a.name | default('')) | tojson }}{% if a.orcid %},
-      "identifier": {{ ('https://orcid.org/' ~ a.orcid) | tojson }}{% endif %}
-    }{% if not loop.last %},{% endif %}
-    {% endfor %}
-  ]{% endif %}
-}
-</script>
-
 {# ---------------------------
    Helper macros
    --------------------------- #}
@@ -64,7 +36,7 @@
   <div class="pb-2">
     <h1><span class="text-vhpblue">{{ val(record.title, 'Dataset') }}</span></h1>
     {% if record.description %}
-      <p class="text-secondary">{{ record.description | safe }}</p>
+      <p class="text-secondary">{{ record.description | sanitize_html }}</p>
     {% endif %}
   </div>
   
@@ -317,7 +289,7 @@
                           {% else %}
                             {{ val(f.name) }}
                           {% endif %}
-                          {% if f.size %} <span class="text-muted">({{ bytes_mb(f.size) }})</span>{% endif %}
+                          {% if f.size %} <span class="text-muted">({{ bytes_mb(f.size, f.size) }})</span>{% endif %}
                           {% if f.checksum %}<br><span class="d-lg-block d-none text-muted">{{ f.checksum }}</span>{% endif %}
                           </span>
                         </li>
@@ -1186,6 +1158,7 @@
 
 
 
+{% include "records/_data_links.html" %}
 </section>
 
 

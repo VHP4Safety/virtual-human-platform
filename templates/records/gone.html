@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
+  <h1><span class="text-vhpblue">{{ record.name or "Removed record" }}</span></h1>
+  <p class="text-secondary fs-5">Removed from the platform.</p>
+  <p>Its address, <code>{{ record.iri }}</code>, is not reused.</p>
+  <p><a class="btn btn-outline-vhpblue" href="{{ url_for('home') }}">Back to the platform</a></p>
+</section>
+{% endblock %}

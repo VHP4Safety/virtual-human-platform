@@ -132,6 +132,9 @@ python app.py
 ```
 
 The application will be available at [http://localhost:5050/](http://localhost:5050/).
+With `FLASK_DEBUG=1`, the Flask debugger and reloader are on, for development. Do not set it in production.
+For a deployment at another address, such as a test site, set `PLATFORM_BASE` to that address before the launch
+(see the settings in [linkeddata/README.md](linkeddata/README.md)).
 
 ### Deployment with Docker
 
@@ -139,10 +142,19 @@ Build and run the Docker container:
 
 ```
 docker build -t vhp4safety_ui .
-docker run -d -p 5000:5050 vhp4safety_ui
+docker run -d -p 5000:5050 -v vhp4safety_data:/data -e SECRET_KEY=<a long random text> vhp4safety_ui
+docker exec <container> python -m linkeddata launch
 ```
 
-The application will be available at [http://localhost:5000/](http://localhost:5000/).
+The application will be available at [http://localhost:5000/](http://localhost:5000/). The database is kept in the
+volume `/data`, and the launch makes the first records.
+
+With `-e PLATFORM_LAUNCH=1`, the container makes the launch itself at a start without a database, before it serves
+the platform, so the `docker exec` is not needed. The launch is made in `/data/state.launching`, which becomes
+`/data/state` only at its end: a launch that is stopped is made again at the next start, and a kept database is
+never launched again. Keep `/data` on a mount that outlives the container, such as a bind mount, so that a new image
+starts on the same database. `SECRET_KEY`, `ORCID_CLIENT_ID`, `ORCID_CLIENT_SECRET` and `GITHUB_TOKEN` can be given
+as Docker secrets of their names in lower case, such as `/run/secrets/secret_key`.
 
 ### Published images
 
@@ -153,7 +165,7 @@ without building it yourself:
 
 ```
 docker pull vhp4safety/virtual-human-platform:<version>
-docker run -d -p 5000:5050 vhp4safety/virtual-human-platform:<version>
+docker run -d -p 5000:5050 -v vhp4safety_data:/data -e SECRET_KEY=<a long random text> vhp4safety/virtual-human-platform:<version>
 ```
 
 The workflow is `.github/workflows/docker-publish.yml`. It needs the repository secrets
@@ -187,18 +199,6 @@ This web app uses a dynamic content loading approach for both the tool and case 
   - The JavaScript reads these files and populates the HTML elements, enabling a single template to serve multiple tools or case studies.
 
 This technique allows for easy expansion and maintenance: new tools or case studies can be added simply by creating new JSON files, without modifying the HTML or Python backend.
-
-### Caching
-
-Index data fetched from the cloud repositories (tools, methods, data) is cached server-side for 5 days using Flask-Caching (`SimpleCache`, in-memory per worker process — also wiped on every restart). Most page loads therefore do not hit the source repositories.
-
-You can force fresh data at any time by appending the `reset_cache` query parameter to any URL:
-
-```
-http://localhost:5050/tools?reset_cache
-```
-
-This clears the entire server-side cache; the current request and every subsequent one repopulate it with fresh data. No token or env var is required — the trigger is intentionally unprotected. Worst case, a stranger forces the cache to repopulate from the upstream indexes (low impact, slightly slower next requests).
 
 ## Contributing
 

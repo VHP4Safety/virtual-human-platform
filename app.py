@@ -3,80 +3,52 @@
 import json
 import os
 import re
+import secrets
+from datetime import datetime, timedelta, timezone
 
+import nh3
 import requests
 import urllib.parse
-from flask import Flask, abort, jsonify, render_template, request, Response
-from flask_caching import Cache
+from flask import Flask, abort, g, jsonify, redirect, render_template, request, Response, send_from_directory, url_for
 from jinja2 import TemplateNotFound
+from markupsafe import Markup
+from rdflib import URIRef
+from rdflib.namespace import SDO
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BaseConverter
 
-# from wikidataintegrator import wdi_core
-from wikibaseintegrator import wbi_helpers
-
-# Import BioStudies extractor
-from data.biostudies.search import BioStudiesExtractor
-from data.zenodo.search import ZenodoExtractor
-from data.mapping import normalize_all, scrub_draft
+from admin.writes import slug
+from database import records
+from database.images import NAME, folder
+from database.tables import Record
+from linkeddata import crates, documents, pages, void
+from linkeddata.profile import PROFILES, hierarchy, settings
+from routes import records_api
+from routes.account import blueprint as account_blueprint
+from routes.changes import blueprint as changes_blueprint
+from routes.editor import blueprint as admin_blueprint
 
 ################################################################################
-CACHE_TIMEOUT = 60 * 60 * 24 * 5  # 5 days
-### Configuration for BioStudies Integration
-# Change these variables to switch between collections
-BIOSTUDIES_COLLECTION = "VHP4Safety"  # Replace with "EU-ToxRisk" to test
 BIOSTUDIES_COLLECTION_NAME = "VHP4Safety"  # Display name for the page
-ZENODO_COMMUNITY = "vhp4safety"  # zenodo community
-ZENODO_RECORD_TYPE = "dataset"  # only show datasets
-ZENODO_RECORD_TYPE_MODEL = "model"  # only show datasets
-
-# Non-glossary "stage" labels. The five Process Flow Step stages are resolved
-# from the VHP glossary at runtime (see get_process_flow_steps); these legacy
-# labels stay hardcoded because the data/models pages still reference them by
-# literal key and their data sources have not migrated to the glossary URIs.
-STAGE_EXPLANATIONS_LEGACY = {
-    "Other": "Other or unknown category.",
-    "ADME": "Absorption, distribution, metabolism, and excretion of a substance (toxic or not) in a living organism, following exposure to this substance.",
-    "Hazard Assessment": "The process of assessing the intrinsic hazard a substance poses to human health and/or the environment",
-    "Chemical Information": "Information about chemical properties and identity.",
-    "General": "Not specific to a flow step.",
-    "(External) exposure": "External exposure assessment.",
-    "Generic": "Generic category.",
-}
-
-# Legacy glossary-URI -> stage-label mappings, superseded by the Process Flow
-# Step URIs that get_process_flow_steps() resolves from the glossary.
-STAGE_MAPPING_LEGACY = {
-    "https://vhp4safety.github.io/glossary#VHP0000056": "ADME",
-    "https://vhp4safety.github.io/glossary#VHP0000102": "Hazard Assessment",
-    "https://vhp4safety.github.io/glossary#VHP0000148": "Chemical Information",
-    "https://vhp4safety.github.io/glossary#VHP0000149": "General",
-}
-METHODS_URL = "https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/methods_index.json"
-# TOOLS and SERVICES are synonymous
-SERVICES_URL = "https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/cap/service_index.json"
-GLOSSARY_URL = (
-    "https://raw.githubusercontent.com/VHP4Safety/glossary/refs/heads/main/glossary.owl"
-)
-CASESTUDIES_URL = (
-    "https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/"
-    "refs/heads/main/ro-crate-metadata.json"
-)
+MAX_PAGE_SIZE = 48
 
 # SEO defaults. Every page renders a <title>/<meta description> (see base.html);
 # routes override page_title / meta_description with page-specific values, and
 # inject_seo_defaults() falls back to these for anything that does not.
 DEFAULT_PAGE_TITLE = "VHP4Safety — Virtual Human Platform for safety assessment"
-DEFAULT_META_DESCRIPTION = (
-    "The Virtual Human Platform (VHP4Safety) brings together tools, methods, "
-    "data and case studies for animal-free, human-based safety assessment of "
-    "chemicals and pharmaceuticals."
-)
 
 
 def clip(text, limit=160):
     """Trim a description to a search-snippet-friendly length (~160 chars)."""
     text = " ".join((text or "").split())
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
+
+
+def page_args(default_size: int) -> tuple[int, int]:
+    """Read ?page and ?page_size from the request, kept within sensible bounds."""
+    page = max(request.args.get("page", 1, type=int), 1)
+    page_size = request.args.get("page_size", default_size, type=int)
+    return page, min(max(page_size, 1), MAX_PAGE_SIZE)
 
 ################################################################################
 class RegexConverter(BaseConverter):
@@ -95,591 +67,87 @@ class RegexConverter(BaseConverter):
         self.regex = items[0]
 
 
-cache_config = {
-    "CACHE_TYPE": "SimpleCache",  # Flask-Caching related configs
-    "CACHE_DEFAULT_TIMEOUT": CACHE_TIMEOUT,  # 60 min chaching
-}
 app = Flask(__name__)
-app.config.from_mapping(cache_config)
+# The client address, scheme and host are taken from the reverse proxy, for the rate limits and the ORCID login.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+if not os.environ.get("SECRET_KEY"):
+    app.logger.warning("SECRET_KEY is not set: logins end on restart, and fail with several workers.")
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLASK_DEBUG") != "1"
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=12)
+# With the __Host- prefix, the cookie is sent only to this host. The prefix is accepted only on a secure cookie.
+if app.config["SESSION_COOKIE_SECURE"]:
+    app.config["SESSION_COOKIE_NAME"] = "__Host-session"
+app.register_blueprint(account_blueprint)
+app.register_blueprint(admin_blueprint)
+records_api.limiter.init_app(app)
+records_api.register(app)
+app.register_blueprint(changes_blueprint)
 # Google Search Console verification token (rendered as a <meta> tag in
 # base.html when set). Kept out of the repo -- set it in the service env.
 app.config["GOOGLE_SITE_VERIFICATION"] = os.environ.get("GOOGLE_SITE_VERIFICATION", "")
-cache = Cache(app)
+# The class hierarchy of the vocabularies is read once, at start, not at the first request.
+hierarchy()
 
 
-@app.before_request
-def handle_cache_reset():
-    """Clear the entire server-side cache when ?reset_cache is in the URL.
-
-    Unprotected by design: a stranger forcing a refetch is low-impact (just
-    repopulates the cache from the upstream indexes), and keeping it open
-    removes a config knob (no CACHE_RESET_TOKEN env var needed).
-    """
-    if "reset_cache" in request.args:
-        cache.clear()
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Content-Security-Policy", "object-src 'none'; base-uri 'self'")
+    return response
 
 
-@cache.memoize(timeout=CACHE_TIMEOUT)
-def _get_json_dict_cached(url: str, timeout: int = 5) -> dict:
-    """Fetch xxxx_index.json from the cloud repo and return as a dictionary."""
-    resp = requests.get(url, timeout=timeout)
-    if resp.status_code != 200:
-        raise ValueError(f"Unexpected status code {resp.status_code} for {url}")
-    data = resp.json()
-    if not isinstance(data, dict):
-        raise ValueError(f"Unexpected JSON type for {url}")
-    return data
+def local_link(tag: str, attribute: str, value: str) -> str:
+    """Return the address of a link or an image in a text as a path on this server."""
+    return page_link(value) if attribute in ("href", "src") else value
 
 
-def get_json_dict(url: str, timeout: int = 5) -> dict:
-    """Fetch xxxx_index.json from the cloud repo and return as a dictionary.
-    Return an empty dict on any error to avoid breaking pages that depend on it.
-    """
-    try:
-        return _get_json_dict_cached(url, timeout=timeout)
-    except Exception:
-        return {}
-
-
-@cache.memoize(timeout=CACHE_TIMEOUT)
-def _get_service_detail_cached(tool_id: str, timeout: int = 5) -> dict:
-    """Fetch a tool/service detail JSON from the cloud repo."""
-    detail_url = f"https://cloud.vhp4safety.nl/service/{tool_id}.json"
-    return _get_json_dict_cached(detail_url, timeout=timeout)
-
-
-def get_service_detail(tool_id: str, timeout: int = 5) -> dict:
-    """Fetch service detail and return an empty dict on any error."""
-    if not tool_id:
-        return {}
-    if not re.match(r"^[A-Za-z0-9._-]+$", tool_id):
-        return {}
-    try:
-        return _get_service_detail_cached(tool_id, timeout=timeout)
-    except Exception:
-        return {}
-
-
-# --- Case studies & regulatory questions -----------------------------------
-# (case slug, question index) -> reg_q_Xy upstream field name. This is the
-# only remaining hardcoded artifact: the keys must match upstream tool/method
-# index field names (used to filter records) and the casestudy config files
-# do not currently record them. If a field like `upstreamField` were added to
-# each question in <case>_content.json's step1Contents.questions[], this map
-# could be derived from the config too.
-_REG_QUESTION_KEYS = {
-    ("kidney", 0): "reg_q_1a",
-    ("kidney", 1): "reg_q_1b",
-    ("parkinson", 0): "reg_q_2a",
-    ("parkinson", 1): "reg_q_2b",
-    ("thyroid", 0): "reg_q_3a",
-    ("thyroid", 1): "reg_q_3b",
-}
-
-
-@cache.memoize(timeout=CACHE_TIMEOUT)
-def _get_casestudies_cached() -> dict:
-    """Fetch + parse case studies. Raises on failure so the cache does not
-    store an empty/poisoned result (a transient HTTP/SSL hiccup must not stick
-    around for CACHE_TIMEOUT). Public wrapper get_casestudies() catches.
-    """
-    resp = requests.get(CASESTUDIES_URL, timeout=5)
-    resp.raise_for_status()
-    data = resp.json()
-
-    studies = {}
-    for entry in data.get("@graph", []):
-        types = entry.get("@type", [])
-        if isinstance(types, str):
-            types = [types]
-        if "File" not in types:
-            continue
-        if entry.get("encodingFormat") != "application/json":
-            continue
-        slug = entry.get("identifier")
-        if not slug:
-            continue
-        studies[slug] = {
-            "name": entry.get("name", ""),
-            "description": entry.get("description", ""),
-            "content_url": entry.get("contentUrl", ""),
-        }
-    if not studies:
-        raise ValueError("no case studies found in RO-Crate @graph")
-    return studies
-
-
-def get_casestudies() -> dict:
-    """Return case studies from VHP4Safety/ui-casestudy-config's RO-Crate.
-
-    The upstream metadata is an RO-Crate (`ro-crate-metadata.json`) whose
-    `@graph` lists every file in the repo. Case studies are the JSON `File`
-    entities with an `identifier` (the slug) and a `contentUrl` to the
-    per-case content JSON.
-
-    Returns {slug: {"name", "description", "content_url"}}. Iteration yields
-    slugs, so callers that just need the slug list can do `for c in
-    get_casestudies()`. Returns an empty dict on any error so callers degrade
-    safely; failures are NOT cached so the next request retries.
-    """
-    try:
-        return _get_casestudies_cached()
-    except Exception:
-        return {}
-
-
-@cache.memoize(timeout=CACHE_TIMEOUT)
-def _get_casestudy_content_cached(url: str) -> dict:
-    """Fetch the per-case content JSON. Raises on failure so the cache does
-    not store an empty/poisoned result. Public wrapper get_casestudy_content()
-    catches.
-    """
-    resp = requests.get(url, timeout=5)
-    resp.raise_for_status()
-    data = resp.json()
-    if not data:
-        raise ValueError(f"empty case-study content at {url}")
-    return data
-
-
-def get_casestudy_content(slug: str) -> dict:
-    """Fetch the per-case `<slug>_content.json` from the config repo.
-
-    Returns an empty dict on any error so callers degrade safely; failures
-    are NOT cached so the next request retries. The url-not-found case skips
-    the fetch entirely (returning {} without going through the cache).
-    """
-    url = get_casestudies().get(slug, {}).get("content_url")
-    if not url:
-        return {}
-    try:
-        return _get_casestudy_content_cached(url)
-    except Exception:
-        return {}
-
-
-def get_reg_questions() -> dict:
-    """Build {reg_q_Xy: {"label", "explanation"}} from per-case content JSONs.
-
-    Keys come from _REG_QUESTION_KEYS (upstream field names). Labels and
-    explanations come from each case's step1Contents.questions[] entries in
-    the remote casestudy config (label and description fields respectively).
-    """
-    result = {}
-    for slug in get_casestudies():
-        content = get_casestudy_content(slug)
-        questions = (content.get("step1Contents") or {}).get("questions") or []
-        for i, q in enumerate(questions[:2]):
-            key = _REG_QUESTION_KEYS.get((slug, i))
-            if not key:
-                continue
-            value = q.get("value") or f"Q{i + 1}"
-            steps = ((content.get("step2Contents") or {}).get(value) or {}).get("steps") or []
-            result[key] = {
-                "label": q.get("label") or f"{slug.title()} Q{i + 1}",
-                "explanation": q.get("description", ""),
-                "case": slug,
-                # the case-study page keys questions by value ("Q2"), not label
-                "url": f"/casestudies/{slug}/{value}",
-                # process-flow steps (lowercased) whose button is enabled there;
-                # data-tab pills for any other step link to the glossary term
-                "enabled_steps": [
-                    (s.get("value") or "").lower()
-                    for s in steps
-                    if s.get("state") != "disabled"
-                ],
-            }
-    return result
-
-
-def get_reg_question_explanations() -> dict:
-    """{label: explanation} for templates that look up by hardcoded label."""
-    return {v["label"]: v["explanation"] for v in get_reg_questions().values()}
-
-
-# Suffix the VHP glossary uses to mark an owl:Class as a Process Flow Step stage.
-_PROCESS_FLOW_STEP_SUFFIX = " (Process Flow Step)"
-# Matches a Turtle quoted literal, tolerating backslash escapes.
-_TTL_QUOTED = r'"((?:[^"\\]|\\.)*)"'
-
-
-@cache.memoize(timeout=CACHE_TIMEOUT)
-def _get_process_flow_steps_cached() -> dict:
-    """Fetch + parse Process Flow Steps from the glossary. Raises on failure
-    so the cache does not store an empty/poisoned result (the raw.github CDN
-    intermittently resets the connection; we must not keep that empty result
-    around for CACHE_TIMEOUT). Public wrapper get_process_flow_steps() catches.
-    """
-    resp = requests.get(GLOSSARY_URL, timeout=5)
-    resp.raise_for_status()
-    # Normalise line endings so the block split works regardless of CRLF / LF
-    ttl = resp.text.replace("\r\n", "\n")
-
-    steps = {}
-    # The glossary is Turtle with one blank-line-separated block per subject.
-    for block in ttl.split("\n\n"):
-        m_subj = re.match(r"\s*<([^>]+)>", block)
-        m_label = re.search(r"rdfs:label\s+" + _TTL_QUOTED, block)
-        if not (m_subj and m_label):
-            continue
-        label = m_label.group(1)
-        if not label.endswith(_PROCESS_FLOW_STEP_SUFFIX):
-            continue
-        m_desc = re.search(r"dc:description\s+" + _TTL_QUOTED, block)
-        clean_label = label[: -len(_PROCESS_FLOW_STEP_SUFFIX)].strip()
-        steps[m_subj.group(1)] = {
-            "label": clean_label,
-            # URL/id-safe anchor slug, computed once here so the templates that
-            # link to it (home.html) and define it (the accordion) can't drift.
-            "slug": clean_label.lower().replace(" ", "-"),
-            "description": (m_desc.group(1) if m_desc else "").strip(),
-        }
-    # sort by id
-    sort_ids = [
-        "https://vhp4safety.github.io/glossary#VHP0000153",
-        "https://vhp4safety.github.io/glossary#VHP0000154",
-        "https://vhp4safety.github.io/glossary#VHP0000155",
-        "https://vhp4safety.github.io/glossary#VHP0000156",
-        "https://vhp4safety.github.io/glossary#VHP0000158",
-    ]
-    steps = dict(
-        sorted(
-            steps.items(),
-            key=lambda item: (
-                sort_ids.index(item[0]) if item[0] in sort_ids else len(sort_ids)
-            ),
-        )
-    )
-    if not steps:
-        raise ValueError("no Process Flow Step entries found in glossary")
-    return steps
+@app.template_filter("sanitize_html")
+def sanitize_html(value) -> Markup:
+    """Keep the formatting tags of upstream HTML; scripts and event handlers are removed."""
+    return Markup(nh3.clean(str(value or ""), attribute_filter=local_link))
 
 
 def get_process_flow_steps() -> dict:
-    """Return {glossary_uri: {"label", "slug", "description"}} for every
-    owl:Class whose rdfs:label ends with " (Process Flow Step)". Returns an
-    empty dict on any error so callers degrade safely; failures are NOT cached
-    so the next request retries.
-    """
-    try:
-        return _get_process_flow_steps_cached()
-    except Exception:
+    """Return the process flow steps of the glossary by address, with label, slug and description."""
+    return pages.steps()
+
+
+def get_service_detail(tool_id: str) -> dict:
+    """Return the details of the tool tool_id from its record, or an empty dict."""
+    record = records.get(records.address(f"tools/{tool_id}"))
+    if record is None or record.part_of is not None:
         return {}
+    return pages.tool_details(record)
 
 
-def get_stage_explanations() -> dict:
-    """Stage label -> explanation: the glossary Process Flow Steps merged with
-    the non-glossary legacy labels still used by the data/models pages.
-    """
-    glossary = {
-        step["label"]: step["description"] for step in get_process_flow_steps().values()
-    }
-    return {**glossary, **STAGE_EXPLANATIONS_LEGACY}
-
-
-def get_stage_mapping() -> dict:
-    """Glossary URI -> stage label: the Process Flow Step URIs resolved from the
-    glossary merged with the legacy URI mappings.
-    """
-    glossary = {uri: step["label"] for uri, step in get_process_flow_steps().items()}
-    return {**glossary, **STAGE_MAPPING_LEGACY}
-
-
-# --- Partner logos ----------------------------------------------------------
-PARTNERS_DIR = os.path.join(app.static_folder, "images", "partners")
-PARTNERS_FILE = os.path.join(PARTNERS_DIR, "partners.txt")
-_PARTNER_IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".svg", ".gif", ".webp")
-
-
-def get_partner_logos() -> list:
-    """Return partner logos from static/images/partners/.
-
-    Each item is a dict {"file": ..., "name": ..., "url": ...}. Order, names
-    and links come from partners.txt, whose entries are
-    "filename | Organization name | https://link" (name and link optional);
-    blank lines and '#' comments are ignored. Only files explicitly listed in
-    partners.txt are returned — images present in the directory but not
-    registered (or commented out) are not displayed.
-    """
-    try:
-        images = {
-            f
-            for f in os.listdir(PARTNERS_DIR)
-            if f.lower().endswith(_PARTNER_IMAGE_EXTS)
-        }
-    except OSError:
-        return []
-
-    logos = []
-    used = set()
-    try:
-        with open(PARTNERS_FILE, encoding="utf-8") as fh:
-            for line in fh:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                parts = [p.strip() for p in line.split("|")]
-                fname = parts[0]
-                if fname in images and fname not in used:
-                    used.add(fname)
-                    logos.append(
-                        {
-                            "file": fname,
-                            "name": (
-                                parts[1]
-                                if len(parts) > 1 and parts[1]
-                                else os.path.splitext(fname)[0]
-                            ),
-                            "url": parts[2] if len(parts) > 2 else "",
-                        }
-                    )
-    except OSError:
-        pass
-
-    return logos
-
-
-class _RepositoryFetchAllFailed(Exception):
-    """Both extractors returned error-shaped dicts. Carries the original
-    tuple so the public wrapper can return it without re-fetching."""
-
-
-@cache.memoize(timeout=CACHE_TIMEOUT)
-def _get_repository_data_cached(
-    search_query: str,
-    page: int = 1,
-    page_size: int = 18,
-    filters: list | None = None,
-    load_metadata: bool = True,
-) -> tuple[dict, dict]:
-    """Fetch from BioStudies + Zenodo. The extractors swallow network failures
-    and return {"error": "..."} dicts rather than raising, so we check the
-    result here and raise if BOTH halves errored -- otherwise cache.memoize
-    would store the dual-error tuple for CACHE_TIMEOUT and every subsequent
-    request would see the same stale failure. Partial success is cacheable
-    (the errored half stays until the timeout, but the working half remains
-    usable).
-    """
-    bs_extractor = BioStudiesExtractor(collection=BIOSTUDIES_COLLECTION)
-    if search_query:
-        bs_results = bs_extractor.search_studies(
-            search_query,
-            page=page,
-            page_size=page_size,
-            filters=filters,
-            load_metadata=load_metadata,
-        )
-    else:
-        bs_results = bs_extractor.list_studies(
-            page=page,
-            page_size=page_size,
-            include_urls=True,
-            filters=filters,
-            load_metadata=load_metadata,
-        )
-
-    zen_extractor = ZenodoExtractor(
-        community=ZENODO_COMMUNITY, record_type=ZENODO_RECORD_TYPE
-    )
-    if not filters:
-        # We currently do no filter Zenodo datasets.
-        if search_query:
-            zen_result = zen_extractor.search_records(
-                search_query, page=page, size=page_size, load_metadata=load_metadata
-            )
-        else:
-            # load metadata needed for is_rocrate filtering in template
-            zen_result = zen_extractor.list_records(
-                page=page,
-                size=page_size,
-                include_urls=True,
-                load_metadata=load_metadata,
-            )
-    else:
-        zen_result = {"hits": [], "total": 0, "error": None}
-
-    # Both extractors errored -> bypass the cache by raising. The wrapper
-    # catches and returns the same tuple to the caller (contract preserved),
-    # but the next request will retry instead of getting the cached failure.
-    if bs_results.get("error") and zen_result.get("error"):
-        raise _RepositoryFetchAllFailed((bs_results, zen_result))
-
-    return bs_results, zen_result
-
-
-def get_repository_data(
-    search_query: str,
-    page: int = 1,
-    page_size: int = 18,
-    filters: list | None = None,
-    load_metadata: bool = True,
-) -> tuple[dict, dict]:
-    """Return (bs_results, zen_result) from the two repositories.
-
-    Each half is the extractor's raw response: a {"hits", "total"} dict on
-    success or a {"error": "..."} dict on failure. A dual-failure result is
-    NOT cached so the next request retries; partial success is cached as-is.
-    """
-    try:
-        return _get_repository_data_cached(
-            search_query,
-            page=page,
-            page_size=page_size,
-            filters=filters,
-            load_metadata=load_metadata,
-        )
-    except _RepositoryFetchAllFailed as exc:
-        return exc.args[0]
-
-
-@cache.memoize(timeout=CACHE_TIMEOUT)
-def _get_repository_model_cached(
-    search_query: str,
-    page: int = 1,
-    page_size: int = 18,
-    filters: list | None = None,
-    load_metadata: bool = True,
-) -> tuple[dict, dict]:
-    """Fetch from Zenodo. The extractors swallow network failures
-    and return {"error": "..."} dicts rather than raising, so we check the
-    result here and raise if BOTH halves errored -- otherwise cache.memoize
-    would store the dual-error tuple for CACHE_TIMEOUT and every subsequent
-    request would see the same stale failure. Partial success is cacheable
-    (the errored half stays until the timeout, but the working half remains
-    usable).
-    """
-    zen_extractor = ZenodoExtractor(
-        community=ZENODO_COMMUNITY, record_type=ZENODO_RECORD_TYPE_MODEL
-    )
-    if not filters:
-        # We currently do no filter Zenodo datasets.
-        if search_query:
-            zen_result = zen_extractor.search_records(
-                search_query, page=page, size=page_size, load_metadata=load_metadata
-            )
-        else:
-            # load metadata needed for is_rocrate filtering in template
-            zen_result = zen_extractor.list_records(
-                page=page,
-                size=page_size,
-                include_urls=True,
-                load_metadata=load_metadata,
-            )
-    else:
-        zen_result = {"hits": [], "total": 0, "error": None}
-
-    # Both extractors errored -> bypass the cache by raising. The wrapper
-    # catches and returns the same tuple to the caller (contract preserved),
-    # but the next request will retry instead of getting the cached failure.
-    if zen_result.get("error"):
-        raise _RepositoryFetchAllFailed((bs_results, zen_result))
-
-    return zen_result
-
-
-def get_repository_model(
-    search_query: str,
-    page: int = 1,
-    page_size: int = 18,
-    filters: list | None = None,
-    load_metadata: bool = True,
-) -> tuple[dict, dict]:
-    """Return (bs_results, zen_result) from the two repositories.
-
-    Each half is the extractor's raw response: a {"hits", "total"} dict on
-    success or a {"error": "..."} dict on failure. A dual-failure result is
-    NOT cached so the next request retries; partial success is cached as-is.
-    """
-    try:
-        return _get_repository_model_cached(
-            search_query,
-            page=page,
-            page_size=page_size,
-            filters=filters,
-            load_metadata=load_metadata,
-        )
-    except _RepositoryFetchAllFailed as exc:
-        return exc.args[0]
+def page_record(path: str) -> dict:
+    """Return the content of the page record at path, or abort with 404."""
+    record = records.get(records.address(path))
+    if record is None:
+        abort(404)
+    return pages.page(record)
 
 
 # Provide methods list to all templates for the Methods dropdown in the navbar
 @app.context_processor
 def inject_methods_menu():
-    """Fetch methods_index.json and expose a simple list of {id, title} to templates.
-    Return an empty list on any error to avoid breaking pages.
-    """
-    data = get_json_dict(METHODS_URL)
-    if data:
-        items = []
-        for key, val in data.items() if isinstance(data, dict) else []:
-            title = (
-                val.get("method")
-                or val.get("method_name_content")
-                or val.get("method_name")
-                or key
-            )
-            items.append({"id": key, "title": title})
-        # sort by title
-        items = sorted(items, key=lambda x: x["title"].lower())
-        return {"methods_menu": items}
-    else:
-        return {"methods_menu": []}
+    """Return the methods for the navigation menu and the search bar."""
+    return {"methods_menu": pages.menu("methods")}
 
 
 @app.context_processor
 def inject_tools_menu():
-    """Fetch methods_index.json and expose a simple list of {id, title} to templates.
-    Return an empty list on any error to avoid breaking pages.
-    """
-    data = get_json_dict(SERVICES_URL)
-    if data:
-        items = []
-        for key, val in data.items() if isinstance(data, dict) else []:
-            title = val.get("service") or key
-            items.append({"id": key, "title": title})
-        # sort by title
-        items = sorted(items, key=lambda x: x["title"].lower())
-        return {"tools_menu": items}
-    else:
-        return {"tools_menu": []}
-
-
-def data_hit_id(hit: dict) -> str:
-    """Return the identifier to use in a /data/<id> URL for a repository hit.
-
-    BioStudies hits resolve to their accession; Zenodo hits to their numeric
-    recid. doi_url is intentionally never used -- it contains slashes the
-    /data/<dataid> route's string converter cannot match.
-    """
-    return (
-        hit.get("accession")
-        or hit.get("accno")
-        or hit.get("id")
-        or hit.get("recid")
-        or ""
-    )
+    """Return the tools for the navigation menu and the search bar."""
+    return {"tools_menu": pages.menu("tools")}
 
 
 @app.context_processor
 def inject_data_menu():
-    """Fetch methods_index.json and expose a simple list of {id, title} to templates.
-    Return an empty list on any error to avoid breaking pages.
-    """
-    bs_results, zen_results = get_repository_data(search_query="")
-    hits: list = bs_results.get("hits", [])
-    hits.extend(zen_results.get("hits", []))
-    if hits:
-        items = []
-        for hit in hits:
-            title = hit.get("title")
-            id = hit.get("accession", "") or hit.get("doi_url", "") or hit.get("id", "")
-            url = hit.get("url", "") or hit.get("doi_url")
-            items.append({"id": id, "title": title, "url": url})
-        # sort by title
-        items = sorted(items, key=lambda x: x["title"].lower())
-        return {"data_menu": items}
-    else:
-        return {"data_menu": []}
+    """Return the datasets for the navigation menu and the search bar."""
+    return {"data_menu": pages.menu("data")}
 
 
 @app.context_processor
@@ -688,12 +156,13 @@ def inject_seo_defaults():
 
     Routes override page_title / meta_description via render_template kwargs
     (explicit context wins over context processors). canonical_url defaults to
-    the current URL without its query string (request.base_url).
+    the address of the record of the page, else the page path under the
+    platform address.
     """
     return {
         "page_title": DEFAULT_PAGE_TITLE,
-        "meta_description": DEFAULT_META_DESCRIPTION,
-        "canonical_url": request.base_url,
+        "meta_description": void.platform()["abstract"],
+        "canonical_url": g.record.iri if "record" in g else records.address(request.path.strip("/")),
     }
 
 
@@ -701,120 +170,55 @@ def inject_seo_defaults():
 ### The landing page
 @app.route("/")
 def home():
-    try:
-        tools = get_json_dict(
-            SERVICES_URL
-        )  # Geting the service_list.json in the dictionary format.
-        tools = list(tools.values())  # Converting the dictionary to a list object.
-    except Exception as e:
-        return f"Error processing service data: {e}", 500
-    num_tools = len(tools)
-    num_case_studies = len(get_casestudies())
-    try:
-        methods = get_json_dict(METHODS_URL)
-        num_methods = len(methods) if isinstance(methods, dict) else 0
-    except Exception:
-        num_methods = 0
-    bs_res, zen_res = get_repository_data(search_query="")
-    num_datasets = bs_res.get("total", 0) + zen_res.get("total", 0)
+    record = records.get(settings()["base"])
+    if record is None:
+        abort(404)
+    platform = pages.catalogue_of(record)
+    workflow = records.get(records.address("safety_assessment_workflow"))
     return render_template(
         "home.html",
-        num_tools=num_tools,
-        num_case_studies=num_case_studies,
-        num_methods=num_methods,
-        num_datasets=num_datasets,
+        platform=platform,
+        workflow=pages.page(workflow) if workflow is not None else None,
         process_flow_steps=get_process_flow_steps(),
-        partner_logos=get_partner_logos(),
         page_title=DEFAULT_PAGE_TITLE,
-        meta_description=DEFAULT_META_DESCRIPTION,
-    )
-
-
-def data_hit_id(hit: dict) -> str:
-    """Return the identifier to use in a /data/<id> URL for a repository hit.
-
-    BioStudies hits resolve to their accession; Zenodo hits to their numeric
-    recid. doi_url is intentionally never used -- it contains slashes the
-    /data/<dataid> route's string converter cannot match.
-    """
-    return (
-        hit.get("accession")
-        or hit.get("accno")
-        or hit.get("id")
-        or hit.get("recid")
-        or ""
+        meta_description=platform["abstract"],
     )
 
 
 ################################################################################
 ### The sitemap.xml for search engines
 @app.route("/sitemap.xml")
-@cache.memoize(timeout=CACHE_TIMEOUT)
 def sitemap():
-    BASE = "https://platform.vhp4safety.nl"
+    BASE = records.address("").rstrip("/")
 
     # Static, parameter-less GET pages, derived from the URL map so new pages
     # are picked up automatically. Machine endpoints are excluded. Routes with
     # <params> are skipped and handled below.
-    EXCLUDED_ENDPOINTS = {"sitemap", "robots", "static"}
+    EXCLUDED_ENDPOINTS = {"sitemap", "robots", "static", "models_page", "api_catalog", "void_description"}
+    # The pages for editors (login, tokens, editing, changes) and the API are left out.
+    EXCLUDED_BLUEPRINTS = {"account", "admin", "changes", "records", "api-docs"}
     paths = sorted(
         rule.rule.rstrip("/") or "/"
         for rule in app.url_map.iter_rules()
         if not rule.arguments
         and rule.endpoint not in EXCLUDED_ENDPOINTS
+        and rule.endpoint.split(".")[0] not in EXCLUDED_BLUEPRINTS
         and "GET" in (rule.methods or set())
     )
 
-    # Tool detail pages
-    tools = get_json_dict(SERVICES_URL)
-    if isinstance(tools, dict):
-        paths += [f"/tools/{urllib.parse.quote(str(k))}" for k in tools]
-
-    # Method detail pages
-    methods = get_json_dict(METHODS_URL)
-    if isinstance(methods, dict):
-        paths += [f"/methods/{urllib.parse.quote(str(k))}" for k in methods]
-
-    # Dataset detail pages (BioStudies + Zenodo). Fetched in pages of 25 (the
-    # Zenodo API rejects larger page sizes) and looped until both sources are
-    # exhausted. load_metadata=False keeps this cheap (no per-file HEAD requests).
-    # A repo failure must never 500 the sitemap; tools/methods/case studies still
-    # serve.
-    DATA_PAGE_SIZE = 25
-    try:
-        page = 1
-        while True:
-            bs_results, zen_results = get_repository_data(
-                search_query="",
-                page=page,
-                page_size=DATA_PAGE_SIZE,
-                load_metadata=False,
-            )
-            bs_hits = (bs_results or {}).get("hits", [])
-            zen_hits = (zen_results or {}).get("hits", [])
-            for hit in bs_hits + zen_hits:
-                hit_id = data_hit_id(hit)
-                if hit_id:
-                    paths.append(f"/data/{urllib.parse.quote(str(hit_id))}")
-            total = max(
-                (bs_results or {}).get("total") or 0,
-                (zen_results or {}).get("total") or 0,
-            )
-            if (not bs_hits and not zen_hits) or page * DATA_PAGE_SIZE >= total:
-                break
-            page += 1
-    except Exception:
-        pass
-
-    # Case study detail pages
-    paths += [f"/casestudies/{urllib.parse.quote(c)}" for c in get_casestudies()]
+    # Record pages, with the time of their last change
+    changed = {}
+    for address, time in records.with_pages():
+        changed["/" + records.path(address)] = time
+    paths += sorted(changed)
 
     # Dedupe while preserving order
     seen = set()
     unique_paths = [p for p in paths if not (p in seen or seen.add(p))]
 
     url_entries = "\n".join(
-        f"  <url>\n    <loc>{BASE}{p}</loc>\n  </url>" for p in unique_paths
+        f"  <url>\n    <loc>{BASE}{p}</loc>\n" + (f"    <lastmod>{changed[p]}</lastmod>\n" if p in changed else "") + "  </url>"
+        for p in unique_paths
     )
     sitemapContent = (
         '<?xml version="1.0" encoding="utf-8"?>\n'
@@ -832,8 +236,9 @@ def robots():
     robotsContent = (
         "User-agent: *\n"
         "Allow: /\n"
+        "Disallow: /admin/\n"
         "\n"
-        "Sitemap: https://platform.vhp4safety.nl/sitemap.xml\n"
+        f"Sitemap: {records.address('sitemap.xml')}\n"
     )
     return Response(robotsContent, mimetype="text/plain")
 
@@ -842,75 +247,6 @@ def robots():
 ### Pages under 'Data'
 @app.route("/data")
 def data():
-    # Get query parameters for pagination and search
-    page = request.args.get("page", 1, type=int)
-    page_size = request.args.get("page_size", 12, type=int)
-    search_query = request.args.get("search", "", type=str)
-
-    # Get filter parameters (multi-select via repeated query params). Param
-    # names match tools/methods: ?case_study=, ?reg_q=, ?stage=, ?search=.
-    # Each filter type is a list; the extractor groups by field and applies
-    # OR-within-field, AND-across-fields.
-    filter_case_study = request.args.getlist("case_study")
-    filter_regulatory_question = request.args.getlist("reg_q")
-    filter_flow_step = request.args.getlist("stage")
-
-    # Build filter list (one tuple per (field, value)); repeated field names
-    # become OR within that field downstream in _apply_filters.
-    # The reg-question dropdown sends the question label; records store the
-    # canonical reg_q_Xy key, so convert label -> key (same map methods uses).
-    # fetched once so every reg-question map below comes from the same result
-    reg_qs = get_reg_questions()
-    reg_q_label_to_key = {v["label"]: k for k, v in reg_qs.items()}
-    filters = []
-    for v in filter_case_study:
-        filters.append(("case_study", v))
-    for v in filter_regulatory_question:
-        filters.append(("regulatory_question", reg_q_label_to_key.get(v, v)))
-    for v in filter_flow_step:
-        filters.append(("flow_step", v))
-
-    # Split page budget between the two repositories so the combined output
-    # respects page_size (e.g. page_size=6 -> 3 from each source).
-    per_source = max(page_size // 2, 1)
-    bs_results, zen_results = get_repository_data(
-        search_query, page, per_source, filters=filters
-    )
-
-    # Extract studies and metadata
-    studies = bs_results.get("hits", [])
-    bs_total = bs_results.get("total", 0)
-    bs_error: str | None = bs_results.get("error", None)
-
-    # Extract datasets and metadata from Zenodo
-    datasets = zen_results.get("hits", [])
-    zen_total = zen_results.get("total", 0)
-    zen_error: str | None = zen_results.get("error", None)
-
-    # enrich with normalized metadata mapping:
-
-    # studies, datasets = normalize_all([studies],[datasets])
-
-    # Hide '[DRAFT]'-tagged values so the template's `{% if %}` checks skip them.
-    for s in studies:
-        scrub_draft(s)
-    for d in datasets:
-        scrub_draft(d)
-
-    # combine totals for pagination
-    total = bs_total + zen_total
-
-    # Get filtering metadata (if filters were applied)
-    filters_applied = bs_results.get("filters_applied", False)
-    hits_returned = bs_results.get("hits_returned", len(studies))
-    pages_fetched = bs_results.get("pages_fetched", 1)
-    page_size_met = bs_results.get("page_size_met", True)
-
-    # Calculate pagination info per source so that if one source is empty or
-    # filtered out, pagination still advances through the active source.
-    has_next = (page * per_source < bs_total) or (page * per_source < zen_total)
-    has_prev = page > 1
-
     # Pass data to template
     return render_template(
         "data/data.html",
@@ -919,33 +255,7 @@ def data():
             "Browse datasets and studies in the VHP4Safety data collection, "
             "aggregated from BioStudies and Zenodo for animal-free safety assessment."
         ),
-        studies=studies,
-        datasets=datasets,
-        total=total,
-        page=page,
-        page_size=page_size,
-        search_query=search_query,
-        collection_name=BIOSTUDIES_COLLECTION_NAME,
-        collection=BIOSTUDIES_COLLECTION,
-        errors={"zenodo": zen_error, "biostudies": bs_error},
-        has_next=has_next,
-        has_prev=has_prev,
-        filter_case_study=filter_case_study,
-        filter_regulatory_question=filter_regulatory_question,
-        filter_flow_step=filter_flow_step,
-        filters_applied=filters_applied,
-        hits_returned=hits_returned,
-        pages_fetched=pages_fetched,
-        page_size_met=page_size_met,
-        stage_explanations=get_stage_explanations(),
-        reg_question_explanations=get_reg_question_explanations(),
-        reg_question_cases={v["label"]: v.get("case", "") for v in reg_qs.values()},
-        reg_questions=reg_q_label_to_key,
-        reg_q_labels={k: v["label"] for k, v in reg_qs.items()},
-        reg_q_urls={k: v["url"] for k, v in reg_qs.items()},
-        reg_q_steps={k: v["enabled_steps"] for k, v in reg_qs.items()},
-        process_flow_steps=get_process_flow_steps(),
-        case_studies=list(get_casestudies()),
+        **pages.data_listing(request.args),
     )
 
 
@@ -975,38 +285,14 @@ def split_text_int(value: None | str) -> tuple[str, None | int]:
 
 @app.route("/data/<dataid>")
 def data_detail(dataid):
-    bs_results, zen_results = get_repository_data(dataid)
-
-    studies = bs_results.get("hits", [])
-    bs_total = bs_results.get("total", 0)
-    bs_error: str | None = bs_results.get("error", None)
-
-    # Extract datasets and metadata from Zenodo
-    datasets = zen_results.get("hits", [])
-    zen_total = zen_results.get("total", 0)
-    zen_error: str | None = zen_results.get("error", None)
-
-    studies, datasets = normalize_all(studies, datasets)
-    for s in studies:
-        scrub_draft(s)
-    for d in datasets:
-        scrub_draft(d)
-
-    if bs_error and not zen_error:
-        if zen_total != 1:
-            return abort(404)
-    elif zen_error and not bs_error:
-        if bs_total != 1:
-            return abort(404)
-    # reg-question records store the canonical reg_q_Xy key; map key -> label so
-    # the badges show the human-readable question.
-    reg_qs = get_reg_questions()
-    reg_q_labels = {k: v["label"] for k, v in reg_qs.items()}
-    reg_q_urls = {k: v["url"] for k, v in reg_qs.items()}
-    reg_q_steps = {k: v["enabled_steps"] for k, v in reg_qs.items()}
-    record = studies[0] if studies else (datasets[0] if datasets else None)
-    if record is None:
-        return abort(404)
+    found = records.get(records.address(f"data/{dataid}"))
+    if found is None or found.part_of is not None:
+        abort(404)
+    filters = pages.catalogue_filters("data", records.latest_change())
+    reg_q_labels = filters["reg_q_labels"]
+    reg_q_urls = filters["reg_q_urls"]
+    reg_q_steps = filters["reg_q_steps"]
+    record = pages.catalogue_details(found)
     rec_title = record.get("title") or "Dataset"
     rec_desc = record.get("description") or record.get("abstract") or ""
     return render_template(
@@ -1023,11 +309,10 @@ def data_detail(dataid):
 
 ################################################################################
 ### Pages under 'Models'
-@app.route("/models_page")
+@app.route("/models")
 def models():
     # Get query parameters for pagination and search
-    page = request.args.get("page", 1, type=int)
-    page_size = request.args.get("page_size", 18, type=int)
+    page, page_size = page_args(18)
     search_query = request.args.get("query", "", type=str)
 
     # Get filter parameters
@@ -1046,18 +331,8 @@ def models():
     if filter_flow_step:
         filters.append(("flow_step", filter_flow_step))
 
-    # Initialize extractor
-    extractor = BioStudiesExtractor(collection=BIOSTUDIES_COLLECTION)
-
     # Fetch data based on search query or list all
-    if search_query:
-        results = extractor.search_studies(
-            search_query, page=page, page_size=page_size, filters=filters
-        )
-    else:
-        results = extractor.list_studies(
-            page=page, page_size=page_size, include_urls=True, filters=filters
-        )
+    results = pages.model_listing(search_query, page, page_size, filters)
 
     # Extract studies and metadata
     studies = results.get("hits", [])
@@ -1088,7 +363,6 @@ def models():
         page_size=page_size,
         search_query=search_query,
         collection_name=BIOSTUDIES_COLLECTION_NAME,
-        collection=BIOSTUDIES_COLLECTION,
         error=error,
         has_next=has_next,
         has_prev=has_prev,
@@ -1099,12 +373,14 @@ def models():
         hits_returned=hits_returned,
         pages_fetched=pages_fetched,
         page_size_met=page_size_met,
-        stage_explanations=get_stage_explanations(),
-        reg_question_explanations=get_reg_question_explanations(),
-        reg_question_cases={v["label"]: v.get("case", "") for v in get_reg_questions().values()},
-        reg_questions={v["label"]: k for k, v in get_reg_questions().items()},
-        case_studies=list(get_casestudies()),
+        # The filter values are the case studies, questions and steps of the data.
+        **pages.catalogue_filters("data", records.latest_change()),
     )
+
+
+@app.route("/models_page")
+def models_page():
+    return redirect(url_for("models"), code=301)
 
 
 ################################################################################
@@ -1115,149 +391,6 @@ def models():
 @app.route("/tools")
 def tools():
     try:
-        tools = get_json_dict(
-            SERVICES_URL
-        )  # Geting the service_list.json in the dictionary format.
-        tools = list(tools.values())  # Converting the dictionary to a list object.
-
-        # Glossary URI -> stage label: Process Flow Steps resolved from the VHP
-        # glossary, merged with the legacy URI mappings.
-        stage_mapping = get_stage_mapping()
-
-        # Map stage URLs to readable labels up front -- needed for filtering
-        # and for building the stage dropdown.
-        for tool in tools:
-            full_stage_url = tool.get("stage", "")
-            if full_stage_url in stage_mapping:
-                tool["stage"] = stage_mapping[full_stage_url]
-            elif tool["stage"] in ["NA", "Unknown"]:
-                # Combining "NA" and "Unknown" stages in a single stage-type, "Other".
-                tool["stage"] = "Other"
-
-        # Collect all unique stages from the UNFILTERED tools first so the
-        # Flow Step dropdown is stable -- otherwise applying a filter shrinks
-        # the dropdown to just the values present in the filtered set, and
-        # removing a filter pill (which doesn't trigger a server reload) can't
-        # restore the missing options. Matches the methods() behaviour.
-        stages = sorted(set(tool.get("stage") for tool in tools if tool.get("stage")))
-        if "Other" in stages:
-            stages.remove("Other")
-            stages.append("Other")
-
-        # Getting selected stages from the URL.
-        selected_stages = request.args.getlist("stage")
-
-        # Filtering tools by selected stages.
-        if selected_stages:
-            tools = [tool for tool in tools if tool.get("stage") in selected_stages]
-
-        # Filter by case study. Tools have no `case_study` field; membership
-        # is derived from the reg_q_Xy booleans via _REG_QUESTION_KEYS
-        # (e.g. selecting "Kidney" matches tools where reg_q_1a OR reg_q_1b
-        # is "true"). OR within type, AND across types.
-        selected_case_studies = request.args.getlist("case_study")
-        if selected_case_studies:
-            slugs_lc = {c.lower() for c in selected_case_studies}
-            case_fields = [
-                field
-                for (slug, _), field in _REG_QUESTION_KEYS.items()
-                if slug in slugs_lc
-            ]
-            if case_fields:
-                tools = [
-                    tool
-                    for tool in tools
-                    if any(str(tool.get(f, "")).lower() == "true" for f in case_fields)
-                ]
-
-        # Filtering over the regulatory questions. OR within type: a tool
-        # passes if any of the selected questions' reg_q_Xy field is "true".
-        # Matches the convention used by every other within-type filter on
-        # the platform (flow-step, case-study, methods reg-question).
-        reg_questions = {v["label"]: k for k, v in get_reg_questions().items()}
-
-        selected_questions = request.args.getlist("reg_q")
-
-        if selected_questions:
-            fields = [
-                reg_questions.get(q) for q in selected_questions if reg_questions.get(q)
-            ]
-            tools = [
-                tool
-                for tool in tools
-                if any(str(tool.get(f, "")).lower() == "true" for f in fields)
-            ]
-
-        # Getting the search query from URL to add a search bar based on tool names.
-        search_query = request.args.get("search", "").strip().lower()
-
-        # Filtering tools by search query.
-        if search_query:
-            tools = [
-                tool
-                for tool in tools
-                if search_query in tool.get("service", "").lower()
-            ]
-
-        # Pagination
-        page = request.args.get("page", 1, type=int)
-        page_size = request.args.get("page_size", 12, type=int)
-        total = len(tools)
-        start = (page - 1) * page_size
-        end = start + page_size
-        tools = tools[start:end]
-        has_prev = page > 1
-        has_next = end < total
-
-        # Enrich only the tools on the current page. The per-tool detail fetch
-        # below makes one HTTP request per tool, so doing it after pagination
-        # keeps it to ~page_size requests instead of one for every tool.
-        placeholder_logo = (
-            "https://github.com/VHP4Safety/ui-design/blob/main/static/images/logo.png"
-        )
-        for tool in tools:
-            html_name = tool.get("html_name")
-            md_name = tool.get("md_file_name")
-            png_name = tool.get("png_file_name")
-
-            tool["url"] = f"https://cloud.vhp4safety.nl/service/{html_name}"
-            tool["meta_data"] = (
-                f"https://raw.githubusercontent.com/VHP4Safety/cloud/main/docs/service/{md_name}"
-                if md_name
-                else "md file not found"
-            )
-
-            # Check if the tool has the placeholder logo; also guard against None
-            if not png_name or png_name == placeholder_logo:
-                tool["png"] = None  # set to None if it's the common placeholder
-            else:
-                tool["png"] = (
-                    f"https://raw.githubusercontent.com/VHP4Safety/cloud/main/docs/service/{png_name}"
-                    if not png_name.startswith("http")
-                    else png_name
-                )
-
-            inst_url = tool.get("inst_url", "no_url")
-            if not inst_url:  # catches "" as well
-                inst_url = "no_url"
-            tool["inst_url"] = inst_url
-
-            # Fetch per-tool detail JSON to check hosting status
-            tool_id = tool.get("id", "")
-            vhp_hosted = False
-            vhp_deved = False
-            if tool_id:
-                detail = get_service_detail(tool_id)
-                if detail.get("developed-by-VHP"):
-                    vhp_deved = detail.get("developed-by-VHP") == "true"
-                if inst_url != "no_url":
-                    vhp_platform = (
-                        detail.get("instance", {}).get("vhp-platform", "").lower()
-                    )
-                    vhp_hosted = vhp_platform not in ("external", "independent", "")
-            tool["vhp_deved"] = vhp_deved
-            tool["vhp_hosted"] = vhp_hosted
-
         return render_template(
             "tools/tools.html",
             page_title="Tools — VHP4Safety",
@@ -1266,155 +399,20 @@ def tools():
                 "Platform for animal-free safety assessment of chemicals and "
                 "pharmaceuticals."
             ),
-            tools=tools,
-            stages=stages,
-            selected_stages=selected_stages,
-            case_studies=list(get_casestudies()),
-            selected_case_studies=selected_case_studies,
-            reg_questions=reg_questions,
-            selected_questions=selected_questions,
-            stage_explanations=get_stage_explanations(),
-            reg_question_explanations=get_reg_question_explanations(),
-            reg_question_cases={v["label"]: v.get("case", "") for v in get_reg_questions().values()},
-            page=page,
-            page_size=page_size,
-            total=total,
-            has_prev=has_prev,
-            has_next=has_next,
-            search_query=search_query,
+            **pages.catalogue_listing("tools", request.args),
         )
 
-    except Exception as e:
-        return f"Error processing service data: {e}", 500
+    except Exception:
+        app.logger.exception("Tools page failed")
+        return "Error processing service data", 500
 
 
 ### New route to list methods (similar to the tools page)
 @app.route("/methods")
 @app.route("/methods/")
 def methods():
-    """Fetch methods_index.json from the cloud repo, normalize fields and render a methods list page."""
-    methods = get_json_dict(METHODS_URL)  # cached for CACHE_TIMEOUT (5 days)
-
-    if not methods:
-        return "Error fetching methods list", 503
-
+    """Render the methods listing from the records."""
     try:
-        methods = list(methods.values())  # convert dict to list
-
-        # Normalize fields for the template and collect stages.
-        # `vhp4safety_workflow_stage_content` is expected to hold glossary URIs
-        # (same convention as service_index.json), e.g.
-        # "https://vhp4safety.github.io/glossary#VHP0000156". We translate the
-        # URI to the human label via get_stage_mapping(), so the dropdown,
-        # filter, and tooltip (driven by get_stage_explanations()) all speak
-        # the same vocabulary. Values that don't match a known URI fall
-        # through as-is so legacy / typo values still render.
-        stage_mapping = get_stage_mapping()
-        stages_set = set()
-        normalized = []
-        for m in methods:
-            norm = {}
-            norm["id"] = m.get("id", "")
-            # template expects 'service' and 'description'
-            norm["service"] = (
-                m.get("method")
-                or m.get("method_name_content")
-                or m.get("method_name")
-                or ""
-            )
-            norm["description"] = (
-                m.get("method_description_content") or m.get("method_description") or ""
-            )
-            # main_url used for method webpage (catalog page)
-            norm["main_url"] = m.get("catalog_webpage_url") or "no_url"
-            # interactive instance not present in methods index
-            norm["inst_url"] = m.get("inst_url") or "no_url"
-            # metadata md file not available in index; keep empty string
-            norm["meta_data"] = m.get("meta_data") or ""
-            # placeholder/no png
-            norm["png"] = None
-            # keep original raw data for potential details page
-            norm["raw"] = m
-
-            # Collect stages (split comma-separated values). Each part is a
-            # glossary URI -> we resolve it to the human label. Placeholder
-            # strings ("_No response_" / "No response") are skipped. The
-            # resolved labels are stored on the record so the stage filter
-            # below can match against them directly.
-            stage_field = (m.get("vhp4safety_workflow_stage_content") or "").strip()
-            resolved_stages = []
-            if stage_field:
-                for part in [s.strip() for s in stage_field.split(",")]:
-                    if not part or part.lower().strip("_") == "no response":
-                        continue
-                    label = stage_mapping.get(part, part)  # URI -> label, else as-is
-                    resolved_stages.append(label)
-                    stages_set.add(label)
-            norm["stages"] = resolved_stages
-
-            normalized.append(norm)
-
-        # Apply search and filters similar to /tools
-        selected_case_studies = request.args.getlist("case_study")
-        selected_stages = request.args.getlist("stage")
-        selected_questions = request.args.getlist("reg_q")
-        search_query = request.args.get("search", "").strip().lower()
-
-        methods_filtered = normalized
-
-        if selected_case_studies:
-            # UI sends "Thyroid" (slug.title()); records store the lowercase
-            # slug ("thyroid"). Case-insensitive match handles both ends.
-            cs_lower = {c.lower() for c in selected_case_studies}
-            methods_filtered = [
-                m for m in methods_filtered
-                if (m["raw"].get("case_study") or "").strip().lower() in cs_lower
-            ]
-
-        if selected_stages:
-            # Match against the URI-resolved labels stored on `norm["stages"]`,
-            # so the filter speaks the same vocabulary as the dropdown.
-            sel = set(selected_stages)
-            methods_filtered = [
-                m for m in methods_filtered if sel & set(m.get("stages") or [])
-            ]
-
-        # Filter by regulatory questions. Methods records carry the canonical
-        # reg_q_Xy key directly in the `regulatory_question` field (e.g.
-        # "reg_q_1b"), matching the tools/data convention.
-        reg_questions = {v["label"]: k for k, v in get_reg_questions().items()}
-        if selected_questions:
-            selected_keys = {
-                reg_questions.get(q) for q in selected_questions if reg_questions.get(q)
-            }
-            methods_filtered = [
-                m
-                for m in methods_filtered
-                if (m["raw"].get("regulatory_question") or "").strip() in selected_keys
-            ]
-
-        if search_query:
-            methods_filtered = [
-                m
-                for m in methods_filtered
-                if search_query in m.get("service", "").lower()
-            ]
-
-        stages = sorted(stages_set)
-        if "Other" in stages:
-            stages.remove("Other")
-            stages.append("Other")
-
-        # Pagination
-        page = request.args.get("page", 1, type=int)
-        page_size = request.args.get("page_size", 12, type=int)
-        total = len(methods_filtered)
-        start = (page - 1) * page_size
-        end = start + page_size
-        methods_page = methods_filtered[start:end]
-        has_prev = page > 1
-        has_next = end < total
-
         # Pass everything the template expects
         return render_template(
             "methods/methods.html",
@@ -1423,60 +421,22 @@ def methods():
                 "Browse the catalogue of experimental and computational methods in "
                 "the VHP4Safety Virtual Human Platform for animal-free safety assessment."
             ),
-            methods=methods_page,
-            stages=stages,
-            selected_stages=selected_stages,
-            case_studies=list(get_casestudies()),
-            selected_case_studies=selected_case_studies,
-            reg_questions=reg_questions,
-            selected_questions=selected_questions,
-            stage_explanations=get_stage_explanations(),
-            reg_question_explanations=get_reg_question_explanations(),
-            reg_question_cases={v["label"]: v.get("case", "") for v in get_reg_questions().values()},
-            page=page,
-            page_size=page_size,
-            total=total,
-            has_prev=has_prev,
-            has_next=has_next,
-            search_query=search_query,
+            **pages.catalogue_listing("methods", request.args),
         )
 
-    except Exception as e:
-        return f"Error processing methods data: {e}", 500
+    except Exception:
+        app.logger.exception("Methods page failed")
+        return "Error processing methods data", 500
 
 
 @app.route("/methods/<methodid>")
 def method_page(methodid):
-    """Render a single method page using templates/methods/method.html
-    Method details are taken from methods_index.json (keyed by method id).
-    """
-    try:
-        methods = get_json_dict(METHODS_URL)
-        # methods_index.json is a dict keyed by method id
-        if methodid not in methods:
-            abort(404)
-        method_details = methods[methodid]
-    except Exception as e:
-        return f"Error processing methods data: {e}", 500
-
-    # Try to load the full method JSON from the docs/methods folder (raw github)
-    method_json = None
-    # URL-encode the filename part to be safe
-    encoded = urllib.parse.quote(methodid, safe="")
-    raw_url = (
-        "https://raw.githubusercontent.com/VHP4Safety/cloud/refs/heads/main/docs/methods/"
-        + f"{encoded}.json"
-    )
-    try:
-        r = requests.get(raw_url, timeout=5)
-        if r.status_code == 200:
-            method_json = r.json()
-        else:
-            # fall back to using the index entry as minimal data
-            method_json = method_details
-    except Exception:
-        # on any error, fall back to index entry
-        method_json = method_details
+    """Render the page of a method from its record."""
+    record = records.get(records.address(f"methods/{methodid}"))
+    if record is None or record.part_of is not None:
+        abort(404)
+    method_details = {}
+    method_json = pages.method_json(record)
 
     # Mirror the template's title/description resolution (methods/method.html)
     src = method_json if isinstance(method_json, dict) else method_details
@@ -1507,34 +467,11 @@ def method_page(methodid):
 @app.route("/tools/<toolname>")
 def tool_page(toolname):
     # get the tools metadata:
-    try:
-        tools = get_json_dict(SERVICES_URL)
-        tools = dict(tools)
-        # Geting the service_list.json in the dictionary format.
-        # Converting the dictionary to a list object.
-    except Exception as e:
-        return f"Error processing service data: {e}", 500
-
-    # Map toolname to the correct JSON file in the new tool folder
-    if toolname not in tools:
+    tool_details = get_service_detail(toolname)
+    if not tool_details:
         abort(404)
 
-    # get the tools metadata:
-    url = "https://cloud.vhp4safety.nl/service/" + toolname + ".json"
-    response = requests.get(url)
-
-    if response.status_code != 200:
-        return f"Error fetching service list: {response.status_code}", 503
-
-    try:
-        tool_details = response.json()
-        tool_details = dict(tool_details)
-        # Geting the service_list.json in the dictionary format.
-        # Converting the dictionary to a list object.
-    except Exception as e:
-        return f"Error processing service data: {e}", 500
-
-    tool_meta = tools[toolname]
+    tool_meta = tool_details
     tool_name = tool_meta.get("service") or tool_meta.get("title") or toolname
     return render_template(
         "tools/tool.html",
@@ -1547,35 +484,29 @@ def tool_page(toolname):
     )
 
 
-@app.route("/model/<modelid>")
+@app.route("/models/<modelid>")
 def model_page(modelid):
-    zen_results = get_repository_model(modelid)
+    found = records.get(records.address(f"models/{modelid}"))
+    if found is None or found.part_of is not None:
+        abort(404)
+    reg_q_labels = pages.catalogue_filters("data", records.latest_change())["reg_q_labels"]
+    data = pages.catalogue_details(found)
+    return render_template(
+        "models/model.html", data=data, reg_q_labels=reg_q_labels, outline=pages.outline(found),
+        page_title=f"{data['title']} — VHP4Safety models",
+        meta_description=clip(data["description"]) or f"{data['title']}: a record of the VHP4Safety models.",
+    )
 
-    # Extract datasets and metadata from Zenodo
-    datasets = zen_results.get("hits", [])
-    zen_total = zen_results.get("total", 0)
-    zen_error: str | None = zen_results.get("error", None)
 
-    studies, datasets = normalize_all([], datasets)
-    for s in studies:
-        scrub_draft(s)
-    for d in datasets:
-        scrub_draft(d)
-
-    if zen_total != 1:
-        return abort(404)
-    # reg-question records store the canonical reg_q_Xy key; map key -> label so
-    # the badges show the human-readable question.
-    reg_q_labels = {k: v["label"] for k, v in get_reg_questions().items()}
-    if studies:
-        return render_template(
-            "models/model.html", data=studies[0], reg_q_labels=reg_q_labels
-        )
-    elif datasets:
-        return render_template(
-            "models/model.html", data=datasets[0], reg_q_labels=reg_q_labels
-        )
-    return abort(404)
+@app.route("/model/<modelid>")
+def model_redirect(modelid):
+    """Redirect the address of a model in Zenodo to its model page, or to the models listing if models share it."""
+    found = pages.based_on("models", f"https://zenodo.org/records/{modelid}")
+    if len(found) == 1:
+        return redirect(page_link(found[0]), code=301)
+    if found:
+        return redirect(url_for("models"), code=302)
+    return redirect(url_for("model_page", modelid=modelid), code=301)
 
 
 ################################################################################
@@ -1586,7 +517,8 @@ def model_page(modelid):
 @app.route("/explore_our_work")
 def explore_our_work():
     return render_template(
-        "implementation/explore_our_work.html",
+        "records/page.html",
+        page=page_record("explore_our_work"),
         page_title="Our work — VHP4Safety",
         meta_description=(
             "How the VHP4Safety consortium builds the Virtual Human Platform to "
@@ -1599,7 +531,9 @@ def explore_our_work():
 @app.route("/training")
 def training():
     return render_template(
-        "implementation/training.html",
+        "records/page.html",
+        page=page_record("training"),
+        listed=pages.items(records.page(settings()["kinds"]["training"], {}, "", 0, None)[1]),
         page_title="Training — VHP4Safety",
         meta_description=(
             "Training materials and courses on the VHP4Safety Virtual Human Platform "
@@ -1612,7 +546,8 @@ def training():
 @app.route("/impact")
 def impact():
     return render_template(
-        "implementation/impact.html",
+        "records/page.html",
+        page=page_record("impact"),
         page_title="Impact — VHP4Safety",
         meta_description=(
             "The scientific and societal impact of VHP4Safety in the transition to "
@@ -1628,8 +563,10 @@ def impact():
 # General Safety Assessment Workflow page
 @app.route("/safety_assessment_workflow")
 def SafetyAssessmentWorkflow():
+    page = page_record("safety_assessment_workflow")
     return render_template(
-        "safety_assessment_workflow.html", process_flow_steps=get_process_flow_steps()
+        "safety_assessment_workflow.html", process_flow_steps=get_process_flow_steps(),
+        page=page, page_title="Safety Assessment Workflow — VHP4Safety", meta_description=clip(page["description"]),
     )
 
 
@@ -1642,6 +579,7 @@ def SafetyAssessmentWorkflow():
 def workflows():
     return render_template(
         "case_studies/casestudies.html",
+        case_studies=pages.case_studies(),
         page_title="Case studies — VHP4Safety",
         meta_description=(
             "Explore the VHP4Safety case studies (kidney, Parkinson's disease and "
@@ -1662,26 +600,33 @@ def workflows():
 def casestudy(case: str = "", question: str = "", step: str = "",
               step1: str = "", step2: str = "", step3: str = "",
               step4: str = "", step5: str = ""):
-    if case not in get_casestudies():
+    record = records.get(records.address(f"casestudies/{case}"))
+    if record is None:
         abort(404)
     # The <question>/<step> sub-routes are JS-driven states of the same page, so
     # canonicalise them all to the base case URL to avoid duplicate indexing.
-    case_labels = {
-        "kidney": "Kidney",
-        "parkinson": "Parkinson's disease",
-        "thyroid": "Thyroid",
-    }
-    case_name = case_labels.get(case, case.capitalize())
+    address = records.address(request.path.strip("/"))
+    # An address such as /casestudies/kidney/Q1/Exposure/Current_Dose_levels is matched to a page part by part.
+    if address != record.iri and records.get(address) is None:
+        wanted = [slug(part) for part in address.removeprefix(record.iri + "/").split("/")]
+        for part in records.parts_of(record.iri):
+            if [slug(given) for given in part.removeprefix(record.iri + "/").split("/")] == wanted:
+                return redirect(page_link(part), code=301)
+    found = pages.case_outline(record.iri, records.latest_change())
+    descriptions = [field["values"][0] for field in found["fields"] if field["name"] == "description"]
     # JS will handle steps via the URL
     return render_template(
         "case_studies/casestudy.html",
-        case=case,
-        page_title=f"{case_name} case study — VHP4Safety",
-        meta_description=(
-            f"The VHP4Safety {case_name} case study: a Virtual Human Platform "
-            "workflow connecting tools, methods and data to a regulatory question."
-        ),
-        canonical_url=request.url_root.rstrip("/") + "/casestudies/" + case,
+        case_outline=found,
+        case_document=url_for("records.read", path=f"casestudies/{case}"),
+        # At the address of a question or a step, the page record is that part. The case study is given too.
+        case_json=None if address == record.iri else documents.page_document(record.iri, records.latest_change()),
+        page_address=address,
+        config_base=records.address(""),
+        page_title=f"{record.name or case} — VHP4Safety",
+        meta_description=clip(descriptions[0]["text"] if descriptions else "")
+        or f"The VHP4Safety {record.name or case}: a Virtual Human Platform workflow connecting tools, methods and data to a regulatory question.",
+        canonical_url=record.iri,
     )
 
 
@@ -1703,8 +648,22 @@ def is_valid_qid(qid):
     return re.fullmatch(r"Q\d+", qid) is not None
 
 
+def run_sparql(endpoint: str, query: str) -> dict:
+    """Run a SPARQL query with a time limit and return the JSON results."""
+    response = requests.post(
+        endpoint,
+        data={"query": query},
+        headers={"Accept": "application/sparql-results+json", "User-Agent": "VHP4Safety platform"},
+        timeout=10,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
 @app.route("/compound/<cwid>")
 def show_compound(cwid):
+    if not is_valid_qid(cwid):
+        abort(404)
     try:
         return render_template("compound.html", cwid=cwid)
     except TemplateNotFound:
@@ -1733,12 +692,11 @@ def show_compounds_properties_as_json(cwid):
         "}"
     )
     try:
-        compound_dat = wbi_helpers.execute_sparql_query(
-            sparqlquery, endpoint=compoundwikiEP
-        )
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    if not bool(compound_dat):
+        compound_dat = run_sparql(compoundwikiEP, sparqlquery)
+    except Exception:
+        app.logger.exception("Compound query failed")
+        return jsonify({"error": "Upstream query failed"}), 500
+    if not bool(compound_dat) or not compound_dat["results"]["bindings"]:
         return jsonify({"error": "No data found"}), 404
     compound_dat = compound_dat["results"]["bindings"][0]
     # return jsonify(compound_dat);
@@ -1750,8 +708,8 @@ def show_compounds_properties_as_json(cwid):
     ]
     if "inchi" in compound_dat:
         compound_list[0]["inchi"] = compound_dat["inchi"]["value"]
-    if "inchikey" in compound_dat:
-        compound_list[0]["inchikey"] = compound_dat["inchikey"]["value"]
+    if "inchiKey" in compound_dat:
+        compound_list[0]["inchikey"] = compound_dat["inchiKey"]["value"]
     if "SMILES" in compound_dat:
         compound_list[0]["SMILES"] = compound_dat["SMILES"]["value"]
     if "formula" in compound_dat:
@@ -1779,11 +737,10 @@ def show_compounds_identifiers_as_json(cwid):
         "}"
     )
     try:
-        compound_dat = wbi_helpers.execute_sparql_query(
-            sparqlquery, endpoint=compoundwikiEP
-        )
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        compound_dat = run_sparql(compoundwikiEP, sparqlquery)
+    except Exception:
+        app.logger.exception("Compound query failed")
+        return jsonify({"error": "Upstream query failed"}), 500
     if len(compound_dat["results"]["bindings"]) == 0:
         return jsonify({"error": "No data found"}), 404
     compound_dat = compound_dat["results"]["bindings"]
@@ -1796,7 +753,7 @@ def show_compounds_identifiers_as_json(cwid):
                 {
                     "propertyLabel": expProp["propertyLabel"]["value"],
                     "value": expProp["value"]["value"],
-                    "formatterURL": expProp["formatterURL"]["value"],
+                    "formatterURL": expProp.get("formatterURL", {}).get("value", ""),
                 }
             )
         else:
@@ -1828,11 +785,10 @@ def show_compounds_toxicology_as_json(cwid):
         "}"
     )
     try:
-        compound_dat = wbi_helpers.execute_sparql_query(
-            sparqlquery, endpoint=compoundwikiEP
-        )
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        compound_dat = run_sparql(compoundwikiEP, sparqlquery)
+    except Exception:
+        app.logger.exception("Compound query failed")
+        return jsonify({"error": "Upstream query failed"}), 500
     if len(compound_dat["results"]["bindings"]) == 0:
         return jsonify({"error": "No data found"}), 404
     compound_dat = compound_dat["results"]["bindings"]
@@ -1873,17 +829,18 @@ def show_compounds_expdata_as_json(cwid):
         "}"
     )
     try:
-        compound_dat = wbi_helpers.execute_sparql_query(
-            sparqlquery, endpoint=compoundwikiEP
-        )
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        compound_dat = run_sparql(compoundwikiEP, sparqlquery)
+    except Exception:
+        app.logger.exception("Compound query failed")
+        return jsonify({"error": "Upstream query failed"}), 500
     if not bool(compound_dat):
         return jsonify({"error": "No data found"}), 404
     if len(compound_dat["results"]["bindings"]) == 0:
         return jsonify({"error": "No data found"}), 404
     compound_dat = compound_dat["results"]["bindings"][0]
     qid = compound_dat["qid"]["value"]
+    if not re.fullmatch(r"http://www\.wikidata\.org/entity/Q\d+", qid):
+        return jsonify({"error": "No data found"}), 404
     # the next query may be affected by https://github.com/ad-freiburg/qlever-control/issues/187
     sparqlquery = (
         "PREFIX wd: <http://www.wikidata.org/entity/>\n"
@@ -1912,10 +869,11 @@ def show_compounds_expdata_as_json(cwid):
             + urllib.parse.quote_plus(sparqlquery)
         )
         # return sparqlqueryURL
-        compound_dat = requests.get(sparqlqueryURL)
+        compound_dat = requests.get(sparqlqueryURL, timeout=10)
         # return json.loads(compound_dat.content)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Compound query failed")
+        return jsonify({"error": "Upstream query failed"}), 500
     if not bool(compound_dat):
         return jsonify({"error": "No data found"}), 404
     compound_dat = json.loads(compound_dat.content)["results"]["bindings"]
@@ -1942,6 +900,7 @@ def show_compounds_expdata_as_json(cwid):
 def terms_of_service():
     return render_template(
         "legal/terms_of_service.html",
+        page=page_record("legal/terms_of_service"),
         page_title="Terms of Service — VHP4Safety",
         meta_description="Terms of Service for the VHP4Safety Virtual Human Platform.",
     )
@@ -1951,10 +910,282 @@ def terms_of_service():
 def privacy_policy():
     return render_template(
         "legal/privacypolicy.html",
+        page=page_record("legal/privacypolicy"),
         page_title="Privacy Policy — VHP4Safety",
         meta_description="Privacy Policy for the VHP4Safety Virtual Human Platform.",
     )
 
 
+################################################################################
+### Pages and data of the records
+OFFERED = ["text/html", *records_api.FORMATS.values(), "application/json", "text/markdown"]
+# A page is also changed by a change of the code, such as a new release.
+STARTED = datetime.now(timezone.utc).replace(microsecond=0)
+
+
+@app.template_filter("page_link")
+def page_link(iri: str) -> str:
+    """Return a platform address as a path on this server."""
+    return pages.local(iri)
+
+
+def not_acceptable() -> Response:
+    """Return 406 with the formats of the address."""
+    lines = ["None of the formats asked for is given here. This address answers in:", "- text/html"]
+    for ending, media in records_api.FORMATS.items():
+        lines.append(f"- {media}, or with the ending {ending}")
+    lines.append("- application/json (its JSON-LD)")
+    lines.append(f"- text/markdown, or with the ending {records_api.MARKDOWN}")
+    return Response("\n".join(lines) + "\n", status=406, content_type="text/plain; charset=utf-8", headers={"Vary": "Accept"})
+
+
+def listing_page(kind: str):
+    """Return the listing page of a kind."""
+    found = pages.listing(kind, request.args)
+    return render_template("records/listing.html", listing=found, page_title=f"{found['name'] or kind.capitalize()} — VHP4Safety")
+
+
+def record_page(record: Record):
+    """Return the page of a record."""
+    if record.type in records.within(str(SDO.WebPage)):
+        found = pages.page(record)
+        steps = {term["iri"]: term for term in found["kinds"]}
+        return render_template("records/page.html", page=found, process_flow_steps=steps,
+                               page_title=f"{found['name']} — VHP4Safety",
+                               meta_description=found["description"][:160] or f"{found['name']}, a page of the VHP4Safety Virtual Human Platform.")
+    found = pages.outline(record)
+    first = {}
+    for field in found["fields"]:
+        first[field["name"]] = field["values"][0]
+    description = first.get("description", {}).get("text")
+    image = first.get("image", {}).get("link")
+    name = record.name or record.iri
+    return render_template(
+        "records/record.html",
+        record={"iri": record.iri, "name": record.name, "description": description, "image": image},
+        outline=found,
+        page_title=f"{name} — VHP4Safety",
+        meta_description=(description or "")[:160] or f"{name}, a record of the VHP4Safety Virtual Human Platform.",
+    )
+
+
+@app.before_request
+def negotiate():
+    """Return the data of a record if it is requested."""
+    if request.endpoint in ("static", "image") or request.path.startswith("/api/"):
+        return None
+    # An address with a slash at the end and without a page of its own is redirected to the address without the
+    # slash (/casestudies/ to /casestudies), so that each page has one address.
+    if request.url_rule is None and len(request.path) > 1 and request.path.endswith("/"):
+        target = "/" + urllib.parse.quote(request.path.strip("/"))
+        if request.query_string:
+            target += "?" + request.query_string.decode()
+        return redirect(target, code=308)
+    path = request.path.strip("/")
+    media = None
+    for ending, ending_media in {**records_api.FORMATS, records_api.MARKDOWN: "text/markdown"}.items():
+        if path.endswith(ending):
+            path = path.removesuffix(ending)
+            media = ending_media
+    # The page is returned for a request without Accept. For a request of other formats only, the formats are listed.
+    if media is None:
+        media = request.accept_mimetypes.best_match(OFFERED) if request.accept_mimetypes else "text/html"
+    # At the page of a kind (/tools), all records of the kind are given in the formats of the API, without pages.
+    if path in settings()["kinds"] and media is None:
+        return not_acceptable()
+    if path in settings()["kinds"] and media != "text/html":
+        g.listing = path
+        g.media = media
+        return app.view_functions["records.listed"](kind=path)
+    # For a kind without a page of its own, the records are listed.
+    if path in settings()["kinds"] and request.url_rule is None:
+        return listing_page(path)
+    record = records.get(records.address(path))
+    if record is None:
+        return None
+    if media is None:
+        return not_acceptable()
+    if record.moved_to:
+        ending = request.path.removeprefix("/" + path) if request.path.startswith("/" + path) else ""
+        target = page_link(record.moved_to) + ending
+        if request.query_string:
+            target += "?" + request.query_string.decode()
+        return redirect(target, code=301)
+    if record.removed_at:
+        return render_template("records/gone.html", record=record, page_title="Removed — VHP4Safety"), 410
+    g.record = record
+    if media == "text/markdown":
+        return records_api.markdown_of(record)
+    # The address of the platform is the address of its dataset, so its data is the VoID description.
+    if media != "text/html":
+        # The data of another record is one document with its parts.
+        if record.iri == settings()["base"]:
+            return records_api.data(void.described(), media)
+        return records_api.data(documents.linked(record), media, record.iri)
+    # A record with no page of its own is shown on the general record page.
+    if request.url_rule is None:
+        return record_page(record)
+    return None
+
+
+@app.route("/<path:path>/ro-crate-metadata.json")
+def ro_crate(path: str):
+    """Return the RO-Crate of a model."""
+    record = records.get(records.address(path))
+    if not crates.of_models(record):
+        abort(404)
+    headers = {"Access-Control-Allow-Origin": "*", "Content-Disposition": f'inline; filename="{crates.file_name(record)}"'}
+    given = crates.zenodo(record)
+    if given is not None:
+        return Response(given, mimetype="application/ld+json", headers=headers)
+    headers["Link"] = f'<{crates.PROFILE}>; rel="profile", <{record.iri}>; rel="cite-as"'
+    return Response(json.dumps(crates.crate(record), indent=2), mimetype="application/ld+json", headers=headers)
+
+
+# The root of the draft crate of a model is at the model address with /ro-crate/ (linkeddata/crates.py).
+@app.route("/<path:path>/ro-crate/")
+def crate_root(path: str):
+    if not crates.of_models(records.get(records.address(path))):
+        abort(404)
+    return redirect(f"/{path}/ro-crate-metadata.json", code=303)
+
+
+@app.after_request
+def link_data(response):
+    links = []
+    if "record" in g:
+        links = [f'<{g.record.iri}>; rel="cite-as"', f'<{g.record.type}>; rel="type"']
+        for ending, media in records_api.FORMATS.items():
+            links.append(f'<{g.record.iri}{ending}>; rel="describedby"; type="{media}"')
+        if crates.of_models(g.record):
+            links.append(f'<{g.record.iri}/ro-crate-metadata.json>; rel="describedby"; type="application/ld+json"; profile="https://w3id.org/ro/crate"')
+        links.append(f'<{url_for("records.model_shapes", _external=True)}>; rel="http://www.w3.org/ns/ldp#constrainedBy"; type="text/turtle"')
+        links.append(f'<{g.record.iri}{records_api.MARKDOWN}>; rel="alternate"; type="text/markdown"')
+        response.headers["Vary"] = "Accept"
+    # The page and the data of a record link the licence of the record. Listings and the API link the licence of the records.
+    licences = []
+    if "record" in g:
+        licences = sorted(str(value) for value in records.graph([g.record.iri]).objects(URIRef(g.record.iri), SDO.license))
+    elif ("listing" in g or request.path.startswith("/api/")) and void.platform()["license"]:
+        licences = [void.platform()["license"]]
+    for licence in licences:
+        links.append(f'<{licence}>; rel="license"')
+    if "record" in g and g.record.iri != settings()["base"]:
+        links.append(f'<{settings()["base"]}>; rel="http://rdfs.org/ns/void#inDataset"')
+    if links:
+        given = response.headers.get("Link")
+        response.headers["Link"] = ", ".join(([given] if given else []) + links)
+    if "record" in g and request.method in ("GET", "HEAD") and response.status_code == 200:
+        conditional(response)
+    # Public data may be read by scripts of other sites, without credentials, as visitors.
+    if request.method in ("GET", "HEAD") and (request.path.startswith("/api/") or "listing" in g or ("record" in g and response.mimetype != "text/html")):
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Expose-Headers"] = "Link, ETag, Last-Modified, X-Pagination"
+    return response
+
+
+def conditional(response) -> None:
+    """Return 304 Not Modified if no record was changed since the request version."""
+    latest = records.latest_change()
+    changed = max(datetime.fromisoformat(latest) if latest else STARTED, STARTED)
+    response.set_etag(f"{latest}-{int(STARTED.timestamp())}-{response.mimetype}", weak=True)
+    response.last_modified = changed
+    response.make_conditional(request)
+
+
+@app.context_processor
+def publisher_context() -> dict:
+    """Return the publisher of the platform and the licence of the records for the templates."""
+    return {"publisher_document": void.platform()["publisher"], "records_license": void.platform()["license"]}
+
+
+@app.context_processor
+def record_context() -> dict:
+    """Return the JSON-LD and data addresses of the record of the page."""
+    if "record" not in g:
+        return {}
+    formats = {}
+    for ending, media in records_api.FORMATS.items():
+        formats[media] = page_link(g.record.iri) + ending
+    try:
+        document = documents.page_document(g.record.iri, records.latest_change())
+    except ValueError as problem:
+        app.logger.warning("The record %s does not fit the model: %s", g.record.iri, problem)
+        document = None
+    found = {"record_document": document, "record_formats": formats, "record_markdown": page_link(g.record.iri) + records_api.MARKDOWN}
+    # Only models have an RO-Crate. It is the crate in Zenodo, or a draft made from the record.
+    if crates.of_models(g.record):
+        found.update(record_crate=page_link(g.record.iri) + "/ro-crate-metadata.json", record_crate_draft=crates.zenodo(g.record) is None)
+    return found
+
+
+################################################################################
+### Uploaded images
+@app.route("/images/<name>")
+def image(name: str):
+    if not NAME.fullmatch(name):
+        abort(404)
+    response = send_from_directory(folder(), name, mimetype="image/webp", max_age=31536000)
+    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    response.headers["Content-Security-Policy"] = "default-src 'none'"
+    return response
+
+
+################################################################################
+### Profiles that the platform publishes
+@app.route("/profiles/<name>/<version>")
+@app.route("/profiles/<name>/<version>/<file>")
+def published_profile(name: str, version: str, file: str = "profile.ttl"):
+    response = send_from_directory(PROFILES, f"{name}/{version}/{file}", mimetype="text/turtle")
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return response
+
+
+################################################################################
+### Discovery addresses of the data and the APIs
+CATALOG = "/.well-known/api-catalog"
+OPENAPI = "api/docs/openapi.json"
+DOCS = "api/docs/"
+
+
+def services() -> list[dict]:
+    """Return the APIs of the platform as linkset entries."""
+    found = [{
+        "anchor": records.address("api/"),
+        "service-desc": [{"href": records.address(OPENAPI), "type": "application/vnd.oai.openapi+json"}],
+        "service-doc": [{"href": records.address(DOCS), "type": "text/html"}],
+    }]
+    return found
+
+
+@app.route(CATALOG)
+def api_catalog():
+    body = json.dumps({"linkset": services()}, indent=1)
+    return Response(body, content_type='application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"',
+                    headers={"Access-Control-Allow-Origin": "*"})
+
+
+@app.route("/.well-known/void")
+def void_description():
+    media = request.accept_mimetypes.best_match(["text/turtle", "application/ld+json", *records_api.SERIALIZATIONS]) or "text/turtle"
+    answer = records_api.data(void.described(), media)
+    answer.headers["Access-Control-Allow-Origin"] = "*"
+    return answer
+
+
+@app.after_request
+def service_links(response):
+    links = []
+    if request.path.startswith("/api/"):
+        links.append(f'<{records.address(OPENAPI)}>; rel="service-desc"; type="application/vnd.oai.openapi+json"')
+        links.append(f'<{records.address(DOCS)}>; rel="service-doc"; type="text/html"')
+    if request.path == "/":
+        links.append(f'<{CATALOG}>; rel="api-catalog"')
+    if links:
+        given = response.headers.get("Link")
+        response.headers["Link"] = ", ".join(([given] if given else []) + links)
+    return response
+
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5050, debug=True)
+    app.run(host="0.0.0.0", port=5050, debug=os.environ.get("FLASK_DEBUG") == "1")

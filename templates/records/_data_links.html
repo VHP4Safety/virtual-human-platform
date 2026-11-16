@@ -1,0 +1,11 @@
+{% if record_formats %}
+<p class="small text-secondary mt-3 mb-0">
+  This record as data:
+  <a class="link-vhpblue" href="{{ record_formats['application/ld+json'] }}">JSON-LD</a> ·
+  <a class="link-vhpblue" href="{{ record_formats['text/turtle'] }}">Turtle</a> ·
+  <a class="link-vhpblue" href="{{ record_formats['application/n-triples'] }}">N-Triples</a>
+  {%- if record_crate %} ·
+  <a class="link-vhpblue" href="{{ record_crate }}">{% if record_crate_draft %}RO-Crate draft (not in Zenodo){% else %}RO-Crate (from Zenodo){% endif %}</a>
+  {%- endif %}
+</p>
+{% endif %}

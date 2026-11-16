@@ -1,0 +1,6 @@
+name: spdx
+title: SPDX License List
+# The pinned SPDX License List of the model.
+vocabulary: spdx-licenses-3.27.0.json
+pinned: {url: "https://raw.githubusercontent.com/spdx/license-list-data/v3.27.0/json/licenses.json", sha256: 157789ba91984aecba5c67b84168dbbd41a235b910a7569aa64bf42a88b24290}
+parser: spdx

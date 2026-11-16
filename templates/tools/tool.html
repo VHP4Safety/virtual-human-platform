@@ -3,26 +3,6 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css') }}">
 <link rel="stylesheet" property="stylesheet" href="https://elixirtess.github.io/TeSS_widgets/css/tess-widget.css"/>
 
-<!-- Bioschemas / schema.org annotation -->
-<script type="application/ld+json">
-  {
-    "@context": "https://schema.org/",
-    "@type": "SoftwareApplication",
-    "http://purl.org/dc/terms/conformsTo": {
-      "@type": "CreativeWork", "@id": "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"
-    },
-    "@id" : "https://vhp4safety.github.io/cloud/service/{{ tool_details.id }}",
-    "description": "{{ tool_details.description }}",
-    {% if tool_details.instance and tool_details.instance.url %}
-    "url": "{{ tool_details.instance.url }}",
-    {% else %}
-    "url": "{{ tool_details.url}}",
-    {% endif %}
-    "name": "{{ tool_details.service }}"
-  }
-</script>
-
-
 <section class="container py-md-5 py-3 d-flex flex-column min-vh-100">
     <div class="pb-2">
         <h1><span class="text-vhpblue" id="collection-name">{{ tool_json.service }}
@@ -59,8 +39,8 @@
         <div class="row">
           <div class="col-md-6">
             <p>{{ tool_json.description }}
-        {% if tool_details.stage and tool_details.stage in process_flow_steps %}
-          {% set step = process_flow_steps[tool_details.stage] %}
+        {% for stage in tool_details.stage if stage in process_flow_steps %}
+          {% set step = process_flow_steps[stage] %}
           <div style="margin-top: 5px">
             <a href="{{ url_for('SafetyAssessmentWorkflow') }}#definition-{{ step.slug }}"
                class="btn btn-vhppurple"
@@ -69,7 +49,7 @@
               {{ step.label }}
             </a>
           </div>
-        {% endif %}
+        {% endfor %}
         {% if tool_details.get("regulatory-question") %}
         <div style="margin-top: 5px">
           {% if tool_details.get("regulatory-question").get("1a") == "true" or
@@ -89,9 +69,9 @@
           </div>
           <div class="col-md-6 pt-md-0 pt-2 mt-md-0 mt-1">
             {% if tool_details.instance and tool_details.instance.url %}
-            <a href="{{ tool_details.instance.url }}" target="_blank"><img src="https://cloud.vhp4safety.nl/service/{{ tool_details.screenshot }}" class="card-img-bottom" alt="Image showing the logo or screenshot of the project."></a>
+            <a href="{{ tool_details.instance.url }}" target="_blank"><img src="{{ tool_details.screenshot }}" class="card-img-bottom" alt="Image showing the logo or screenshot of the project."></a>
             {% else %}
-            <img src="https://cloud.vhp4safety.nl/service/{{ tool_details.screenshot }}" class="card-img-bottom" alt="Image showing the logo or screenshot of the project.">
+            <img src="{{ tool_details.screenshot }}" class="card-img-bottom" alt="Image showing the logo or screenshot of the project.">
             {% endif %}
           </div>
         </div>
@@ -152,15 +132,12 @@
                  data-bs-parent="#tool-documentation-accordion">
               <div class="accordion-body">
                 <ul style="list-style-type:disc">
-                  {% if tool_details.intro %}
-                  <li>Intro: <a href={{ tool_details.intro.url }}>{{ tool_details.intro.title }}</a></li>
-                  {% endif %}
-                  {% if tool_details.demo %}
-                  <li>Demo: <a href={{ tool_details.demo.url }}>{{ tool_details.demo.title }}</a></li>
-                  {% endif %}
-                  {% if tool_details.workflow %}
-                  <li>Workflow: <a href={{ tool_details.workflow.url }}>{{ tool_details.workflow.title }}</a></li>
-                  {% endif %}
+                  {% for intro in tool_details.intro %}
+                  <li><a href="{{ intro.url }}">{{ intro.title }}</a></li>
+                  {% endfor %}
+                  {% for workflow in tool_details.workflow %}
+                  <li>Workflow: <a href="{{ workflow.url }}">{{ workflow.title }}</a></li>
+                  {% endfor %}
                 </ul>
               </div>
             </div>
@@ -180,8 +157,10 @@
                  aria-labelledby="doc-heading-vhp-info"
                  data-bs-parent="#tool-documentation-accordion">
               <div class="accordion-body">
+                {% for peertube in tool_details.peertube %}
                 <h3>Introduction video</h3>
-                <div style="position: relative; padding-top: 56.25%;"><iframe title="{{ tool_details.peertube.title }}" width="100%" height="100%" src="{{ tool_details.peertube.url }}" allow="fullscreen" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" style="border: 0px; position: absolute; inset: 0px;"></iframe></div>
+                <div style="position: relative; padding-top: 56.25%;"><iframe title="{{ peertube.title }}" width="100%" height="100%" src="{{ peertube.url }}" allow="fullscreen" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" style="border: 0px; position: absolute; inset: 0px;"></iframe></div>
+                {% endfor %}
               </div>
             </div>
           </div>
@@ -261,7 +240,7 @@
               </div>
             </div>
           </div>
-          <script src="https://cdn.jsdelivr.net/npm/citation-js"></script>
+          <script src="https://cdn.jsdelivr.net/npm/citation-js@0.9.0" integrity="sha384-wop5NlY7ORa1+WSchJbyKhM2UGNF+nuCoelh0sH4SAaS31ho6ehlpFyULYk/Q9dC" crossorigin="anonymous"></script>
           <script>var Cite = require('citation-js')</script>
           <script>
             const cite = new Cite();
@@ -298,8 +277,8 @@
                 <ul>
                   {% if tool_details.instance.version %}<li>Version: {{ tool_details.instance.version }}</li>{% endif %}
                   {% if tool_details.instance.license %}<li>License: {{ tool_details.instance.license }}</li>{% endif %}
-                  {% if tool_details.instance.source %}<li>Source code: <a href="{{ tool_details.instance.source }}">{{ tool_details.instance.source }}</a></li>{% endif %}
-                  {% if tool_details.instance.docker %}<li>Docker: <a href="{{ tool_details.instance.docker }}">{{ tool_details.instance.docker }}</a></li>{% endif %}
+                  {% for source in tool_details.instance.source %}<li>Source code: <a href="{{ source }}">{{ source }}</a></li>{% endfor %}
+                  {% for docker in tool_details.instance.docker %}<li>Download: <a href="{{ docker }}">{{ docker }}</a></li>{% endfor %}
                 </ul>
               </div>
             </div>
@@ -408,5 +387,6 @@ function initTeSSWidgets() {
         onload="if (typeof initTeSSWidgets === 'function') initTeSSWidgets();">
 </script>
 
+{% include "records/_data_links.html" %}
 </section>
 {% endblock %}

@@ -11,6 +11,12 @@
     <title>{{ page_title }}</title>
     <meta name="description" content="{{ meta_description }}" />
     <link rel="canonical" href="{{ canonical_url }}" />
+    {% for media, href in (record_formats or {}).items() %}
+    <link rel="describedby" type="{{ media }}" href="{{ href }}" />
+    {% endfor %}
+    {% if record_markdown %}
+    <link rel="alternate" type="text/markdown" href="{{ record_markdown }}" />
+    {% endif %}
 
     <!-- Open Graph / Twitter Card for link previews (and minor search signal) -->
     <meta property="og:type" content="website" />
@@ -26,35 +32,15 @@
     <meta name="google-site-verification" content="{{ config.GOOGLE_SITE_VERIFICATION }}" />
     {% endif %}
 
-    <!-- Organization entity for search engines (brand recognition) -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "VHP4Safety",
-      "alternateName": "Virtual Human Platform for Safety Assessment",
-      "url": "{{ request.url_root }}",
-      "logo": "{{ request.url_root }}static/images/logos/logo/PNG/300ppi/VHP_Logo_Long_02_300.png",
-      "description": "VHP4Safety develops the Virtual Human Platform for animal-free, human-based safety assessment of chemicals and pharmaceuticals.",
-      "email": "vhp4safety@uu.nl",
-      "sameAs": [
-        "https://github.com/VHP4Safety",
-        "https://www.linkedin.com/company/vhp4safety",
-        "https://www.youtube.com/@VHP4Safety",
-        "https://video.edu.nl/a/vhp4safety"
-      ],
-      "funder": {
-        "@type": "Organization",
-        "name": "Dutch Research Council (NWO)",
-        "url": "https://www.nwo.nl"
-      },
-      "funding": {
-        "@type": "Grant",
-        "identifier": "NWA.1292.19.272",
-        "url": "https://www.nwo.nl/en/projects/nwa129219272"
-      }
-    }
-    </script>
+    {% if record_document %}
+    <!-- The record of the page, as published. It is the first block, as only the first block is read by some programs. -->
+    <script type="application/ld+json" id="record-document">{{ record_document|tojson }}</script>
+    {% endif %}
+
+    {% if publisher_document %}
+    <!-- The publisher of the platform, from its record, for search engines -->
+    <script type="application/ld+json">{{ publisher_document|tojson }}</script>
+    {% endif %}
 
     {% if config.DEBUG %}
     <!-- we are running in DEBUG mode -->
@@ -65,16 +51,13 @@
     <!-- Bootstrap 5.3.8 CSS -->
     <link href="/static/css/bootstrap-custom.css" rel="stylesheet">
     <link href="/static/css/base.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" integrity="sha384-CK2SzKma4jA5H/MXDUU7i1TqZlCFaD4T01vtyDFvPlD97JQyS+IsSh1nI2EFbpyk" crossorigin="anonymous">
 
     <!-- jQuery -->
-    <script defer src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script defer src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha384-1H217gwSVyLSIfaLxHbE7dRb3v4mYCKbpQvzx0cegeju1MVsGrX5xXxAvs/HgeFs" crossorigin="anonymous"></script>
 
-    <!-- Jmol for molecular visualization -->
-    <script src="/static/js/JSmol.min.js"></script>
-
-    <!-- Goatcounter.com, the GDPR-compliant page visit counter -->
-    <script data-goatcounter="https://vhp4safety.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+    <!-- Goatcounter.com, the GDPR-compliant page visit counter. The path is counted without the query string. -->
+    <script data-goatcounter="https://vhp4safety.goatcounter.com/count" data-goatcounter-settings='{"path": {{ request.path|tojson }}}' async src="//gc.zgo.at/count.js"></script>
 
     <!-- Favicon -->
     <link
@@ -86,11 +69,11 @@
     {% block head %}{% endblock %}
   </head>
 
-  <nav class="navbar navbar-expand-xl py-md-2 pe-md-2 pe-0 py-0  navbar-light bg-white border-bottom fixed-top">
+  <nav class="navbar navbar-expand-xxl py-md-2 pe-md-2 pe-0 py-0  navbar-light bg-white border-bottom fixed-top">
     <div class="container-fluid d-flex align-items-center justify-content-between">
 
     <!-- Logo -->
-    <a class="navbar-brand ms-xl-3" href="/">
+    <a class="navbar-brand ms-xxl-3" href="/">
       <img
         src="/static/images/logos/logo/PNG/300ppi/VHP_Logo_Long_02_300.png"
         alt="VHP4Safety Logo"
@@ -108,7 +91,7 @@
 
 
   <!-- Desktop buttons (hidden on mobile) -->
-  <div class="d-none d-xl-flex align-items-center gap-3">
+  <div class="d-none d-xxl-flex align-items-center gap-3">
     
     <!-- Glossary Toggle Switch -->
     <div class="form-check form-switch mb-0 text-nowrap" data-vhp-glossary-skip>
@@ -273,7 +256,8 @@
       </div>
       <div class="collapse" id="collapseTools">
         <div class="d-flex flex-column ps-3 gap-2">
-          <!-- Tools links -->
+          <!-- Tools links, after the models -->
+          <button class="btn btn-light text-start" onclick="location.href='/models'" data-bs-dismiss="offcanvas">Models</button>
            {% for tool in tools_menu %}
             <button class="btn btn-light text-start" onclick="location.href='/tools/{{tool.id}}'" data-bs-dismiss="offcanvas">{{tool.title}}</button>
           {% endfor%}
@@ -352,6 +336,8 @@
               <li><a href="{{ url_for('home') }}#about-section" class="text-decoration-none link-vhppink fs-7 small">About</a></li>
               <li><a href="{{ url_for('home') }}#partners-section" class="text-decoration-none link-vhppink fs-7 small">Partners</a></li>
               <li><a href="{{ url_for('home') }}#contact-section" class="text-decoration-none link-vhppink fs-7 small">Contact</a></li>
+              <li><a href="{{ url_for('api-docs.openapi_swagger_ui') }}" class="text-decoration-none link-vhppink fs-7 small">API</a></li>
+              <li><a href="{{ url_for('account.account_tokens') }}" class="text-decoration-none link-vhppink fs-7 small">Editors</a></li>
             </ul>
           </div>
           <div class="col-md-3">
@@ -373,7 +359,7 @@
         </div>
         <div class="row mt-3">
           <div class="col-12 text-center">
-            <p class="mb-0 small">&copy; 2026 VHP4Safety, Licensed with <a href="https://github.com/VHP4Safety/virtual-human-platform/blob/main/LICENSE.md">AGPL-3</a>, Funded by <a href="https://www.nwo.nl">NWO</a> under file number <a href="https://www.nwo.nl/en/projects/nwa129219272">NWA.1292.19.272</a></p>
+            <p class="mb-0 small">&copy; 2026 VHP4Safety, Code licensed with <a href="https://github.com/VHP4Safety/virtual-human-platform/blob/main/LICENSE.md">AGPL-3</a>,{% if records_license %} records with <a href="{{ records_license }}">{{ records_license.rsplit("/", 1)[-1] }}</a>,{% endif %} Funded by <a href="https://www.nwo.nl">NWO</a> under file number <a href="https://www.nwo.nl/en/projects/nwa129219272">NWA.1292.19.272</a></p>
           </div>
         </div>
       </div>
@@ -386,7 +372,7 @@
     <script src="/static/js/glossary_highlighter.js"></script>
 
     <!-- script for search bar's functionality -->
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2" integrity="sha384-zPE55eyESN+FxCWGEnlNxGyAPJud6IZ6TtJmXb56OFRGhxZPN4akj9rjA3gw5Qqa" crossorigin="anonymous"></script>
     <script src="/static/js/search_bar.js"></script>
     <script src="/static/js/dropdown_paginate.js"></script>
 
@@ -395,6 +381,8 @@
       // Store contextprocessor vars for dropdown menu
       window.TOOLS_MENU = (function(){ try { return {{ tools_menu | tojson | safe }}; } catch(e) { return []; } })();
       window.TOOLS_MENU = Array.isArray(window.TOOLS_MENU) ? window.TOOLS_MENU : [];
+      // The Tools menu starts with the models, which have a page of their own.
+      window.TOOLS_DROPDOWN = [{id: "models", title: "Models", main_url: "/models"}].concat(window.TOOLS_MENU);
       window.METHODS_MENU = (function(){ try { return {{ methods_menu | tojson | safe }}; } catch(e) { return []; } })();
       window.METHODS_MENU = Array.isArray(window.METHODS_MENU) ? window.METHODS_MENU : [];
       window.DATA_MENU = (function(){ try { return {{ data_menu | tojson | safe }}; } catch(e) { return []; } })();

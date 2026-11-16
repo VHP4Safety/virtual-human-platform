@@ -1,9 +1,22 @@
 flask>=3.1.3
-flask-caching==2.3.1
 requests>=2.33.0
 #wikidataintegrator==0.9.30
-setuptools==78.1.1 # Provides pkg_resources module, required for wikidataintegrator
 werkzeug>=3.0.6
 #pyBiodatafuse @ git+https://github.com/BioDataFuse/pyBiodatafuse.git
-wikibaseintegrator>=0.12.14
+gunicorn>=23.0.0
+nh3>=0.3.0
+Flask-Limiter==4.1.1
+flask-smorest==0.47.0
+rdfsolve[validation] @ git+https://github.com/jmillanacosta/rdfsolve@84aa648ed98c4f5009eb83f450bd6b167ff0be00
+rdflib>=7.0
+pyld>=2.0
+pandas>=2.0
+pyoxigraph>=0.5.11
+pyshacl>=0.30
+sqlalchemy>=2.0
+pillow>=11
+pyyaml>=6.0
+markdownify>=1.2
+beautifulsoup4>=4.12
+rocrate>=0.16
 

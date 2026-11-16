@@ -1,0 +1,25 @@
+{% extends "editor/base.html" %}
+{% block content %}
+{% set names = kind_names() %}
+<div class="container-fluid px-lg-4 py-4">
+  <h1 class="h3 text-vhppurple mb-4">Records</h1>
+  {% for source in failed %}
+  <div class="alert alert-warning small py-2">Last import of {{ source.name }} not stored. {{ source.problem }}</div>
+  {% endfor %}
+  <div class="row g-3">
+    {% for kind in kinds %}
+    <div class="col-sm-6 col-lg-3">
+      <a class="card h-100 text-decoration-none" href="{{ url_for('admin.edit', kind=kind.kind) }}">
+        <div class="card-body">
+          <h2 class="h5 text-vhppurple">{{ names[kind.kind] }}</h2>
+          <p class="small text-secondary">{{ kind.records }} records · {{ kind.edited }} written here · {{ kind.removed }} removed · {{ kind.required }} required and {{ kind.recommended }} recommended values missing · {{ kind.notes }} with issues</p>
+          <div class="progress" role="progressbar" aria-label="Fields filled" aria-valuenow="{{ kind.complete }}" aria-valuemin="0" aria-valuemax="100" title="Average fields filled: {{ kind.complete }}%">
+            <div class="progress-bar bg-vhpblue" style="width: {{ kind.complete }}%">{{ kind.complete }}%</div>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{# The outline of a record. #}
+
+{% macro value(found) -%}
+  {%- if found.link -%}
+    <a class="link-vhpblue text-break" href="{{ found.link|page_link }}">{{ found.name }}</a>
+  {%- elif found.html -%}
+    {{ found.text|sanitize_html }}
+  {%- else -%}
+    {{ found.text }}
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro fields_table(fields, left_out=()) %}
+<table class="table mb-0">
+  <tbody>
+    {% for field in fields if field.name not in left_out %}
+    {% if field.section and (loop.first or loop.previtem.section != field.section) %}
+    <tr><th colspan="2" scope="rowgroup" class="h6 pt-3 text-vhpblue border-0">{{ field.section }}</th></tr>
+    {% endif %}
+    <tr>
+      <th scope="row" class="text-nowrap fw-semibold">{{ field.label }}</th>
+      <td>{% for found in field["values"] %}{{ value(found) }}{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endmacro %}
+
+{% macro parts(groups, level) %}
+{% for group in groups %}
+{% for item in group["items"] %}
+<section class="mt-3">
+  <h{{ [level, 6]|min }} class="h6 mb-2">{{ item.name or item.kind }}{% if item.kind %} <span class="badge text-bg-light border fw-normal">{{ item.kind }}</span>{% endif %}</h{{ [level, 6]|min }}>
+  {% if item.fields %}{{ fields_table(item.fields) }}{% endif %}
+  {{ parts(item.parts, level + 1) }}
+</section>
+{% endfor %}
+{% endfor %}
+{% endmacro %}
+
+{# An outline with headings, fields as a list, and texts as paragraphs. #}
+{% macro article(found, level) %}
+<section class="mb-4">
+  <h{{ [level, 6]|min }}>{{ found.name or found.kind }}</h{{ [level, 6]|min }}>
+  {% for field in found.fields %}
+  {% if field.long %}
+  <div class="mb-3"><p class="fw-semibold mb-1">{{ field.label }}</p>{% for found_value in field["values"] %}<div>{{ value(found_value) }}</div>{% endfor %}</div>
+  {% else %}
+  <p class="mb-1"><span class="fw-semibold">{{ field.label }}:</span> {% for found_value in field["values"] %}{{ value(found_value) }}{% if not loop.last %}; {% endif %}{% endfor %}</p>
+  {% endif %}
+  {% endfor %}
+  {% for group in found.parts %}{% for item in group["items"] %}{{ article(item, level + 1) }}{% endfor %}{% endfor %}
+</section>
+{% endmacro %}
+
+{% macro named_on(named) %}
+{% if named %}
+<div class="card mt-3">
+  <div class="card-body">
+    <h2 class="h5 mb-3">Named on other records</h2>
+    <table class="table mb-0">
+      <tbody>
+        {% for label, holders in named.items() %}
+        <tr>
+          <th scope="row" class="text-nowrap fw-semibold">{{ label }}</th>
+          <td>
+            {% for holder in holders[:100] %}
+            {% if holder.kind %}<span class="badge text-bg-light border fw-normal me-1">{{ holder.kind }}</span>{% endif %}<a class="link-vhpblue text-break" href="{{ holder.address|page_link }}">{{ holder.name }}</a>{% if not loop.last %}<br>{% endif %}
+            {% endfor %}
+            {% if holders|length > 100 %}<br><span class="text-secondary">and {{ holders|length - 100 }} more</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endmacro %}

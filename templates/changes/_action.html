@@ -1,0 +1,2 @@
+{% set colours = {"Added": "text-bg-success", "Changed": "text-bg-vhpblue", "Removed": "text-bg-secondary", "Restored": "text-bg-success", "Moved": "text-bg-vhppurple", "Merged": "text-bg-vhppurple", "Removed permanently": "text-bg-danger"} %}
+<span class="badge {{ colours.get(action, 'text-bg-secondary') }}">{{ action }}</span>

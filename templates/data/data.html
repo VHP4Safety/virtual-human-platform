@@ -213,9 +213,9 @@
             multiSelect: true, // Multiple selections per category
             multipleInputs: true, // Create separate hidden input for each value
             initialFilters: {
-                'case-study': [{% for c in filter_case_study %}'{{ c }}'{% if not loop.last %}, {% endif %}{% endfor %}],
-                'flow-step': [{% for s in filter_flow_step %}'{{ s }}'{% if not loop.last %}, {% endif %}{% endfor %}],
-                'reg-question': [{% for q in filter_regulatory_question %}'{{ q }}'{% if not loop.last %}, {% endif %}{% endfor %}]
+                'case-study': {{ filter_case_study | tojson }},
+                'flow-step': {{ filter_flow_step | tojson }},
+                'reg-question': {{ filter_regulatory_question | tojson }}
             },
             filterFieldMap: {
                 'case-study': 'case_study',

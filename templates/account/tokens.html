@@ -1,0 +1,85 @@
+{% extends "editor/base.html" %}
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+  <h1 class="h3 text-vhppurple mb-1">Write tokens</h1>
+
+  {% if not editor %}
+  <div class="alert alert-secondary">This ORCID iD is not on the list of editors.</div>
+  {% elif with_token %}
+  <div class="alert alert-secondary">Logged in with a write token; tokens are made after <a class="alert-link" href="{{ url_for('account.orcid_login', next=request.path) }}">logging in with ORCID</a>.</div>
+  {% else %}
+  {% if secret %}
+  <div class="alert alert-warning">
+    <p class="mb-1 fw-semibold">New token, shown only once:</p>
+    <code class="user-select-all fs-6">{{ secret }}</code>
+  </div>
+  {% endif %}
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-5">
+      <form method="post" class="card h-100">
+        <div class="card-header bg-white fw-semibold">New token</div>
+        <div class="card-body">
+          <input type="hidden" name="form_token" value="{{ form_token }}">
+          <p class="mb-2">Kinds it writes:</p>
+          {% set names = kind_names() %}
+          {% for kind in kinds %}
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="kinds" value="{{ kind }}" id="kind-{{ kind }}" checked>
+            <label class="form-check-label" for="kind-{{ kind }}">{{ names[kind] }}</label>
+          </div>
+          {% endfor %}
+          <label class="form-label mt-3" for="days">Valid for (days)</label>
+          <input class="form-control mb-3" type="number" min="1" max="365" name="days" id="days" value="{{ days }}">
+          <button type="submit" class="btn btn-vhpblue">Create token</button>
+        </div>
+      </form>
+    </div>
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header bg-white fw-semibold">Writing records with a token</div>
+        <div class="card-body small">
+          <p>Fields are named as in <a class="link-vhpblue" href="https://schema.org/SoftwareApplication">schema.org</a>; a link is <code>{"@id": "https://..."}</code>. The record is checked against the model and shown on its page at once.</p>
+          <pre class="bg-body-tertiary p-2 rounded mb-2"><code>curl -X PUT {{ request.url_root }}api/tools/my-tool \
+  -H "Authorization: Bearer vhp_..." \
+  -H "Content-Type: application/json" \
+  -d '{"name": "My tool", "description": "What it does.",
+       "url": {"@id": "https://example.org"}}'</code></pre>
+          <p class="mb-0">With <code>POST /api/tools</code>, the address is made from the name. With <code>DELETE /api/tools/my-tool</code>, the record is removed. With <code>POST /api/images</code>, an image is uploaded. The saved record is at <code>{{ request.url_root }}tools/my-tool.jsonld</code>. The same is done with a form in the <a class="link-vhpblue" href="{{ url_for('admin.admin') }}">record editor</a>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header bg-white fw-semibold">Tokens</div>
+    <div class="table-responsive">
+      <table class="table mb-0 align-middle">
+        <thead><tr><th>Token</th><th>Kinds</th><th>Created</th><th>Expires</th><th>Last used</th><th></th></tr></thead>
+        <tbody>
+          {% for token in tokens %}
+          <tr>
+            <td><code>{{ token.prefix }}…</code></td>
+            <td>{{ token.kinds }}</td>
+            <td>{{ token.created_at[:10] }}</td>
+            <td>{{ token.expires_at[:10] }}</td>
+            <td>{{ (token.last_used_at or "")[:16]|replace("T", " ") }}</td>
+            <td class="text-end">
+              {% if token.revoked_at %}<span class="badge text-bg-secondary">revoked</span>{% else %}
+              <form method="post" action="{{ url_for('account.revoke_token', token_id=token.id) }}">
+                <input type="hidden" name="form_token" value="{{ form_token }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-secondary">No tokens yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

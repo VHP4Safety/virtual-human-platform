@@ -7,11 +7,11 @@
     <!-- Page Title and Description -->
     <div class="">
         <h1><span class="text-vhpblue" id="collection-name">{{ collection_name or 'Data catalog' }} Models</span></h1>
-        <p class="text-secondary fs-5">Explore models generated or used in <span id="collection-name-sub">{{ collection_name }} and hosted on FAIRdom or BioModels archive.</span></p>
+        <p class="text-secondary fs-5">Explore models generated or used in <span id="collection-name-sub">{{ collection_name }} and hosted on Zenodo.</span></p>
     </div>
 
     <nav class="navbar navbar-expand-lg bg-body-tertiary mb-3 d-inline">
-        <form method="GET" action="{{ url_for('data') }}" class="d-flex" role="search" id="search-form">
+        <form method="GET" action="{{ url_for('models') }}" class="d-flex" role="search" id="search-form">
             <input type="text" class="form-control me-2" name="query" id="search-input" value="{{ search_query or '' }}" placeholder="Search for models..." />
             <!-- Hidden inputs for filters -->
             <input type="hidden" name="filter_case_study" id="filter_case_study" value="{{ filter_case_study or '' }}" />
@@ -19,7 +19,7 @@
             <input type="hidden" name="filter_flow_step" id="filter_flow_step" value="{{ filter_flow_step or '' }}" />
             <div class="btn-group" role="group" aria-label="Search and filter buttons">
                 <button type="submit" class="btn btn-outline-vhpblue">Search</button>
-                <a href="{{ url_for('data') }}" class="btn btn-outline-danger text-nowrap">Clear</a>
+                <a href="{{ url_for('models') }}" class="btn btn-outline-danger text-nowrap">Clear</a>
                 <button type="button" id="filter-toggle-btn" class="btn btn-outline-secondary">Filters</button>
             </div>
         </form>
@@ -45,13 +45,9 @@
                         Flow Step
                     </button>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item text-wrap text-md-nowrap" href="#" data-filter-type="flow-step" data-filter-value="ADME" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="{{ stage_explanations['ADME'] }}">ADME <i class="bi bi-question-circle text-vhpblue"></i></a></li>
-                        <li><a class="dropdown-item text-wrap text-md-nowrap" href="#" data-filter-type="flow-step" data-filter-value="Chemical Information" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="{{ stage_explanations['Chemical Information'] }}">Chemical Information <i class="bi bi-question-circle text-vhpblue"></i></a></li>
-                        <li><a class="dropdown-item text-wrap text-md-nowrap" href="#" data-filter-type="flow-step" data-filter-value="General" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="{{ stage_explanations['General'] }}">General <i class="bi bi-question-circle text-vhpblue"></i></a></li>
-                        <li><a class="dropdown-item text-wrap text-md-nowrap" href="#" data-filter-type="flow-step" data-filter-value="Hazard Assessment" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="{{ stage_explanations['Hazard Assessment'] }}">Hazard Assessment <i class="bi bi-question-circle text-vhpblue"></i></a></li>
-                        <li><a class="dropdown-item text-wrap text-md-nowrap" href="#" data-filter-type="flow-step" data-filter-value="External exposure" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="{{ stage_explanations['External exposure'] }}">External exposure <i class="bi bi-question-circle text-vhpblue"></i></a></li>
-                        <li><a class="dropdown-item text-wrap text-md-nowrap" href="#" data-filter-type="flow-step" data-filter-value="Generic" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="{{ stage_explanations['Generic'] }}">Generic <i class="bi bi-question-circle text-vhpblue"></i></a></li>
-                        <li><a class="dropdown-item text-wrap text-md-nowrap" href="#" data-filter-type="flow-step" data-filter-value="Other" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="{{ stage_explanations['Other'] }}">Other <i class="bi bi-question-circle text-vhpblue"></i></a></li>
+                        {% for stage in stages %}
+                          <li><a class="dropdown-item text-wrap text-md-nowrap" href="#" data-filter-type="flow-step" data-filter-value="{{ stage }}"{% if stage in stage_explanations %} data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="{{ stage_explanations[stage] }}"{% endif %}>{{ stage }}{% if stage in stage_explanations %} <i class="bi bi-question-circle text-vhpblue"></i>{% endif %}</a></li>
+                        {% endfor %}
                     </ul>
                 </div>
                 
@@ -136,7 +132,7 @@
                             <i class="bi bi-box-arrow-up-right pe-1"></i>
                             View 
                         </a>
-                        <a href="#"
+                        <a href="{{ study.links.archive or '#' }}"
                            class="btn btn-sm btn-outline-secondary view-details-btn">
                             <i class="bi bi-box-fill pe-1"></i>
                             RO-Crate
@@ -146,7 +142,7 @@
                             class="btn btn-sm btn-outline-vhpblue"
                             data-bs-toggle="tooltip"
                             data-bs-title="View metadata (.md)"
-                            onclick="showMetadata('{{ study.meta_data }}', '{{ study.title }}')">
+                            onclick='showMetadata({{ (study.meta_data or "") | tojson }}, {{ (study.title or "") | tojson }})'>
                         <i class="bi bi-list-ul"></i>
                             Metadata
                         </button>
@@ -185,9 +181,9 @@
             filterTypes: ['case-study', 'reg-question', 'flow-step'],
             multiSelect: false, // Single selection per category
             initialFilters: {
-                'case-study': '{{ filter_case_study or "" }}',
-                'flow-step': '{{ filter_flow_step or "" }}',
-                'reg-question': '{{ filter_regulatory_question or "" }}'
+                'case-study': {{ (filter_case_study or "") | tojson }},
+                'flow-step': {{ (filter_flow_step or "") | tojson }},
+                'reg-question': {{ (filter_regulatory_question or "") | tojson }}
             },
             filterFieldMap: {
                 'case-study': 'filter_case_study',

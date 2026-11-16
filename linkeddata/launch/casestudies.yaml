@@ -1,0 +1,9 @@
+name: casestudies
+title: Case studies
+parser: casestudies
+# The RO-Crate of the case studies, and the content file of each case study, by identifier.
+files:
+  crate: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/ro-crate-metadata.json
+  kidney: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/kidney_content.json
+  parkinson: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/parkinson_content.json
+  thyroid: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/thyroid_content.json

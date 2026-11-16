@@ -1,0 +1,570 @@
+# The shapes of the profile https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT.
+@prefix bioschemas_draft: <https://bioschemas.org/draft_terms/> .
+@prefix dash: <http://datashapes.org/dash#> .
+@prefix glossary: <https://vhp4safety.github.io/glossary#> .
+@prefix profile: <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <http://schema.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+profile:Study a sh:NodeShape ;
+    rdfs:label "Case study" ;
+    sh:name "Case study" ;
+    sh:property profile:Study-studySubject,
+        profile:Study-abstract,
+        profile:Study-creator,
+        profile:Study-description,
+        profile:Study-hasPart,
+        profile:Study-headline,
+        profile:Study-image,
+        profile:Study-keywords,
+        profile:Study-name,
+        profile:Study-text ;
+    sh:targetClass bioschemas_draft:Study .
+
+profile:WorkflowStep a sh:NodeShape ;
+    rdfs:label "Workflow step" ;
+    sh:name "Workflow step" ;
+    sh:property profile:WorkflowStep-input,
+        profile:WorkflowStep-output ;
+    sh:targetObjectsOf schema:step .
+
+profile:FormalParameter-description a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Description" ;
+    sh:order 2 ;
+    sh:path schema:description .
+
+profile:FormalParameter-name a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:message "One name needed." ;
+    sh:minCount 1 ;
+    sh:name "Name" ;
+    sh:order 1 ;
+    sh:path schema:name .
+
+profile:HowTo a sh:NodeShape ;
+    rdfs:label "Workflow page" ;
+    sh:name "Workflow page" ;
+    sh:property profile:HowTo-additionalType,
+        profile:HowTo-creativeWorkStatus,
+        profile:HowTo-description,
+        profile:HowTo-disambiguatingDescription,
+        profile:HowTo-hasPart,
+        profile:HowTo-headline,
+        profile:HowTo-input,
+        profile:HowTo-name,
+        profile:HowTo-output,
+        profile:HowTo-position,
+        profile:HowTo-step,
+        profile:HowTo-supply,
+        profile:HowTo-text,
+        profile:HowTo-tool  .
+
+profile:HowTo-additionalType a sh:PropertyShape ;
+    sh:description "Only for the steps of a question, such as Exposure: the step of the process flow, also used as the name of the button." ;
+    sh:group profile:group-workflow-page ;
+    sh:in ( glossary:VHP0000153 glossary:VHP0000154 glossary:VHP0000155 glossary:VHP0000156 glossary:VHP0000158 ) ;
+    sh:maxCount 1 ;
+    sh:message "Choose a process flow step from the list." ;
+    sh:name "Process flow step" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 5 ;
+    sh:path schema:additionalType ;
+    sh:severity sh:Warning .
+
+profile:HowTo-creativeWorkStatus a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "Empty: the page is shown, and opened with its button. Incomplete: its page has no content yet, so its button is greyed out and the page cannot be opened." ;
+    sh:group profile:group-workflow-page ;
+    sh:in ( "Incomplete" ) ;
+    sh:maxCount 1 ;
+    sh:name "Status" ;
+    sh:order 6 ;
+    sh:path schema:creativeWorkStatus .
+
+profile:HowTo-description a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "Shown under the heading of its page." ;
+    sh:group profile:group-workflow-page ;
+    sh:maxCount 1 ;
+    sh:name "Summary" ;
+    sh:order 4 ;
+    sh:path schema:description .
+
+profile:HowTo-disambiguatingDescription a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "Only for a step: shown under the title on its button." ;
+    sh:group profile:group-workflow-page ;
+    sh:maxCount 1 ;
+    sh:name "Description under its button" ;
+    sh:order 8 ;
+    sh:path schema:disambiguatingDescription .
+
+profile:HowTo-hasPart a sh:PropertyShape ;
+    sh:class schema:WebPageElement ;
+    sh:description "Page sections, each with a heading, an HTML text and a position." ;
+    sh:group profile:group-parts ;
+    sh:name "Sections" ;
+    sh:node profile:WebPageElement ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:order 1 ;
+    sh:path schema:hasPart .
+
+profile:HowTo-headline a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "The heading of its page, if it differs from the title." ;
+    sh:group profile:group-workflow-page ;
+    sh:maxCount 1 ;
+    sh:name "Heading of its page" ;
+    sh:order 3 ;
+    sh:path schema:headline .
+
+profile:HowTo-input a sh:PropertyShape ;
+    sh:description "The input of a step, such as an estimated daily intake: a linked dataset, or a name if there is no record of it yet." ;
+    sh:group profile:group-parts ;
+    sh:name "Input" ;
+    sh:or ( [ rdfs:label "Data" ;
+                sh:class schema:Dataset ] [ rdfs:label "Name only" ;
+                sh:node profile:FormalParameter ] ) ;
+    sh:order 5 ;
+    sh:path <https://bioschemas.org/properties/input> .
+
+profile:HowTo-name a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "Shown on its button, as the heading of its page, and in the way back to it." ;
+    sh:group profile:group-workflow-page ;
+    sh:maxCount 1 ;
+    sh:message "One title needed." ;
+    sh:minCount 1 ;
+    sh:name "Title" ;
+    sh:order 1 ;
+    sh:path schema:name .
+
+profile:HowTo-output a sh:PropertyShape ;
+    sh:description "The output of a step, such as an exposure calculation: a linked dataset, or a name if there is no record of it yet." ;
+    sh:group profile:group-parts ;
+    sh:name "Output" ;
+    sh:or ( [ rdfs:label "Data" ;
+                sh:class schema:Dataset ] [ rdfs:label "Name only" ;
+                sh:node profile:FormalParameter ] ) ;
+    sh:order 6 ;
+    sh:path <https://bioschemas.org/properties/output> .
+
+profile:HowTo-position a sh:PropertyShape ;
+    sh:datatype xsd:integer ;
+    sh:description "Button order on the parent page. 1 is first." ;
+    sh:group profile:group-workflow-page ;
+    sh:maxCount 1 ;
+    sh:name "Position" ;
+    sh:order 7 ;
+    sh:path schema:position .
+
+profile:HowTo-step a sh:PropertyShape ;
+    sh:class schema:HowTo ;
+    sh:description "Each a page under the address of this page. For a question, these are its process flow steps." ;
+    sh:group profile:group-parts ;
+    sh:name "Steps" ;
+    sh:node profile:HowTo ;
+    sh:nodeKind sh:IRI ;
+    sh:order 2 ;
+    sh:path schema:step .
+
+profile:HowTo-supply a sh:PropertyShape ;
+    sh:class schema:HowToSupply ;
+    sh:description "Each use of a dataset on the page, with the label and the description on its button." ;
+    sh:group profile:group-parts ;
+    sh:name "Data" ;
+    sh:node profile:HowToSupply ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:order 4 ;
+    sh:path schema:supply .
+
+profile:HowTo-text a sh:PropertyShape ;
+    dash:singleLine false ;
+    sh:datatype xsd:string ;
+    sh:description "For a question: the question, shown on its button and on its page. For a step: text shown on its page, above its sections." ;
+    sh:group profile:group-workflow-page ;
+    sh:maxCount 1 ;
+    sh:name "Text" ;
+    sh:order 2 ;
+    sh:path schema:text .
+
+profile:HowTo-tool a sh:PropertyShape ;
+    sh:class schema:HowToTool ;
+    sh:description "Each use of a tool, method or model on the page, with the label and the description on its button." ;
+    sh:group profile:group-parts ;
+    sh:name "Tools and methods" ;
+    sh:node profile:HowToTool ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:order 3 ;
+    sh:path schema:tool .
+
+profile:HowToSupply a sh:NodeShape ;
+    rdfs:label "Data used" ;
+    sh:name "Data used" ;
+    sh:property profile:HowToSupply-description,
+        profile:HowToSupply-item,
+        profile:HowToSupply-name,
+        profile:HowToSupply-position .
+
+profile:HowToSupply-description a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Description under the label" ;
+    sh:order 3 ;
+    sh:path schema:description .
+
+profile:HowToSupply-item a sh:PropertyShape ;
+    sh:class schema:Dataset ;
+    sh:maxCount 1 ;
+    sh:message "Link a dataset." ;
+    sh:minCount 1 ;
+    sh:name "Dataset" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 1 ;
+    sh:path schema:item ;
+    sh:severity sh:Warning .
+
+profile:HowToSupply-name a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Label on its button" ;
+    sh:order 2 ;
+    sh:path schema:name .
+
+profile:HowToSupply-position a sh:PropertyShape ;
+    sh:datatype xsd:integer ;
+    sh:description "Button order among the tools and data of the page. 1 is first." ;
+    sh:maxCount 1 ;
+    sh:name "Position" ;
+    sh:order 4 ;
+    sh:path schema:position .
+
+profile:HowToTool a sh:NodeShape ;
+    rdfs:label "Tool, method or model used" ;
+    sh:name "Tool, method or model used" ;
+    sh:property profile:HowToTool-description,
+        profile:HowToTool-item,
+        profile:HowToTool-name,
+        profile:HowToTool-position .
+
+profile:HowToTool-description a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Description under the label" ;
+    sh:order 3 ;
+    sh:path schema:description .
+
+profile:HowToTool-item a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:message "Link a tool, method or model." ;
+    sh:minCount 1 ;
+    sh:name "Tool, method or model" ;
+    sh:nodeKind sh:IRI ;
+    sh:or ( [ rdfs:label "Tool" ;
+                sh:class schema:SoftwareApplication ] [ rdfs:label "Method" ;
+                sh:class bioschemas_draft:LabProtocol ] [ rdfs:label "Model" ;
+                sh:class schema:SoftwareSourceCode ] ) ;
+    sh:order 1 ;
+    sh:path schema:item ;
+    sh:severity sh:Warning .
+
+profile:HowToTool-name a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Label on its button" ;
+    sh:order 2 ;
+    sh:path schema:name .
+
+profile:HowToTool-position a sh:PropertyShape ;
+    sh:datatype xsd:integer ;
+    sh:description "Button order for the tools and data of the page." ;
+    sh:maxCount 1 ;
+    sh:name "Position" ;
+    sh:order 4 ;
+    sh:path schema:position .
+
+profile:ImageObject a sh:NodeShape ;
+    rdfs:label "Figure" ;
+    sh:name "Figure" ;
+    sh:property profile:ImageObject-caption,
+        profile:ImageObject-contentUrl .
+
+profile:ImageObject-caption a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "Also read out in place of the image." ;
+    sh:maxCount 1 ;
+    sh:name "Caption" ;
+    sh:order 2 ;
+    sh:path schema:caption .
+
+profile:ImageObject-contentUrl a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:message "One image address needed." ;
+    sh:minCount 1 ;
+    sh:name "Image" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 1 ;
+    sh:path schema:contentUrl .
+
+profile:Study-studySubject a sh:PropertyShape ;
+    sh:class schema:DefinedTerm ;
+    sh:description "The medical condition that the case study is about, as a SNOMED or MONDO term (the studySubject of the Bioschemas Study profile)." ;
+    sh:group profile:group-about-the-case-study ;
+    sh:message "Choose a SNOMED CT or MONDO term, or register it." ;
+    sh:name "Condition" ;
+    sh:order 3 ;
+    sh:path schema:studySubject ;
+    sh:severity sh:Warning .
+
+profile:Study-abstract a sh:PropertyShape ;
+    dash:singleLine false ;
+    sh:datatype xsd:string ;
+    sh:group profile:group-about-the-case-study ;
+    sh:maxCount 1 ;
+    sh:name "Introduction to the questions" ;
+    sh:order 5 ;
+    sh:path schema:abstract .
+
+profile:Study-creator a sh:PropertyShape ;
+    sh:description "The people and organisations who wrote the case study (creator in Bioschemas). Kept in the data, not shown on the page." ;
+    sh:group profile:group-about-the-case-study ;
+    sh:name "Authors" ;
+    sh:or ( [ rdfs:label "Person" ;
+                sh:class schema:Person ] [ rdfs:label "Organisation" ;
+                sh:class schema:Organization ] ) ;
+    sh:order 0 ;
+    sh:path schema:creator .
+
+profile:Study-description a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "In one sentence." ;
+    sh:group profile:group-about-the-case-study ;
+    sh:maxCount 1 ;
+    sh:name "Aim" ;
+    sh:order 2 ;
+    sh:path schema:description .
+
+profile:Study-hasPart a sh:PropertyShape ;
+    sh:description "The regulatory questions of the case study, each with the workflow that answers it, at /casestudies/<case>/<question>, and the sections of its page, each with a heading, an HTML text and a position." ;
+    sh:group profile:group-parts ;
+    sh:name "Questions and sections" ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:or ( [ rdfs:label "Regulatory question" ; sh:class schema:HowTo ; sh:node profile:HowTo ; sh:nodeKind sh:IRI ]
+        [ rdfs:label "Section" ; sh:class schema:WebPageElement ; sh:node profile:WebPageElement ] ) ;
+    sh:order 1 ;
+    sh:path schema:hasPart .
+
+profile:Study-headline a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "The heading of its page, if it differs from the name." ;
+    sh:group profile:group-about-the-case-study ;
+    sh:maxCount 1 ;
+    sh:name "Heading of its page" ;
+    sh:order 8 ;
+    sh:path schema:headline .
+
+profile:Study-image a sh:PropertyShape ;
+    sh:description "Shown on the case studies page." ;
+    sh:group profile:group-about-the-case-study ;
+    sh:maxCount 1 ;
+    sh:name "Icon" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 7 ;
+    sh:path schema:image .
+
+profile:Study-keywords a sh:PropertyShape ;
+    sh:class schema:DefinedTerm ;
+    sh:description "The topics of the case study." ;
+    sh:group profile:group-about-the-case-study ;
+    sh:message "Choose a vocabulary term, or register it. Text is kept until then." ;
+    sh:name "Keywords" ;
+    sh:order 4 ;
+    sh:path schema:keywords ;
+    sh:severity sh:Warning .
+
+profile:Study-name a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:group profile:group-about-the-case-study ;
+    sh:maxCount 1 ;
+    sh:message "One name needed." ;
+    sh:minCount 1 ;
+    sh:name "Name" ;
+    sh:order 1 ;
+    sh:path schema:name .
+
+profile:Study-text a sh:PropertyShape ;
+    dash:singleLine false ;
+    sh:datatype xsd:string ;
+    sh:description "The text of the page in HTML, if it is not in sections." ;
+    sh:group profile:group-about-the-case-study ;
+    sh:maxCount 1 ;
+    sh:name "Text" ;
+    sh:order 6 ;
+    sh:path schema:text .
+
+profile:VideoObject a sh:NodeShape ;
+    rdfs:label "Video" ;
+    sh:name "Video" ;
+    sh:property profile:VideoObject-duration,
+        profile:VideoObject-embedUrl,
+        profile:VideoObject-name,
+        profile:VideoObject-thumbnailUrl .
+
+profile:VideoObject-duration a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "An ISO 8601 duration, such as PT5M38S." ;
+    sh:maxCount 1 ;
+    sh:name "Duration" ;
+    sh:order 4 ;
+    sh:path schema:duration ;
+    sh:pattern "^P" .
+
+profile:VideoObject-embedUrl a sh:PropertyShape ;
+    sh:description "The address of the player of the video, such as https://video.edu.nl/videos/embed/<id>." ;
+    sh:maxCount 1 ;
+    sh:message "The address of the player needed." ;
+    sh:minCount 1 ;
+    sh:name "Player" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 2 ;
+    sh:path schema:embedUrl .
+
+profile:VideoObject-name a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Title" ;
+    sh:order 1 ;
+    sh:path schema:name .
+
+profile:VideoObject-thumbnailUrl a sh:PropertyShape ;
+    sh:maxCount 1 ;
+    sh:name "Thumbnail" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 3 ;
+    sh:path schema:thumbnailUrl .
+
+profile:WebPageElement-about a sh:PropertyShape ;
+    sh:description "The record that is presented in the section, with the shown fields. Or, for a grant without shown fields, the records that name the grant, such as its publications." ;
+    sh:maxCount 1 ;
+    sh:name "Presents" ;
+    sh:or ( [ rdfs:label "Grant" ;
+                sh:class schema:MonetaryGrant ] [ rdfs:label "Organisation or project" ;
+                sh:class schema:Organization ] [ rdfs:label "Training material" ;
+                sh:class schema:LearningResource ] ) ;
+    sh:order 8 ;
+    sh:path schema:about .
+
+profile:WebPageElement-creativeWorkStatus a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "Empty: the section is shown. hidden: the section is kept in the data, but not shown on the page." ;
+    sh:in ( "hidden" ) ;
+    sh:maxCount 1 ;
+    sh:name "Status" ;
+    sh:order 6 ;
+    sh:path schema:creativeWorkStatus .
+
+profile:WebPageElement-hasPart a sh:PropertyShape ;
+    sh:class schema:WebPageElement ;
+    sh:description "Its own sections, shown as its items." ;
+    sh:name "Sections" ;
+    sh:node profile:WebPageElement ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:order 7 ;
+    sh:path schema:hasPart .
+
+profile:WebPageElement-image a sh:PropertyShape ;
+    sh:class schema:ImageObject ;
+    sh:description "Shown after the text." ;
+    sh:name "Figures" ;
+    sh:node profile:ImageObject ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:order 4 ;
+    sh:path schema:image .
+
+profile:WebPageElement-name a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Heading" ;
+    sh:order 1 ;
+    sh:path schema:name .
+
+profile:WebPageElement-position a sh:PropertyShape ;
+    sh:datatype xsd:integer ;
+    sh:maxCount 1 ;
+    sh:name "Position" ;
+    sh:order 3 ;
+    sh:path schema:position .
+
+profile:WebPageElement-text a sh:PropertyShape ;
+    dash:singleLine false ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:name "Text" ;
+    sh:order 2 ;
+    sh:path schema:text .
+
+profile:WebPageElement-url a sh:PropertyShape ;
+    sh:description "Where the section is read, such as a section of a tutorial on the documentation site." ;
+    sh:maxCount 1 ;
+    sh:name "Address" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 9 ;
+    sh:path schema:url .
+
+profile:WebPageElement-video a sh:PropertyShape ;
+    sh:class schema:VideoObject ;
+    sh:name "Videos" ;
+    sh:node profile:VideoObject ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:order 5 ;
+    sh:path schema:video .
+
+profile:WorkflowStep-input a sh:PropertyShape ;
+    sh:message "Add the input." ;
+    sh:minCount 1 ;
+    sh:path <https://bioschemas.org/properties/input> ;
+    sh:severity sh:Warning .
+
+profile:WorkflowStep-output a sh:PropertyShape ;
+    sh:message "Add the output." ;
+    sh:minCount 1 ;
+    sh:path <https://bioschemas.org/properties/output> ;
+    sh:severity sh:Warning .
+
+profile:FormalParameter a sh:NodeShape ;
+    rdfs:label "Input or output" ;
+    sh:name "Input or output" ;
+    sh:property profile:FormalParameter-description,
+        profile:FormalParameter-name .
+
+profile:WebPageElement a sh:NodeShape ;
+    rdfs:label "Section" ;
+    sh:name "Section" ;
+    sh:property profile:WebPageElement-about,
+        profile:WebPageElement-creativeWorkStatus,
+        profile:WebPageElement-hasPart,
+        profile:WebPageElement-image,
+        profile:WebPageElement-name,
+        profile:WebPageElement-position,
+        profile:WebPageElement-text,
+        profile:WebPageElement-url,
+        profile:WebPageElement-video .
+
+profile:group-parts a sh:PropertyGroup ;
+    rdfs:label "Parts" ;
+    sh:order 2 .
+
+profile:group-workflow-page a sh:PropertyGroup ;
+    rdfs:label "Workflow page" ;
+    sh:order 1 .
+
+profile:group-about-the-case-study a sh:PropertyGroup ;
+    rdfs:label "About the case study" ;
+    sh:order 1 .
+
