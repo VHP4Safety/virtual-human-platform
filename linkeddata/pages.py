@@ -187,6 +187,32 @@ def markdown(record: Record, formats: dict[str, str], licence: str) -> str:
     return "\n\n".join(lines) + "\n"
 
 
+def llms(index: dict) -> str:
+    """Return llms.txt (llmstxt.org): what the platform holds and where agents start, from index, the entry points of the API."""
+    platform = void.platform()
+    about = ["To answer a question, search first, then read the record at its address.",
+             "Record kinds: " + ", ".join(index["kinds"]) + ".",
+             f"A page is at {settings()['base']}<kind>/<name>. Add .md, .jsonld, .ttl or .nt to the address of a page for that format."]
+    if platform["license"]:
+        # CC0 is a dedication to the public domain, so the records may be reused for any purpose.
+        free = " The records may be reused for any purpose, also by AI systems." if "CC0" in platform["license"] else ""
+        about.append(f"Licence of the records: {platform['license']}.{free}")
+    start = [f"- [Search all records]({index['search']}): the address (@id), class (@type) and name of each record with the text",
+             f"- [Read one record]({index['record']}): the record in JSON-LD; its page address with .md gives it in Markdown",
+             f"- [Index of the API]({records.address('api')}): the listing of each kind, the downloads and these addresses",
+             f"- [OpenAPI description]({index['openapi']}): every operation, with examples"]
+    data = [f"- [All records]({index['dump']}): one file, in N-Triples or Turtle",
+            f"- [SHACL shapes]({index['shapes']}): the fields of each kind of record",
+            f"- [VoID]({index['void']}): the dataset, its licence and its statistics"]
+    optional = [f"- [Sitemap]({records.address('sitemap.xml')}): every page, with the date of its last change",
+                "- [Glossary](https://vhp4safety.github.io/glossary): the terms that the records use as keywords"]
+    lines = [f"# {platform['name'] or index['title']}"]
+    if platform["abstract"]:
+        lines.append(f"> {platform['abstract']}")
+    lines += ["\n".join(about), "## Start here\n\n" + "\n".join(start), "## Data\n\n" + "\n".join(data), "## Optional\n\n" + "\n".join(optional)]
+    return "\n\n".join(lines) + "\n"
+
+
 def figures(found: Graph, node, path) -> list[dict]:
     """Return the images of a field of node, with address and caption."""
     listed = []

@@ -194,7 +194,7 @@ def sitemap():
     # Static, parameter-less GET pages, derived from the URL map so new pages
     # are picked up automatically. Machine endpoints are excluded. Routes with
     # <params> are skipped and handled below.
-    EXCLUDED_ENDPOINTS = {"sitemap", "robots", "static", "models_page", "api_catalog", "void_description"}
+    EXCLUDED_ENDPOINTS = {"sitemap", "robots", "llms", "static", "models_page", "api_catalog", "void_description"}
     # The pages for editors (login, tokens, editing, changes) and the API are left out.
     EXCLUDED_BLUEPRINTS = {"account", "admin", "changes", "records", "api-docs"}
     paths = sorted(
@@ -241,6 +241,13 @@ def robots():
         f"Sitemap: {records.address('sitemap.xml')}\n"
     )
     return Response(robotsContent, mimetype="text/plain")
+
+
+################################################################################
+### llms.txt tells agents what the platform holds and where to start (llmstxt.org)
+@app.route("/llms.txt")
+def llms():
+    return Response(pages.llms(records_api.index_of_api()), content_type=pages.MEDIA, headers={"Access-Control-Allow-Origin": "*"})
 
 
 ################################################################################

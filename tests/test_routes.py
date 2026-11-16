@@ -2,6 +2,7 @@
 
 import io
 import json
+import re
 from urllib.parse import parse_qs, urlparse
 
 from PIL import Image as Picture
@@ -142,6 +143,21 @@ def test_api_index(site):
         assert (answer.status_code, answer.mimetype) == (200, "application/json"), path
     found = site.get(local(anchor)).json
     assert set(found["kinds"]) == set(settings()["kinds"]) and found["start"].startswith("Search first")
-    for name in ("search", "openapi", "documentation", "dump", "terms", "shapes", "void", "catalog", "kinds"):
+    for name in ("search", "openapi", "documentation", "dump", "terms", "shapes", "void", "catalog", "llms", "kinds"):
         for address in found[name].values() if name == "kinds" else [found[name]]:
             assert site.get(local(address)).status_code == 200, address
+
+
+def test_llms(site):
+    """llms.txt says what the platform holds and where to start, and each of its links on the platform works."""
+    add_records()
+    answer = site.get("/llms.txt")
+    text = answer.data.decode()
+    assert (answer.status_code, answer.mimetype) == (200, "text/markdown") and text.startswith("# ")
+    assert "search first" in text and all(kind in text for kind in settings()["kinds"])
+    links = re.findall(r"\]\(([^)]+)\)", text)
+    assert len(links) >= 8
+    # The example record is not in the test database.
+    for link in links:
+        if link.startswith(BASE) and not link.endswith("/aopwikiapi"):
+            assert site.get(local(link)).status_code == 200, link
