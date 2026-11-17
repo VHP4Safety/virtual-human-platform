@@ -396,8 +396,8 @@ def found_record(path: str):
     return record
 
 
-# A text searched for is at most as long as a registry takes it.
-TEXT = validate.Length(max=200)
+# A text searched for is at most as long as a registry takes it, and holds no NUL, which ends a text in SQLite.
+TEXT = validate.And(validate.Length(max=200), validate.ContainsNoneOf(["\x00"]))
 
 
 class Search(Schema):
@@ -525,7 +525,7 @@ def index():
 def search(given):
     """Search records and vocabulary terms."""
     among = records.nodes_with(str(SDO.DefinedTerm), str(SDO.inDefinedTermSet), [given["vocabulary"]]) if given["vocabulary"] else None
-    return jsonify(searched(given["text"], given["of_class"], given["within"], given["limit"], among))
+    return Response(json.dumps(searched(given["text"], given["of_class"], given["within"], given["limit"], among)), mimetype="application/ld+json")
 
 
 def searched(text: str, classes: list[str] | None = None, within: str = "", limit: int = 20, among=None) -> dict:
@@ -936,8 +936,10 @@ def described(spec: dict) -> dict:
         paths[f"/api/{kind}"] = {"get": listed, "post": added}
         paths[f"/api/{kind}/facets"] = {"get": counted}
         tags.append({"name": kind, "description": f"{label} records, of the class {jsonld_name(of_class)}, with the fields of the schema {name}. {components[name]['description']}"})
-    # A record of any kind, told apart by its class.
-    anything = {"anyOf": [{"$ref": ref} for ref in mapping.values()], "discriminator": {"propertyName": "@type", "mapping": mapping}}
+    # A record of any kind, told apart by its class: the class of its kind, a class below it, or the class of a part.
+    for of_class, part in records.types():
+        mapping.setdefault(jsonld_name(of_class), schemas.REF + ("Part" if part or of_class not in kinds() else schemas.kind_name(settings()["kinds"][kinds()[of_class]])))
+    anything = {"anyOf": [{"$ref": ref} for ref in dict.fromkeys(mapping.values())], "discriminator": {"propertyName": "@type", "mapping": mapping}}
     reading["get"]["responses"]["200"]["content"]["application/ld+json"]["schema"] = anything
     reading["put"]["requestBody"]["content"]["application/ld+json"]["schema"] = anything
     # The schema of the request bodies, of any record, is replaced by those of the kinds.

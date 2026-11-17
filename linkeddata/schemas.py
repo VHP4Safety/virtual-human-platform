@@ -28,6 +28,8 @@ SHARED = {
     "Value": {"type": "object", "required": ["@value"], "description": "A value with its datatype, such as a year.", "properties": {
         "@value": {"type": "string"}, "@type": {"type": "string", "format": "iri", "description": "The datatype."}}},
     "Types": {"anyOf": [{"type": "string"}, {"type": "array", "items": {"type": "string"}}], "description": "The class, or the classes, by their JSON-LD names."},
+    "Part": {"type": "object", "description": "A part of a record, such as a question of a case study, with the fields of the shape of its class.", "properties": {
+        "@id": {"type": "string", "format": "iri", "description": "The address of the part, under the address of its record."}, "@type": {"$ref": REF + "Types"}}},
 }
 
 

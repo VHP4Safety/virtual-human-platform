@@ -431,3 +431,20 @@ def test_filters(site):
     for path in ("/api/people", "/api/people/facets"):
         unknown = site.get(path, query_string={"affiliation": "x"})
         assert unknown.status_code == 422 and "affiliation" in unknown.json["message"], path
+
+
+def test_search_details(site):
+    """The search ignores the case of any letter, takes the start of an address as it is, and returns JSON-LD; each class
+    that a record is read with is in the description of getRecord."""
+    writes.save(writes.document(PERSON, BASE + "people/v", {"name": "Véronique"}), PERSON, "Test Editor", ORCID)
+    writes.save(writes.document("https://schema.org/AboutPage", BASE + "about", {"name": "About"}), "https://schema.org/AboutPage", "Test Editor", ORCID)
+    for text in ("VÉRONIQUE", "véronique"):
+        assert [found["name"] for found in site.get("/api/search", query_string={"text": text}).json["@graph"]] == ["Véronique"], text
+        assert site.get("/api/people", query_string={"search": text}).json["@graph"][0]["name"] == "Véronique", text
+    for within in ("%", "_", BASE.upper()):
+        assert site.get("/api/search", query_string={"within": within}).json["@graph"] == [], within
+    assert site.get("/api/search", query_string={"within": BASE + "people/"}).json["@graph"][0]["name"] == "Véronique"
+    assert site.get("/api/search", query_string={"text": "\x00"}).status_code == 422
+    assert site.get("/api/search").mimetype == "application/ld+json"
+    mapping = site.get("/api/docs/openapi.json").json["paths"]["/api/{path}"]["get"]["responses"]["200"]["content"]["application/ld+json"]["schema"]["discriminator"]["mapping"]
+    assert mapping["AboutPage"] == mapping["WebPage"]

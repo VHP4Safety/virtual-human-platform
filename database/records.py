@@ -57,9 +57,10 @@ def search(text: str, classes: list[str], within: str = "", limit: int | None = 
         every |= {str(sub) for sub in hierarchy().transitive_subjects(RDFS.subClassOf, URIRef(of_class))}
     statement = select(Record).where(Record.type.in_(every), Record.removed_at.is_(None), Record.moved_to.is_(None))
     if text:
-        statement = statement.where(Record.name.icontains(text, autoescape=True) | Record.iri.contains(text, autoescape=True))
+        statement = statement.where(func.casefold(Record.name).contains(text.casefold(), autoescape=True) | Record.iri.contains(text, autoescape=True))
+    # The start of the address is compared as it is, without the wildcards and the ignored case of LIKE.
     if within:
-        statement = statement.where(Record.iri.startswith(within))
+        statement = statement.where(func.substr(Record.iri, 1, len(within)) == within)
     if among is not None:
         statement = statement.where(Record.iri.in_(among))
     with database.session() as db:
@@ -104,6 +105,12 @@ def names(iris: list[str]) -> dict[str, str]:
     for iri, term in terms(others).items():
         found[iri] = term["name"]
     return found
+
+
+def types() -> list[tuple[str, bool]]:
+    """Return each class of the records and of their parts, with True for a class of parts, the classes of records first."""
+    with database.session() as db:
+        return sorted(db.execute(select(Record.type, Record.part_of.is_not(None)).distinct()).all(), key=lambda found: (found[1], found[0]))
 
 
 def earlier_addresses(iri: str) -> list[str]:
@@ -388,7 +395,7 @@ def chosen(of_class: str, filters: dict, search: str = ""):
     statement = select(Record.iri, Record.name).where(
         Record.type.in_(within(of_class)), Record.removed_at.is_(None), Record.moved_to.is_(None), Record.part_of.is_(None))
     if search:
-        statement = statement.where(or_(Record.name.icontains(search, autoescape=True), Record.iri.contains(search, autoescape=True)))
+        statement = statement.where(or_(func.casefold(Record.name).contains(search.casefold(), autoescape=True), Record.iri.contains(search, autoescape=True)))
     for path, wanted in filters.items():
         statement = statement.where(Record.iri.in_(nodes_with(of_class, path, wanted)))
     return statement
