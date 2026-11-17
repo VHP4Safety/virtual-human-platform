@@ -90,7 +90,8 @@ TAGS = [
     {"name": "editing", "description": "Add, change, move, remove and restore records. A write token for the kind is required."},
     {"name": "registries", "description": "Search vocabulary registries for vocabularies and terms that are not on the platform yet. As each search is sent on to a registry, the searches of each client address are limited to " + REGISTRY_LIMIT + "."},
 ]
-limiter.limit(LIMIT)(blueprint)
+# The requests of a client to all operations of the API are counted together, and the registry searches also apart.
+limiter.shared_limit(LIMIT, scope="api")(blueprint)
 TOKEN = [{"token": []}]
 WRITE = {"security": TOKEN, "requestBody": {"content": {"text/turtle": {"schema": {"type": "string"}}}}}
 class Record(Schema.from_dict({"@type": fields.Raw(metadata={"description": "The class of the record, such as SoftwareApplication. Required for a new record."})})):
@@ -471,7 +472,7 @@ def registries():
 @blueprint.arguments(Registry, location="query")
 @blueprint.response(200, {"type": "array", "items": VOCABULARY})
 @blueprint.doc(description="Return up to 50 vocabularies with the text in the identifier or the title.")
-@limiter.limit(REGISTRY_LIMIT)
+@limiter.limit(REGISTRY_LIMIT, override_defaults=False)
 def registry_vocabularies(given, registry):
     """Search the vocabularies of a registry."""
     if registry not in PROVIDERS:
@@ -488,7 +489,7 @@ def registry_vocabularies(given, registry):
     "Return the terms of the namespace with the text in the name. The terms are read from the registry of the "
     "namespace."
 ))
-@limiter.limit(REGISTRY_LIMIT)
+@limiter.limit(REGISTRY_LIMIT, override_defaults=False)
 def registry_terms(given):
     """Search the terms of a vocabulary."""
     if not given["text"].strip() or not given["namespace"]:

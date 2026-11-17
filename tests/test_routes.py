@@ -285,6 +285,8 @@ def test_rate_limit(site):
         refused = answers[-1]
         assert refused.status_code == 429 and refused.headers.get("Retry-After") and refused.mimetype == "application/problem+json"
         assert answers[0].headers.get("X-RateLimit-Limit") == "300"
+        # The limit is one count for all operations of the API.
+        assert site.get("/api/tools").status_code == 429
     finally:
         records_api.limiter.reset()
     assert records_api.LIMIT in site.get("/api/docs/openapi.json").json["info"]["description"]
