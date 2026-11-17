@@ -4,7 +4,7 @@ import copy
 import json
 import re
 from functools import lru_cache
-from urllib.parse import quote, quote_plus
+from urllib.parse import quote, quote_plus, urlsplit
 
 from flask import Response, g, jsonify, redirect, render_template, request, url_for
 from flask_limiter import Limiter
@@ -129,20 +129,57 @@ class Image(Schema.from_dict({"@id": fields.String(metadata={"description": "The
     pass
 
 
-def kind_of(address: str | None, body: dict) -> str | None:
-    """Return the kind of the record at address, or of the @type of a new record in body."""
-    record = records.get(address) if address else None
-    given = record.type if record is not None else body.get("@type")
+def kinds() -> dict[str, str]:
+    """Return the kind of each class of records, with the classes below the class of each kind."""
     names = {}
     for name, kind in settings()["kinds"].items():
         for of_class in records.within(kind):
             names[of_class] = name
-    for value in given if isinstance(given, list) else [given]:
-        if isinstance(value, str):
-            iri = value if value.startswith(("http://", "https://")) else documents.expand(value)
-            if iri in names:
-                return names[iri]
-    return None
+    return names
+
+
+def kind_of(address: str | None, body: dict) -> str | None:
+    """Return the kind of the record at address, or of the @type of a new record in body."""
+    record = records.get(address) if address else None
+    given = [record.type] if record is not None else writes.classes(body)
+    return next((kinds()[of_class] for of_class in given if of_class in kinds()), None)
+
+
+def written(address: str) -> bool:
+    """Return True if address is an http or https address without a space or another character that no address holds."""
+    return web(address) and not any(char.isspace() or char in '<>"{}|\\^`' for char in address)
+
+
+def placed(address: str, kind: str | None) -> None:
+    """Refuse a new address that is not <kind>/<name> in the kind of the record, with a name such as the API makes from a
+    name. Only a term of a vocabulary is stored outside the platform, at its own http or https address."""
+    path = records.path(address)
+    head, _, name = path.partition("/")
+    hosts = {urlsplit(settings()[base]).netloc for base in ("base", "release base")}
+    if kind in settings()["kinds"] and (path != address and head == kind and writes.named(name) or path == address and vocabulary_kind(kind) and written(address) and urlsplit(address).netloc not in hosts):
+        return
+    if kind not in settings()["kinds"]:
+        abort(422, message="A new record is at <kind>/<name>, in a kind of GET /api, such as tools/<name>; a term of a vocabulary may be at its own http or https address.")
+    label = settings()["labels"][settings()["kinds"][kind]].lower()
+    outside = ", or at its own http or https address outside the platform" if vocabulary_kind(kind) else ""
+    abort(422, message=f"A {label} record is at {kind}/<name>, with a name of lowercase letters, digits and single hyphens, such as {kind}/{writes.slug(name or label)}{outside}.")
+
+
+def kind_at(address: str, body: dict) -> str:
+    """Return the kind of the record written at address with body: the kind of the stored record, or else of the new
+    address, or for a term outside the platform of its class. Refuse a class of another kind, as a record keeps the kind
+    of its class and of its address."""
+    given = {of_class: kinds()[of_class] for of_class in writes.classes(body) if of_class in kinds()}
+    if body.get("@type") and not given:
+        abort(400, message="Unknown @type: send the class of the record, such as " + jsonld_name(next(iter(settings()["kinds"].values()))) + "; the classes of each kind are in GET /api/shapes.ttl.")
+    path = records.path(address)
+    kind = kind_of(address, {}) or (path.partition("/")[0] if path != address else next(iter(given.values()), None))
+    if records.get(address) is None:
+        placed(address, kind)
+    for of_class, of_kind in given.items():
+        if of_kind != kind:
+            abort(422, message=f"{jsonld_name(of_class)} is a class of the kind {of_kind}, not {kind}; a record keeps the kind of its class, so add it with POST /api/{of_kind}.")
+    return kind
 
 
 def identity(kind: str):
@@ -287,9 +324,7 @@ def rendered(address: str, found: Graph, kind: str) -> Response:
 
 def store(address: str, body: dict, preview: bool = False, page: bool = False):
     """Check and store the record in body at address, and return the warnings."""
-    kind = kind_of(address, body)
-    if kind is None:
-        abort(400, message="Unknown @type.")
+    kind = kind_at(address, body)
     who = writer(kind)
     # A text with a lone surrogate, such as \ud800, cannot be stored.
     try:
@@ -305,7 +340,7 @@ def store(address: str, body: dict, preview: bool = False, page: bool = False):
     writes.classed(found, address)
     # Only http and https addresses are accepted, so that no script (javascript:) or file address is stored as a link.
     for _, predicate, value in found:
-        if isinstance(value, URIRef) and predicate != RDF.type and not str(value).startswith(("https://", "http://")):
+        if isinstance(value, URIRef) and predicate != RDF.type and not written(str(value)):
             abort(422, message=f"{jsonld_name(str(predicate))}: only https:// or http:// addresses.")
     writes.addressed(found)
     found, warnings, recommended = checks.checked(documents.document(found, address))
@@ -695,12 +730,19 @@ def move(body):
         abort(404, message="No record at this address.")
     whole(record)
     editable(record)
-    who = writer(kind_of(record.iri, {}))
-    target = records.get(records.address(body["to"]))
+    kind = kind_of(record.iri, {})
+    who = writer(kind)
+    # The new address is a page address on the platform, in the kind of the record, or an earlier address of the record.
+    address = settings()["base"] + body["to"].strip("/")
+    if address == record.iri:
+        abort(409, message="The record is at this address already.")
+    target = records.get(address)
     if target is not None and target.moved_to != record.iri:
         abort(409, message="Address taken, now or before.")
+    if target is None:
+        placed(address, kind)
     unchanged(record.iri)
-    return done(records.address(body["to"]), writes.move(record.iri, records.address(body["to"]), who.name, who.orcid), 200)
+    return done(address, writes.move(record.iri, address, who.name, who.orcid), 200)
 
 
 @blueprint.post("/restore", tags=["editing"])
@@ -716,6 +758,7 @@ def restore(body):
     record = found_record(body["record"])
     if not record.removed_at or record.moved_to:
         abort(404, message="No removed record at this address.")
+    whole(record)
     editable(record)
     who = writer(kind_of(record.iri, {}))
     return done(record.iri, writes.restore(record.iri, who.name, who.orcid), 200)

@@ -331,3 +331,25 @@ def test_written_formats(site):
     for path in (NEW, "/api/tools"):
         assert site.open(path, method="PUT" if path == NEW else "POST", data="<a> <b", content_type="text/turtle", headers=bearer).status_code == 422
     assert site.put(NEW, json={"@type": "SoftwareApplication", "name": "\ud800"}, headers=bearer).status_code == 422
+
+
+def test_kind_and_address(site):
+    """A record keeps the kind of its class, at <kind>/<name>; only a term of a vocabulary is at its own address elsewhere."""
+    add_records()
+    bearer = {"Authorization": "Bearer " + tokens.create(ORCID, "Test Editor", list(settings()["kinds"]))}
+    person = {"@type": "Person", "name": "P"}
+    for path, method in (("/api/tools", "POST"), ("/api/tools/t", "PUT"), ("/api/tools/p", "PUT")):
+        assert site.open(path, method=method, json=person, headers=bearer).status_code == 422, path
+    assert site.post("/api/tools", json={**person, "@type": ["Person", "SoftwareApplication"]}, headers=bearer).status_code == 422
+    for path in ("tools", "admin", "foo/u", "tools/a b", "tools/facets", "tools/U", "https://github.com/x/y"):
+        assert site.put("/api/" + path, json={"@type": "SoftwareApplication", "name": "U"}, headers=bearer).status_code == 422, path
+    # A new record without a class, or with the class of schema.org in http, has the class of the kind of its address.
+    assert site.put("/api/tools/untyped", json={"name": "U"}, headers=bearer).status_code == 201
+    assert site.put("/api/tools/http", json={"@type": "http://schema.org/SoftwareApplication", "name": "H"}, headers=bearer).status_code == 201
+    term = {"@type": "DefinedTerm", "name": "Term"}
+    assert site.put("/api/https://example.org/term", json=term, headers=bearer).status_code == 201
+    assert site.put("/api/https://example.org/a term", json=term, headers=bearer).status_code == 422
+    assert site.post("/api/terms", json={**term, "@id": BASE + "tools/term"}, headers=bearer).status_code == 422
+    for to in ("tools/a b", "https://example.org/x", "people/t", "tools/facets", "tools/t#x", "tools/../people/t", "tools/t"):
+        assert site.post("/api/move", json={"record": "tools/t", "to": to}, headers=bearer).status_code in (409, 422), to
+    assert site.get("/api/tools/t").status_code == 200
