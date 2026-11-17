@@ -34,6 +34,8 @@ SERIALIZATIONS = {"text/turtle": "turtle", "application/n-triples": "nt"}
 # to ask again (Retry-After).
 limiter = Limiter(get_remote_address, storage_uri="memory://", headers_enabled=True)
 LIMIT = "300 per minute"
+# The registry operations ask the registries, which may block the platform if it asks too often.
+REGISTRY_LIMIT = "30 per minute"
 
 
 def data(found: Graph, media: str, iri: str | None = None) -> Response:
@@ -59,8 +61,8 @@ def markdown_of(record: tables.Record) -> Response:
 
 
 # The examples are filled in from the first stored record (pages.first_record), so that each one works on this platform.
-DESCRIPTION = """The records of the platform: {kinds}. Reading needs no token. Each client address may send {limit} to
-the API; over the limit, the answer is 429 Too Many Requests, with Retry-After.
+DESCRIPTION = """The records of the platform: {kinds}. Reading needs no token. The requests of each client address are
+limited to {limit}; over the limit, the answer is 429 Too Many Requests, with Retry-After.
 
 To answer a question, start here:
 
@@ -84,7 +86,7 @@ blueprint = Blueprint("records", __name__, url_prefix="/api", description="Read,
 TAGS = [
     {"name": "downloads", "description": "Download all records, the vocabulary terms in use and the SHACL shapes, each as one file."},
     {"name": "editing", "description": "Add, change, move, remove and restore records. A write token for the kind is required."},
-    {"name": "registries", "description": "Search vocabulary registries for terms. For editors only."},
+    {"name": "registries", "description": "Search vocabulary registries for vocabularies and terms that are not on the platform yet. As each search is sent on to a registry, the searches of each client address are limited to " + REGISTRY_LIMIT + "."},
 ]
 limiter.limit(LIMIT)(blueprint)
 TOKEN = [{"token": []}]
@@ -304,13 +306,6 @@ class Registry(Schema):
     namespace = fields.String(load_default="", metadata={"description": "The namespace of the vocabulary that is searched, such as the namespace of a vocabulary record."})
 
 
-def registered() -> None:
-    """Refuse registry requests from visitors. Allow editors, signed in or with a valid write token."""
-    token = tokens.find(tokens.bearer(request.headers.get("Authorization", "")))
-    if account.current_editor() is None and token is None:
-        abort(401, message="Login or write token needed.")
-
-
 ADDRESS = {"type": "string", "format": "uri"}
 INDEX = {"type": "object", "required": ["title", "start", "search", "kinds", "openapi"], "properties": {
     "title": {"type": "string", "description": "The name of the platform."},
@@ -362,7 +357,6 @@ TERMS = {"type": "object", "required": ["registry", "terms"], "properties": {
 @blueprint.doc(description="Return the title of each vocabulary registry, by the name that the other registry operations take.")
 def registries():
     """List the vocabulary registries."""
-    registered()
     return jsonify(PROVIDERS)
 
 
@@ -371,9 +365,9 @@ def registries():
 @blueprint.arguments(Registry, location="query")
 @blueprint.response(200, {"type": "array", "items": VOCABULARY})
 @blueprint.doc(description="Return up to 50 vocabularies with the text in the identifier or the title.")
+@limiter.limit(REGISTRY_LIMIT)
 def registry_vocabularies(given, registry):
     """Search the vocabularies of a registry."""
-    registered()
     if registry not in PROVIDERS:
         abort(404, message="No such registry.")
     with Ontologies(registry, cache=database.STATE_DIR / "registries.json") as provider:
@@ -388,9 +382,9 @@ def registry_vocabularies(given, registry):
     "Return the terms of the namespace with the text in the name. The terms are read from the registry of the "
     "namespace."
 ))
+@limiter.limit(REGISTRY_LIMIT)
 def registry_terms(given):
     """Search the terms of a vocabulary."""
-    registered()
     if not given["text"].strip() or not given["namespace"]:
         return jsonify({"registry": None, "terms": []})
     registry = serving(given["namespace"], cache=database.STATE_DIR / "registries.json")
@@ -838,7 +832,7 @@ def start(shown) -> dict:
     kinds = settings()["kinds"]
     kind, of_class = next(((kind, of_class) for kind, of_class in kinds.items() if shown is not None and shown.iri.startswith(records.address(kind) + "/")),
                           next(iter(kinds.items())))
-    found = {"kinds": ", ".join(label.lower() for label in settings()["labels"].values()), "limit": LIMIT + " requests", "text": "<text>",
+    found = {"kinds": ", ".join(label.lower() for label in settings()["labels"].values()), "limit": LIMIT, "text": "<text>",
              "record": "<kind>/<name>", "kind": kind, "filter": "<field>=<value>"}
     if shown is not None:
         found.update(text=quote_plus((shown.name or "").split(" ")[0]), record=records.path(shown.iri))

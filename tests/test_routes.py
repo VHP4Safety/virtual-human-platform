@@ -290,6 +290,17 @@ def test_rate_limit(site):
     assert records_api.LIMIT in site.get("/api/docs/openapi.json").json["info"]["description"]
 
 
+def test_registries_open(site):
+    """The registries are searched without a token, with a lower limit, as each search is sent on to a registry."""
+    from routes import records_api
+
+    assert site.get("/api/registries").status_code == 200
+    empty = site.get("/api/registries/terms", query_string={"text": " ", "namespace": "http://purl.obolibrary.org/obo/UBERON_"})
+    assert (empty.status_code, empty.json["terms"]) == (200, [])
+    assert empty.headers.get("X-RateLimit-Limit") == records_api.REGISTRY_LIMIT.split()[0]
+    records_api.limiter.reset()
+
+
 def test_problem_details(site):
     """An error of the API is a problem detail (RFC 9457) that says what to try next, with the fields the editor reads."""
     missing = site.get("/api/tools/nothing-here")
