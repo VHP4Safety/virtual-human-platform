@@ -153,6 +153,12 @@ def inject_data_menu():
     return {"data_menu": pages.menu("data")}
 
 
+def released(address: str) -> str:
+    """Return the address of a page on the platform itself: the canonical link of a copy at another address, such as a
+    test site, points there."""
+    return settings()["release base"] + address.removeprefix(settings()["base"])
+
+
 @app.context_processor
 def inject_seo_defaults():
     """Provide SEO defaults so every page has a title/description/canonical.
@@ -160,12 +166,12 @@ def inject_seo_defaults():
     Routes override page_title / meta_description via render_template kwargs
     (explicit context wins over context processors). canonical_url defaults to
     the address of the record of the page, else the page path under the
-    platform address.
+    platform address, at the address of the platform itself (released).
     """
     return {
         "page_title": DEFAULT_PAGE_TITLE,
         "meta_description": void.platform()["abstract"],
-        "canonical_url": g.record.iri if "record" in g else records.address(request.path.strip("/")),
+        "canonical_url": released(g.record.iri if "record" in g else records.address(request.path.strip("/"))),
         "noindex": settings()["copy"],
     }
 
@@ -645,7 +651,7 @@ def casestudy(case: str = "", question: str = "", step: str = "",
         page_title=f"{record.name or case} — VHP4Safety",
         meta_description=clip(descriptions[0]["text"] if descriptions else "")
         or f"The VHP4Safety {record.name or case}: a Virtual Human Platform workflow connecting tools, methods and data to a regulatory question.",
-        canonical_url=record.iri,
+        canonical_url=released(record.iri),
     )
 
 

@@ -260,6 +260,10 @@ def test_copy_not_indexed(site, monkeypatch, copy):
     assert ("User-agent: ClaudeBot\nUser-agent: GPTBot\nUser-agent: Google-Extended\nUser-agent: CCBot\nDisallow: /\n" in robots) == copy
     # Search crawlers still read the pages, to see the noindex header.
     assert "User-agent: *\nAllow: /\n" in robots
+    # The canonical link of a page of a copy points to the page on the platform itself.
+    if copy:
+        monkeypatch.setitem(settings(), "base", "https://copy.example/")
+    assert BeautifulSoup(site.get("/tools").data, "html.parser").find("link", rel="canonical")["href"] == BASE + "tools"
 
 
 def test_docs_page(site):
