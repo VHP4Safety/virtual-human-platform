@@ -231,8 +231,8 @@ parser: zenodo
 ## Read and write records
 
 The API is documented at `/api/docs/` (OpenAPI 3.1, made with flask-smorest). A record body is JSON-LD with the
-JSON-LD context of the platform (on the `Record` schema as `x-jsonld-context`), or Turtle. The fields are described
-in the shapes at `/api/shapes.ttl`. `{kind}` is one of the kinds of the profile.
+JSON-LD context of the platform, or Turtle. The fields of each kind are in its schema in the OpenAPI description
+(`linkeddata/schemas.py`) and in the shapes at `/api/shapes.ttl`. `{kind}` is one of the kinds of the profile.
 
 - `GET /api/{kind}`: list the records of the kind, found by name (`search`) and by field values, with the name of
   the field (`/api/tools?processFlowStep=<address>&provider=<address>`). Several values of one field match any of

@@ -281,7 +281,7 @@ def formats(description: str, media: list[str]) -> dict:
     """Document the response in each format; the examples are taken from the records (described)."""
     content = {}
     for name in media:
-        content[name] = {"schema": {"$ref": "#/components/schemas/Record"} if name == "application/ld+json" else {"type": "string"}}
+        content[name] = {"schema": {"type": "string"}}
     return {"200": {"description": description, "content": content}}
 
 
@@ -334,7 +334,7 @@ FOUND = {"type": "object", "required": ["@id", "@type", "name"], "properties": {
 SEARCHED = {"type": "object", "required": ["@context", "@graph"], "properties": {
     "@context": CONTEXT, "@graph": {"type": "array", "items": FOUND, "description": "The records, parts and terms found."}}}
 LISTING = {"type": "object", "required": ["@context", "@graph"], "properties": {
-    "@context": CONTEXT, "@graph": {"type": "array", "items": {"$ref": "#/components/schemas/Record"}, "description": "The records of the page, with their fields."}}}
+    "@context": CONTEXT, "@graph": {"type": "array", "items": {"type": "object"}, "description": "The records of the page, with their fields."}}}
 REGISTRIES = {"type": "object", "description": "The title of each registry, by its name.", "additionalProperties": {"type": "string"}}
 VOCABULARY = {"type": "object", "properties": {
     "id": {"type": "string", "description": "The identifier of the vocabulary in the registry."},
@@ -805,6 +805,8 @@ def described(spec: dict) -> dict:
     anything = {"anyOf": [{"$ref": ref} for ref in mapping.values()], "discriminator": {"propertyName": "@type", "mapping": mapping}}
     reading["get"]["responses"]["200"]["content"]["application/ld+json"]["schema"] = anything
     reading["put"]["requestBody"]["content"]["application/ld+json"]["schema"] = anything
+    # The schema of the request bodies, of any record, is replaced by those of the kinds.
+    components.pop("Record")
     for parameter in reading.get("parameters", []):
         if parameter["name"] == "path" and addresses:
             parameter["examples"] = addresses
@@ -895,7 +897,6 @@ def register(app) -> None:
         return render_template("error.html", error=problem, page_title=f"{problem.code} {problem.name} — VHP4Safety",
                                meta_description=problem.description or problem.name), problem.code
     api.spec.components.security_scheme("token", {"type": "http", "scheme": "bearer", "description": "A write token, sent as `Authorization: Bearer <token>`. Make tokens at `/account/tokens/`. A token is valid for the kinds chosen for it, for 90 days by default."})
-    api.spec.components.schema("Record", component={"x-jsonld-context": documents.context(settings())}, schema=Record)
     api.spec.components.schema("FacetValue", schema=FacetValue)
     api.register_blueprint(blueprint)
     for tag in TAGS:
