@@ -6,7 +6,7 @@ from flask import Blueprint, Response, abort, redirect, render_template, request
 
 from admin import editor, writes
 from database import records
-from linkeddata import crates, pages
+from linkeddata import crates, documents, pages
 from linkeddata.profile import settings, shape_of
 from routes.account import current_editor, form_token
 
@@ -73,6 +73,7 @@ def edit(kind: str):
         crate=("zenodo" if crates.zenodo(record) is not None else "draft") if crates.of_models(record) else None,
         read_only=record is not None and kind in settings()["read only in the editor"],
         draft_vocabulary=editor.draft_vocabulary(record),
+        context=documents.context(settings()),
         page_title=f"{pages.kind_names()[kind]} — VHP4Safety editor",
     ))
     response.headers["X-Robots-Tag"] = "noindex"

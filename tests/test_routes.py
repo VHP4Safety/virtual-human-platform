@@ -531,3 +531,15 @@ def test_form_token_kept(site):
     site.get("/logout/")
     assert signed_in(site, ["tools"]) == form_token
     assert site.put(NEW, json={"@type": "SoftwareApplication", **FITTING}, headers={"X-Form-Token": form_token}).status_code == 201
+
+
+def test_platform_record(site):
+    """The record of the platform, at the base address, is read and written at /api/ with its full address, as the editor
+    does, since /api/ is the index of the API."""
+    catalog = "https://schema.org/DataCatalog"
+    writes.save(writes.document(catalog, BASE, {"name": "Platform"}), catalog, "Test Editor", ORCID)
+    bearer = {"Authorization": "Bearer " + tokens.create(ORCID, "Test Editor", list(settings()["kinds"]))}
+    read = site.get("/api/" + BASE, headers={"Accept": "text/turtle"})
+    assert read.status_code == 200 and "Platform" in read.data.decode()
+    for query in ("?preview=true", ""):
+        assert site.put("/api/" + BASE + query, data=read.data, content_type="text/turtle", headers=bearer).status_code == 200, query

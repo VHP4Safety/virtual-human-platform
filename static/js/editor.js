@@ -6,14 +6,23 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
 (function () {
   const editor = JSON.parse(document.getElementById("editor").textContent);
   const message = document.getElementById("message");
-  // A record outside the platform, such as an ontology term, is read at /api/ with its full address.
-  const path = editor.graph.startsWith(editor.base) ? editor.graph.slice(editor.base.length) : editor.graph;
+  // A record outside the platform, such as an ontology term, is read at /api/ with its full address, as is the record of
+  // the platform, at the base address, as /api/ is the index of the API.
+  const path = editor.graph.startsWith(editor.base) && editor.graph !== editor.base ? editor.graph.slice(editor.base.length) : editor.graph;
   const graph = "/api/" + encodeURI(path).replace(/#/g, "%23");
   const form = document.querySelector("shacl-form");
   const column = document.getElementById("main-column");
   const SCHEMA = "https://schema.org/";
   let previewTimer = null;
   let previewRequest = null;
+  // The preview of the form is made once the form has loaded; before, the form holds no record.
+  let formReady = false;
+  if (form) {
+    form.addEventListener("ready", function () {
+      formReady = true;
+      schedulePreview();
+    });
+  }
 
   function make(tag, className, text) {
     const node = document.createElement(tag);
@@ -298,17 +307,22 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
 
   // Draw the case study from the form in the browser.
   async function showLiveCaseStudy() {
+    if (!formReady) {
+      return;
+    }
     if (!published) {
       await showPublishedCaseStudy();
     }
-    const flat = await jsonld.compact(await jsonld.fromRDF(statements(), { format: "application/n-quads" }), published["@context"]);
+    // A new case study is not published yet, and is drawn with the context of the platform.
+    const context = published ? published["@context"] : editor.context;
+    const flat = await jsonld.compact(await jsonld.fromRDF(statements(), { format: "application/n-quads" }), context);
     const nodes = flat["@graph"] || [flat];
     const root = nodes.find(function (node) { return node["@id"] === editor.graph; });
     if (!root) {
       return;
     }
     const rest = nodes.filter(function (node) { return node !== root; });
-    await showCaseStudy(Object.assign({}, root, { "@context": published["@context"], "@included": rest.concat([published]) }));
+    await showCaseStudy(Object.assign({}, root, { "@context": context, "@included": rest.concat(published ? [published] : []) }));
     // A page added in the form is now in the preview, so go to the part that is edited.
     if (current()) {
       markSelected(current());
@@ -349,6 +363,9 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
       } else if (frame.hasAttribute("srcdoc") || !frame.getAttribute("src")) {
         showPage(null);
       }
+      return;
+    }
+    if ((edited || !editor.version) && !formReady) {
       return;
     }
     say(view === "page" ? "Making the page…" : "Checking…", true);
@@ -590,10 +607,12 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
   }
 
   // Send a change. The pressed button turns until the record is opened again or the request is refused.
+  // The record is opened again at reopened, or else at the address that the API answers, such as after a move.
   async function act(button, text, method, address, body, reopened) {
     const working = busy(button, text, column);
-    if (await send(method, address, body, body ? "application/json" : undefined)) {
-      reopen(reopened);
+    const answer = await send(method, address, body, body ? "application/json" : undefined);
+    if (answer) {
+      reopen(reopened || answer["@id"]);
     } else {
       working.done();
     }
@@ -633,7 +652,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     move: function (event) {
       const to = window.prompt("New address (the old one forwards to it):", path);
       if (to && to !== path) {
-        act(event.currentTarget, "Moving…", "POST", "/api/move", JSON.stringify({ record: path, to: to }), editor.base + to);
+        act(event.currentTarget, "Moving…", "POST", "/api/move", JSON.stringify({ record: path, to: to }), null);
       }
     },
   };
