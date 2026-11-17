@@ -441,7 +441,7 @@ class FacetValue(Schema):
 
 class Query(Schema):
     # No example, as Swagger UI fills in an example, and an optional filter then changes the list.
-    search = fields.String(load_default="", metadata={"description": "Text in the name or the address of the record, such as aop. The case is ignored."})
+    search = fields.String(load_default="", metadata={"description": "Text in the name or the address of the record. The case is ignored."})
 
     class Meta:
         unknown = INCLUDE
