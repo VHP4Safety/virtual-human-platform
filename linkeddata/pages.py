@@ -423,7 +423,7 @@ def listing(path: str, arguments, size: int = LISTED) -> dict:
         if records.browsed(field):
             browsed.append(field)
             given[field["name"]] = arguments.getlist(field["name"])
-    number = max(arguments.get("page", 1, type=int), 1)
+    number = min(max(arguments.get("page", 1, type=int), 1), records.PAGES)
     total, iris = records.page(of_class, records.filters(of_class, given), given["search"], (number - 1) * size, size)
     found = documents.public(records.graph(iris))
     listed = []

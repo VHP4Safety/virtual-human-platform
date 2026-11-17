@@ -18,6 +18,10 @@ from linkeddata.profile import fields, hierarchy, settings, shapes_text, terms
 logging.getLogger("rdflib.term").setLevel(logging.ERROR)
 
 
+# The highest page number of a listing, so that the place of the first record of a page fits in the database.
+PAGES = 100_000
+
+
 def address(path: str) -> str:
     """Return the address of the record at a page path."""
     whole = re.fullmatch(r"(https?):/+(.*)", path)

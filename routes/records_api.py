@@ -10,7 +10,7 @@ from flask import Response, g, jsonify, redirect, render_template, request, url_
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_smorest import Api, Blueprint, abort
-from marshmallow import INCLUDE, Schema, fields, pre_load
+from marshmallow import INCLUDE, Schema, fields, pre_load, validate
 from rdflib import RDF, Graph, URIRef
 from rdflib.namespace import SDO
 from rdfsolve.iris import prefix_map
@@ -395,16 +395,20 @@ def found_record(path: str):
     return record
 
 
+# A text searched for is at most as long as a registry takes it.
+TEXT = validate.Length(max=200)
+
+
 class Search(Schema):
-    text = fields.String(load_default="", metadata={"description": "Text in the name or the address."})
+    text = fields.String(load_default="", validate=TEXT, metadata={"description": "Text in the name or the address."})
     of_class = fields.List(fields.Url(metadata={"format": "iri"}), data_key="class", load_default=list, metadata={"description": "Classes (IRIs) of the records or terms. Subclasses are included."})
     within = fields.String(load_default="", metadata={"description": "The start of the address, such as a vocabulary namespace."})
     vocabulary = fields.Url(load_default="", metadata={"format": "iri", "description": "The IRI of a vocabulary. Only its terms are searched."})
-    limit = fields.Integer(load_default=20, validate=lambda number: 1 <= number <= 200, metadata={"description": "The maximum number of results, from 1 to 200."})
+    limit = fields.Integer(load_default=20, validate=validate.Range(min=1, max=200), metadata={"description": "The maximum number of results."})
 
 
 class Registry(Schema):
-    text = fields.String(load_default="", metadata={"description": "Text in the name of a vocabulary or a term."})
+    text = fields.String(load_default="", validate=TEXT, metadata={"description": "Text in the name of a vocabulary or a term."})
     namespace = fields.String(load_default="", metadata={"description": "The namespace of the vocabulary that is searched, such as the namespace of a vocabulary record."})
 
 
@@ -540,7 +544,7 @@ class FacetValue(Schema):
 
 class Query(Schema):
     # No example, as Swagger UI fills in an example, and an optional filter then changes the list.
-    search = fields.String(load_default="", metadata={"description": "Text in the name or the address of the record. The case is ignored."})
+    search = fields.String(load_default="", validate=TEXT, metadata={"description": "Text in the name or the address of the record. The case is ignored."})
 
     class Meta:
         unknown = INCLUDE
@@ -554,6 +558,16 @@ class Query(Schema):
         return found
 
 
+class Listing(Query):
+    page = fields.Integer(load_default=1, validate=validate.Range(min=1, max=records.PAGES), metadata={"description": "The number of the page."})
+    page_size = fields.Integer(load_default=20, validate=validate.Range(min=1, max=200), metadata={"description": "The number of records on a page."})
+
+
+# The number of records and pages of a listing, as made by flask-smorest, in JSON.
+PAGED = {"X-Pagination": {"description": "The number of records and of pages, and the numbers of the first, last, previous and next page.", "content": {"application/json": {"schema": {
+    "type": "object", "required": ["total", "total_pages"], "properties": {name: {"type": "integer"} for name in ("total", "total_pages", "first_page", "last_page", "page", "previous_page", "next_page")}}}}}}
+
+
 KIND = "/<any({}):kind>".format(", ".join(settings()["kinds"]))
 OF_KIND = [{"in": "path", "name": "kind", "description": "The kind of the records.", "example": "tools",
             "schema": {"type": "string", "enum": list(settings()["kinds"])}}]
@@ -563,28 +577,23 @@ LISTED = "One page of records, in the format requested in the Accept header."
 
 @blueprint.route(KIND, methods=["GET"], parameters=OF_KIND)
 @blueprint.doc(operationId="listRecords")
-@blueprint.response(200, LISTING, content_type="application/ld+json", description=LISTED)
-@blueprint.alt_response(200, schema={"type": "string"}, content_type="text/turtle", success=True, description=LISTED)
-@blueprint.alt_response(200, schema={"type": "string"}, content_type="application/n-triples", success=True, description=LISTED)
-@blueprint.alt_response(200, schema={"type": "string"}, content_type="text/markdown", success=True, description=LISTED)
-@blueprint.arguments(Query, location="query", unknown=INCLUDE)
-@blueprint.paginate(page_size=20, max_page_size=200)
+@blueprint.response(200, LISTING, content_type="application/ld+json", description=LISTED, headers=PAGED)
+@blueprint.alt_response(200, schema={"type": "string"}, content_type="text/turtle", success=True, description=LISTED, headers=PAGED)
+@blueprint.alt_response(200, schema={"type": "string"}, content_type="application/n-triples", success=True, description=LISTED, headers=PAGED)
+@blueprint.alt_response(200, schema={"type": "string"}, content_type="text/markdown", success=True, description=LISTED, headers=PAGED)
+@blueprint.arguments(Listing, location="query", unknown=INCLUDE)
 @blueprint.doc(description=(
     "Return one page of records, sorted by name, in the format of the Accept header. Find records by name or "
     "address with search. Filter records by the fields below: give several values of one field to find the records "
     "with any of them, and several fields to find the records that match all of them. The number of records is in "
     "the X-Pagination header."
 ))
-def listed(given, kind, pagination_parameters):
+def listed(given, kind):
     """List the records of a kind."""
     of_class = settings()["kinds"][kind]
     # At the address of a kind (/tools.ttl), all records of the kind are returned as one file, not as pages.
-    whole = "listing" in g
-    first, size = (0, None) if whole else (pagination_parameters.first_item, pagination_parameters.page_size)
-    total, iris = records.page(of_class, records.filters(of_class, given), given["search"], first, size)
-    if whole:
-        pagination_parameters.page, pagination_parameters.page_size = 1, max(total, 1)
-    pagination_parameters.item_count = total
+    page, size = (1, None) if "listing" in g else (given["page"], given["page_size"])
+    total, iris = records.page(of_class, records.filters(of_class, given), given["search"], (page - 1) * (size or 0), size)
     found = readable(records.graph(iris), kind)
     # The format requested at the page of a kind (/tools) is used, also when it is requested with a file extension (/tools.ttl).
     media = g.get("media") or request.accept_mimetypes.best_match(["application/ld+json", *SERIALIZATIONS, "text/markdown"], "application/ld+json")
@@ -592,15 +601,18 @@ def listed(given, kind, pagination_parameters):
         texts = []
         for iri in iris:
             texts.append(markdown_of(records.get(iri)).get_data(as_text=True))
-        return Response("\n".join(texts), content_type=pages.MEDIA, headers={"Vary": "Accept"})
-    if media in SERIALIZATIONS:
-        return data(found, media)
-    documented = []
-    for iri in iris:
-        document = documents.document(found, iri)
-        document.pop("@context", None)
-        documented.append(document)
-    return Response(json.dumps({"@context": documents.context(settings()), "@graph": documented}, indent=1), mimetype="application/ld+json", headers={"Vary": "Accept"})
+        answer = Response("\n".join(texts), content_type=pages.MEDIA, headers={"Vary": "Accept"})
+    elif media in SERIALIZATIONS:
+        answer = data(found, media)
+    else:
+        documented = []
+        for iri in iris:
+            document = documents.document(found, iri)
+            document.pop("@context", None)
+            documented.append(document)
+        answer = Response(json.dumps({"@context": documents.context(settings()), "@graph": documented}, indent=1), mimetype="application/ld+json", headers={"Vary": "Accept"})
+    answer.headers["X-Pagination"] = json.dumps(blueprint._make_pagination_metadata(page, size or max(total, 1), total))
+    return answer
 
 
 @blueprint.get(KIND + "/facets", parameters=OF_KIND)

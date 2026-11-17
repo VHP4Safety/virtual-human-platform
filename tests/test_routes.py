@@ -375,3 +375,18 @@ def test_links_only_web(site):
     writes.save(writes.document(TOOL, BASE + "tools/j", {"name": "J", "url": "javascript:alert(1)"}), TOOL, "Test Editor", ORCID)
     page = site.get("/tools/j").data.decode()
     assert "J" in page and 'href="javascript:' not in page.replace(" ", "").lower()
+
+
+def test_bounds(site):
+    """Numbers and texts out of their bounds, which the description gives, are refused with 422."""
+    namespace = "http://purl.obolibrary.org/obo/UBERON_"
+    for path, query in (("/api/tools", {"page": "461168601842738792"}), ("/api/tools", {"page_size": "201"}), ("/api/tools", {"search": "x" * 201}),
+                        ("/api/search", {"limit": "99999999999999999999"}), ("/api/search", {"limit": "0"}), ("/api/search", {"limit": "-1"}),
+                        ("/api/registries/terms", {"text": "x" * 201, "namespace": namespace})):
+        assert site.get(path, query_string=query).status_code == 422, query
+    assert site.get("/tools", query_string={"page": "99999999999999999999"}).status_code == 200
+    spec = site.get("/api/docs/openapi.json").json
+    limit = next(given for given in spec["paths"]["/api/search"]["get"]["parameters"] if given["name"] == "limit")
+    assert (limit["schema"]["minimum"], limit["schema"]["maximum"]) == (1, 200)
+    page = next(given for given in spec["paths"]["/api/tools"]["get"]["parameters"] if given.get("name") == "page")
+    assert page["schema"]["maximum"] and "content" in spec["paths"]["/api/tools"]["get"]["responses"]["200"]["headers"]["X-Pagination"]
