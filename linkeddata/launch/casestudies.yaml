@@ -3,10 +3,8 @@ title: Case studies
 parser: casestudies
 # The RO-Crate of the case studies, and the content file of each case study, by identifier.
 files:
-  # Local while the cosmetics case study is being developed on the pseudo-cosmetics-case branch: the crate is the
-  # upstream file with an added entry for cosmetics. Point both back at ui-casestudy-config before merging.
-  crate: linkeddata/launch/casestudies/ro-crate-metadata.json
-  cosmetics: linkeddata/launch/casestudies/cosmetics_content.json
+  crate: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/ro-crate-metadata.json
+  cosmetics: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/cosmetics_content.json
   kidney: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/kidney_content.json
   parkinson: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/parkinson_content.json
   thyroid: https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/thyroid_content.json
