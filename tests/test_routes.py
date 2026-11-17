@@ -392,3 +392,26 @@ def test_bounds(site):
     assert (limit["schema"]["minimum"], limit["schema"]["maximum"]) == (1, 200)
     page = next(given for given in spec["paths"]["/api/tools"]["get"]["parameters"] if given.get("name") == "page")
     assert page["schema"]["maximum"] and "content" in spec["paths"]["/api/tools"]["get"]["responses"]["200"]["headers"]["X-Pagination"]
+
+
+def test_read_written_back(site):
+    """What the API returns for a record is taken back in a write, in JSON-LD and in Turtle, with the fields that records
+    of the kind have outside the profile; the values added on output, such as mainEntityOfPage, are not stored."""
+    from database import records
+    from linkeddata.documents import context
+
+    writes.save(writes.document(PERSON, BASE + "people/p", {"name": "P"}), PERSON, "Test Editor", ORCID)
+    writes.save({"@context": context(settings()), "@id": BASE + "tools/i", "@type": "SoftwareApplication", "name": "I",
+                 "image": {"@id": "https://i.org/i.png"}, "author": {"@id": BASE + "people/p"}}, TOOL, "Test Editor", ORCID)
+    bearer = {"Authorization": "Bearer " + tokens.create(ORCID, "Test Editor", list(settings()["kinds"]))}
+    for media in ("application/ld+json", "text/turtle"):
+        read = site.get("/api/tools/i", headers={"Accept": media}).data
+        for query in ("?preview=true", ""):
+            answer = site.put("/api/tools/i" + query, data=read, content_type=media, headers=bearer)
+            assert answer.status_code == 200, (media, query, answer.json)
+    stored = records.graph([BASE + "tools/i"])
+    assert "i.png" in stored.serialize(format="nt") and "mainEntityOfPage" not in stored.serialize(format="nt")
+    vocabulary = "https://schema.org/DefinedTermSet"
+    writes.save({"@context": context(settings()), "@id": BASE + "vocabularies/v", "@type": "DefinedTermSet", "name": "V",
+                 "void:uriSpace": "https://v.org/"}, vocabulary, "Test Editor", ORCID)
+    assert site.post("/api/vocabularies", json={"name": "W", "void:uriSpace": "https://w.org/"}, headers=bearer).status_code == 201

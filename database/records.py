@@ -272,6 +272,15 @@ def within(of_class: str) -> list[str]:
     return [of_class, *sorted({str(below) for below in hierarchy().transitive_subjects(RDFS.subClassOf, URIRef(of_class))} - {of_class})]
 
 
+def properties(of_class: str) -> set[str]:
+    """Return the properties of the records of of_class and of the classes below it that are kept outside the tables of
+    their fields, such as the image of a tool, which the API returns with the fields."""
+    rest = tables()[sql_tables.STATEMENTS]
+    held = select(Record.iri).where(Record.type.in_(within(of_class)), Record.part_of.is_(None))
+    with database.engine().connect() as connection:
+        return set(connection.scalars(select(rest.c.property).distinct().where(rest.c.record.in_(held), rest.c.iri == rest.c.record)))
+
+
 def sources(of_class: str, path: str) -> list[dict]:
     """Return the tables and columns of the values of a field of of_class."""
     rest = tables()[sql_tables.STATEMENTS]
