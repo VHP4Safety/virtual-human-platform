@@ -117,15 +117,17 @@ function children(state, page, level) {
   return parts(state, page, level === 0 ? "hasPart" : "step").filter(function (node) { return level !== 0 || !isPart(String(node["@id"] || "_:")); });
 }
 
-// Return true if a step has no content and no steps with content.
-function empty(step) {
+// Return true if a step has no content and no steps with content. A step given by address only, as in flat JSON-LD,
+// is found by its address.
+function empty(step, nodes, level) {
+  const found = nodes && step && nodes.get(step["@id"]) || step;
   for (const name of CONTENT) {
-    if (all(step, name).length) {
+    if (all(found, name).length) {
       return false;
     }
   }
-  for (const child of all(step, "step")) {
-    if (!empty(child)) {
+  for (const child of (level || 0) < DEEPEST ? all(found, "step") : []) {
+    if (!empty(child, nodes, (level || 0) + 1)) {
       return false;
     }
   }
@@ -138,11 +140,11 @@ function isPart(id) {
 }
 
 // Return the stage of a page in the process flow, from 1 to 5.
-export function stageOf(page, level) {
+export function stageOf(page, level, nodes) {
   let steps = false;
   for (const child of all(page, level === 0 ? "hasPart" : "step")) {
     if (level !== 0 || (child && typeof child === "object" && !isPart(String(child["@id"] || "_:")))) {
-      steps = steps || !empty(child);
+      steps = steps || !empty(child, nodes);
     }
   }
   if (!steps && (all(page, "tool").length || all(page, "supply").length)) {
@@ -270,11 +272,11 @@ function breadcrumbs(container, state, found) {
 // Draw the process flow, with the stage of the page in view active.
 function processFlow(container, state, found, header) {
   const level = found.length - 1;
-  const active = stageOf(found[level], level);
+  const active = stageOf(found[level], level, state.nodes);
   // The level of the lowest page above the page in view at each stage.
   const above = [];
   for (let at = 0; at < level; at += 1) {
-    above[stageOf(found[at], at)] = at;
+    above[stageOf(found[at], at, state.nodes)] = at;
   }
   // The header is drawn once and then only marked, so that marks in it, such as the glossary marks, are kept.
   if (!header) {
@@ -341,12 +343,12 @@ function staged(state) {
   function walk(page, level, path, question) {
     for (const child of level < DEEPEST ? children(state, page, level) : []) {
       const greyed = first(child, "creativeWorkStatus") === "Incomplete";
-      if (!child["@id"] || (empty(child) && !greyed && !state.options.openDisabled)) {
+      if (!child["@id"] || (empty(child, state.nodes) && !greyed && !state.options.openDisabled)) {
         continue;
       }
       const asked = level === 0 ? label(state, child) || child["@id"] : question;
       const disabled = greyed && !state.options.openDisabled;
-      found.push({ stage: stageOf(page, level), path: path.concat([child["@id"]]), name: label(state, child) || child["@id"],
+      found.push({ stage: stageOf(page, level, state.nodes), path: path.concat([child["@id"]]), name: label(state, child) || child["@id"],
                    above: level ? label(state, page) : "", question: asked, disabled: disabled, page: true });
       if (!disabled) {
         walk(child, level + 1, path.concat([child["@id"]]), asked);
@@ -467,7 +469,7 @@ function buttons(container, state, page, level) {
   const row = make("div", "row py-3");
   for (const child of children(state, page, level)) {
     const disabled = first(child, "creativeWorkStatus") === "Incomplete";
-    const hidden = empty(child) && !disabled;
+    const hidden = empty(child, state.nodes) && !disabled;
     if (hidden && !state.options.openDisabled) {
       continue;
     }
