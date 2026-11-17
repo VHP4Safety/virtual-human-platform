@@ -4,6 +4,7 @@ import copy
 import json
 import re
 from functools import lru_cache
+from http import HTTPStatus
 from urllib.parse import quote, quote_plus, urlsplit
 
 from flask import Response, g, jsonify, redirect, render_template, request, url_for
@@ -944,6 +945,19 @@ def described(spec: dict) -> dict:
     reading["put"]["requestBody"]["content"]["application/ld+json"]["schema"] = anything
     # The schema of the request bodies, of any record, is replaced by those of the kinds.
     components.pop("Record")
+    # The errors are problem details, as problem_details returns them, in place of the Error of flask-smorest. A record
+    # may be moved or removed, and each operation is limited.
+    components.pop("Error")
+    components["ProblemDetails"] = PROBLEM
+    responses = spec["components"].setdefault("responses", {})
+    for name, status in (("NOT_FOUND", 404), ("GONE", 410), ("TOO_MANY_REQUESTS", 429)):
+        responses[name] = {"description": HTTPStatus(status).phrase}
+    for response in responses.values():
+        response["content"] = {"application/problem+json": {"schema": {"$ref": schemas.REF + "ProblemDetails"}}}
+    reading["get"]["responses"].update({"301": {"description": "Moved: the record is at the address in Location."},
+                                        "404": {"$ref": "#/components/responses/NOT_FOUND"}, "410": {"$ref": "#/components/responses/GONE"}})
+    for _, _, operation in [(path, method, operation) for path, methods in [*paths.items(), ("/api/{path}", reading)] for method, operation in methods.items() if method != "parameters"]:
+        operation["responses"]["429"] = {"$ref": "#/components/responses/TOO_MANY_REQUESTS"}
     for parameter in reading.get("parameters", []):
         if parameter["name"] == "path" and addresses:
             parameter["examples"] = addresses
@@ -998,14 +1012,28 @@ def hint(code: int) -> str:
     return f"See the operations in {found['openapi']}, and the entry points at {found['index']}."
 
 
+# The fields of problem_details, for the description.
+PROBLEM = {"type": "object", "required": ["type", "title", "status", "detail", "hint"], "description": "An error, as problem details (RFC 9457), with a hint of what to try next.", "properties": {
+    "type": {"type": "string", "description": "about:blank, as the status tells the error."},
+    "title": {"type": "string", "description": "The name of the status, such as Not Found."},
+    "status": {"type": "integer", "description": "The status code."},
+    "detail": {"type": "string", "description": "What is wrong."},
+    "hint": {"type": "string", "description": "What to try next."},
+    "code": {"type": "integer", "description": "The status code, as flask-smorest also sends it."},
+    "message": {"type": "string", "description": "What is wrong, as flask-smorest also sends it."},
+    "errors": {"type": "object", "description": "The problems found in each part of the request, such as query or json, by field."}}}
+
+
 def problem_details(problem: HTTPException, payload: dict, code: int, headers: dict) -> Response:
-    """Return an error as problem details (RFC 9457) with a hint, keeping the code, message and errors of flask-smorest."""
+    """Return an error as problem details (RFC 9457) with a hint, keeping the code, message and errors of flask-smorest,
+    and the headers of the error, such as Allow of 405."""
     body = {"type": "about:blank", "title": problem.name, "status": code, "detail": payload.get("message") or problem.description,
             "hint": hint(code)}
     for name in ("code", "message", "errors"):
         if name in payload:
             body[name] = payload[name]
-    return Response(json.dumps(body), status=code, headers=headers, content_type="application/problem+json")
+    kept = {name: value for name, value in problem.get_headers() if name.lower() != "content-type"}
+    return Response(json.dumps(body), status=code, headers={**kept, **(headers or {})}, content_type="application/problem+json")
 
 
 def register(app) -> None:

@@ -448,3 +448,15 @@ def test_search_details(site):
     assert site.get("/api/search").mimetype == "application/ld+json"
     mapping = site.get("/api/docs/openapi.json").json["paths"]["/api/{path}"]["get"]["responses"]["200"]["content"]["application/ld+json"]["schema"]["discriminator"]["mapping"]
     assert mapping["AboutPage"] == mapping["WebPage"]
+
+
+def test_errors_described(site):
+    """The errors are described as the problem details that they are, with 404 and 410 of a record and 429 of each
+    operation; a 405 names the allowed methods."""
+    spec = site.get("/api/docs/openapi.json").json
+    assert "Error" not in spec["components"]["schemas"] and set(spec["components"]["schemas"]["ProblemDetails"]["required"]) <= set(site.get("/api/tools/none").json)
+    for response in spec["components"]["responses"].values():
+        assert list(response["content"]) == ["application/problem+json"]
+    assert {"404", "410"} <= set(spec["paths"]["/api/{path}"]["get"]["responses"])
+    assert all("429" in operation["responses"] for _, _, operation in operations(spec))
+    assert "GET" in site.post("/api/search").headers["Allow"]
