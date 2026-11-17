@@ -1,0 +1,157 @@
+# Competency questions of the agent-readiness eval: what a toxicologist might ask their coding agent about the
+# platform. The answer of each is a set of records, computed by the SPARQL query over the dump of the platform
+# (GET /api/dump) when the eval runs, so that no answer is written by hand and each follows the data.
+# In the queries, p: is the base of the records, and the prefixes schema:, rdf: and bs: are declared.
+# "one-hop" questions follow one link from a named record; "multi-hop" questions follow two or more.
+
+base: https://platform.vhp4safety.nl/
+
+questions:
+  - id: o01-tools-of-provider
+    tags: [one-hop, tools, organizations]
+    question: Which tools on the VHP4Safety platform are provided by the Department of Translational Genomics at Maastricht University?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?x schema:provider p:organizations/department-of-translational-genomics-maastricht-university .
+        FILTER(STRSTARTS(STR(?x), STR(p:tools/))) }
+
+  - id: o02-methods-of-supplier
+    tags: [one-hop, methods, organizations]
+    question: Which lab methods (assays) listed on the VHP4Safety platform come from Invitrogen?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?x schema:provider p:organizations/invitrogen . FILTER(STRSTARTS(STR(?x), STR(p:methods/))) }
+
+  - id: o03-datasets-of-case-study
+    tags: [one-hop, data, casestudies]
+    question: What datasets does the VHP4Safety platform have for the thyroid case study?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?x schema:isPartOf p:casestudies/thyroid . FILTER(STRSTARTS(STR(?x), STR(p:data/))) }
+
+  - id: o04-tools-of-maintainer
+    tags: [one-hop, tools, people]
+    question: Which tools on the VHP4Safety platform does Marvin Martens maintain?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?x schema:maintainer p:people/marvin-martens . FILTER(STRSTARTS(STR(?x), STR(p:tools/))) }
+
+  - id: o05-people-of-organization
+    tags: [one-hop, people, organizations]
+    question: Who on the VHP4Safety platform is affiliated with Erasmus MC?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?x schema:affiliation p:organizations/erasmus-mc . FILTER(STRSTARTS(STR(?x), STR(p:people/))) }
+
+  - id: o06-datasets-about-aop
+    tags: [one-hop, data, terms]
+    question: Which datasets on the VHP4Safety platform are about AOP 464 from AOP-Wiki?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?x schema:about <https://aopwiki.org/aops/464> . FILTER(STRSTARTS(STR(?x), STR(p:data/))) }
+
+  - id: o07-models
+    tags: [one-hop, models]
+    question: What computational models (such as PBK or qAOP models) can I find on the VHP4Safety platform?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?x schema:mainEntityOfPage ?x . FILTER(STRSTARTS(STR(?x), STR(p:models/))) }
+
+  - id: o08-datasets-of-creator
+    tags: [one-hop, data, people]
+    question: Which datasets on the VHP4Safety platform were created by Fabian Wagenaars?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?x schema:creator/rdf:rest*/rdf:first p:people/fabian-wagenaars .
+        FILTER(STRSTARTS(STR(?x), STR(p:data/))) }
+
+  - id: o09-training-of-tool
+    tags: [one-hop, training, tools]
+    question: Is there a tutorial or training material on the VHP4Safety platform for BridgeDb?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?x schema:mentions p:tools/bridgedb . FILTER(STRSTARTS(STR(?x), STR(p:training/))) }
+
+  - id: o10-datasets-of-grant
+    tags: [one-hop, data, grants]
+    question: Which datasets on the VHP4Safety platform were funded by the OpenRiskNet project?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?x schema:funding p:grants/731075 . FILTER(STRSTARTS(STR(?x), STR(p:data/))) }
+
+  - id: m01-providers-of-case-study-tools
+    tags: [multi-hop, organizations, tools, casestudies]
+    question: Which organisations provide the tools that are used in the thyroid case study of the VHP4Safety platform?
+    gold: |
+      SELECT DISTINCT ?x WHERE { p:casestudies/thyroid schema:hasPart* ?part . ?tool schema:isPartOf ?part ; schema:provider ?x .
+        FILTER(STRSTARTS(STR(?tool), STR(p:tools/)) && STRSTARTS(STR(?x), STR(p:organizations/))) }
+
+  - id: m02-suppliers-of-case-study-methods
+    tags: [multi-hop, organizations, methods, casestudies]
+    question: Which companies supply the assay methods used in the Parkinson case study on the VHP4Safety platform?
+    gold: |
+      SELECT DISTINCT ?x WHERE { p:casestudies/parkinson schema:hasPart* ?part . ?method schema:isPartOf ?part ; schema:provider ?x .
+        FILTER(STRSTARTS(STR(?method), STR(p:methods/)) && STRSTARTS(STR(?x), STR(p:organizations/))) }
+
+  - id: m03-creators-of-case-study-data
+    tags: [multi-hop, people, data, casestudies]
+    question: Who created the datasets of the kidney case study on the VHP4Safety platform?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?data schema:isPartOf p:casestudies/kidney ; schema:creator/rdf:rest*/rdf:first ?x .
+        FILTER(STRSTARTS(STR(?data), STR(p:data/)) && STRSTARTS(STR(?x), STR(p:people/))) }
+
+  - id: m04-funders-of-case-study-data
+    tags: [multi-hop, organizations, grants, data, casestudies]
+    question: Which funding organisations are behind the grants that funded the datasets of the kidney case study on the VHP4Safety platform?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?data schema:isPartOf p:casestudies/kidney ; schema:funding ?grant . ?grant schema:funder ?x .
+        FILTER(STRSTARTS(STR(?data), STR(p:data/)) && STRSTARTS(STR(?x), STR(p:organizations/))) }
+
+  - id: m05-compounds-of-case-study-data
+    tags: [multi-hop, compound, data, casestudies]
+    question: Which compounds were used as reagents in the datasets of the Parkinson case study on the VHP4Safety platform?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?data schema:isPartOf p:casestudies/parkinson ; schema:hasPart ?protocol .
+        ?protocol bs:reagent/rdf:rest*/rdf:first ?reagent . ?reagent schema:sameAs ?x .
+        FILTER(STRSTARTS(STR(?data), STR(p:data/)) && STRSTARTS(STR(?x), STR(p:compound/))) }
+
+  - id: m06-datasets-of-compound
+    tags: [multi-hop, data, compound]
+    question: In which datasets on the VHP4Safety platform was rotenone used?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?x schema:hasPart ?protocol . ?protocol bs:reagent/rdf:rest*/rdf:first ?reagent .
+        ?reagent schema:sameAs ?compound . ?compound schema:name ?name .
+        FILTER(STRSTARTS(STR(?x), STR(p:data/)) && LCASE(STR(?name)) = "rotenone") }
+
+  - id: m07-methods-of-case-study-data
+    tags: [multi-hop, methods, data, casestudies]
+    question: Which lab methods were used to measure the datasets of the Parkinson case study on the VHP4Safety platform?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?data schema:isPartOf p:casestudies/parkinson ; schema:measurementTechnique ?x .
+        FILTER(STRSTARTS(STR(?data), STR(p:data/)) && STRSTARTS(STR(?x), STR(p:methods/))) }
+
+  - id: m08-citations-of-provider-tools
+    tags: [multi-hop, publications, tools, organizations]
+    question: Which publications are cited by the tools that the Department of Translational Genomics at Maastricht University provides on the VHP4Safety platform?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?tool schema:provider p:organizations/department-of-translational-genomics-maastricht-university ;
+        schema:citation ?x . FILTER(STRSTARTS(STR(?x), STR(p:publications/))) }
+
+  - id: m09-model-people-of-organization
+    tags: [multi-hop, people, models, organizations]
+    question: Which people affiliated with Leiden University created or contributed to the models on the VHP4Safety platform?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?model schema:creator|schema:contributor ?x . ?x schema:affiliation p:organizations/leiden-university .
+        FILTER(STRSTARTS(STR(?model), STR(p:models/))) }
+
+  - id: m10-provider-tools-of-case-study
+    tags: [multi-hop, tools, organizations, casestudies]
+    question: Which of the tools used in the thyroid case study on the VHP4Safety platform does VHP4Safety itself provide?
+    gold: |
+      SELECT DISTINCT ?x WHERE { p:casestudies/thyroid schema:hasPart* ?part . ?x schema:isPartOf ?part ; schema:provider p:organizations/vhp4safety .
+        FILTER(STRSTARTS(STR(?x), STR(p:tools/))) }
+
+  - id: m11-case-study-data-of-method
+    tags: [multi-hop, data, methods, casestudies]
+    question: Which datasets of the Parkinson case study on the VHP4Safety platform were measured with the Alamar Blue assay?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?x schema:isPartOf p:casestudies/parkinson ;
+        schema:measurementTechnique p:methods/alamar_blue_assay_for_detection_of_mitochondrial_activity .
+        FILTER(STRSTARTS(STR(?x), STR(p:data/))) }
+
+  - id: m12-grants-of-creator-data
+    tags: [multi-hop, grants, data, people]
+    question: Which grants funded the datasets that Fabian Wagenaars created, according to the VHP4Safety platform?
+    gold: |
+      SELECT DISTINCT ?x WHERE { ?data schema:creator/rdf:rest*/rdf:first p:people/fabian-wagenaars ; schema:funding ?x .
+        FILTER(STRSTARTS(STR(?data), STR(p:data/)) && STRSTARTS(STR(?x), STR(p:grants/))) }

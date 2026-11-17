@@ -1,0 +1,5 @@
+# The eval runs outside the platform, with its own packages.
+anthropic>=2.9
+markdownify>=1.2
+pyyaml>=6
+rdflib>=7.6
