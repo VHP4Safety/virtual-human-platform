@@ -6,6 +6,8 @@ const HEADINGS = ["text-vhppink-distinct", "text-vhpdarkpurple", "text-vhpdarkte
 // Tools, methods and data are blue.
 const BUTTONS = ["btn-vhppink-distinct", "btn-vhpdarkpurple", "btn-vhpdarkteal", "btn-vhplightteal"];
 const ITEMS = "btn-vhpblue";
+// The tools, methods and data of a page have a column each in the overview of a question.
+const KINDS = ["Tools", "Methods", "Data"];
 const PROCESS_FLOW = ["Regulatory Question", "Safety Assessment Workflow Step", "Case Study Step", "Case Study Substep", "Tools, Models and Data"];
 // The fields with content for a step.
 const CONTENT = ["tool", "supply", "bioschemas:input", "bioschemas:output", "hasPart", "text", "description"];
@@ -464,17 +466,33 @@ function column(button) {
   return cell;
 }
 
-// Draw the buttons of a page.
+// Return the question with its overview on the page of the case study: the question that is chosen there, else the
+// first question that can be opened.
+function chosen(state) {
+  const open = children(state, state.document, 0).filter(function (child) {
+    const greyed = first(child, "creativeWorkStatus") === "Incomplete";
+    return child["@id"] && (state.options.openDisabled || (!greyed && !empty(child, state.nodes)));
+  });
+  return open.find(function (child) { return child["@id"] === state.question; }) || open[0] || null;
+}
+
+// Draw the buttons of a page. The buttons of the questions choose the overview under them, and the button of the
+// chosen question is filled. The pages of a question have no buttons: they are in its overview.
 function buttons(container, state, page, level) {
   const row = make("div", "row py-3");
-  for (const child of children(state, page, level)) {
+  const asked = level === 0 ? chosen(state) : null;
+  for (const child of level === 1 ? [] : children(state, page, level)) {
     const disabled = first(child, "creativeWorkStatus") === "Incomplete";
     const hidden = empty(child, state.nodes) && !disabled;
     if (hidden && !state.options.openDisabled) {
       continue;
     }
-    const button = make("button", "btn w-100 text-white " + BUTTONS[Math.min(level, BUTTONS.length - 1)]);
+    const picked = Boolean(asked) && child["@id"] === asked["@id"];
+    const button = make("button", "btn w-100 " + (level === 0 && !picked ? BUTTONS[0].replace("btn-", "btn-outline-") : "text-white " + BUTTONS[Math.min(level, BUTTONS.length - 1)]));
     button.type = "button";
+    if (level === 0) {
+      button.setAttribute("aria-pressed", String(picked));
+    }
     button.append(make("b", "", label(state, child) || child["@id"] || "(no name)"));
     // The button of a question has the question under its title. Other buttons have their description.
     if (level === 0 && first(child, "text")) {
@@ -495,7 +513,12 @@ function buttons(container, state, page, level) {
         button.title = "Greyed out on the website, and not opened there";
       }
       button.addEventListener("click", function () {
-        navigate(container, state.path.concat([child["@id"]]));
+        if (level === 0) {
+          state.question = child["@id"];
+          draw(container, false);
+        } else {
+          navigate(container, state.path.concat([child["@id"]]));
+        }
       });
     }
     row.append(column(button));
@@ -624,8 +647,249 @@ function parameters(state, page) {
   return list.children.length ? list : null;
 }
 
-// Draw a page.
-function view(container, state, page, level) {
+// Return the pages of a question placed in the grid of its overview: each page with its columns and its rows, and with
+// its tools, methods and data if they have a row. The pages are those with a button on the website (see buttons). The
+// pages below a greyed-out page are left out.
+export function layout(state, question) {
+  // The stages between the question and the tools, models and data have a column each. A deeper page adds a column.
+  let columns = PROCESS_FLOW.length - 2;
+  const greyedOut = function (page) {
+    return first(page, "creativeWorkStatus") === "Incomplete";
+  };
+  const shown = function (page, level) {
+    return children(state, page, level).filter(function (child) {
+      return child["@id"] && (state.options.openDisabled || greyedOut(child) || !empty(child, state.nodes));
+    });
+  };
+  // The pages of level 2 are in column 1. A page is over the rows of its items and of the pages below it.
+  function place(page, level, column, row, path) {
+    const greyed = greyedOut(page);
+    const below = greyed || level >= DEEPEST ? [] : shown(page, level);
+    const own = greyed ? [] : items(state, page);
+    // A page with one page of the same name below it is drawn once, as that page, from the column of this page.
+    if (!own.length && below.length === 1 && label(state, below[0]) === label(state, page) && !greyedOut(below[0])) {
+      return place(below[0], level + 1, column, row, path.concat([below[0]["@id"]]));
+    }
+    columns = Math.max(columns, level - 1);
+    // The items of a page are in its first row, above the pages below it. A page without items and pages has a row too.
+    const node = { page: page, name: label(state, page) || page["@id"], path: path, column: column, last: below.length ? level - 1 : 0, row: row,
+                   rows: own.length || !below.length ? 1 : 0, greyed: greyed, faded: !greyed && empty(page, state.nodes), items: null, below: [] };
+    if (!greyed && node.rows) {
+      node.items = KINDS.map(function () { return []; });
+      for (const item of own) {
+        node.items[item.field === "supply" ? 2 : item.address.includes("/methods/") ? 1 : 0].push(item);
+      }
+    }
+    for (const child of below) {
+      const placed = place(child, level + 1, level, row + node.rows, path.concat([child["@id"]]));
+      node.below.push(placed);
+      node.rows += placed.rows;
+    }
+    return node;
+  }
+  const pages = [];
+  let rows = 0;
+  for (const child of shown(question, 1)) {
+    pages.push(place(child, 2, 1, rows, [question["@id"], child["@id"]]));
+    rows += pages[pages.length - 1].rows;
+  }
+  // A page without pages below it is as wide as the columns of the pages, known once the deepest page is placed. A
+  // greyed-out page is as wide as the grid.
+  (function widen(placed) {
+    for (const node of placed) {
+      node.last = node.last || (node.greyed ? columns + KINDS.length : columns);
+      widen(node.below);
+    }
+  })(pages);
+  return { pages: pages, columns: columns, rows: rows };
+}
+
+// Show the details of a cell of the overview in a popover of Bootstrap, at the pointer and at the focus. A cell
+// without details has no popover.
+function explain(cell, title, lines) {
+  const content = make("div", "small");
+  for (const line of lines) {
+    if (line) {
+      const part = make("div", "");
+      part.append(line);
+      content.append(part);
+    }
+  }
+  if (content.children.length && window.bootstrap) {
+    cell.dataset.bsToggle = "popover";
+    new window.bootstrap.Popover(cell, { trigger: "hover focus", placement: "top", html: true, title: make("span", "", title), content: content });
+  }
+}
+
+// Draw the overview of a question: a grid with a column for each stage, with each page over the rows of the pages
+// below it, and with the tools, methods and data of each row. The cells have classes of Bootstrap only, and each cell
+// is placed by its rows and its columns. With bar, the question is above the grid. With enters, the rows come in one
+// after the other.
+function overview(container, state, question, bar, enters) {
+  const found = layout(state, question);
+  if (!found.pages.length) {
+    return null;
+  }
+  const columns = found.columns + KINDS.length;
+  const grid = make("div", "d-grid gap-2");
+  grid.style.gridAutoColumns = "1fr";
+  grid.style.minWidth = "54rem";
+  function put(cell, row, rows, column, last) {
+    cell.style.gridRow = row + " / span " + rows;
+    cell.style.gridColumn = column + " / " + (last + 1);
+    grid.append(cell);
+    return cell;
+  }
+  // The question and the stages are above the rows of the pages. The last stage has a column for each kind of item.
+  const head = bar ? 2 : 1;
+  if (bar) {
+    const asked = put(make("div", "d-flex align-items-center rounded p-3 fs-5 fw-bold text-bg-vhppink-distinct"), 1, 1, 1, columns);
+    asked.dataset.field = "text";
+    asked.append(make("span", "badge rounded-circle me-2 bg-white text-vhppink-distinct", "1"), document.createTextNode(first(question, "text") || label(state, question)));
+  }
+  const heads = [[2, PROCESS_FLOW[1], 1, 1], [3, PROCESS_FLOW[2], 2, 2], [4, PROCESS_FLOW[3], 3, found.columns]].concat(KINDS.map(function (kind, at) {
+    return [at ? 0 : 5, kind, found.columns + 1 + at, found.columns + 1 + at];
+  }));
+  for (const [stage, name, column, last] of heads) {
+    const title = put(make("div", "d-flex align-items-start small fw-semibold text-secondary"), head, 1, column, last);
+    if (stage) {
+      title.append(make("span", "badge rounded-circle me-2 " + (stage < 5 ? BUTTONS[stage - 1] : ITEMS).replace("btn-", "text-bg-"), String(stage)));
+    }
+    title.append(make("span", "", name));
+  }
+  // A cell in the rows of the pages. Its rows are kept, for the fading of the other rows.
+  function cellAt(cell, row, rows, column, last) {
+    cell.dataset.row = row;
+    cell.dataset.rows = rows;
+    return put(cell, row + head + 1, rows, column, last);
+  }
+  // Return the numbers of tools, methods and data in the rows of a page.
+  function count(node) {
+    const counted = KINDS.map(function (kind, at) {
+      return node.items ? node.items[at].length : 0;
+    });
+    for (const below of node.below) {
+      count(below).forEach(function (number, at) { counted[at] += number; });
+    }
+    return counted;
+  }
+  function branch(node) {
+    const colour = BUTTONS[Math.min(node.column, BUTTONS.length - 1)];
+    const opened = !node.greyed || state.options.openDisabled;
+    const button = make(opened ? "a" : "span", "btn text-start d-flex align-items-center " + (node.greyed ? colour.replace("btn-", "btn-outline-") : "text-white " + colour));
+    button.append(make("b", "", node.name));
+    let cell = button;
+    let note = "";
+    if (opened) {
+      button.href = local(node.path[node.path.length - 1], state.options);
+      button.addEventListener("click", function (event) {
+        event.preventDefault();
+        navigate(container, node.path);
+      });
+      if (node.greyed) {
+        note = "Greyed out on the website, and not opened there";
+      }
+    } else {
+      // A disabled button takes no pointer, so the popover is on an element around it, which can have the focus.
+      button.classList.add("disabled");
+      cell = make("span", "d-grid");
+      cell.tabIndex = 0;
+      cell.append(button);
+      note = "Marked as incomplete: this page is not opened yet.";
+    }
+    if (node.faded) {
+      button.classList.add("opacity-25");
+      note = "Empty: hidden on the website";
+    }
+    cellAt(cell, node.row, node.rows, node.column, node.last);
+    // The numbers are given for a page with pages below it, as the items of a single row are beside the page.
+    const counted = node.below.length ? count(node) : [];
+    explain(cell, node.name, [
+      first(node.page, "disambiguatingDescription") || first(node.page, "description"),
+      KINDS.map(function (kind, at) { return counted[at] ? kind + ": " + counted[at] : ""; }).filter(Boolean).join(" · "),
+      note,
+    ]);
+    (node.items || []).forEach(function (listed, at) {
+      // A column of items is as narrow as the grid needs: a long name is cut, and is whole in its popover or its title.
+      const box = cellAt(make("div", "d-flex flex-wrap align-content-center gap-1 overflow-hidden"), node.row, 1, found.columns + 1 + at, found.columns + 1 + at);
+      if (listed.length) {
+        box.setAttribute("role", "group");
+        box.setAttribute("aria-label", KINDS[at] + " of " + node.name);
+      }
+      for (const item of listed) {
+        // A pill with a record is a link to the record, with the weight of the links of the page.
+        const pill = make(item.address ? "a" : "span", "badge rounded-pill text-bg-light border text-truncate mw-100 " + (item.address ? "" : "fw-normal"), item.name || "(no name)");
+        if (item.address) {
+          pill.href = local(item.address, state.options);
+          opens(pill, state.options);
+        }
+        // In the preview of the editor, a click opens the page that lists the item, as in the pages of a stage.
+        if (state.options.onPick) {
+          pill.addEventListener("click", function () {
+            navigate(container, node.path);
+          });
+        }
+        if (item.description) {
+          pill.tabIndex = 0;
+          explain(pill, item.name || "(no name)", [safeHtml(item.description, state.options)]);
+        } else {
+          pill.title = item.name || "";
+        }
+        box.append(pill);
+      }
+    });
+    for (const below of node.below) {
+      branch(below);
+    }
+  }
+  for (const node of found.pages) {
+    branch(node);
+  }
+  // The cells fade with the transition of Bootstrap, which is off for a reader who asks for less motion. The rows of an
+  // overview that comes into view come in one after the other.
+  const inTurn = enters && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  for (const cell of grid.querySelectorAll("[data-row]")) {
+    cell.classList.add("fade");
+    if (inTurn) {
+      window.setTimeout(function () {
+        cell.classList.add("show");
+      }, 80 + Number(cell.dataset.row) * 70);
+    } else {
+      cell.classList.add("show");
+    }
+  }
+  // The cells beside the rows of the cell at the pointer, or with the focus, are faded. A page without content in the
+  // preview stays as faded as it is.
+  function light(cell) {
+    const from = cell ? Number(cell.dataset.row) : 0;
+    const to = cell ? from + Number(cell.dataset.rows) : 0;
+    for (const other of grid.querySelectorAll("[data-row]:not(.opacity-25)")) {
+      const row = Number(other.dataset.row);
+      other.classList.toggle("opacity-50", Boolean(cell) && (row >= to || row + Number(other.dataset.rows) <= from));
+    }
+  }
+  for (const name of ["mouseover", "focusin"]) {
+    grid.addEventListener(name, function (event) {
+      const cell = event.target.closest("[data-row]");
+      if (cell) {
+        light(cell);
+      }
+    });
+  }
+  for (const name of ["mouseleave", "focusout"]) {
+    grid.addEventListener(name, function () {
+      light(null);
+    });
+  }
+  // The overview is scrolled sideways where it does not fit, as on a phone. The glossary is not marked in it.
+  const scroll = make("nav", "overflow-x-auto p-2 mb-3");
+  scroll.setAttribute("aria-label", "Overview of the question");
+  scroll.append(grid);
+  return scroll;
+}
+
+// Draw a page. The page in view has inView.
+function view(container, state, page, level, inView) {
   const shown = make("div", "case-study-page");
   const top = make("div", "container");
   // The heading is the headline of the page, else its name. The summary of the case study is its introduction.
@@ -641,12 +905,40 @@ function view(container, state, page, level) {
   const introduction = make("p", "text-secondary fs-5", summary);
   introduction.dataset.field = level === 0 ? "abstract description" : "description";
   top.append(introduction);
+  // The pages of a question are in its overview, in place of their buttons. On the page of the case study, the
+  // overview of the chosen question is under the buttons of the questions, with a link to the page of that question.
   const row = buttons(container, state, page, level);
-  if (row.children.length) {
+  const asked = level === 0 ? chosen(state) : level === 1 ? page : null;
+  // An overview comes in when its page comes into view or another question is chosen, not when it is drawn again.
+  const drawn = (page["@id"] || "") + " " + (level === 0 && asked ? asked["@id"] : "");
+  const enters = Boolean(inView) && state.entered !== drawn;
+  if (inView) {
+    state.entered = drawn;
+  }
+  if (level === 0 && row.children.length) {
+    top.append(row);
+  }
+  if (level === 0 && asked) {
+    const open = make("a", "btn btn-sm " + BUTTONS[0].replace("btn-", "btn-outline-"), "Open " + (label(state, asked) || "the question") + " ");
+    open.append(make("i", "bi bi-arrow-right"));
+    open.href = local(asked["@id"], state.options);
+    open.addEventListener("click", function (event) {
+      event.preventDefault();
+      navigate(container, [asked["@id"]]);
+    });
+    const line = make("div", "d-flex justify-content-end px-2");
+    line.append(open);
+    top.append(line);
+  }
+  const grid = asked ? overview(container, state, asked, level === 1, enters) : null;
+  if (grid) {
+    top.append(grid);
+  }
+  if (level !== 0 && row.children.length) {
     top.append(row);
   }
   const bottom = make("div", "container");
-  // The question of a question page is on its button on the case study page, not again on its own page.
+  // The question of a question page is above its overview, and on its button on the case study page, not here again.
   if (level !== 1 && first(page, "text")) {
     const text = make("div", "case-study-text mb-4");
     text.dataset.field = "text";
@@ -755,9 +1047,20 @@ function slide(strip, target, done) {
 // Draw the breadcrumbs, the process flow and the panels of the pages.
 function draw(container, sliding) {
   const state = states.get(container);
+  // An open popover of an overview would stay on the page after its cell is drawn again.
+  for (const cell of container.querySelectorAll('.case-study-panel [data-bs-toggle="popover"]')) {
+    const popover = window.bootstrap ? window.bootstrap.Popover.getInstance(cell) : null;
+    if (popover) {
+      popover.dispose();
+    }
+  }
   rememberOpen(container, state);
   const found = pages(state);
   const level = found.length - 1;
+  // On the page of the case study, the chosen question is the question of the page that was in view.
+  if (level) {
+    state.question = found[1]["@id"];
+  }
   let shown = container.querySelector(":scope > .case-study");
   if (!shown) {
     shown = make("div", "case-study");
@@ -782,7 +1085,7 @@ function draw(container, sliding) {
   for (let at = 0; at <= level; at += 1) {
     const panel = make("div", "case-study-panel");
     panel.dataset.address = found[at]["@id"] || "";
-    panel.append(view(container, state, found[at], at));
+    panel.append(view(container, state, found[at], at, at === level));
     if (panels[at]) {
       panels[at].replaceWith(panel);
     } else {
