@@ -1,0 +1,430 @@
+{
+  "step1Contents": {
+    "navTitle": "Cosmetics Case Study",
+    "navDescription": "Two regulatory questions for the cosmetics case study. Choose one to explore or scroll for an overview.",
+    "questions": [
+      {
+        "label": "Question 1: Route-dependent internal exposure",
+        "description": "Does the route of application change the internal exposure to a cosmetic ingredient, and can a skin-liver microphysiological system measure that difference well enough to support a safety assessment without animal data?",
+        "value": "Q1",
+        "type": "regulatory-question"
+      },
+      {
+        "label": "Question 2: Skin versus liver metabolism",
+        "description": "Does metabolism in the skin change the systemic exposure to a cosmetic ingredient compared with metabolism in the liver, and should it be taken into account in the safety assessment?",
+        "value": "Q2",
+        "type": "regulatory-question"
+      }
+    ],
+    "content": [
+      {
+        "headingType": "h2",
+        "section": "Introduction",
+        "description": "<p>Animal testing of cosmetic ingredients has been prohibited in the European Union since 2013. Safety assessment of these ingredients therefore has to be built entirely from <b>new approach methodologies</b>: in vitro models, in silico models and the measurements that link them. This is the setting of <b>next generation risk assessment</b> (NGRA).</p><p>A cosmetic ingredient is usually applied to the skin, not swallowed. That makes the skin the first tissue it meets, and raises a question that a liver-only assessment cannot answer: does the skin itself metabolise the ingredient before it reaches the bloodstream, and does that change the internal exposure that drives any effect?</p><p>This case study follows that question through the work of the <b>Cosmetics Europe Long Range Science Strategy</b> programme, using a skin-liver microphysiological system (a two-organ chip) and a panel of cosmetics-relevant chemicals tested in skin and liver subcellular fractions.</p>"
+      },
+      {
+        "headingType": "h2",
+        "section": "Why genistein",
+        "description": "<p>The worked example for Question 1 is <b>genistein</b>, a soy isoflavone used in cosmetics as a phytoestrogen active. It was chosen because it makes the route question concrete and measurable:</p><ul><li>it is <b>endocrine active</b>, so the free, unconjugated concentration reaching the circulation is what matters;</li><li>it is <b>extensively conjugated</b> by sulfation and glucuronidation, so skin and liver metabolism directly control that free fraction;</li><li>human-relevant exposures are known for <b>two different routes</b>, which allows a topical cosmetic scenario and a dietary scenario to be compared directly.</li></ul>"
+      },
+      {
+        "headingType": "h2",
+        "section": "Data and provenance",
+        "description": "<p>The case study is built on data from the Cosmetics Europe Long Range Science Strategy programme. The Question 1 work is published as Tao et al. (2023), <i>Journal of Applied Toxicology</i>, <a href=\"https://doi.org/10.1002/jat.4540\">10.1002/jat.4540</a>, carried out by TissUse, Beiersdorf, Pharmacelsus and Cosmetics Europe. The Question 2 panel is published as Eilstein et al. (2020), <i>Journal of Applied Toxicology</i>, <a href=\"https://doi.org/10.1002/jat.3914\">10.1002/jat.3914</a>.</p><p>This is a prototype. The workflow steps that are greyed out have no content yet.</p>"
+      }
+    ]
+  },
+  "step2Contents": {
+    "Q1": {
+      "navTitle": "Safety assessment workflow Steps (Q1)",
+      "navDescription": "Follow these steps for the regulatory question: does the route of application change the internal exposure to a cosmetic ingredient? Click a button or scroll for more info.",
+      "steps": [
+        {
+          "label": "Chemical characteristics and Hazard Identification",
+          "value": "Chemical characteristics and Hazard Identification",
+          "glossaryUrl": "https://glossary.vhp4safety.nl/#VHP0000153",
+          "type": "process-flow-step"
+        },
+        {
+          "label": "Exposure",
+          "value": "Exposure",
+          "glossaryUrl": "https://glossary.vhp4safety.nl/#VHP0000154",
+          "type": "process-flow-step"
+        },
+        {
+          "label": "Toxicokinetics",
+          "value": "Toxicokinetics",
+          "glossaryUrl": "https://glossary.vhp4safety.nl/#VHP0000155",
+          "type": "process-flow-step"
+        },
+        {
+          "label": "Toxicodynamics",
+          "value": "Toxicodynamics",
+          "glossaryUrl": "https://glossary.vhp4safety.nl/#VHP0000156",
+          "type": "process-flow-step"
+        },
+        {
+          "label": "Adverse Outcome",
+          "value": "Adverse Outcome",
+          "glossaryUrl": "https://glossary.vhp4safety.nl/#VHP0000158",
+          "type": "process-flow-step",
+          "state": "disabled"
+        }
+      ],
+      "content": [
+        {
+          "headingType": "h2",
+          "section": "Description",
+          "description": "<p>A cosmetic ingredient applied to the skin and the same ingredient taken in the diet do not produce the same internal exposure, even at the same external dose. The skin may metabolise the ingredient on its way in, a <b>first-pass effect</b> analogous to the one the liver exerts on an oral dose.</p><p>This workflow asks whether a <b>skin-liver microphysiological system</b> can measure that difference. The HUMIMIC Chip2 combines a reconstructed human epidermis (EpiDerm&trade;) with liver spheroids of HepaRG and stellate cells in a shared circulation, so that a dose applied to the skin surface and a dose applied to the circulating medium can be compared in the same system.</p><p>Two human-relevant concentrations were used: <b>60&nbsp;nM</b>, the plasma concentration expected after topical application of a cosmetic product, and <b>1&nbsp;&micro;M</b>, the plasma concentration measured after ingesting soya products. Each was given as a single dose and as repeated doses, topically and systemically, and followed for five days.</p>"
+        }
+      ]
+    },
+    "Q2": {
+      "navTitle": "Safety assessment workflow Steps (Q2)",
+      "navDescription": "Follow these steps for the regulatory question: does metabolism in the skin change the systemic exposure compared with the liver? This question is not yet filled in.",
+      "steps": [
+        {
+          "label": "Chemical characteristics and Hazard Identification",
+          "value": "Chemical characteristics and Hazard Identification",
+          "glossaryUrl": "https://glossary.vhp4safety.nl/#VHP0000153",
+          "type": "process-flow-step",
+          "state": "disabled"
+        },
+        {
+          "label": "Exposure",
+          "value": "Exposure",
+          "glossaryUrl": "https://glossary.vhp4safety.nl/#VHP0000154",
+          "type": "process-flow-step",
+          "state": "disabled"
+        },
+        {
+          "label": "Toxicokinetics",
+          "value": "Toxicokinetics",
+          "glossaryUrl": "https://glossary.vhp4safety.nl/#VHP0000155",
+          "type": "process-flow-step",
+          "state": "disabled"
+        },
+        {
+          "label": "Toxicodynamics",
+          "value": "Toxicodynamics",
+          "glossaryUrl": "https://glossary.vhp4safety.nl/#VHP0000156",
+          "type": "process-flow-step",
+          "state": "disabled"
+        },
+        {
+          "label": "Adverse Outcome",
+          "value": "Adverse Outcome",
+          "glossaryUrl": "https://glossary.vhp4safety.nl/#VHP0000158",
+          "type": "process-flow-step",
+          "state": "disabled"
+        }
+      ],
+      "content": [
+        {
+          "headingType": "h2",
+          "section": "Description",
+          "description": "<p>Question 2 will be built on the comparison of <b>human liver S9</b> and <b>EpiSkin&trade; S9</b> subcellular fractions across a panel of 47 cosmetics-relevant chemicals (Eilstein et al. 2020). The panel was designed to span the reaction chemistries that matter for cosmetics: hair dye precursors, fragrance pro-haptens such as cinnamyl alcohol, preservatives, and probe substrates that require metabolic bioactivation.</p><p>The steps of this question are greyed out because the content has not been written yet.</p>"
+        }
+      ]
+    }
+  },
+  "step3Contents": {
+    "Q1": {
+      "Chemical characteristics and Hazard Identification": {
+        "navTitle": "Chemical characteristics and Hazard Identification (Q1)",
+        "navDescription": "",
+        "steps": [
+          {
+            "label": "Genistein",
+            "value": "Genistein",
+            "description": "The compound, its use in cosmetics and the hazard that drives the question.",
+            "type": "workflow step"
+          },
+          {
+            "label": "Non-specific binding",
+            "value": "Non-specific binding",
+            "description": "How much of the dose is lost to the chip rather than to metabolism.",
+            "type": "workflow step"
+          }
+        ],
+        "content": [
+          {
+            "headingType": "h2",
+            "section": "Description",
+            "description": "<p>Before any exposure can be interpreted, two things have to be known: what the compound is and what makes it a concern, and how much of an applied dose is actually available to the tissues rather than adsorbed to the apparatus.</p>"
+          }
+        ]
+      },
+      "Exposure": {
+        "navTitle": "Exposure (Q1)",
+        "navDescription": "",
+        "steps": [
+          {
+            "label": "Topical and systemic dosing",
+            "value": "Topical and systemic dosing",
+            "description": "Two routes, two human-relevant concentrations, single and repeated.",
+            "type": "workflow step"
+          }
+        ],
+        "content": [
+          {
+            "headingType": "h2",
+            "section": "Description",
+            "description": "<p>The exposure scenarios were chosen to be human-relevant rather than convenient. <b>60&nbsp;nM</b> represents the plasma concentration expected after topical application of a cosmetic product containing genistein. <b>1&nbsp;&micro;M</b> represents the plasma concentration measured after ingesting soya products. The comparison between them is the comparison between a cosmetic and a dietary exposure.</p>"
+          }
+        ]
+      },
+      "Toxicokinetics": {
+        "navTitle": "Toxicokinetics (Q1)",
+        "navDescription": "",
+        "steps": [
+          {
+            "label": "Parent and metabolites in chip medium",
+            "value": "Parent and metabolites in chip medium",
+            "description": "Genistein and its conjugates over five days, in two laboratories.",
+            "type": "workflow step"
+          },
+          {
+            "label": "First-pass metabolism in skin",
+            "value": "First-pass metabolism in skin",
+            "description": "Sulfation in the skin after topical application.",
+            "type": "workflow step"
+          },
+          {
+            "label": "Metabolism in organoids",
+            "value": "Metabolism in organoids",
+            "description": "Skin and liver organoids measured separately, outside the chip.",
+            "type": "workflow step"
+          }
+        ],
+        "content": [
+          {
+            "headingType": "h2",
+            "section": "Description",
+            "description": "<p>The kinetics of genistein and of its sulfate and glucuronide conjugates were followed in the circulating medium of the chip over five days, for each dosing scenario. Measuring the conjugates as well as the parent is what makes the route comparison possible: the ratio between them records where metabolism happened.</p>"
+          }
+        ]
+      },
+      "Toxicodynamics": {
+        "navTitle": "Toxicodynamics (Q1)",
+        "navDescription": "",
+        "steps": [
+          {
+            "label": "Tissue viability",
+            "value": "Tissue viability",
+            "description": "Whether the tissues stayed healthy over the five days.",
+            "type": "workflow step"
+          },
+          {
+            "label": "Transcriptomics",
+            "value": "Transcriptomics",
+            "description": "Gene expression in skin and liver organoids, on days 2 and 5.",
+            "type": "workflow step"
+          }
+        ],
+        "content": [
+          {
+            "headingType": "h2",
+            "section": "Description",
+            "description": "<p>Toxicodynamics here has two jobs. The first is a control: if the tissues were not viable, nothing else in the experiment could be interpreted. The second is the effect measurement itself, by transcriptomics, which asks whether the internal exposure reached in each scenario was enough to change gene expression.</p>"
+          }
+        ]
+      }
+    }
+  },
+  "step4Contents": {
+    "Q1": {
+      "Chemical characteristics and Hazard Identification": {
+        "Genistein": {
+          "navTitle": "Genistein",
+          "navDescription": "",
+          "steps": [],
+          "content": [
+            {
+              "headingType": "h2",
+              "section": "The compound",
+              "description": "<p><b>Genistein</b> is an isoflavone found in soya. In cosmetics it is used as a phytoestrogen active, typically in anti-ageing products. In the diet it is taken in far larger amounts through soya foods, which is why two very different human exposures are known for the same molecule.</p>"
+            },
+            {
+              "headingType": "h2",
+              "section": "The hazard that drives the question",
+              "description": "<p>The governing hazard is <b>endocrine (oestrogenic) activity</b>. Because that activity depends on the free, unconjugated compound reaching its target, the safety question is not simply how much was applied, but how much arrives unconjugated. Genistein is extensively sulfated and glucuronidated, so metabolism controls the answer, and where that metabolism happens determines whether a topical dose behaves like a dietary one.</p>"
+            }
+          ]
+        },
+        "Non-specific binding": {
+          "navTitle": "Non-specific binding",
+          "navDescription": "",
+          "steps": [
+            {
+              "label": "Non-specific binding of genistein",
+              "description": "Loss of genistein to the chip materials, measured separately from metabolic clearance.",
+              "type": "data",
+              "id": "genistein-non-specific-binding"
+            }
+          ],
+          "content": [
+            {
+              "headingType": "h2",
+              "section": "Why it is measured",
+              "description": "<p>In a small circulating system, a lipophilic compound can be lost to tubing, membranes and plastics rather than to metabolism. If that loss is not quantified first, it is indistinguishable from clearance, and every kinetic conclusion drawn afterwards is wrong by an unknown amount.</p><p>Non-specific binding of genistein was therefore measured separately, so that the depletion seen in the chip could be attributed to the tissues.</p>"
+            }
+          ]
+        }
+      },
+      "Exposure": {
+        "Topical and systemic dosing": {
+          "navTitle": "Topical and systemic dosing",
+          "navDescription": "",
+          "steps": [],
+          "content": [
+            {
+              "headingType": "h2",
+              "section": "The scenarios",
+              "description": "<p>Genistein was applied in four combinations, each followed for five days:</p><ul><li><b>Topical, 60&nbsp;nM</b> - the cosmetic scenario, applied to the surface of the reconstructed epidermis;</li><li><b>Systemic, 60&nbsp;nM</b> - the same concentration placed directly in the circulating medium, which is the comparison that isolates the contribution of the skin;</li><li><b>Systemic, 1&nbsp;&micro;M</b> - the dietary scenario;</li><li><b>Single versus repeated</b> dosing for these scenarios, since a cosmetic product is applied daily rather than once.</li></ul>"
+            },
+            {
+              "headingType": "h2",
+              "section": "Why the comparison works",
+              "description": "<p>Applying the same concentration topically and systemically in the same system separates two things that are confounded in a whole organism: what the skin does to the compound, and what the liver does to it. The difference between the two curves is the first-pass contribution of the skin.</p>"
+            }
+          ]
+        }
+      },
+      "Toxicokinetics": {
+        "Parent and metabolites in chip medium": {
+          "navTitle": "Parent and metabolites in chip medium",
+          "navDescription": "",
+          "steps": [
+            {
+              "label": "Genistein and conjugate kinetics in the Chip2",
+              "description": "Genistein, genistein sulfate and genistein glucuronide in circulating medium over five days, two laboratories.",
+              "type": "data",
+              "id": "genistein-chip2-kinetics"
+            },
+            {
+              "label": "Metabolite identification",
+              "description": "Identification of the genistein metabolites formed in the chip medium.",
+              "type": "data",
+              "id": "genistein-chip2-metabolite-identification"
+            }
+          ],
+          "content": [
+            {
+              "headingType": "h2",
+              "section": "What was measured",
+              "description": "<p>Genistein and its two main conjugates, <b>genistein sulfate</b> and <b>genistein glucuronide</b>, were quantified in the circulating medium at intervals across five days, by LC-MS/MS.</p>"
+            },
+            {
+              "headingType": "h2",
+              "section": "Two laboratories",
+              "description": "<p>The chip experiments were run independently in two laboratories, TissUse and Beiersdorf, with bioanalysis by Pharmacelsus. Running the same design in two places is a deliberate test of whether a microphysiological system gives transferable results, which is a precondition for regulatory use rather than an afterthought.</p>"
+            },
+            {
+              "headingType": "h2",
+              "section": "Result",
+              "description": "<p>Route-specific differences in bioavailability were observed. The rate of metabolism was consistent with the short half-life of genistein observed in humans in vivo, which supports the relevance of the system.</p>"
+            }
+          ]
+        },
+        "First-pass metabolism in skin": {
+          "navTitle": "First-pass metabolism in skin",
+          "navDescription": "",
+          "steps": [],
+          "content": [
+            {
+              "headingType": "h2",
+              "section": "The finding",
+              "description": "<p>After topical application, <b>first-pass metabolism occurred in the skin</b>, and it was predominantly <b>sulfation</b>. The skin is therefore not a passive barrier for this compound: it converts part of the dose before it reaches the circulation.</p>"
+            },
+            {
+              "headingType": "h2",
+              "section": "Why it matters for safety assessment",
+              "description": "<p>If the skin conjugates part of a topically applied dose, then the systemically available free compound after a cosmetic application is lower than an assessment based on liver metabolism alone would predict. Ignoring skin metabolism is conservative in this direction, but it is not accurate, and accuracy is what allows a non-animal assessment to stand on its own rather than lean on a safety factor.</p>"
+            }
+          ]
+        },
+        "Metabolism in organoids": {
+          "navTitle": "Metabolism in organoids",
+          "navDescription": "",
+          "steps": [
+            {
+              "label": "Genistein metabolism in EpiDerm and liver organoids",
+              "description": "Parent and conjugate formation in each tissue separately, across a concentration range.",
+              "type": "data",
+              "id": "genistein-organoid-metabolism"
+            }
+          ],
+          "content": [
+            {
+              "headingType": "h2",
+              "section": "Skin and liver measured separately",
+              "description": "<p>Alongside the chip, genistein metabolism was measured in <b>EpiDerm&trade;</b> reconstructed epidermis and in <b>liver organoids</b> on their own, across a concentration range. Measuring the tissues separately gives the contribution of each one, which the combined chip cannot resolve, and provides the reference against which the chip result is read.</p>"
+            }
+          ]
+        }
+      },
+      "Toxicodynamics": {
+        "Tissue viability": {
+          "navTitle": "Tissue viability",
+          "navDescription": "",
+          "steps": [
+            {
+              "label": "Viability and barrier integrity",
+              "description": "LDH, MTT, albumin production and TEER across the five-day runs.",
+              "type": "data",
+              "id": "genistein-chip2-viability"
+            }
+          ],
+          "content": [
+            {
+              "headingType": "h2",
+              "section": "What was checked",
+              "description": "<p>Viability was followed throughout, with different measures for the two tissues:</p><ul><li><b>EpiDerm&trade;</b>: LDH release and MTT reduction;</li><li><b>Liver organoids</b>: LDH release and albumin production, the latter being a measure of function rather than merely of survival;</li><li><b>Barrier integrity</b>: transepithelial electrical resistance (TEER), which shows whether the epidermal barrier held over the five days.</li></ul><p>These are controls. Their purpose is to establish that any absence of effect was a real absence, and not a dying culture.</p>"
+            }
+          ]
+        },
+        "Transcriptomics": {
+          "navTitle": "Transcriptomics",
+          "navDescription": "",
+          "steps": [
+            {
+              "label": "BMDExpress-3",
+              "description": "Benchmark dose analysis of the transcriptomic dose-response.",
+              "type": "tool",
+              "id": "bmdexpress_3"
+            },
+            {
+              "label": "TempO-Seq",
+              "description": "Targeted whole-transcriptome sequencing of the skin and liver organoids.",
+              "type": "tool"
+            },
+            {
+              "label": "TempO-Seq transcriptomics and benchmark dose analysis",
+              "description": "Gene expression in skin and liver organoids on days 2 and 5, with BMD modelling.",
+              "type": "data",
+              "id": "genistein-transcriptomics"
+            }
+          ],
+          "content": [
+            {
+              "headingType": "h2",
+              "section": "What was measured",
+              "description": "<p>Skin and liver organoids were harvested on <b>days 2 and 5</b> and their gene expression measured by <b>TempO-Seq</b> targeted sequencing. Dose-response was analysed by benchmark dose modelling.</p>"
+            },
+            {
+              "headingType": "h2",
+              "section": "Result",
+              "description": "<p>Only <b>repeated dosing at 1&nbsp;&micro;M</b>, the scenario resembling daily intake of soya products, produced statistically significant changes in gene expression, and only in the <b>liver</b> organoids. This coincided with a much higher systemic genistein concentration than was reached in any other dosing scenario.</p><p>The interpretation is that single or low doses are metabolised rapidly enough to limit any toxicodynamic effect. For the cosmetic scenario specifically, the internal exposure never reached a level that moved gene expression.</p>"
+            },
+            {
+              "headingType": "h2",
+              "section": "What this contributes to a safety assessment",
+              "description": "<p>The value of the chip here is that it links a measured internal exposure to a measured effect in the same experiment. That link, rather than either measurement alone, is what a next generation risk assessment needs: it allows a statement about whether a realistic cosmetic exposure reaches a biologically active concentration, without an animal study standing in for the connection.</p>"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

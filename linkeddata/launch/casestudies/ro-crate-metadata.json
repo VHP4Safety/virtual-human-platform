@@ -1,0 +1,350 @@
+{
+  "@context": [
+    "https://w3id.org/ro/crate/1.1/context",
+    {
+      "snomed": "http://snomed.info/id/",
+      "obo": "http://purl.obolibrary.org/obo/"
+    }
+  ],
+  "@graph": [
+    {
+      "@id": "ro-crate-metadata.json",
+      "@type": "CreativeWork",
+      "conformsTo": {
+        "@id": "https://w3id.org/ro/crate/1.1"
+      },
+      "about": {
+        "@id": "./"
+      }
+    },
+    {
+      "@id": "./",
+      "@type": "Dataset",
+      "name": "VHP4Safety Case Studies",
+      "description": "Configuration data for the VHP4Safety case studies (kidney, Parkinson, thyroid, cosmetics) used to drive the case study UI.",
+      "datePublished": "2026-05-17",
+      "dateModified": "2026-05-17",
+      "version": "1.0.0",
+      "url": "https://github.com/VHP4Safety/ui-casestudy-config",
+      "license": {
+        "@id": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "funder": {
+        "@id": "https://ror.org/04jsz6e67"
+      },
+      "mentions": {
+        "@id": "https://glossary.vhp4safety.nl/"
+      },
+      "keywords": [
+        "VHP4Safety",
+        "next-generation risk assessment",
+        "human-based safety assessment",
+        "case study",
+        "in vitro",
+        "in silico",
+        "chemical safety",
+        "kidney disease",
+        "Parkinson's disease",
+        "thyroid"
+      ],
+      "hasPart": [
+        {
+          "@id": "kidney_content.json"
+        },
+        {
+          "@id": "parkinson_content.json"
+        },
+        {
+          "@id": "thyroid_content.json"
+        },
+        {
+          "@id": "cosmetics_content.json"
+        },
+        {
+          "@id": "Images/"
+        },
+        {
+          "@id": "README.md"
+        },
+        {
+          "@id": "transform_content.py"
+        }
+      ]
+    },
+    {
+      "@id": "kidney_content.json",
+      "@type": "File",
+      "name": "Kidney case study",
+      "description": "To study kidney disease and pharmacovigilance.",
+      "identifier": "kidney",
+      "encodingFormat": "application/json",
+      "keywords": [
+        "pharmacovigilance",
+        "kidney disease"
+      ],
+      "about": {
+        "@id": "snomed:90708001"
+      },
+      "contentUrl": "https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/kidney_content.json"
+    },
+    {
+      "@id": "parkinson_content.json",
+      "@type": "File",
+      "name": "Parkinson case study",
+      "description": "To study life course pesticide exposure and neurodegenerative disease.",
+      "identifier": "parkinson",
+      "encodingFormat": "application/json",
+      "keywords": [
+        "pesticide exposure",
+        "neurodegenerative disease",
+        "life course exposure"
+      ],
+      "about": {
+        "@id": "snomed:49049000"
+      },
+      "contentUrl": "https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/parkinson_content.json"
+    },
+    {
+      "@id": "thyroid_content.json",
+      "@type": "File",
+      "name": "Thyroid case study",
+      "description": "To study health effects discriminated by age and sex on thyroid-mediated neurodevelopment.",
+      "identifier": "thyroid",
+      "encodingFormat": "application/json",
+      "keywords": [
+        "neurodevelopment",
+        "age",
+        "sex differences",
+        "thyroid"
+      ],
+      "about": {
+        "@id": "snomed:14304000"
+      },
+      "contentUrl": "https://raw.githubusercontent.com/VHP4Safety/ui-casestudy-config/refs/heads/main/thyroid_content.json"
+    },
+    {
+      "@id": "cosmetics_content.json",
+      "@type": "File",
+      "name": "Cosmetics case study",
+      "description": "To study how skin and liver metabolism determine the internal exposure to cosmetic ingredients, without animal data.",
+      "identifier": "cosmetics",
+      "encodingFormat": "application/json",
+      "keywords": [
+        "cosmetics",
+        "skin metabolism",
+        "next generation risk assessment",
+        "microphysiological systems"
+      ]
+    },
+    {
+      "@id": "Images/",
+      "@type": "Dataset",
+      "name": "Case study images",
+      "description": "Figures referenced from the case study content (currently all thyroid case study figures).",
+      "hasPart": [
+        {
+          "@id": "Images/AOP.png"
+        },
+        {
+          "@id": "Images/BDNF protein exprssion.png"
+        },
+        {
+          "@id": "Images/BER_simulations.png"
+        },
+        {
+          "@id": "Images/Exposure Silychristin.png"
+        },
+        {
+          "@id": "Images/image.png"
+        },
+        {
+          "@id": "Images/KLF9 BDNF gene expression.png"
+        },
+        {
+          "@id": "Images/MCT8 Silychristin concentration curve.png"
+        },
+        {
+          "@id": "Images/MEA data.png"
+        },
+        {
+          "@id": "Images/Modelledfetalbrain concentrations.png"
+        },
+        {
+          "@id": "Images/OAPT1C1 Silychristin concentration curve.png"
+        },
+        {
+          "@id": "Images/PoD Distributions MCT8+OATP1C1.png"
+        }
+      ]
+    },
+    {
+      "@id": "Images/AOP.png",
+      "@type": [
+        "File",
+        "ImageObject"
+      ],
+      "name": "Thyroid hormone mediated developmental neurotoxicity AOP",
+      "encodingFormat": "image/png"
+    },
+    {
+      "@id": "Images/BDNF protein exprssion.png",
+      "@type": [
+        "File",
+        "ImageObject"
+      ],
+      "name": "BDNF protein expression",
+      "encodingFormat": "image/png"
+    },
+    {
+      "@id": "Images/BER_simulations.png",
+      "@type": [
+        "File",
+        "ImageObject"
+      ],
+      "name": "Bioactivity-exposure response (BER) simulations",
+      "encodingFormat": "image/png"
+    },
+    {
+      "@id": "Images/Exposure Silychristin.png",
+      "@type": [
+        "File",
+        "ImageObject"
+      ],
+      "name": "Silychristin exposure scenario",
+      "encodingFormat": "image/png"
+    },
+    {
+      "@id": "Images/image.png",
+      "@type": [
+        "File",
+        "ImageObject"
+      ],
+      "name": "Thyroid case study workflow overview",
+      "encodingFormat": "image/png"
+    },
+    {
+      "@id": "Images/KLF9 BDNF gene expression.png",
+      "@type": [
+        "File",
+        "ImageObject"
+      ],
+      "name": "KLF9 and BDNF gene expression",
+      "encodingFormat": "image/png"
+    },
+    {
+      "@id": "Images/MCT8 Silychristin concentration curve.png",
+      "@type": [
+        "File",
+        "ImageObject"
+      ],
+      "name": "MCT8 silychristin concentration curve",
+      "encodingFormat": "image/png"
+    },
+    {
+      "@id": "Images/MEA data.png",
+      "@type": [
+        "File",
+        "ImageObject"
+      ],
+      "name": "Multi-electrode array (MEA) data",
+      "encodingFormat": "image/png"
+    },
+    {
+      "@id": "Images/Modelledfetalbrain concentrations.png",
+      "@type": [
+        "File",
+        "ImageObject"
+      ],
+      "name": "Modelled fetal brain silychristin concentrations",
+      "encodingFormat": "image/png"
+    },
+    {
+      "@id": "Images/OAPT1C1 Silychristin concentration curve.png",
+      "@type": [
+        "File",
+        "ImageObject"
+      ],
+      "name": "OATP1C1 silychristin concentration curve",
+      "encodingFormat": "image/png"
+    },
+    {
+      "@id": "Images/PoD Distributions MCT8+OATP1C1.png",
+      "@type": [
+        "File",
+        "ImageObject"
+      ],
+      "name": "Point of departure distributions for MCT8 and OATP1C1",
+      "encodingFormat": "image/png"
+    },
+    {
+      "@id": "README.md",
+      "@type": "File",
+      "name": "README",
+      "description": "Project README describing the UI casestudy config repo.",
+      "encodingFormat": "text/markdown"
+    },
+    {
+      "@id": "transform_content.py",
+      "@type": [
+        "File",
+        "SoftwareSourceCode"
+      ],
+      "name": "transform_content.py",
+      "description": "Python script used to transform case study content.",
+      "encodingFormat": "text/x-python",
+      "programmingLanguage": {
+        "@id": "https://www.python.org/"
+      }
+    },
+    {
+      "@id": "https://www.python.org/",
+      "@type": "ComputerLanguage",
+      "name": "Python",
+      "url": "https://www.python.org/"
+    },
+    {
+      "@id": "snomed:90708001",
+      "@type": "MedicalCondition",
+      "name": "Kidney disease",
+      "sameAs": {
+        "@id": "obo:MONDO_0005240"
+      }
+    },
+    {
+      "@id": "snomed:49049000",
+      "@type": "MedicalCondition",
+      "name": "Parkinson's disease",
+      "sameAs": {
+        "@id": "obo:MONDO_0005180"
+      }
+    },
+    {
+      "@id": "snomed:14304000",
+      "@type": "MedicalCondition",
+      "name": "Disorder of thyroid gland",
+      "sameAs": {
+        "@id": "obo:MONDO_0002654"
+      }
+    },
+    {
+      "@id": "https://glossary.vhp4safety.nl/",
+      "@type": "DefinedTermSet",
+      "name": "VHP4Safety Glossary",
+      "description": "Controlled vocabulary of terms used across the VHP4Safety programme, including the process flow steps referenced by each case study.",
+      "url": "https://glossary.vhp4safety.nl/"
+    },
+    {
+      "@id": "https://ror.org/04jsz6e67",
+      "@type": "Organization",
+      "name": "Dutch Research Council",
+      "alternateName": "NWO",
+      "url": "https://www.nwo.nl/"
+    },
+    {
+      "@id": "https://creativecommons.org/licenses/by/4.0/",
+      "@type": "CreativeWork",
+      "name": "Creative Commons Attribution 4.0 International",
+      "identifier": "CC-BY-4.0"
+    }
+  ]
+}
