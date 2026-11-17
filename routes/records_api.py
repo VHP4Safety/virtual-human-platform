@@ -81,7 +81,7 @@ blueprint = Blueprint("records", __name__, url_prefix="/api", description="Read,
 TAGS = [
     {"name": "downloads", "description": "Download all records, the vocabulary terms in use and the SHACL shapes, each as one file."},
     {"name": "editing", "description": "Add, change, move, remove and restore records. A write token for the kind is required."},
-    {"name": "vocabularies", "description": "Search vocabulary registries for terms. For editors only."},
+    {"name": "registries", "description": "Search vocabulary registries for terms. For editors only."},
 ]
 limiter.limit("300 per minute")(blueprint)
 TOKEN = [{"token": []}]
@@ -353,7 +353,7 @@ TERMS = {"type": "object", "required": ["registry", "terms"], "properties": {
 }}
 
 
-@blueprint.get("/registries", tags=["vocabularies"])
+@blueprint.get("/registries", tags=["registries"])
 @blueprint.doc(operationId="listRegistries")
 @blueprint.response(200, REGISTRIES, example=PROVIDERS)
 @blueprint.doc(description="Return the title of each vocabulary registry, by the name that the other registry operations take.")
@@ -363,7 +363,7 @@ def registries():
     return jsonify(PROVIDERS)
 
 
-@blueprint.get("/registries/<registry>/vocabularies", tags=["vocabularies"])
+@blueprint.get("/registries/<registry>/vocabularies", tags=["registries"])
 @blueprint.doc(operationId="listRegistryVocabularies")
 @blueprint.arguments(Registry, location="query")
 @blueprint.response(200, {"type": "array", "items": VOCABULARY})
@@ -377,7 +377,7 @@ def registry_vocabularies(given, registry):
         return jsonify(provider.vocabularies(given["text"])[:50])
 
 
-@blueprint.get("/registries/terms", tags=["vocabularies"])
+@blueprint.get("/registries/terms", tags=["registries"])
 @blueprint.doc(operationId="searchRegistryTerms")
 @blueprint.arguments(Registry, location="query")
 @blueprint.response(200, TERMS)
