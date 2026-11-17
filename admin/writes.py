@@ -3,7 +3,7 @@
 import json
 
 from rdflib import RDF, BNode, Graph, URIRef
-from rdflib.namespace import DCTERMS, SDO
+from rdflib.namespace import SDO
 from sqlalchemy import delete, insert, select
 
 import database
@@ -37,11 +37,6 @@ def class_of(kind: str, body: dict) -> str:
     return kind
 
 
-# The values that the API adds to each record it returns, and does not store from a write: the page of the record and
-# the profiles that it fits. Its address is also added as its url when it has none.
-ADDED = {str(SDO.mainEntityOfPage), str(DCTERMS.conformsTo)}
-
-
 def document(kind: str, address: str, body: dict) -> dict:
     """Return the request body as a JSON-LD document of kind at address. Each field that the API returns for records of
     kind is taken, so that a record that is read can be written back."""
@@ -51,7 +46,8 @@ def document(kind: str, address: str, body: dict) -> dict:
     stored = records.properties(kind)
     found = {"@context": context(settings()), "@id": address, "@type": jsonld_name(kind)}
     for name, value in body.items():
-        if name.startswith("@") or documents.expand(name) in ADDED or (documents.expand(name) == str(SDO.url) and value in (address, {"@id": address})):
+        # The address of a record is also added as its url when it has none.
+        if name.startswith("@") or documents.expand(name) in records.ADDED or (documents.expand(name) == str(SDO.url) and value in (address, {"@id": address})):
             continue
         if name not in known and documents.expand(name) not in stored:
             raise ValueError(f"Unknown field {name!r}.")

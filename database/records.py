@@ -6,7 +6,7 @@ from functools import cache
 
 import pandas as pd
 from rdflib import RDF, RDFS, BNode, Graph, Literal, URIRef
-from rdflib.namespace import SDO
+from rdflib.namespace import DCTERMS, SDO
 from rdfsolve.client import sql_tables
 from sqlalchemy import column, func, literal, or_, select, table, true, union_all
 
@@ -18,6 +18,9 @@ from linkeddata.profile import fields, hierarchy, settings, shapes_text, terms
 logging.getLogger("rdflib.term").setLevel(logging.ERROR)
 
 
+# The values that the API adds to each record it returns, and does not store from a write: the page of the record and
+# the profiles that it fits.
+ADDED = {str(SDO.mainEntityOfPage), str(DCTERMS.conformsTo)}
 # The highest page number of a listing, so that the place of the first record of a page fits in the database.
 PAGES = 100_000
 
@@ -303,7 +306,26 @@ def sources(of_class: str, path: str) -> list[dict]:
             in_statements = True
     if in_statements:
         found.append({"table": rest, "value": rest.c.value, "term": rest.c.term, "where": rest.c.property == path})
+    # The values of a list field, such as the creators of a dataset, are the members of the list, not its first node.
+    if any(path in settings()["lists"].get(each, []) for each in within(of_class)):
+        return [members(source) for source in found]
     return found
+
+
+def members(source: dict) -> dict:
+    """Return the source of the values of a list field: its values that are not a list, and the members of each list,
+    which are held in the table of statements, each node with the next one as rdf:rest."""
+    rest, held = tables()[sql_tables.STATEMENTS], source["table"]
+    nodes = select(held.c.record, held.c.iri, source["value"].label("node")).where(source["where"], source["term"] == "@blank").cte(recursive=True)
+    following = rest.alias()
+    nodes = nodes.union_all(select(nodes.c.record, nodes.c.iri, following.c.value).where(
+        following.c.record == nodes.c.record, following.c.iri == literal("_:").op("||")(nodes.c.node), following.c.property == str(RDF.rest), following.c.term == "@blank"))
+    member = rest.alias()
+    found = union_all(
+        select(held.c.iri, source["value"].label("value"), source["term"].label("term")).where(source["where"], source["term"].is_distinct_from("@blank")),
+        select(nodes.c.iri, member.c.value, member.c.term).where(
+            member.c.record == nodes.c.record, member.c.iri == literal("_:").op("||")(nodes.c.node), member.c.property == str(RDF.first))).subquery()
+    return {"table": found, "value": found.c.value, "term": found.c.term, "where": true()}
 
 
 def values(of_class: str, path: str) -> list[tuple[str, str]]:
@@ -414,8 +436,9 @@ def facets(of_class: str, paths: list[str], filters: dict, search: str = "") -> 
 
 
 def browsed(field: dict) -> bool:
-    """Return True if a listing can be filtered by field: a field of links or listed values, or of several texts or links, such as keywords."""
-    return bool(field["values"] or field["links"] or (field["open"] and not field["single"])) and not field["part"] and not field["fixed"]
+    """Return True if a listing can be filtered by field: a field of links or listed values, or of several texts or links, such as keywords.
+    A field of the values that the API adds on output, such as mainEntityOfPage, is not stored, and filters nothing."""
+    return bool(field["values"] or field["links"] or (field["open"] and not field["single"])) and not field["part"] and not field["fixed"] and field["iri"] not in ADDED
 
 
 def filters(of_class: str, given: dict) -> dict:
@@ -445,7 +468,9 @@ def counted(of_class: str, given: dict) -> dict:
         for value in field["values"]:
             values[(value, field["iris"])] = 0
         for key, count in counts[field["iri"]].items():
-            values[key] = values.get(key, 0) + count
+            # A part, such as the help of a tool written in the tool, is not a value that other records have.
+            if not (key[1] and PART.match(key[0])):
+                values[key] = values.get(key, 0) + count
         listed = []
         for (value, iri), count in values.items():
             # Value fits if it is an IRI and if it is in the list of the field.

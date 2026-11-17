@@ -564,6 +564,16 @@ class Listing(Query):
     page_size = fields.Integer(load_default=20, validate=validate.Range(min=1, max=200), metadata={"description": "The number of records on a page."})
 
 
+def filtered(of_class: str, given: dict) -> dict:
+    """Return the filters of a listing, and refuse a filter that the kind has not, as it would otherwise filter nothing
+    unseen."""
+    names = sorted(field["name"] for field in fields_of(of_class) if records.browsed(field))
+    unknown = sorted(set(given) - set(names) - set(Listing().fields))
+    if unknown:
+        abort(422, message=f"No filter {', '.join(unknown)}; the filters of this kind are {', '.join(names)}.", errors={"query": {name: ["Unknown filter."] for name in unknown}})
+    return records.filters(of_class, given)
+
+
 # The number of records and pages of a listing, as made by flask-smorest, in JSON.
 PAGED = {"X-Pagination": {"description": "The number of records and of pages, and the numbers of the first, last, previous and next page.", "content": {"application/json": {"schema": {
     "type": "object", "required": ["total", "total_pages"], "properties": {name: {"type": "integer"} for name in ("total", "total_pages", "first_page", "last_page", "page", "previous_page", "next_page")}}}}}}
@@ -594,7 +604,7 @@ def listed(given, kind):
     of_class = settings()["kinds"][kind]
     # At the address of a kind (/tools.ttl), all records of the kind are returned as one file, not as pages.
     page, size = (1, None) if "listing" in g else (given["page"], given["page_size"])
-    total, iris = records.page(of_class, records.filters(of_class, given), given["search"], (page - 1) * (size or 0), size)
+    total, iris = records.page(of_class, filtered(of_class, given), given["search"], (page - 1) * (size or 0), size)
     found = readable(records.graph(iris), kind)
     # The format requested at the page of a kind (/tools) is used, also when it is requested with a file extension (/tools.ttl).
     media = g.get("media") or request.accept_mimetypes.best_match(["application/ld+json", *SERIALIZATIONS, "text/markdown"], "application/ld+json")
@@ -627,6 +637,7 @@ def listed(given, kind):
 ))
 def counted(given, kind):
     """Count the records of a kind by field value."""
+    filtered(settings()["kinds"][kind], given)
     return jsonify(records.counted(settings()["kinds"][kind], given))
 
 

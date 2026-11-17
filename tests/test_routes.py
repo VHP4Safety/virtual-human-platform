@@ -415,3 +415,19 @@ def test_read_written_back(site):
     writes.save({"@context": context(settings()), "@id": BASE + "vocabularies/v", "@type": "DefinedTermSet", "name": "V",
                  "void:uriSpace": "https://v.org/"}, vocabulary, "Test Editor", ORCID)
     assert site.post("/api/vocabularies", json={"name": "W", "void:uriSpace": "https://w.org/"}, headers=bearer).status_code == 201
+
+
+def test_filters(site):
+    """A filter of a list field finds the members of the lists, and a filter that the kind has not is refused. The values
+    added on output and the parts of records are not offered as filters."""
+    dataset = "https://schema.org/Dataset"
+    writes.save(writes.document(PERSON, BASE + "people/p", {"name": "P"}), PERSON, "Test Editor", ORCID)
+    writes.save(writes.document(dataset, BASE + "data/d", {"name": "D", "creator": {"@list": [{"@id": BASE + "people/p"}]}}), dataset, "Test Editor", ORCID)
+    writes.save(writes.document(TOOL, BASE + "tools/h", {"name": "H", "softwareHelp": {"@type": "CreativeWork", "name": "Help"}}), TOOL, "Test Editor", ORCID)
+    assert [record["name"] for record in site.get("/api/data", query_string={"creator": BASE + "people/p"}).json["@graph"]] == ["D"]
+    assert [value["value"] for value in site.get("/api/data/facets").json["creator"] if value["count"]] == [BASE + "people/p"]
+    assert not [value for value in site.get("/api/tools/facets").json["softwareHelp"] if value["count"]]
+    assert "mainEntityOfPage" not in site.get("/api/people/facets").json
+    for path in ("/api/people", "/api/people/facets"):
+        unknown = site.get(path, query_string={"affiliation": "x"})
+        assert unknown.status_code == 422 and "affiliation" in unknown.json["message"], path
