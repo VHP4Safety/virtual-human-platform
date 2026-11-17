@@ -11,7 +11,7 @@ from rdfsolve.client import sql_tables
 from sqlalchemy import column, func, literal, or_, select, table, true, union_all
 
 import database
-from database.tables import Record
+from database.tables import Record, Revision
 from linkeddata.profile import fields, hierarchy, settings, shapes_text, terms
 
 # HTML texts that cannot be parsed are already reported with the checks.
@@ -74,10 +74,12 @@ def parts_of(iri: str) -> list[str]:
 
 
 def latest_change() -> str:
-    """Return the time of the last change of a record, in UTC."""
+    """Return the time of the last change of a record, in UTC. A record removed permanently has no row, so the time of
+    the last revision is also taken."""
     with database.session() as db:
         found = db.execute(select(func.max(Record.updated_at), func.max(Record.removed_at))).one()
-    return max([value for value in found if value] or [""])
+        revised = db.scalar(select(func.max(Revision.created_at)))
+    return max([value for value in (*found, revised) if value] or [""])
 
 
 def with_pages() -> list[tuple[str, str]]:
@@ -260,17 +262,22 @@ def graph(iris: list[str]) -> Graph:
 
 
 def with_names(found: Graph) -> Graph:
-    """Return found with the class and the name of each linked record."""
+    """Return found with the class and the name of each linked record that is not removed. A link to the old address of a
+    moved record has the class and the name of the record at its new address."""
     linked = set()
     for _, predicate, value in found:
         if isinstance(value, URIRef) and predicate != SDO.sameAs and (value, None, None) not in found:
             linked.add(str(value))
     named = Graph() + found
     with database.session() as db:
-        for iri, kind, name in db.execute(select(Record.iri, Record.type, Record.name).where(Record.iri.in_(linked))):
-            named.add((URIRef(iri), RDF.type, URIRef(kind)))
-            if name:
-                named.add((URIRef(iri), SDO.name, Literal(name)))
+        earlier = {}
+        for old, new in db.execute(select(Record.iri, Record.moved_to).where(Record.iri.in_(linked), Record.moved_to.is_not(None))):
+            earlier.setdefault(new, []).append(old)
+        for iri, kind, name in db.execute(select(Record.iri, Record.type, Record.name).where(Record.iri.in_(linked | set(earlier)), Record.removed_at.is_(None))):
+            for shown in ([iri] if iri in linked else []) + earlier.get(iri, []):
+                named.add((URIRef(shown), RDF.type, URIRef(kind)))
+                if name:
+                    named.add((URIRef(shown), SDO.name, Literal(name)))
     for prefix, namespace in settings()["prefixes"].items():
         named.bind(prefix, namespace)
     return named

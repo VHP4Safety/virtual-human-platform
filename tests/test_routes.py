@@ -460,3 +460,20 @@ def test_errors_described(site):
     assert {"404", "410"} <= set(spec["paths"]["/api/{path}"]["get"]["responses"])
     assert all("429" in operation["responses"] for _, _, operation in operations(spec))
     assert "GET" in site.post("/api/search").headers["Allow"]
+
+
+def test_linked_names(site):
+    """A linked record that is removed gives no name, a moved one the name at its new address, and a record removed
+    permanently leaves the data of the pages that link it."""
+    bearer = {"Authorization": "Bearer " + tokens.create(ORCID, "Test Editor", list(settings()["kinds"]))}
+    for path, name in (("people/p", "P"), ("people/r", "Rita")):
+        writes.save(writes.document(PERSON, BASE + path, {"name": name}), PERSON, "Test Editor", ORCID)
+    writes.save(writes.document(TOOL, BASE + "tools/l", {"name": "L", "author": [{"@id": BASE + "people/p"}, {"@id": BASE + "people/r"}]}), TOOL, "Test Editor", ORCID)
+    site.put("/api/people/p", json={"@type": "Person", "name": "Q"}, headers=bearer)
+    site.post("/api/move", json={"record": "people/p", "to": "people/q"}, headers=bearer)
+    assert {author.get("name") for author in site.get("/api/tools/l").json["author"]} == {"Q", "Rita"}
+    site.delete("/api/people/q", headers=bearer)
+    assert {author.get("name") for author in site.get("/api/tools/l").json["author"]} == {None, "Rita"}
+    assert "Rita" in site.get("/tools/l").data.decode()
+    site.delete("/api/people/r?permanent=true", headers=bearer)
+    assert "Rita" not in site.get("/tools/l").data.decode()
