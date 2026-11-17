@@ -310,3 +310,24 @@ def test_problem_details(site):
     assert refused.status_code == 401 and refused.json["message"] and "token" in refused.json["hint"]
     wrong = site.get("/api/search", query_string={"limit": "many"})
     assert wrong.status_code == 422 and wrong.json["errors"] and BASE + "api/docs/openapi.json" in wrong.json["hint"]
+
+
+def test_written_formats(site):
+    """A record is read from JSON-LD or Turtle only, with a context only from the body: the node at the address, or the one
+    node without an address."""
+    bearer = {"Authorization": "Bearer " + tokens.create(ORCID, "Test Editor", ["tools"])}
+    record = json.dumps({"@type": "SoftwareApplication", **FITTING})
+    assert site.put(NEW, data=record, content_type="application/x-www-form-urlencoded", headers=bearer).status_code == 415
+    assert site.post("/api/tools", data=record, content_type="text/plain", headers=bearer).status_code == 415
+    own = {"@context": {"@vocab": "https://schema.org/"}, "@type": "SoftwareApplication", "name": "Own", "description": "Does O."}
+    for context in ("http://127.0.0.1:9/context.jsonld", 5, [{"@import": "http://127.0.0.1:9/context.jsonld"}]):
+        assert site.put(NEW, json={**own, "@context": context}, headers=bearer).status_code == 422, context
+    assert site.put(NEW, json={**own, "@id": "https://example.org/other"}, headers=bearer).status_code == 422
+    assert site.put(NEW, json=own, headers=bearer).status_code == 201 and "Does O." in site.get(NEW, headers={"Accept": "text/turtle"}).data.decode()
+    assert site.post("/api/tools", json=own, headers=bearer).json["@id"] == BASE + "tools/own"
+    blank = '[] a <https://schema.org/SoftwareApplication> ; <https://schema.org/name> "Blank" .'
+    assert site.put("/api/tools/blank", data=blank, content_type="text/turtle", headers=bearer).status_code == 201
+    assert site.get("/api/tools/blank").json["name"] == "Blank"
+    for path in (NEW, "/api/tools"):
+        assert site.open(path, method="PUT" if path == NEW else "POST", data="<a> <b", content_type="text/turtle", headers=bearer).status_code == 422
+    assert site.put(NEW, json={"@type": "SoftwareApplication", "name": "\ud800"}, headers=bearer).status_code == 422

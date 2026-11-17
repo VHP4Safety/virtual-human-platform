@@ -30,6 +30,8 @@ FORMAT_NAMES = {".jsonld": "JSON-LD", ".ttl": "Turtle", ".nt": "N-Triples"}
 # A page in Markdown, for readers of plain text such as agents.
 MARKDOWN = ".md"
 SERIALIZATIONS = {"text/turtle": "turtle", "application/n-triples": "nt"}
+# The formats of a record sent in a write.
+WRITTEN = ("application/ld+json", "application/json", "text/turtle")
 # The counts are kept in memory, as the platform is run with one worker. The headers tell a client its limit, and when
 # to ask again (Retry-After).
 limiter = Limiter(get_remote_address, storage_uri="memory://", headers_enabled=True)
@@ -212,6 +214,55 @@ def whole(record) -> None:
         abort(409, message=f"Part of {record.part_of}; written with it.")
 
 
+def web(value) -> bool:
+    """Return True if value is an http or https address. The startswith of rdflib takes no tuple, so a URIRef is compared as
+    a text."""
+    return isinstance(value, str) and str(value).startswith(("https://", "http://"))
+
+
+def inline(value) -> bool:
+    """Return True if each JSON-LD context in value is an object in value, so that no context is read from an address."""
+    if isinstance(value, list):
+        return all(inline(given) for given in value)
+    if not isinstance(value, dict):
+        return True
+    for name, given in value.items():
+        contexts = given if isinstance(given, list) else [given]
+        if name == "@import" or (name == "@context" and not all(context is None or isinstance(context, dict) for context in contexts)):
+            return False
+        if not inline(given):
+            return False
+    return True
+
+
+def parsed(text: str, media: str) -> Graph:
+    """Return the statements of a body in Turtle or JSON-LD, or refuse a body that cannot be read."""
+    try:
+        return Graph().parse(data=text, format="turtle" if media == "text/turtle" else "json-ld")
+    # The parsers of rdflib raise errors of many classes for a body they cannot read.
+    except Exception as problem:
+        abort(422, message=f"Not valid {'Turtle' if media == 'text/turtle' else 'JSON-LD'}: {problem}")
+
+
+def sent(body: dict, address: str | None = None):
+    """Return the statements of a body in Turtle, or in JSON-LD with a context of its own, with the node of the record in
+    them: the node at address, or else the one node that no other node links to, which for a write at an address has no
+    address of its own. Return None for a body in JSON in the context of the platform."""
+    if request.mimetype not in WRITTEN:
+        abort(415, message="Send the record in " + ", ".join(WRITTEN) + ".")
+    if request.mimetype != "text/turtle" and "@context" not in body:
+        return None
+    if request.mimetype != "text/turtle" and not inline(body):
+        abort(422, message="Send the @context in the body, as an object; a context at an address is not read.")
+    found = parsed(request.get_data(as_text=True) if request.mimetype == "text/turtle" else json.dumps(body), request.mimetype)
+    if address is not None and (URIRef(address), None, None) in found:
+        return found, URIRef(address)
+    tops = [node for node in set(found.subjects()) if set(found.subjects(None, node)) <= {node}]
+    if len(tops) != 1 or (address is not None and web(tops[0])):
+        abort(422, message=f"Send the record at {address}, or one node without an address." if address else "Send one record: one node that no other node links to.")
+    return found, tops[0]
+
+
 def rendered(address: str, found: Graph, kind: str) -> Response:
     """Return the page of a record from the sent statements, without storing it."""
     for _, _, own in writes.separate(found):
@@ -240,8 +291,11 @@ def store(address: str, body: dict, preview: bool = False, page: bool = False):
     if kind is None:
         abort(400, message="Unknown @type.")
     who = writer(kind)
-    if "@context" in body:
-        body = documents.document(Graph().parse(data=json.dumps(body), format="json-ld"), address)
+    # A text with a lone surrogate, such as \ud800, cannot be stored.
+    try:
+        json.dumps(body, ensure_ascii=False).encode()
+    except UnicodeEncodeError:
+        abort(422, message="Only valid Unicode text, without lone surrogates such as \\ud800.")
     kind = writes.class_of(settings()["kinds"][kind], body)
     try:
         found = documents.statements(writes.document(kind, address, body))
@@ -532,23 +586,21 @@ def vocabulary_kind(kind: str) -> bool:
 ))
 def added(body, kind):
     """Add a record."""
-    # In Turtle, the record is the node of the class of the kind.
-    given = None
-    if request.mimetype == "text/turtle":
-        given = Graph().parse(data=request.get_data(as_text=True), format="turtle")
-        node = given.value(None, RDF.type, URIRef(settings()["kinds"][kind]))
-        if node is None:
-            abort(422, message=f"Send one node of the class {jsonld_name(settings()['kinds'][kind])}.")
-        body = {"name": str(given.value(node, SDO.name) or "")}
+    # In Turtle or in JSON-LD with a context, the record is the node that no other node links to, and its http or https
+    # address is its @id.
+    given = sent(body)
+    if given is not None:
+        found, node = given
+        body = {"@id": str(node)} if web(node) else {"name": str(found.value(node, SDO.name) or "")}
     # A term of a vocabulary is stored at the address in @id. Other records are stored at an address made from the name.
-    if body.get("@id") is not None and not (str(body["@id"]).startswith(("http://", "https://")) and vocabulary_kind(kind)):
+    if body.get("@id") is not None and not (web(body["@id"]) and vocabulary_kind(kind)):
         abort(422, message="Send @id only for a term of a vocabulary, as an http or https address.")
     address = body.get("@id") or writes.free(records.address(f"{kind}/{writes.slug(str(body.get('name') or kind))}"), set())
     if records.get(address) is not None:
         abort(409, message="Address taken.")
     if given is not None:
-        writes.renamed(given, node, address)
-        body = documents.document(given, address)
+        writes.renamed(found, node, address)
+        body = documents.document(found, address)
     body = {"@type": jsonld_name(settings()["kinds"][kind]), **body}
     return store(address, body)
 
@@ -599,8 +651,11 @@ def replace(given, body, path):
         abort(409, message="Address of a moved or removed record; not reused.")
     if not given["preview"]:
         editable(record)
-    if request.mimetype == "text/turtle":
-        body = documents.document(Graph().parse(data=request.get_data(as_text=True), format="turtle"), address)
+    received = sent(body, address)
+    if received is not None:
+        found, node = received
+        writes.renamed(found, node, address)
+        body = documents.document(found, address)
     return store(address, body, given["preview"], given["page"])
 
 
