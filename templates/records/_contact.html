@@ -3,13 +3,13 @@
 <dl class="row mb-0">
   {% if ask %}
   <dt class="col-sm-4">Questions and issues</dt>
-  <dd class="col-sm-8"><a class="link-vhpblue" href="{{ ask }}" target="_blank" rel="noopener"><i class="bi bi-github"></i> {{ ask_label }}</a></dd>
+  <dd class="col-sm-8"><a class="link-vhpblue" href="{{ ask|page_link }}" target="_blank" rel="noopener"><i class="bi bi-github"></i> {{ ask_label }}</a></dd>
   {% endif %}
   {% for role, found in organisations if found %}
   <dt class="col-sm-4">{{ role }}</dt>
   <dd class="col-sm-8">
     {% for organization in found if organization is mapping %}
-    {% if organization.url %}<a class="link-vhpblue" href="{{ organization.url }}" target="_blank" rel="noopener">{{ organization.name }}</a>{% else %}{{ organization.name }}{% endif %}{% if not loop.last %}<br>{% endif %}
+    {% if organization.url %}<a class="link-vhpblue" href="{{ organization.url|page_link }}" target="_blank" rel="noopener">{{ organization.name }}</a>{% else %}{{ organization.name }}{% endif %}{% if not loop.last %}<br>{% endif %}
     {% endfor %}
   </dd>
   {% endfor %}

@@ -166,7 +166,7 @@
     <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3">
       {% for partner in platform.partners if partner.logo %}
         <div class="col">
-          {% if partner.url %}<a href="{{ partner.url }}" target="_blank" rel="noopener" class="d-block" data-bs-toggle="tooltip" data-bs-title="{{ partner.name }}">{% endif %}
+          {% if partner.url %}<a href="{{ partner.url|page_link }}" target="_blank" rel="noopener" class="d-block" data-bs-toggle="tooltip" data-bs-title="{{ partner.name }}">{% endif %}
             <div class="ratio ratio-1x1"{% if not partner.url %} data-bs-toggle="tooltip" data-bs-title="{{ partner.name }}" tabindex="0"{% endif %}>
               <img src="{{ partner.logo|page_link }}"
                    class="partner-logo"
@@ -207,7 +207,7 @@
             {# LinkedIn and GitHub, one icon each. #}
             {% for site, icon in [("linkedin.com", "linkedin"), ("github.com", "github")] %}
             {% for address in platform.elsewhere if site in address %}{% if loop.first %}
-            <a href="{{ address }}" class="contact-icon fs-3 link-vhppink" aria-label="{{ icon }}">
+            <a href="{{ address|page_link }}" class="contact-icon fs-3 link-vhppink" aria-label="{{ icon }}">
               <i class="bi bi-{{ icon }}"></i>
             </a>
             {% endif %}{% endfor %}

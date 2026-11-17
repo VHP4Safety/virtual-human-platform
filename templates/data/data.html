@@ -116,7 +116,7 @@
                             <div class="d-flex flex-wrap gap-1 pill-scroll">
                                 {% set rq0 = study.metadata.regulatory_question[0] if study.metadata.regulatory_question else '' %}
                                 {% for cs in study.metadata.case_study %}<a role="button" href="{{url_for('casestudy', case=cs|lower)}}" style="font-size:0.75em;" class="flex-shrink-0 lh-1 p-1 btn btn-outline-vhppink-distinct rounded-pill border border-vhppink-distinct d-inline-flex align-items-center text-nowrap">{{cs|capitalize }}</a>{% endfor %}
-                                {% for rq in study.metadata.regulatory_question %}<a{% if rq in reg_q_urls %} role="button" href="{{ reg_q_urls[rq] }}"{% endif %} style="font-size:0.75em;" class="flex-shrink-0 lh-1 p-1 btn btn-outline-vhppink-distinct rounded-pill border border-vhppink-distinct d-inline-flex align-items-center text-nowrap">{{ reg_q_labels.get(rq, rq) }}</a>{% endfor %}
+                                {% for rq in study.metadata.regulatory_question %}<a{% if rq in reg_q_urls %} role="button" href="{{ reg_q_urls[rq]|page_link }}"{% endif %} style="font-size:0.75em;" class="flex-shrink-0 lh-1 p-1 btn btn-outline-vhppink-distinct rounded-pill border border-vhppink-distinct d-inline-flex align-items-center text-nowrap">{{ reg_q_labels.get(rq, rq) }}</a>{% endfor %}
                                 {% for fs in study.metadata.flow_step %}<a role="button" href="{% if fs|lower in reg_q_steps.get(rq0, []) %}{{ reg_q_urls[rq0] }}/{{ fs|replace(' ', '_')|urlencode }}{% else %}{{ url_for('SafetyAssessmentWorkflow') }}#definition-{{ fs|lower|replace(' ', '-') }}{% endif %}" style="font-size:0.75em;" class="flex-shrink-0 lh-1 p-1 btn btn-outline-vhppurple rounded-pill border border-vhppurple d-inline-flex align-items-center text-nowrap">{{fs}}</a>{% endfor %}
                             </div>
                             <button type="button" class="scroll-caret d-none position-absolute end-0 top-50 translate-middle-y btn btn-light btn-sm rounded-circle shadow-sm p-1 lh-1 d-flex align-items-center justify-content-center" aria-label="Scroll for more">
@@ -127,11 +127,11 @@
                     <div class="card-footer btn-group bg-white border-0 py-3 px-2 px-sm-3 text-nowrap" role="group">
                             <a href="{{ url_for('data_detail', dataid=study.accession) }}" class="btn btn-vhpblue" role="button" data-bs-toggle="tooltip" data-bs-title="View details"><i class="bi bi-info-circle"></i></a>
                             {% if study.url%}
-                            <a href="{{ study.url}}" class="btn btn-outline-vhpblue d-inline" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right pe-1"></i> BioStudies</a>
+                            <a href="{{ study.url|page_link }}" class="btn btn-outline-vhpblue d-inline" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right pe-1"></i> BioStudies</a>
                             {% endif%}
 
                             {% if study.metadata.rocrate_url %}
-                            <a href="{{ study.metadata.rocrate_url }}" class="btn btn-outline-secondary d-inline view-details-btn" rel="noopener" target="_blank">
+                            <a href="{{ study.metadata.rocrate_url|page_link }}" class="btn btn-outline-secondary d-inline view-details-btn" rel="noopener" target="_blank">
                                 <i class="bi bi-box-fill pe-1"></i> RO‑Crate
                             </a>
                             {% else %}
@@ -169,10 +169,10 @@
                     <div class="card-footer btn-group bg-white border-0 py-3 px-2 px-sm-3 text-nowrap" role="group">
                             <a href="{{ url_for('data_detail', dataid=dataset.id) }}" class="btn btn-vhpblue" role="button" data-bs-toggle="tooltip" data-bs-title="View details"><i class="bi bi-info-circle"></i></a>
                             {% if dataset.doi_url%}
-                            <a href="{{ dataset.doi_url}}" class="btn btn-outline-vhpblue d-inline" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right pe-1"></i> Zenodo</a>
+                            <a href="{{ dataset.doi_url|page_link }}" class="btn btn-outline-vhpblue d-inline" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right pe-1"></i> Zenodo</a>
                             {% endif%}
                             {% if dataset.links.archive%}
-                            <a href="{{ dataset.links.archive}}" class="btn btn-outline-secondary d-inline view-details-btn"><i class="bi bi-box-fill pe-1"></i>{%if dataset.parsed_metadata.is_rocrate %}RO-Crate{% else %}Archive{% endif %}</a>
+                            <a href="{{ dataset.links.archive|page_link }}" class="btn btn-outline-secondary d-inline view-details-btn"><i class="bi bi-box-fill pe-1"></i>{%if dataset.parsed_metadata.is_rocrate %}RO-Crate{% else %}Archive{% endif %}</a>
                             {% endif%}  
                     </div>
                 </div>

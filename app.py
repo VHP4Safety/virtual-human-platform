@@ -104,7 +104,7 @@ def add_security_headers(response):
 
 def local_link(tag: str, attribute: str, value: str) -> str:
     """Return the address of a link or an image in a text as a path on this server."""
-    return page_link(value) if attribute in ("href", "src") else value
+    return pages.local(value) if attribute in ("href", "src") else value
 
 
 @app.template_filter("sanitize_html")
@@ -950,8 +950,9 @@ STARTED = datetime.now(timezone.utc).replace(microsecond=0)
 
 @app.template_filter("page_link")
 def page_link(iri: str) -> str:
-    """Return a platform address as a path on this server."""
-    return pages.local(iri)
+    """Return a platform address as a path on this server. The pages link each value of a record with it, so that a
+    value that is not an http or https address or a path, such as a javascript: address in a text, links nowhere."""
+    return pages.local(str(iri or "")) if urllib.parse.urlsplit(str(iri or "")).scheme in ("http", "https", "") else "#"
 
 
 def not_acceptable() -> Response:

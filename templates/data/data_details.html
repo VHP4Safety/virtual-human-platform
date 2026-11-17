@@ -221,14 +221,14 @@
                     <dt class="col-sm-3">URL</dt>
                     <dd class="col-sm-9">
                       {% if record.url %}
-                        <a href="{{ record.url }}" target="_blank" rel="noopener" class="text-break">{{ record.url }}</a>
+                        <a href="{{ record.url|page_link }}" target="_blank" rel="noopener" class="text-break">{{ record.url }}</a>
                       {% else %}—{% endif %}
                     </dd>
 
                     <dt class="col-sm-3">DOI</dt>
                     <dd class="col-sm-9">
                       {% if record.doi_url %}
-                        <a href="{{ record.doi_url }}" target="_blank" rel="noopener">{{ record.doi }}</a>
+                        <a href="{{ record.doi_url|page_link }}" target="_blank" rel="noopener">{{ record.doi }}</a>
                       {% elif record.doi %}{{ record.doi }}
                       {% else %}—{% endif %}
                     </dd>
@@ -260,7 +260,7 @@
                               </div>
                             {% elif pub.url %}
                               <div class="text-muted mt-1 text-break">
-                                <a href="{{ pub.url }}" target="_blank" rel="noopener">{{ pub.url }}</a>
+                                <a href="{{ pub.url|page_link }}" target="_blank" rel="noopener">{{ pub.url }}</a>
                               </div>
                             {% endif %}
                           </div>
@@ -285,7 +285,7 @@
                           <i class="bi bi-file-earmark text-vhpblue"></i>
                           <span>
                           {% if f.url %}
-                            <a href="{{ f.url }}" target="_blank" rel="noopener">{{ val(f.name) }}</a>
+                            <a href="{{ f.url|page_link }}" target="_blank" rel="noopener">{{ val(f.name) }}</a>
                           {% else %}
                             {{ val(f.name) }}
                           {% endif %}
@@ -376,7 +376,7 @@
 
                             {% if f.url %}
                               <br>
-                              <a href="{{ f.url }}" target="_blank" rel="noopener"
+                              <a href="{{ f.url|page_link }}" target="_blank" rel="noopener"
                                 class="d-inline-flex align-items-center gap-1">
                                 <i class="bi bi-box-arrow-up-right"></i>
                                 <span>Project</span>
@@ -462,7 +462,7 @@
                           <div class="small mt-1">
                             <span class="text-muted">RRID:</span>
                             {% if ns_bm.rrid_url %}
-                              <a href="{{ ns_bm.rrid_url }}" target="_blank" rel="noopener" class="text-decoration-none">
+                              <a href="{{ ns_bm.rrid_url|page_link }}" target="_blank" rel="noopener" class="text-decoration-none">
                                 <i class="bi bi-link-45deg text-vhpblue"></i> {{ ns_bm.rrid }}
                               </a>
                             {% else %}
@@ -480,7 +480,7 @@
                           {% if ns_bio.organisms %}
                             {% for org in ns_bio.organisms %}
                               {% if org.url %}
-                                <a href="{{ org.url }}" target="_blank" rel="noopener" class="text-muted"><i class="bi bi-link-45deg text-vhpblue"></i> {{ org.value }}</a>
+                                <a href="{{ org.url|page_link }}" target="_blank" rel="noopener" class="text-muted"><i class="bi bi-link-45deg text-vhpblue"></i> {{ org.value }}</a>
                               {% else %}
                                 {{ org.value }}
                               {% endif %}
@@ -494,7 +494,7 @@
                           {% if _organ %}
                             &middot;
                             {% if _organ_url %}
-                              <a href="{{ _organ_url }}" target="_blank" rel="noopener" class="text-muted"><i class="bi bi-link-45deg text-vhpblue"></i> {{ _organ }}</a>
+                              <a href="{{ _organ_url|page_link }}" target="_blank" rel="noopener" class="text-muted"><i class="bi bi-link-45deg text-vhpblue"></i> {{ _organ }}</a>
                             {% else %}
                               {{ _organ }}
                             {% endif %}
@@ -505,7 +505,7 @@
                           {% if _tissue %}
                             &middot;
                             {% if _tissue_url %}
-                              <a href="{{ _tissue_url }}" target="_blank" rel="noopener" class="text-muted"><i class="bi bi-link-45deg text-vhpblue"></i> {{ _tissue }}</a>
+                              <a href="{{ _tissue_url|page_link }}" target="_blank" rel="noopener" class="text-muted"><i class="bi bi-link-45deg text-vhpblue"></i> {{ _tissue }}</a>
                             {% else %}
                               {{ _tissue }}
                             {% endif %}
@@ -514,7 +514,7 @@
                           {% if ns_bm.cell_type %}
                             &middot;
                             {% if ns_bm.cell_type_url %}
-                              <a href="{{ ns_bm.cell_type_url }}" target="_blank" rel="noopener" class="text-muted"><i class="bi bi-link-45deg text-vhpblue"></i> {{ ns_bm.cell_type }}</a>
+                              <a href="{{ ns_bm.cell_type_url|page_link }}" target="_blank" rel="noopener" class="text-muted"><i class="bi bi-link-45deg text-vhpblue"></i> {{ ns_bm.cell_type }}</a>
                             {% else %}
                               {{ ns_bm.cell_type }}
                             {% endif %}
@@ -652,7 +652,7 @@
                                 <br>
                                 <span class="text-muted">CompoundCloud:</span>
                                 {% if ns.cc_url %}
-                                  <a href="{{ ns.cc_url }}" target="_blank" rel="noopener" class="text-decoration-none">
+                                  <a href="{{ ns.cc_url|page_link }}" target="_blank" rel="noopener" class="text-decoration-none">
                                     <i class="bi bi-link-45deg text-vhpblue"></i> {{ ns.cc_id }}
                                   </a>
                                 {% else %}
@@ -744,11 +744,11 @@
                             {% set sp = namespace(n=false) %}
                             {% for a in ns_ex.extra %}{% if sp.n %} &middot; {% endif %}{{ a.name }}: {{ a.value }}{% set eu = (a.valqual | selectattr('name','equalto','Unit') | map(attribute='value') | list) if a.valqual else [] %}{% if eu %} {{ eu[0] }}{% endif %}{% set sp.n = true %}{% endfor %}
                             {% for nm in common %}{% if sp.n %} &middot; {% endif %}{% set fa = regimens[0].attributes | selectattr('name','equalto',nm) | list | first %}{{ nm }}: {{ fa.value }}{% set u = (fa.valqual | selectattr('name','equalto','Unit') | map(attribute='value') | list) if fa.valqual else [] %}{% if u %} {{ u[0] }}{% endif %}{% set sp.n = true %}{% endfor %}
-                            {% if ns_ex.bioassays %}{% if sp.n %} &middot; {% endif %}Bioassays: {% for bn in ns_ex.bioassays %}{% if not loop.first %}, {% endif %}{% set m = namespace(url=None) %}{% for b in ns_bio.bioassays %}{% if b.value and b.value|lower|trim == bn|lower|trim %}{% set m.url = b.url or b.bao_url %}{% endif %}{% endfor %}{% if m.url %}<a href="{{ m.url }}" target="_blank" rel="noopener" class="fw-semibold text-nowrap"><i class="bi bi-link-45deg text-vhpblue"></i> {{ bn }}</a>{% else %}{{ bn }}{% endif %}{% endfor %}{% endif %}
+                            {% if ns_ex.bioassays %}{% if sp.n %} &middot; {% endif %}Bioassays: {% for bn in ns_ex.bioassays %}{% if not loop.first %}, {% endif %}{% set m = namespace(url=None) %}{% for b in ns_bio.bioassays %}{% if b.value and b.value|lower|trim == bn|lower|trim %}{% set m.url = b.url or b.bao_url %}{% endif %}{% endfor %}{% if m.url %}<a href="{{ m.url|page_link }}" target="_blank" rel="noopener" class="fw-semibold text-nowrap"><i class="bi bi-link-45deg text-vhpblue"></i> {{ bn }}</a>{% else %}{{ bn }}{% endif %}{% endfor %}{% endif %}
                           </div>
                         {% endif %}
                         {% if rb.bioassays %}
-                          <div class="small mt-1"><span class="text-muted">Bioassays:</span> {% for bn in rb.bioassays %}{% if not loop.first %}, {% endif %}{% set m = namespace(url=None) %}{% for b in ns_bio.bioassays %}{% if b.value and b.value|lower|trim == bn|lower|trim %}{% set m.url = b.url or b.bao_url %}{% endif %}{% endfor %}{% if m.url %}<a href="{{ m.url }}" target="_blank" rel="noopener" class="fw-semibold text-nowrap"><i class="bi bi-link-45deg text-vhpblue"></i> {{ bn }}</a>{% else %}{{ bn }}{% endif %}{% endfor %}</div>
+                          <div class="small mt-1"><span class="text-muted">Bioassays:</span> {% for bn in rb.bioassays %}{% if not loop.first %}, {% endif %}{% set m = namespace(url=None) %}{% for b in ns_bio.bioassays %}{% if b.value and b.value|lower|trim == bn|lower|trim %}{% set m.url = b.url or b.bao_url %}{% endif %}{% endfor %}{% if m.url %}<a href="{{ m.url|page_link }}" target="_blank" rel="noopener" class="fw-semibold text-nowrap"><i class="bi bi-link-45deg text-vhpblue"></i> {{ bn }}</a>{% else %}{{ bn }}{% endif %}{% endfor %}</div>
                         {% endif %}
                           </div>
                         </div>
@@ -769,7 +769,7 @@
                             <div class="small mt-1"><span class="text-muted">Duration:</span> {{ ns_ex.duration }}{% if ns_ex.duration_unit %} {{ ns_ex.duration_unit }}{% endif %}</div>
                           {% endif %}
                           {% if ns_ex.bioassays %}
-                            <div class="small mt-1"><span class="text-muted">Bioassays:</span> {% for bn in ns_ex.bioassays %}{% if not loop.first %}, {% endif %}{% set m = namespace(url=None) %}{% for b in ns_bio.bioassays %}{% if b.value and b.value|lower|trim == bn|lower|trim %}{% set m.url = b.url or b.bao_url %}{% endif %}{% endfor %}{% if m.url %}<a href="{{ m.url }}" target="_blank" rel="noopener" class="fw-semibold text-nowrap"><i class="bi bi-link-45deg text-vhpblue"></i> {{ bn }}</a>{% else %}{{ bn }}{% endif %}{% endfor %}</div>
+                            <div class="small mt-1"><span class="text-muted">Bioassays:</span> {% for bn in ns_ex.bioassays %}{% if not loop.first %}, {% endif %}{% set m = namespace(url=None) %}{% for b in ns_bio.bioassays %}{% if b.value and b.value|lower|trim == bn|lower|trim %}{% set m.url = b.url or b.bao_url %}{% endif %}{% endfor %}{% if m.url %}<a href="{{ m.url|page_link }}" target="_blank" rel="noopener" class="fw-semibold text-nowrap"><i class="bi bi-link-45deg text-vhpblue"></i> {{ bn }}</a>{% else %}{{ bn }}{% endif %}{% endfor %}</div>
                           {% endif %}
                           {% if ns_ex.extra %}
                             <div class="small text-muted mt-1">
@@ -870,13 +870,13 @@
                           {% if ns_ba.value %}
                             {% set ba_link = ns_ba.url or ns_ba.bao_url %}
                             {% if ba_link %}
-                              <a href="{{ ba_link }}" target="_blank" rel="noopener">{{ ns_ba.value }}</a>
+                              <a href="{{ ba_link|page_link }}" target="_blank" rel="noopener">{{ ns_ba.value }}</a>
                             {% else %}
                               {{ ns_ba.value }}
                             {% endif %}
                             {% if ns_ba.ontology %}
                               {% if ns_ba.bao_url %}
-                                <a href="{{ ns_ba.bao_url }}" target="_blank" rel="noopener" class="badge rounded-pill ms-1 text-decoration-none btn btn-vhpblue">{{ ns_ba.ontology }}</a>
+                                <a href="{{ ns_ba.bao_url|page_link }}" target="_blank" rel="noopener" class="badge rounded-pill ms-1 text-decoration-none btn btn-vhpblue">{{ ns_ba.ontology }}</a>
                               {% else %}
                                 <span class="badge bg-vhpblue rounded-pill ms-1">{{ ns_ba.ontology }}</span>
                               {% endif %}
@@ -890,7 +890,7 @@
                           {% for ev in ns_ep.aop_events %}
                           <div class="small mt-1 d-flex align-items-start gap-2">
                             <i class="bi bi-arrow-right-circle text-vhpblue"></i>
-                            <span>{% if ev.url %}<a href="{{ ev.url }}" target="_blank" rel="noopener">{{ ev.value }}</a>{% else %}{{ ev.value }}{% endif %}</span>
+                            <span>{% if ev.url %}<a href="{{ ev.url|page_link }}" target="_blank" rel="noopener">{{ ev.value }}</a>{% else %}{{ ev.value }}{% endif %}</span>
                           </div>
                           {% endfor %}
                         {% endif %}
@@ -941,7 +941,7 @@
 
                           {% for pc in ns_ep.pos_controls %}
                             {% if sep.needed %} &middot; {% endif %}
-                            Positive control: {% if pc.url %}<a href="{{ pc.url }}" target="_blank" rel="noopener">{{ pc.name }}</a>{% else %}{{ pc.name }}{% endif %}{% if pc.conc %} ({{ pc.conc }}{% if pc.conc_unit %} {{ pc.conc_unit }}{% endif %}{% if pc.dur %}, {{ pc.dur }}{% if pc.dur_unit %} {{ pc.dur_unit }}{% endif %}{% endif %}){% endif %}
+                            Positive control: {% if pc.url %}<a href="{{ pc.url|page_link }}" target="_blank" rel="noopener">{{ pc.name }}</a>{% else %}{{ pc.name }}{% endif %}{% if pc.conc %} ({{ pc.conc }}{% if pc.conc_unit %} {{ pc.conc_unit }}{% endif %}{% if pc.dur %}, {{ pc.dur }}{% if pc.dur_unit %} {{ pc.dur_unit }}{% endif %}{% endif %}){% endif %}
                             {% set sep.needed = true %}
                           {% endfor %}
 
@@ -999,7 +999,7 @@
                   <i class="bi bi-diagram-3 text-vhpblue"></i>
                   <span class="small">
                     {% if ns_bio.aop_url %}
-                      <a href="{{ ns_bio.aop_url }}" target="_blank" rel="noopener">{{ ns_bio.aop_name }}</a>
+                      <a href="{{ ns_bio.aop_url|page_link }}" target="_blank" rel="noopener">{{ ns_bio.aop_name }}</a>
                     {% else %}
                       {{ ns_bio.aop_name }}
                     {% endif %}
@@ -1011,7 +1011,7 @@
                   <i class="bi bi-arrow-right-circle text-vhpblue"></i>
                   <span class="small">
                     {% if ev.url %}
-                      <a href="{{ ev.url }}" target="_blank" rel="noopener">{{ ev.value }}</a>
+                      <a href="{{ ev.url|page_link }}" target="_blank" rel="noopener">{{ ev.value }}</a>
                     {% else %}
                       {{ ev.value }}
                     {% endif %}
@@ -1072,7 +1072,7 @@
      
         {% set rq0 = data.metadata.regulatory_question[0] if data.metadata.regulatory_question else '' %}
         {% for cs in data.metadata.case_study %}<a role="button" href="{{url_for('casestudy', case=cs|lower)}}" style="font-size:0.75em;" class="lh-1 p-1 btn btn-outline-vhppink-distinct rounded-pill border border-vhppink-distinct d-inline-flex align-items-center text-wrap">{{cs|capitalize }}</a> {% endfor %}
-        {% for rq in data.metadata.regulatory_question %}<a{% if rq in reg_q_urls %} role="button" href="{{ reg_q_urls[rq] }}"{% endif %} style="font-size:0.75em;" class="lh-1 p-1 btn btn-outline-vhppink-distinct rounded-pill border border-vhppink-distinct d-inline-flex align-items-center text-wrap">{{ reg_q_labels.get(rq, rq) }}</a> {% endfor %}
+        {% for rq in data.metadata.regulatory_question %}<a{% if rq in reg_q_urls %} role="button" href="{{ reg_q_urls[rq]|page_link }}"{% endif %} style="font-size:0.75em;" class="lh-1 p-1 btn btn-outline-vhppink-distinct rounded-pill border border-vhppink-distinct d-inline-flex align-items-center text-wrap">{{ reg_q_labels.get(rq, rq) }}</a> {% endfor %}
         {% for fs in data.metadata.flow_step %}<a role="button" href="{% if fs|lower in reg_q_steps.get(rq0, []) %}{{ reg_q_urls[rq0] }}/{{ fs|replace(' ', '_')|urlencode }}{% else %}{{ url_for('SafetyAssessmentWorkflow') }}#definition-{{ fs|lower|replace(' ', '-') }}{% endif %}" style="font-size:0.75em;" class="lh-1 p-1 btn btn-outline-vhppurple rounded-pill border border-vhppurple d-inline-flex align-items-center text-wrap">{{fs}}</a> {% endfor %}
 
     </div>

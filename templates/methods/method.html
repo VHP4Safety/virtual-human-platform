@@ -66,19 +66,19 @@
               <dt class="col-sm-4">Catalog number</dt>
               <dd class="col-sm-8">
                 {%- if catalog_url -%}
-                  <a href="{{ catalog_url }}" target="_blank">{{ get('catalog_number_content', catalog_url) }}</a>
+                  <a href="{{ catalog_url|page_link }}" target="_blank">{{ get('catalog_number_content', catalog_url) }}</a>
                 {%- else -%}
                   {{ get('catalog_number_content') }}
                 {%- endif -%}
               </dd>
 
               <dt class="col-sm-4">SOP</dt>
-              <dd class="col-sm-8">{% if sop_url %}<a href="{{ sop_url }}" target="_blank">Download SOP</a>{% else %}—{% endif %}</dd>
+              <dd class="col-sm-8">{% if sop_url %}<a href="{{ sop_url|page_link }}" target="_blank">Download SOP</a>{% else %}—{% endif %}</dd>
 
               <dt class="col-sm-4">Type</dt>
               <dd class="col-sm-8">
                 {%- if type_iri and type_iri.startswith('http') -%}
-                  <a class="ontology-iri-link" href="{{ type_iri }}" target="_blank">{{ type_iri }}</a>
+                  <a class="ontology-iri-link" href="{{ type_iri|page_link }}" target="_blank">{{ type_iri }}</a>
                 {%- else -%}
                   {{ type_iri or '—' }}
                 {%- endif -%}
@@ -112,11 +112,11 @@
             <div class="mt-3">
               <!-- Run / Instance button -->
               {% if method_json.get('instance') and method_json.instance.get('url') %}
-                <a href="{{ method_json.instance.url }}" class="btn btn-vhpblue w-100 mb-2" target="_blank" rel="noopener">Run the method</a>
+                <a href="{{ method_json.instance.url|page_link }}" class="btn btn-vhpblue w-100 mb-2" target="_blank" rel="noopener">Run the method</a>
               {% elif method_details.get('instance') and method_details.instance.get('url') %}
-                <a href="{{ method_details.instance.url }}" class="btn btn-vhpblue w-100 mb-2" target="_blank" rel="noopener">Run the method</a>
+                <a href="{{ method_details.instance.url|page_link }}" class="btn btn-vhpblue w-100 mb-2" target="_blank" rel="noopener">Run the method</a>
               {% elif method_json.get('catalog_webpage_url') or method_details.get('catalog_webpage_url') %}
-                <a href="{{ method_json.get('catalog_webpage_url') or method_details.get('catalog_webpage_url') }}" class="btn btn-outline-vhpblue w-100 mb-2" target="_blank" rel="noopener">Method webpage</a>
+                <a href="{{ (method_json.get('catalog_webpage_url') or method_details.get('catalog_webpage_url'))|page_link }}" class="btn btn-outline-vhpblue w-100 mb-2" target="_blank" rel="noopener">Method webpage</a>
               {% else %}
                 <button class="btn btn-outline-secondary w-100 mb-2" disabled>No instance available</button>
               {% endif %}
@@ -151,19 +151,19 @@
       <div class="tab-pane" id="simple-tabpanel-2" role="tabpanel" aria-labelledby="simple-tab-2">
         <ul style="list-style-type:disc">
         {% if method_json.get('intro') %}
-          <li>Intro: <a href="{{ method_json.intro.url }}">{{ method_json.intro.title }}</a></li>
+          <li>Intro: <a href="{{ method_json.intro.url|page_link }}">{{ method_json.intro.title }}</a></li>
         {% elif method_details.get('intro') %}
-          <li>Intro: <a href="{{ method_details.intro.url }}">{{ method_details.intro.title }}</a></li>
+          <li>Intro: <a href="{{ method_details.intro.url|page_link }}">{{ method_details.intro.title }}</a></li>
         {% endif %}
         {% if method_json.get('demo') %}
-          <li>Demo: <a href="{{ method_json.demo.url }}">{{ method_json.demo.title }}</a></li>
+          <li>Demo: <a href="{{ method_json.demo.url|page_link }}">{{ method_json.demo.title }}</a></li>
         {% elif method_details.get('demo') %}
-          <li>Demo: <a href="{{ method_details.demo.url }}">{{ method_details.demo.title }}</a></li>
+          <li>Demo: <a href="{{ method_details.demo.url|page_link }}">{{ method_details.demo.title }}</a></li>
         {% endif %}
         {% if method_json.get('workflow') %}
-          <li>Workflow: <a href="{{ method_json.workflow.url }}">{{ method_json.workflow.title }}</a></li>
+          <li>Workflow: <a href="{{ method_json.workflow.url|page_link }}">{{ method_json.workflow.title }}</a></li>
         {% elif method_details.get('workflow') %}
-          <li>Workflow: <a href="{{ method_details.workflow.url }}">{{ method_details.workflow.title }}</a></li>
+          <li>Workflow: <a href="{{ method_details.workflow.url|page_link }}">{{ method_details.workflow.title }}</a></li>
         {% endif %}
       </ul>
       </div>
@@ -191,8 +191,8 @@
           {% set inst = method_json.get('instance') or method_details.get('instance') %}
           {% if inst.get('version') %}<li>Version: {{ inst.get('version') }}</li>{% endif %}
           {% if inst.get('license') %}<li>License: {{ inst.get('license') }}</li>{% endif %}
-          {% if inst.get('source') %}<li>Source code: <a href="{{ inst.get('source') }}">{{ inst.get('source') }}</a></li>{% endif %}
-          {% if inst.get('docker') %}<li>Docker: <a href="{{ inst.get('docker') }}">{{ inst.get('docker') }}</a></li>{% endif %}
+          {% if inst.get('source') %}<li>Source code: <a href="{{ (inst.get('source'))|page_link }}">{{ inst.get('source') }}</a></li>{% endif %}
+          {% if inst.get('docker') %}<li>Docker: <a href="{{ (inst.get('docker'))|page_link }}">{{ inst.get('docker') }}</a></li>{% endif %}
         </ul>
         {% endif %}
         {% if (method_json.get('ELIXIR') and method_json.ELIXIR.get('biomethods')) or (method_details.get('ELIXIR') and method_details.ELIXIR.get('biomethods')) %}
@@ -208,7 +208,7 @@
         {% set doi_url = doi if doi.startswith('http') else 'https://doi.org/' ~ doi %}
         <h2 class="pt-2">References</h2>
         <div id="bibliography">
-          <p><a href="{{ doi_url }}" target="_blank" class="text-primary">{{ doi }}</a></p>
+          <p><a href="{{ doi_url|page_link }}" target="_blank" class="text-primary">{{ doi }}</a></p>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/citation-js@0.9.0" integrity="sha384-wop5NlY7ORa1+WSchJbyKhM2UGNF+nuCoelh0sH4SAaS31ho6ehlpFyULYk/Q9dC" crossorigin="anonymous"></script>
         <script>

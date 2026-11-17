@@ -364,3 +364,14 @@ def test_token_of_other_kind(site):
     other = site.put("/api/people/p", json=person, headers={"Authorization": "Bearer " + secret})
     assert other.status_code == 403 and "people" in other.json["message"]
     assert site.put(NEW, json={"@type": "SoftwareApplication", **FITTING}, headers={"Authorization": "bearer " + secret}).status_code == 201
+
+
+def test_links_only_web(site):
+    """A link field takes only http and https addresses, and a page links no other value, such as javascript:."""
+    bearer = {"Authorization": "Bearer " + tokens.create(ORCID, "Test Editor", ["tools"])}
+    for value in ("javascript:alert(document.domain)", {"@id": "javascript:alert(1)"}, "data:text/html,x", " JavaScript:alert(1)"):
+        assert site.put(NEW, json={"@type": "SoftwareApplication", "name": "J", "url": value}, headers=bearer).status_code == 422, value
+    # A text stored before, or imported, is shown but not linked.
+    writes.save(writes.document(TOOL, BASE + "tools/j", {"name": "J", "url": "javascript:alert(1)"}), TOOL, "Test Editor", ORCID)
+    page = site.get("/tools/j").data.decode()
+    assert "J" in page and 'href="javascript:' not in page.replace(" ", "").lower()

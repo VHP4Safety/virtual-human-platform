@@ -91,14 +91,14 @@
                     <dt class="col-sm-3">URL</dt>
                     <dd class="col-sm-9">
                       {% if record.url %}
-                        <a href="{{ record.url }}" target="_blank" rel="noopener" class="text-break">{{ record.url }}</a>
+                        <a href="{{ record.url|page_link }}" target="_blank" rel="noopener" class="text-break">{{ record.url }}</a>
                       {% else %}—{% endif %}
                     </dd>
 
                     <dt class="col-sm-3">DOI</dt>
                     <dd class="col-sm-9">
                       {% if record.doi_url %}
-                        <a href="{{ record.doi_url }}" target="_blank" rel="noopener">{{ record.doi }}</a>
+                        <a href="{{ record.doi_url|page_link }}" target="_blank" rel="noopener">{{ record.doi }}</a>
                       {% elif record.doi %}{{ record.doi }}
                       {% else %}—{% endif %}
                     </dd>
@@ -119,7 +119,7 @@
                           <i class="bi bi-file-earmark text-vhpblue"></i>
                           <span>
                           {% if f.url %}
-                            <a href="{{ f.url }}" target="_blank" rel="noopener">{{ val(f.name) }}</a>
+                            <a href="{{ f.url|page_link }}" target="_blank" rel="noopener">{{ val(f.name) }}</a>
                           {% else %}
                             {{ val(f.name) }}
                           {% endif %}
@@ -203,7 +203,7 @@
                               </div>
                             {% elif pub.url %}
                               <div class="text-muted mt-1 text-break">
-                                <a href="{{ pub.url }}" target="_blank" rel="noopener">{{ pub.url }}</a>
+                                <a href="{{ pub.url|page_link }}" target="_blank" rel="noopener">{{ pub.url }}</a>
                               </div>
                             {% endif %}
                           </div>
@@ -293,7 +293,7 @@
 
                             {% if f.url %}
                               <br>
-                              <a href="{{ f.url }}" target="_blank" rel="noopener"
+                              <a href="{{ f.url|page_link }}" target="_blank" rel="noopener"
                                 class="d-inline-flex align-items-center gap-1">
                                 <i class="bi bi-box-arrow-up-right"></i>
                                 <span>Project</span>

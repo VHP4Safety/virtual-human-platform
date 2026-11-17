@@ -348,9 +348,12 @@ def store(address: str, body: dict, preview: bool = False, page: bool = False):
         abort(422, message=str(problem))
     writes.kept(found, address, kind)
     writes.classed(found, address)
-    # Only http and https addresses are accepted, so that no script (javascript:) or file address is stored as a link.
-    for _, predicate, value in found:
-        if isinstance(value, URIRef) and predicate != RDF.type and not written(str(value)):
+    # Only http and https addresses are accepted, so that no script (javascript:) or file address is stored as a link, nor
+    # as a text in a field of links.
+    for holder, predicate, value in found:
+        linked = isinstance(value, URIRef) or urlsplit(str(value)).scheme not in ("", "http", "https") and any(
+            field["iri"] == str(predicate) and field["iris"] and not field["texts"] for field in fields_of(records.class_of(found, holder)))
+        if linked and predicate != RDF.type and not written(str(value)):
             abort(422, message=f"{jsonld_name(str(predicate))}: only https:// or http:// addresses.")
     writes.addressed(found)
     found, warnings, recommended = checks.checked(documents.document(found, address))
