@@ -96,12 +96,15 @@ def add_security_headers(response):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     response.headers.setdefault("Content-Security-Policy", "object-src 'none'; base-uri 'self'")
+    # A copy at another address, such as a test site, does not compete with the platform in search results.
+    if settings()["copy"]:
+        response.headers["X-Robots-Tag"] = "noindex"
     return response
 
 
 def local_link(tag: str, attribute: str, value: str) -> str:
     """Return the address of a link or an image in a text as a path on this server."""
-    return page_link(value) if attribute in ("href", "src") else value
+    return pages.local(value) if attribute in ("href", "src") else value
 
 
 @app.template_filter("sanitize_html")
@@ -150,6 +153,12 @@ def inject_data_menu():
     return {"data_menu": pages.menu("data")}
 
 
+def released(address: str) -> str:
+    """Return the address of a page on the platform itself: the canonical link of a copy at another address, such as a
+    test site, points there."""
+    return settings()["release base"] + address.removeprefix(settings()["base"])
+
+
 @app.context_processor
 def inject_seo_defaults():
     """Provide SEO defaults so every page has a title/description/canonical.
@@ -157,12 +166,13 @@ def inject_seo_defaults():
     Routes override page_title / meta_description via render_template kwargs
     (explicit context wins over context processors). canonical_url defaults to
     the address of the record of the page, else the page path under the
-    platform address.
+    platform address, at the address of the platform itself (released).
     """
     return {
         "page_title": DEFAULT_PAGE_TITLE,
         "meta_description": void.platform()["abstract"],
-        "canonical_url": g.record.iri if "record" in g else records.address(request.path.strip("/")),
+        "canonical_url": released(g.record.iri if "record" in g else records.address(request.path.strip("/"))),
+        "noindex": settings()["copy"],
     }
 
 
@@ -194,7 +204,7 @@ def sitemap():
     # Static, parameter-less GET pages, derived from the URL map so new pages
     # are picked up automatically. Machine endpoints are excluded. Routes with
     # <params> are skipped and handled below.
-    EXCLUDED_ENDPOINTS = {"sitemap", "robots", "static", "models_page", "api_catalog", "void_description"}
+    EXCLUDED_ENDPOINTS = {"sitemap", "robots", "llms", "static", "models_page", "api_catalog", "void_description"}
     # The pages for editors (login, tokens, editing, changes) and the API are left out.
     EXCLUDED_BLUEPRINTS = {"account", "admin", "changes", "records", "api-docs"}
     paths = sorted(
@@ -240,7 +250,22 @@ def robots():
         "\n"
         f"Sitemap: {records.address('sitemap.xml')}\n"
     )
+    # A copy at another address is not crawled for training. Search crawlers still read its pages, to see the noindex
+    # header, and agents that fetch a page for a person still read it.
+    if settings()["copy"]:
+        robotsContent = (
+            f"# A copy of the platform for tests. The platform is at {settings()['release base']}\n\n"
+            "User-agent: ClaudeBot\nUser-agent: GPTBot\nUser-agent: Google-Extended\nUser-agent: CCBot\nDisallow: /\n\n"
+            + robotsContent
+        )
     return Response(robotsContent, mimetype="text/plain")
+
+
+################################################################################
+### llms.txt tells agents what the platform holds and where to start (llmstxt.org)
+@app.route("/llms.txt")
+def llms():
+    return Response(pages.llms(), content_type=pages.MEDIA, headers={"Access-Control-Allow-Origin": "*"})
 
 
 ################################################################################
@@ -626,7 +651,7 @@ def casestudy(case: str = "", question: str = "", step: str = "",
         page_title=f"{record.name or case} — VHP4Safety",
         meta_description=clip(descriptions[0]["text"] if descriptions else "")
         or f"The VHP4Safety {record.name or case}: a Virtual Human Platform workflow connecting tools, methods and data to a regulatory question.",
-        canonical_url=record.iri,
+        canonical_url=released(record.iri),
     )
 
 
@@ -925,8 +950,9 @@ STARTED = datetime.now(timezone.utc).replace(microsecond=0)
 
 @app.template_filter("page_link")
 def page_link(iri: str) -> str:
-    """Return a platform address as a path on this server."""
-    return pages.local(iri)
+    """Return a platform address as a path on this server. The pages link each value of a record with it, so that a
+    value that is not an http or https address or a path, such as a javascript: address in a text, links nowhere."""
+    return pages.local(str(iri or "")) if urllib.parse.urlsplit(str(iri or "")).scheme in ("http", "https", "") else "#"
 
 
 def not_acceptable() -> Response:
@@ -1095,8 +1121,9 @@ def conditional(response) -> None:
 
 @app.context_processor
 def publisher_context() -> dict:
-    """Return the publisher of the platform and the licence of the records for the templates."""
-    return {"publisher_document": void.platform()["publisher"], "records_license": void.platform()["license"]}
+    """Return the publisher of the platform, the licence of the records and the entry points of agents for the templates."""
+    return {"publisher_document": void.platform()["publisher"], "records_license": void.platform()["license"],
+            "entry_points": pages.entry_points()}
 
 
 @app.context_processor

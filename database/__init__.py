@@ -84,6 +84,8 @@ def journal(connection, _record) -> None:
         # read the last committed records until the commit, as with the write-ahead log.
         cursor.execute("PRAGMA cache_spill=OFF")
     cursor.close()
+    # The case of texts is ignored in searches with casefold, as lower of SQLite changes only the letters of ASCII.
+    connection.create_function("casefold", 1, lambda text: text.casefold() if isinstance(text, str) else text, deterministic=True)
 
 
 def backup(keep: int = 14) -> Path:

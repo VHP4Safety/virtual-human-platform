@@ -10,9 +10,10 @@
          supplies sensible defaults for any page that does not. -->
     <title>{{ page_title }}</title>
     <meta name="description" content="{{ meta_description }}" />
+    {% if noindex %}<meta name="robots" content="noindex" />{% endif %}
     <link rel="canonical" href="{{ canonical_url }}" />
     {% for media, href in (record_formats or {}).items() %}
-    <link rel="describedby" type="{{ media }}" href="{{ href }}" />
+    <link rel="describedby" type="{{ media }}" href="{{ href|page_link }}" />
     {% endfor %}
     {% if record_markdown %}
     <link rel="alternate" type="text/markdown" href="{{ record_markdown }}" />
@@ -359,7 +360,12 @@
         </div>
         <div class="row mt-3">
           <div class="col-12 text-center">
-            <p class="mb-0 small">&copy; 2026 VHP4Safety, Code licensed with <a href="https://github.com/VHP4Safety/virtual-human-platform/blob/main/LICENSE.md">AGPL-3</a>,{% if records_license %} records with <a href="{{ records_license }}">{{ records_license.rsplit("/", 1)[-1] }}</a>,{% endif %} Funded by <a href="https://www.nwo.nl">NWO</a> under file number <a href="https://www.nwo.nl/en/projects/nwa129219272">NWA.1292.19.272</a></p>
+            <p class="mb-0 small">&copy; 2026 VHP4Safety, Code licensed with <a href="https://github.com/VHP4Safety/virtual-human-platform/blob/main/LICENSE.md">AGPL-3</a>,{% if records_license %} records with <a href="{{ records_license|page_link }}">{{ records_license.rsplit("/", 1)[-1] }}</a>,{% endif %} Funded by <a href="https://www.nwo.nl">NWO</a> under file number <a href="https://www.nwo.nl/en/projects/nwa129219272">NWA.1292.19.272</a></p>
+            {# The addresses are written out, as agents read the text of a page and often not its links or its headers. #}
+            <p class="mb-0 mt-2 small" id="agents">Agents and scripts: search at <a href="{{ entry_points.search }}">{{ entry_points.search }}</a>,
+              read any page as .md, .jsonld, .ttl or .nt, get all records at <a href="{{ entry_points.dump }}">{{ entry_points.dump }}</a>,
+              and start at <a href="{{ entry_points.llms }}">{{ entry_points.llms }}</a>
+              or <a href="{{ entry_points.openapi }}">{{ entry_points.openapi }}</a>.</p>
           </div>
         </div>
       </div>

@@ -37,6 +37,16 @@ def check_form() -> None:
         abort(400)
 
 
+def restart(**values) -> None:
+    """Start the session again with values. Its form token is kept, so that an editor page opened before a sign-out and a
+    new sign-in, such as in another tab, still saves."""
+    kept = session.get("form_token")
+    session.clear()
+    session.update(values)
+    if kept:
+        session["form_token"] = kept
+
+
 def local_path(address: str | None) -> str | None:
     """Return the address if it is a path on this site, so that a sign-in does not redirect elsewhere."""
     if address and address.isprintable() and address.startswith("/") and not address.startswith("//") and "\\" not in address:
@@ -49,10 +59,10 @@ def current_editor() -> tokens.Editor | None:
     return tokens.editor(session.get("orcid"), session.get("name"), session.get("token_id"))
 
 
-def editor_of_request(kind: str) -> tokens.Editor | None:
-    """Return the editor of a request of an editor page, if kind may be written."""
+def editor_of_request(kind: str | None) -> tokens.Editor | None:
+    """Return the editor of a request of an editor page, if kind may be written, or if kind is None, any kind."""
     editor = current_editor()
-    if editor is None or kind not in editor.kinds or "form_token" not in session:
+    if editor is None or (kind is not None and kind not in editor.kinds) or "form_token" not in session:
         return None
     if not hmac.compare_digest(request.headers.get("X-Form-Token", ""), session["form_token"]):
         return None
@@ -85,10 +95,7 @@ def token_login():
             problem="Invalid or expired token.",
             page_title="Log in — VHP4Safety",
         ), 403
-    session.clear()
-    session["orcid"] = token.orcid
-    session["name"] = token.name
-    session["token_id"] = token.id
+    restart(orcid=token.orcid, name=token.name, token_id=token.id)
     return redirect(local_path(request.form.get("next")) or url_for("admin.admin"))
 
 
@@ -130,15 +137,13 @@ def orcid_callback():
     )
     if response.status_code != 200 or not response.json().get("orcid"):
         return "ORCID login failed.", 400
-    session.clear()
-    session["orcid"] = response.json()["orcid"]
-    session["name"] = response.json().get("name") or session["orcid"]
+    restart(orcid=response.json()["orcid"], name=response.json().get("name") or response.json()["orcid"])
     return redirect(after_login or url_for("account.account_tokens"))
 
 
 @blueprint.get("/logout/")
 def logout():
-    session.clear()
+    restart()
     return redirect("/")
 
 

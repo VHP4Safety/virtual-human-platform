@@ -6,16 +6,23 @@ from functools import cache
 
 import pandas as pd
 from rdflib import RDF, RDFS, BNode, Graph, Literal, URIRef
-from rdflib.namespace import SDO
+from rdflib.namespace import DCTERMS, SDO
 from rdfsolve.client import sql_tables
 from sqlalchemy import column, func, literal, or_, select, table, true, union_all
 
 import database
-from database.tables import Record
+from database.tables import Record, Revision
 from linkeddata.profile import fields, hierarchy, settings, shapes_text, terms
 
 # HTML texts that cannot be parsed are already reported with the checks.
 logging.getLogger("rdflib.term").setLevel(logging.ERROR)
+
+
+# The values that the API adds to each record it returns, and does not store from a write: the page of the record and
+# the profiles that it fits.
+ADDED = {str(SDO.mainEntityOfPage), str(DCTERMS.conformsTo)}
+# The highest page number of a listing, so that the place of the first record of a page fits in the database.
+PAGES = 100_000
 
 
 def address(path: str) -> str:
@@ -50,9 +57,10 @@ def search(text: str, classes: list[str], within: str = "", limit: int | None = 
         every |= {str(sub) for sub in hierarchy().transitive_subjects(RDFS.subClassOf, URIRef(of_class))}
     statement = select(Record).where(Record.type.in_(every), Record.removed_at.is_(None), Record.moved_to.is_(None))
     if text:
-        statement = statement.where(Record.name.icontains(text, autoescape=True) | Record.iri.contains(text, autoescape=True))
+        statement = statement.where(func.casefold(Record.name).contains(text.casefold(), autoescape=True) | Record.iri.contains(text, autoescape=True))
+    # The start of the address is compared as it is, without the wildcards and the ignored case of LIKE.
     if within:
-        statement = statement.where(Record.iri.startswith(within))
+        statement = statement.where(func.substr(Record.iri, 1, len(within)) == within)
     if among is not None:
         statement = statement.where(Record.iri.in_(among))
     with database.session() as db:
@@ -66,10 +74,12 @@ def parts_of(iri: str) -> list[str]:
 
 
 def latest_change() -> str:
-    """Return the time of the last change of a record, in UTC."""
+    """Return the time of the last change of a record, in UTC. A record removed permanently has no row, so the time of
+    the last revision is also taken."""
     with database.session() as db:
         found = db.execute(select(func.max(Record.updated_at), func.max(Record.removed_at))).one()
-    return max([value for value in found if value] or [""])
+        revised = db.scalar(select(func.max(Revision.created_at)))
+    return max([value for value in (*found, revised) if value] or [""])
 
 
 def with_pages() -> list[tuple[str, str]]:
@@ -97,6 +107,12 @@ def names(iris: list[str]) -> dict[str, str]:
     for iri, term in terms(others).items():
         found[iri] = term["name"]
     return found
+
+
+def types() -> list[tuple[str, bool]]:
+    """Return each class of the records and of their parts, with True for a class of parts, the classes of records first."""
+    with database.session() as db:
+        return sorted(db.execute(select(Record.type, Record.part_of.is_not(None)).distinct()).all(), key=lambda found: (found[1], found[0]))
 
 
 def earlier_addresses(iri: str) -> list[str]:
@@ -246,17 +262,22 @@ def graph(iris: list[str]) -> Graph:
 
 
 def with_names(found: Graph) -> Graph:
-    """Return found with the class and the name of each linked record."""
+    """Return found with the class and the name of each linked record that is not removed. A link to the old address of a
+    moved record has the class and the name of the record at its new address."""
     linked = set()
     for _, predicate, value in found:
         if isinstance(value, URIRef) and predicate != SDO.sameAs and (value, None, None) not in found:
             linked.add(str(value))
     named = Graph() + found
     with database.session() as db:
-        for iri, kind, name in db.execute(select(Record.iri, Record.type, Record.name).where(Record.iri.in_(linked))):
-            named.add((URIRef(iri), RDF.type, URIRef(kind)))
-            if name:
-                named.add((URIRef(iri), SDO.name, Literal(name)))
+        earlier = {}
+        for old, new in db.execute(select(Record.iri, Record.moved_to).where(Record.iri.in_(linked), Record.moved_to.is_not(None))):
+            earlier.setdefault(new, []).append(old)
+        for iri, kind, name in db.execute(select(Record.iri, Record.type, Record.name).where(Record.iri.in_(linked | set(earlier)), Record.removed_at.is_(None))):
+            for shown in ([iri] if iri in linked else []) + earlier.get(iri, []):
+                named.add((URIRef(shown), RDF.type, URIRef(kind)))
+                if name:
+                    named.add((URIRef(shown), SDO.name, Literal(name)))
     for prefix, namespace in settings()["prefixes"].items():
         named.bind(prefix, namespace)
     return named
@@ -266,6 +287,15 @@ def with_names(found: Graph) -> Graph:
 def within(of_class: str) -> list[str]:
     """Return of_class and the classes below it in the vocabularies, such as a ResearchProject for an Organization."""
     return [of_class, *sorted({str(below) for below in hierarchy().transitive_subjects(RDFS.subClassOf, URIRef(of_class))} - {of_class})]
+
+
+def properties(of_class: str) -> set[str]:
+    """Return the properties of the records of of_class and of the classes below it that are kept outside the tables of
+    their fields, such as the image of a tool, which the API returns with the fields."""
+    rest = tables()[sql_tables.STATEMENTS]
+    held = select(Record.iri).where(Record.type.in_(within(of_class)), Record.part_of.is_(None))
+    with database.engine().connect() as connection:
+        return set(connection.scalars(select(rest.c.property).distinct().where(rest.c.record.in_(held), rest.c.iri == rest.c.record)))
 
 
 def sources(of_class: str, path: str) -> list[dict]:
@@ -290,7 +320,26 @@ def sources(of_class: str, path: str) -> list[dict]:
             in_statements = True
     if in_statements:
         found.append({"table": rest, "value": rest.c.value, "term": rest.c.term, "where": rest.c.property == path})
+    # The values of a list field, such as the creators of a dataset, are the members of the list, not its first node.
+    if any(path in settings()["lists"].get(each, []) for each in within(of_class)):
+        return [members(source) for source in found]
     return found
+
+
+def members(source: dict) -> dict:
+    """Return the source of the values of a list field: its values that are not a list, and the members of each list,
+    which are held in the table of statements, each node with the next one as rdf:rest."""
+    rest, held = tables()[sql_tables.STATEMENTS], source["table"]
+    nodes = select(held.c.record, held.c.iri, source["value"].label("node")).where(source["where"], source["term"] == "@blank").cte(recursive=True)
+    following = rest.alias()
+    nodes = nodes.union_all(select(nodes.c.record, nodes.c.iri, following.c.value).where(
+        following.c.record == nodes.c.record, following.c.iri == literal("_:").op("||")(nodes.c.node), following.c.property == str(RDF.rest), following.c.term == "@blank"))
+    member = rest.alias()
+    found = union_all(
+        select(held.c.iri, source["value"].label("value"), source["term"].label("term")).where(source["where"], source["term"].is_distinct_from("@blank")),
+        select(nodes.c.iri, member.c.value, member.c.term).where(
+            member.c.record == nodes.c.record, member.c.iri == literal("_:").op("||")(nodes.c.node), member.c.property == str(RDF.first))).subquery()
+    return {"table": found, "value": found.c.value, "term": found.c.term, "where": true()}
 
 
 def values(of_class: str, path: str) -> list[tuple[str, str]]:
@@ -353,7 +402,7 @@ def chosen(of_class: str, filters: dict, search: str = ""):
     statement = select(Record.iri, Record.name).where(
         Record.type.in_(within(of_class)), Record.removed_at.is_(None), Record.moved_to.is_(None), Record.part_of.is_(None))
     if search:
-        statement = statement.where(or_(Record.name.icontains(search, autoescape=True), Record.iri.contains(search, autoescape=True)))
+        statement = statement.where(or_(func.casefold(Record.name).contains(search.casefold(), autoescape=True), Record.iri.contains(search, autoescape=True)))
     for path, wanted in filters.items():
         statement = statement.where(Record.iri.in_(nodes_with(of_class, path, wanted)))
     return statement
@@ -401,8 +450,9 @@ def facets(of_class: str, paths: list[str], filters: dict, search: str = "") -> 
 
 
 def browsed(field: dict) -> bool:
-    """Return True if a listing can be filtered by field: a field of links or listed values, or of several texts or links, such as keywords."""
-    return bool(field["values"] or field["links"] or (field["open"] and not field["single"])) and not field["part"] and not field["fixed"]
+    """Return True if a listing can be filtered by field: a field of links or listed values, or of several texts or links, such as keywords.
+    A field of the values that the API adds on output, such as mainEntityOfPage, is not stored, and filters nothing."""
+    return bool(field["values"] or field["links"] or (field["open"] and not field["single"])) and not field["part"] and not field["fixed"] and field["iri"] not in ADDED
 
 
 def filters(of_class: str, given: dict) -> dict:
@@ -432,7 +482,9 @@ def counted(of_class: str, given: dict) -> dict:
         for value in field["values"]:
             values[(value, field["iris"])] = 0
         for key, count in counts[field["iri"]].items():
-            values[key] = values.get(key, 0) + count
+            # A part, such as the help of a tool written in the tool, is not a value that other records have.
+            if not (key[1] and PART.match(key[0])):
+                values[key] = values.get(key, 0) + count
         listed = []
         for (value, iri), count in values.items():
             # Value fits if it is an IRI and if it is in the list of the field.

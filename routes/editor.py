@@ -6,7 +6,7 @@ from flask import Blueprint, Response, abort, redirect, render_template, request
 
 from admin import editor, writes
 from database import records
-from linkeddata import crates, pages
+from linkeddata import crates, documents, pages
 from linkeddata.profile import settings, shape_of
 from routes.account import current_editor, form_token
 
@@ -29,26 +29,34 @@ def logged_in(kind: str | None = None):
 
 @blueprint.get("/admin/")
 def admin():
-    if logged_in() is None:
+    found = logged_in()
+    if found is None:
         return redirect(url_for("account.login", next=request.path))
-    return render_template("admin/kinds.html", kinds=editor.counts(), failed=editor.failed(), page_title="VHP4Safety editor")
+    # The kinds that the editor may write are listed, such as tools only for a token of tools.
+    kinds = [counted for counted in editor.counts() if counted["kind"] in found.kinds]
+    return render_template("admin/kinds.html", kinds=kinds, failed=editor.failed(), page_title="VHP4Safety editor")
 
 
 @blueprint.get("/admin/<kind>/")
 def edit(kind: str):
-    if logged_in(kind) is None:
+    found = logged_in(kind)
+    if found is None:
         return redirect(url_for("account.login", next=request.path))
-    listed = editor.listing(kind)
     selected = request.args.get("record") or ""
     # The address of a new record is made from its name, as in the API.
     name = request.args.get("new", "").strip()
     if name:
         selected = writes.free(records.address(f"{kind}/{writes.slug(name)}"), set())
     record = records.get(selected) if selected else None
+    # A record is edited with the kind of its class, and with the rights of that kind.
+    of_kind = next((other for other, of_class in settings()["kinds"].items() if record is not None and record.type in records.within(of_class)), kind)
+    if of_kind != kind:
+        return redirect(url_for("admin.edit", kind=of_kind, record=selected))
+    listed = editor.listing(kind)
     response = Response(render_template(
         "admin/records.html",
         kind=kind,
-        kinds=list(settings()["kinds"]),
+        kinds=[other for other in settings()["kinds"] if other in found.kinds],
         records=listed,
         selected=selected,
         base=settings()["base"],
@@ -65,6 +73,7 @@ def edit(kind: str):
         crate=("zenodo" if crates.zenodo(record) is not None else "draft") if crates.of_models(record) else None,
         read_only=record is not None and kind in settings()["read only in the editor"],
         draft_vocabulary=editor.draft_vocabulary(record),
+        context=documents.context(settings()),
         page_title=f"{pages.kind_names()[kind]} — VHP4Safety editor",
     ))
     response.headers["X-Robots-Tag"] = "noindex"

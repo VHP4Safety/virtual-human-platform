@@ -69,7 +69,7 @@
           </div>
           <div class="col-md-6 pt-md-0 pt-2 mt-md-0 mt-1">
             {% if tool_details.instance and tool_details.instance.url %}
-            <a href="{{ tool_details.instance.url }}" target="_blank"><img src="{{ tool_details.screenshot }}" class="card-img-bottom" alt="Image showing the logo or screenshot of the project."></a>
+            <a href="{{ tool_details.instance.url|page_link }}" target="_blank"><img src="{{ tool_details.screenshot }}" class="card-img-bottom" alt="Image showing the logo or screenshot of the project."></a>
             {% else %}
             <img src="{{ tool_details.screenshot }}" class="card-img-bottom" alt="Image showing the logo or screenshot of the project.">
             {% endif %}
@@ -98,19 +98,19 @@
         {% endif %}
         {% if tool_details.Other %}
           {% if tool_details.Other.wikipedia %}
-          <p>More at <a href="{{ tool_details.Other.wikipedia }}">Wikipedia</a>.</p>
+          <p>More at <a href="{{ tool_details.Other.wikipedia|page_link }}">Wikipedia</a>.</p>
           {% endif %}
         {% endif %}
         <!-- Instance Page -->
         {% if tool_details.instance %}
           {% if tool_details.instance.url %}
           <div style="margin-top: 5px">
-            <a type="button" href="{{ tool_details.instance.url }}" class="btn btn-vhpblue flex-grow-1" target="_blank" rel="noopener" data-bs-toggle="tooltip" data-bs-title="Try VHP-hosted instance">Run the tool</a>
+            <a type="button" href="{{ tool_details.instance.url|page_link }}" class="btn btn-vhpblue flex-grow-1" target="_blank" rel="noopener" data-bs-toggle="tooltip" data-bs-title="Try VHP-hosted instance">Run the tool</a>
           </div>
           {% endif %}
         {% elif tool_details.url %}
           <div style="margin-top: 5px">
-            <a type="button" href="{{ tool_details.url}}" class="btn btn-outline-vhpblue flex-grow-1" data-bs-toggle="tooltip" data-bs-title="Try non-VHP instance">Run the tool</a>
+            <a type="button" href="{{ tool_details.url|page_link }}" class="btn btn-outline-vhpblue flex-grow-1" data-bs-toggle="tooltip" data-bs-title="Try non-VHP instance">Run the tool</a>
           </div>
         {% endif %}
       </div>
@@ -133,10 +133,10 @@
               <div class="accordion-body">
                 <ul style="list-style-type:disc">
                   {% for intro in tool_details.intro %}
-                  <li><a href="{{ intro.url }}">{{ intro.title }}</a></li>
+                  <li><a href="{{ intro.url|page_link }}">{{ intro.title }}</a></li>
                   {% endfor %}
                   {% for workflow in tool_details.workflow %}
-                  <li>Workflow: <a href="{{ workflow.url }}">{{ workflow.title }}</a></li>
+                  <li>Workflow: <a href="{{ workflow.url|page_link }}">{{ workflow.title }}</a></li>
                   {% endfor %}
                 </ul>
               </div>
@@ -277,8 +277,8 @@
                 <ul>
                   {% if tool_details.instance.version %}<li>Version: {{ tool_details.instance.version }}</li>{% endif %}
                   {% if tool_details.instance.license %}<li>License: {{ tool_details.instance.license }}</li>{% endif %}
-                  {% for source in tool_details.instance.source %}<li>Source code: <a href="{{ source }}">{{ source }}</a></li>{% endfor %}
-                  {% for docker in tool_details.instance.docker %}<li>Download: <a href="{{ docker }}">{{ docker }}</a></li>{% endfor %}
+                  {% for source in tool_details.instance.source %}<li>Source code: <a href="{{ source|page_link }}">{{ source }}</a></li>{% endfor %}
+                  {% for docker in tool_details.instance.docker %}<li>Download: <a href="{{ docker|page_link }}">{{ docker }}</a></li>{% endfor %}
                 </ul>
               </div>
             </div>

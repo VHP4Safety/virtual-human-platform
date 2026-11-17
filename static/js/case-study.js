@@ -189,7 +189,12 @@ function pathTo(state, page, level, address) {
 }
 
 // Return a platform address as an address on this server.
+// A value that is not an http, https or mailto address or a path, such as a javascript: address in a text, links nowhere.
 function local(address, options) {
+  const plain = address.replace(/[\s\u0000-\u001f]/g, "");
+  if (/^[^/?#]*:/.test(plain) && !/^(https?|mailto):/i.test(plain)) {
+    return "#";
+  }
   return options.base && address.startsWith(options.base) ? "/" + address.slice(options.base.length) : address;
 }
 

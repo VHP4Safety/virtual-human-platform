@@ -4,6 +4,7 @@ import re
 from functools import lru_cache
 from operator import itemgetter
 from pathlib import Path
+from urllib.parse import quote_plus
 
 from bs4 import BeautifulSoup
 from markdownify import markdownify
@@ -14,6 +15,7 @@ from rdflib.namespace import SDO, VOID
 from rdfsolve.iris import local_name
 from werkzeug.datastructures import MultiDict
 
+import database
 from database import records
 from database.tables import Record
 from linkeddata import documents, void
@@ -183,7 +185,100 @@ def markdown(record: Record, formats: dict[str, str], licence: str) -> str:
     lines = markdown_lines(found, 1)
     lines.insert(1, f"<{found['address']}>")
     data = " · ".join(f"[{name}]({address})" for name, address in formats.items())
-    lines.append(f"---\n\nData: {data}" + (f"  \nLicence: <{licence}>" if licence else ""))
+    lines.append(f"---\n\nData: {data}" + (f"  \nLicence: <{licence}>" if licence else "") + f"  \n{agents_line()}")
+    return "\n\n".join(lines) + "\n"
+
+
+def agents_line() -> str:
+    """Return the line that names the entry points for agents and scripts, at the end of a Markdown page."""
+    found = entry_points()
+    return (f"Agents and scripts: search at <{found['search']}>, the API at <{found['index']}>, "
+            f"OpenAPI at <{found['openapi']}>, all records at <{found['dump']}>, and where to start at <{found['llms']}>.")
+
+
+@lru_cache(maxsize=4)
+def chosen_examples(state: str, version: str) -> dict[str, str]:
+    """Return the example record of each class of a kind in the database at state, as it was at version (see examples)."""
+    candidates = {of_class: records.page(of_class, {}, "", 0, 50)[1] for of_class in settings()["kinds"].values()}
+    found = documents.public(records.graph(sorted({iri for iris in candidates.values() for iri in iris})))
+    chosen = {}
+    for of_class, iris in candidates.items():
+        if iris:
+            chosen[of_class] = max(iris, key=lambda iri: len(set(found.predicates(URIRef(iri)))))
+    return chosen
+
+
+def examples() -> dict[str, str]:
+    """Return the address of the example record of each class of a kind that has records: of its first 50 records by
+    name, the one with the most public fields, and of those the first. The schema of each kind in the description of
+    the API shows it, so that the example works on this platform, and it changes only when a record changes."""
+    return chosen_examples(str(database.STATE_DIR), records.latest_change())
+
+
+def readable_at(iri: str) -> bool:
+    """Return True if the record at iri is read at an address of the API of this platform, api/<path>."""
+    return iri.startswith(settings()["base"]) and bool(records.path(iri))
+
+
+def first_record() -> Record | None:
+    """Return the first record by name of the first kind whose records are read at the API of this platform: the record
+    and the search of the entry points, of llms.txt and of the description of the API."""
+    for of_class in settings()["kinds"].values():
+        _, iris = records.page(of_class, {}, "", 0, 1)
+        if iris and readable_at(iris[0]):
+            return records.get(iris[0])
+    return None
+
+
+def entry_points() -> dict:
+    """Return the addresses where agents and scripts start, at the address of this platform: the index of the API, which
+    llms.txt, the end of each page and the end of each Markdown page also name. The search is for the first word of the
+    name of the first record (first_record), and the record is that record."""
+    shown = first_record()
+    named = quote_plus((shown.name or "").split(" ")[0]) if shown is not None else ""
+    found = {
+        "title": settings()["title"],
+        "start": "Search first, then read the record at its address.",
+        "index": records.address("api"),
+        "search": records.address("api/search?text=" + named),
+        "record": records.address("api/" + records.path(shown.iri)) if shown is not None else None,
+        "kinds": {kind: records.address("api/" + kind) for kind in settings()["kinds"]},
+        "openapi": records.address("api/docs/openapi.json"),
+        "documentation": records.address("api/docs") + "/",
+        "dump": records.address("api/dump"),
+        "terms": records.address("api/dump/terms"),
+        "shapes": records.address("api/shapes.ttl"),
+        "void": records.address(".well-known/void"),
+        "catalog": records.address(".well-known/api-catalog"),
+        "llms": records.address("llms.txt"),
+    }
+    return {name: value for name, value in found.items() if value is not None}
+
+
+def llms() -> str:
+    """Return llms.txt (llmstxt.org): what the platform holds and where agents start."""
+    index = entry_points()
+    platform = void.platform()
+    about = ["To answer a question, search first, then read the record at its address.",
+             "Record kinds: " + ", ".join(index["kinds"]) + ".",
+             f"A page is at {settings()['base']}<kind>/<name>. Add .md, .jsonld, .ttl or .nt to the address of a page for that format."]
+    if platform["license"]:
+        # CC0 is a dedication to the public domain, so the records may be reused for any purpose.
+        free = " The records may be reused for any purpose, also by AI systems." if "CC0" in platform["license"] else ""
+        about.append(f"Licence of the records: {platform['license']}.{free}")
+    start = [f"- [Search all records]({index['search']}): the address (@id), class (@type) and name of each record with the text",
+             *([f"- [Read one record]({index['record']}): the record in JSON-LD; its page address with .md gives it in Markdown"] if "record" in index else []),
+             f"- [Index of the API]({index['index']}): the listing of each kind, the downloads and these addresses",
+             f"- [OpenAPI description]({index['openapi']}): every operation, with examples"]
+    data = [f"- [All records]({index['dump']}): one file, in N-Triples or Turtle",
+            f"- [SHACL shapes]({index['shapes']}): the fields of each kind of record",
+            f"- [VoID]({index['void']}): the dataset, its licence and its statistics"]
+    optional = [f"- [Sitemap]({records.address('sitemap.xml')}): every page, with the date of its last change",
+                "- [Glossary](https://vhp4safety.github.io/glossary): the terms that the records use as keywords"]
+    lines = [f"# {platform['name'] or index['title']}"]
+    if platform["abstract"]:
+        lines.append(f"> {platform['abstract']}")
+    lines += ["\n".join(about), "## Start here\n\n" + "\n".join(start), "## Data\n\n" + "\n".join(data), "## Optional\n\n" + "\n".join(optional)]
     return "\n\n".join(lines) + "\n"
 
 
@@ -328,7 +423,7 @@ def listing(path: str, arguments, size: int = LISTED) -> dict:
         if records.browsed(field):
             browsed.append(field)
             given[field["name"]] = arguments.getlist(field["name"])
-    number = max(arguments.get("page", 1, type=int), 1)
+    number = min(max(arguments.get("page", 1, type=int), 1), records.PAGES)
     total, iris = records.page(of_class, records.filters(of_class, given), given["search"], (number - 1) * size, size)
     found = documents.public(records.graph(iris))
     listed = []

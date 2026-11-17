@@ -126,13 +126,13 @@
                     <div class="d-grid"
                          style="grid-template-columns: repeat(3, 1fr); gap: 0.4rem;">
                         <!-- This URL link should be changed to URL location of models -->
-                        <a href="{{ study.url or '#' }}" 
+                        <a href="{{ (study.url or '#')|page_link }}" 
                            class="btn btn-sm btn-outline-vhpblue"
                            target="_blank">
                             <i class="bi bi-box-arrow-up-right pe-1"></i>
                             View 
                         </a>
-                        <a href="{{ study.links.archive or '#' }}"
+                        <a href="{{ (study.links.archive or '#')|page_link }}"
                            class="btn btn-sm btn-outline-secondary view-details-btn">
                             <i class="bi bi-box-fill pe-1"></i>
                             RO-Crate

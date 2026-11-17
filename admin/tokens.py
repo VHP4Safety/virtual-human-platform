@@ -44,8 +44,9 @@ def usable(token: Token | None) -> Token | None:
 
 
 def bearer(header: str) -> str | None:
-    """Return the secret of a Bearer Authorization header, or None."""
-    return header.removeprefix("Bearer ").strip() if header.startswith("Bearer ") else None
+    """Return the secret of a Bearer Authorization header, or None. The scheme is read in any case, as in RFC 9110."""
+    scheme, _, secret = header.partition(" ")
+    return secret.strip() if scheme.lower() == "bearer" else None
 
 
 def find(secret: str | None) -> Token | None:

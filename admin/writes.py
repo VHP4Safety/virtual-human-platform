@@ -14,28 +14,45 @@ from linkeddata.documents import context
 from linkeddata.profile import fields, jsonld_name, settings
 
 
+# The names of the addresses of the API under a kind, which no record takes.
+RESERVED = {"facets"}
+
+
+def classes(body: dict) -> list[str]:
+    """Return the classes in @type of body, by their addresses. A class of schema.org is also taken in http."""
+    given = body.get("@type")
+    found = []
+    for name in given if isinstance(given, list) else [given]:
+        if isinstance(name, str):
+            of_class = name if name.startswith(("http://", "https://")) else documents.expand(name)
+            found.append("https://schema.org/" + of_class.removeprefix("http://schema.org/") if of_class.startswith("http://schema.org/") else of_class)
+    return found
+
+
 def class_of(kind: str, body: dict) -> str:
     """Return the class of a record of kind written with body."""
-    given = body.get("@type")
-    for name in given if isinstance(given, list) else [given]:
-        if not isinstance(name, str):
-            continue
-        of_class = name if name.startswith(("http://", "https://")) else documents.expand(name)
+    for of_class in classes(body):
         if of_class in records.within(kind):
             return of_class
     return kind
 
 
 def document(kind: str, address: str, body: dict) -> dict:
-    """Return the request body as a JSON-LD document of kind at address."""
+    """Return the request body as a JSON-LD document of kind at address. Each field that the API returns for records of
+    kind is taken, so that a record that is read can be written back."""
     known = {}
     for field in fields(kind):
         known[field["name"]] = field
+    stored = records.properties(kind)
     found = {"@context": context(settings()), "@id": address, "@type": jsonld_name(kind)}
     for name, value in body.items():
-        if name.startswith("@"):
+        # The address of a record is also added as its url when it has none.
+        # A blank text is no value, so that a blank name is reported as missing.
+        if isinstance(value, str) and not value.strip():
             continue
-        if name not in known:
+        if name.startswith("@") or documents.expand(name) in records.ADDED or (documents.expand(name) == str(SDO.url) and value in (address, {"@id": address})):
+            continue
+        if name not in known and documents.expand(name) not in stored:
             raise ValueError(f"Unknown field {name!r}.")
         found[name] = value
     for name, field in known.items():
@@ -76,7 +93,13 @@ def classed(found: Graph, iri: str) -> None:
 
 
 def slug(name: str) -> str:
-    return parsers.slug(name)[:60] or "record"
+    """Return the name of a new record made from a text: up to 60 lowercase letters, digits and single hyphens."""
+    return parsers.slug(name)[:60].strip("-") or "record"
+
+
+def named(name: str) -> bool:
+    """Return True if name can be the name of a new record: made of what slug makes, and not a name of the API."""
+    return bool(name) and parsers.slug(name) == name and name not in RESERVED
 
 
 def part(found: Graph, node: BNode) -> bool:
@@ -91,7 +114,7 @@ def part(found: Graph, node: BNode) -> bool:
 def free(base: str, taken: set) -> str:
     """Return base, or base with the first free number, as a free address."""
     iri, number = base, 1
-    while iri in taken or records.get(iri) is not None or iri.endswith("/facets"):
+    while iri in taken or records.get(iri) is not None or iri.rsplit("/", 1)[-1] in RESERVED:
         number += 1
         iri = f"{base}-{number}"
     taken.add(iri)

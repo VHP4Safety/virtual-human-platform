@@ -6,14 +6,23 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
 (function () {
   const editor = JSON.parse(document.getElementById("editor").textContent);
   const message = document.getElementById("message");
-  // A record outside the platform, such as an ontology term, is read at /api/ with its full address.
-  const path = editor.graph.startsWith(editor.base) ? editor.graph.slice(editor.base.length) : editor.graph;
+  // A record outside the platform, such as an ontology term, is read at /api/ with its full address, as is the record of
+  // the platform, at the base address, as /api/ is the index of the API.
+  const path = editor.graph.startsWith(editor.base) && editor.graph !== editor.base ? editor.graph.slice(editor.base.length) : editor.graph;
   const graph = "/api/" + encodeURI(path).replace(/#/g, "%23");
   const form = document.querySelector("shacl-form");
   const column = document.getElementById("main-column");
   const SCHEMA = "https://schema.org/";
   let previewTimer = null;
   let previewRequest = null;
+  // The preview of the form is made once the form has loaded; before, the form holds no record.
+  let formReady = false;
+  if (form) {
+    form.addEventListener("ready", function () {
+      formReady = true;
+      schedulePreview();
+    });
+  }
 
   function make(tag, className, text) {
     const node = document.createElement(tag);
@@ -31,7 +40,27 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
 
   function show(text, ok) {
     message.className = "alert " + (ok ? "alert-success" : "alert-danger");
-    message.textContent = text;
+    message.replaceChildren(text);
+  }
+
+  // Return the problems of each field of a refusal, such as "json > name: Missing", as the API names them by place.
+  function problemsOf(errors, trail) {
+    return Object.entries(errors || {}).flatMap(function (entry) {
+      return Array.isArray(entry[1]) ? [trail + entry[0] + ": " + entry[1].join(" ")] : problemsOf(entry[1], trail + entry[0] + " > ");
+    });
+  }
+
+  // Return a refusal to show. Without a valid login, such as after a sign-out in another tab, it links the sign-in, in a
+  // new tab, so that the edits are kept.
+  function refusal(answer, response) {
+    const shown = make("span", "", [answer.detail || answer.message || response.statusText].concat(problemsOf(answer.errors, "")).join(" "));
+    if (response.status === 401) {
+      const link = make("a", "ms-1", "Sign in again");
+      link.href = "/login/?next=" + encodeURIComponent(window.location.pathname + window.location.search);
+      link.target = "_blank";
+      shown.append(link, document.createTextNode(" in a new tab, then try again."));
+    }
+    return shown;
   }
 
   // Send a request to the API. Show a refusal with refuse, else above the form.
@@ -39,6 +68,9 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     const headers = { "X-Form-Token": editor.token };
     if (editor.version) {
       headers["If-Match"] = '"' + editor.version + '"';
+    } else if (method === "PUT") {
+      // A new record is saved only if no record was added at its address since it was opened, such as in another tab.
+      headers["If-None-Match"] = "*";
     }
     if (type) {
       headers["Content-Type"] = type;
@@ -53,8 +85,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     }
     const answer = await response.json().catch(function () { return {}; });
     if (!response.ok) {
-      const fields = Object.entries(answer.errors || {}).map(function (entry) { return entry[0] + ": " + entry[1].join(" "); });
-      refused([answer.message || response.statusText].concat(fields).join(" "));
+      refused(refusal(answer, response));
       return null;
     }
     return answer;
@@ -276,17 +307,22 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
 
   // Draw the case study from the form in the browser.
   async function showLiveCaseStudy() {
+    if (!formReady) {
+      return;
+    }
     if (!published) {
       await showPublishedCaseStudy();
     }
-    const flat = await jsonld.compact(await jsonld.fromRDF(statements(), { format: "application/n-quads" }), published["@context"]);
+    // A new case study is not published yet, and is drawn with the context of the platform.
+    const context = published ? published["@context"] : editor.context;
+    const flat = await jsonld.compact(await jsonld.fromRDF(statements(), { format: "application/n-quads" }), context);
     const nodes = flat["@graph"] || [flat];
     const root = nodes.find(function (node) { return node["@id"] === editor.graph; });
     if (!root) {
       return;
     }
     const rest = nodes.filter(function (node) { return node !== root; });
-    await showCaseStudy(Object.assign({}, root, { "@context": published["@context"], "@included": rest.concat([published]) }));
+    await showCaseStudy(Object.assign({}, root, { "@context": context, "@included": rest.concat(published ? [published] : []) }));
     // A page added in the form is now in the preview, so go to the part that is edited.
     if (current()) {
       markSelected(current());
@@ -329,6 +365,9 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
       }
       return;
     }
+    if ((edited || !editor.version) && !formReady) {
+      return;
+    }
     say(view === "page" ? "Making the page…" : "Checking…", true);
     let turtle = "";
     if (edited || !editor.version) {
@@ -367,7 +406,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     }
     const answer = await response.json().catch(function () { return {}; });
     if (!response.ok) {
-      say(answer.message || "Preview not made.");
+      say(answer.detail || answer.message || "Preview not made.");
       return;
     }
     if (view === "page") {
@@ -527,7 +566,9 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     const save = document.getElementById("save");
     const problems = document.getElementById("save-problems");
     function refuse(text) {
-      problems.replaceChildren(make("div", "", "Not saved: " + text));
+      const line = make("div", "", "Not saved: ");
+      line.append(text);
+      problems.replaceChildren(line);
       problems.classList.remove("d-none");
     }
 
@@ -566,10 +607,12 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
   }
 
   // Send a change. The pressed button turns until the record is opened again or the request is refused.
+  // The record is opened again at reopened, or else at the address that the API answers, such as after a move.
   async function act(button, text, method, address, body, reopened) {
     const working = busy(button, text, column);
-    if (await send(method, address, body, body ? "application/json" : undefined)) {
-      reopen(reopened);
+    const answer = await send(method, address, body, body ? "application/json" : undefined);
+    if (answer) {
+      reopen(reopened || answer["@id"]);
     } else {
       working.done();
     }
@@ -609,7 +652,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     move: function (event) {
       const to = window.prompt("New address (the old one forwards to it):", path);
       if (to && to !== path) {
-        act(event.currentTarget, "Moving…", "POST", "/api/move", JSON.stringify({ record: path, to: to }), editor.base + to);
+        act(event.currentTarget, "Moving…", "POST", "/api/move", JSON.stringify({ record: path, to: to }), null);
       }
     },
   };

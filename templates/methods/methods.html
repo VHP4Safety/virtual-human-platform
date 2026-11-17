@@ -111,7 +111,7 @@
                             {% if item.main_url == "no_url" %}
                                 <a type="button" class="btn btn-outline-vhpblue disabled" data-bs-toggle="methodtip" data-bs-title="No webpage available"><i class="bi bi-box-arrow-up-right"></i></a>
                             {% else %}
-                                <a type="button" href="{{ item.main_url }}" class="btn btn-outline-vhpblue" target="_blank" data-bs-toggle="methodtip" data-bs-title="Visit main webpage"><i class="bi bi-box-arrow-up-right"></i></a>
+                                <a type="button" href="{{ item.main_url|page_link }}" class="btn btn-outline-vhpblue" target="_blank" data-bs-toggle="methodtip" data-bs-title="Visit main webpage"><i class="bi bi-box-arrow-up-right"></i></a>
                             {% endif %}
 
                             <!-- Meta-Data 

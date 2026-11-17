@@ -199,3 +199,9 @@ cython_debug/
 .pypirc
 .gitignore
 bootstrap-custom/bootstrap-custom.css.map
+
+# The traces and reports of the agent-readiness eval stay local; results.jsonl is kept.
+.claude/hillclimb/**/traces/
+.claude/hillclimb/**/report.html
+.claude/hillclimb/**/state.json
+.claude/hillclimb/**/trajectory/
