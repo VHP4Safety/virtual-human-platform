@@ -47,6 +47,9 @@ def document(kind: str, address: str, body: dict) -> dict:
     found = {"@context": context(settings()), "@id": address, "@type": jsonld_name(kind)}
     for name, value in body.items():
         # The address of a record is also added as its url when it has none.
+        # A blank text is no value, so that a blank name is reported as missing.
+        if isinstance(value, str) and not value.strip():
+            continue
         if name.startswith("@") or documents.expand(name) in records.ADDED or (documents.expand(name) == str(SDO.url) and value in (address, {"@id": address})):
             continue
         if name not in known and documents.expand(name) not in stored:

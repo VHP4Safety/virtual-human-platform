@@ -477,3 +477,29 @@ def test_linked_names(site):
     assert "Rita" in site.get("/tools/l").data.decode()
     site.delete("/api/people/r?permanent=true", headers=bearer)
     assert "Rita" not in site.get("/tools/l").data.decode()
+
+
+def test_write_states(site):
+    """A write is refused with 412 for a version that is not the stored one, or with If-None-Match: * at a taken address,
+    with 409 naming the new address of a moved record and with 410 for a removed one; If-Match: * and a list of versions
+    are taken, a part is restored with its record only, POST previews too, and a blank name is reported as missing."""
+    add_records()
+    bearer = {"Authorization": "Bearer " + tokens.create(ORCID, "Test Editor", list(settings()["kinds"]))}
+    assert site.put("/api/tools/t", json=FITTING, headers={**bearer, "If-Match": "*"}).status_code == 200
+    version = site.get("/api/tools/t").headers["ETag"]
+    assert site.put("/api/tools/t", json=FITTING, headers={**bearer, "If-Match": f'"other", {version}'}).status_code == 200
+    assert site.put("/api/tools/t", json=FITTING, headers={**bearer, "If-None-Match": "*"}).status_code == 412
+    assert site.put("/api/tools/fresh", json=FITTING, headers={**bearer, "If-None-Match": "*"}).status_code == 201
+    assert site.post("/api/tools?preview=true", json={"name": "Preview"}, headers=bearer).status_code == 200
+    assert site.get("/api/tools/preview").status_code == 404
+    blank = site.put("/api/tools/blank", json={"name": " "}, headers=bearer)
+    assert blank.status_code == 201 and "name" in blank.json["warnings"]
+    assert site.get(blank.json["change"], headers=bearer).status_code == 200
+    site.post("/api/move", json={"record": "tools/fresh", "to": "tools/moved"}, headers=bearer)
+    moved = site.put("/api/tools/fresh", json=FITTING, headers=bearer)
+    assert moved.status_code == 409 and BASE + "tools/moved" in moved.json["message"]
+    assert [site.delete("/api/tools/moved", headers=bearer).status_code for _ in range(2)] == [200, 410]
+    study = {"@type": "bioschemas_draft:Study", "name": "C", "hasPart": {"@type": "HowTo", "name": "Q"}}
+    assert site.put("/api/casestudies/c", json=study, headers=bearer).status_code == 201
+    site.delete("/api/casestudies/c", headers=bearer)
+    assert site.post("/api/restore", json={"record": "casestudies/c/q"}, headers=bearer).status_code == 409

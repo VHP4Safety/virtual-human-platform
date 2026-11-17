@@ -8,6 +8,7 @@ import database
 from admin.changes import edges, statements
 from database import records
 from database.tables import Revision
+from admin import tokens
 from routes.account import current_editor
 
 blueprint = Blueprint("changes", __name__)
@@ -15,7 +16,8 @@ blueprint = Blueprint("changes", __name__)
 
 @blueprint.before_request
 def editors_only():
-    if current_editor() is None:
+    """Show the changes to editors, signed in or with a write token, such as the change in the answer of a write."""
+    if current_editor() is None and tokens.find(tokens.bearer(request.headers.get("Authorization", ""))) is None:
         return redirect(url_for("account.login", next=request.full_path.rstrip("?")))
     return None
 

@@ -243,11 +243,22 @@ def done(address: str, revision, status: int, warnings: dict | None = None):
 
 
 def unchanged(address: str) -> None:
-    """Refuse a write with a version in If-Match if the record was changed after that version."""
-    expected = request.headers.get("If-Match", "").strip('" ')
+    """Refuse a write with versions in If-Match if the record was changed after them, and with If-None-Match: * if a
+    record is at the address, such as one added in another tab after a new record was opened."""
     record = records.get(address)
-    if expected and record is not None and record.updated_at != expected:
+    # A version that is not quoted, as RFC 9110 wants it, matches no version.
+    if "If-Match" in request.headers and record is not None and not request.if_match.contains(record.updated_at):
         abort(412, message="Changed since it was opened; reopen it to see the change.")
+    if request.if_none_match.star_tag and record is not None:
+        abort(412, message="A record was added at this address since it was opened; open it to see it.")
+
+
+def current(record) -> None:
+    """Refuse a write of a moved or removed record, saying where it is or how it comes back."""
+    if record is not None and record.moved_to:
+        abort(409, message=f"Moved to {record.moved_to}; write it there.")
+    if record is not None and record.removed_at:
+        abort(410, message="Removed; restore it with POST /api/restore first.")
 
 
 def editable(record) -> None:
@@ -649,6 +660,7 @@ def vocabulary_kind(kind: str) -> bool:
 
 @blueprint.post(KIND, tags=["editing"], parameters=OF_KIND)
 @blueprint.doc(operationId="addRecord")
+@blueprint.arguments(Writing, location="query")
 @blueprint.arguments(Record, content_type="application/ld+json")
 @blueprint.response(201, Done, description="Added.")
 @blueprint.doc(**WRITE)
@@ -657,13 +669,13 @@ def vocabulary_kind(kind: str) -> bool:
     "vocabulary term at the address in @id. Store a record that does not fit the shapes too, and return the "
     "problems as warnings."
 ))
-def added(body, kind):
+def added(given, body, kind):
     """Add a record."""
     # In Turtle or in JSON-LD with a context, the record is the node that no other node links to, and its http or https
     # address is its @id.
-    given = sent(body)
-    if given is not None:
-        found, node = given
+    received = sent(body)
+    if received is not None:
+        found, node = received
         body = {"@id": str(node)} if web(node) else {"name": str(found.value(node, SDO.name) or "")}
     # A term of a vocabulary is stored at the address in @id. Other records are stored at an address made from the name.
     if body.get("@id") is not None and not (web(body["@id"]) and vocabulary_kind(kind)):
@@ -671,11 +683,11 @@ def added(body, kind):
     address = body.get("@id") or writes.free(records.address(f"{kind}/{writes.slug(str(body.get('name') or kind))}"), set())
     if records.get(address) is not None:
         abort(409, message="Address taken.")
-    if given is not None:
+    if received is not None:
         writes.renamed(found, node, address)
         body = documents.document(found, address)
     body = {"@type": jsonld_name(settings()["kinds"][kind]), **body}
-    return store(address, body)
+    return store(address, body, given["preview"], given["page"])
 
 
 @blueprint.get("/<path:path>", parameters=AT_PATH)
@@ -712,16 +724,15 @@ def read(path):
 @blueprint.doc(**WRITE)
 @blueprint.doc(description=(
     "Store the record, sent in JSON-LD or Turtle, at the page address. Refuse the write with 412 if the version in "
-    "If-Match is older than the stored record. With preview=true, store nothing, and return the changes and the "
-    "warnings."
+    "If-Match is older than the stored record, or with If-None-Match: * if a record is at the address. With "
+    "preview=true, store nothing, and return the changes and the warnings."
 ))
 def replace(given, body, path):
     """Add or replace a record at an address."""
     address = records.address(path)
     record = records.get(address)
     whole(record)
-    if record is not None and (record.moved_to or record.removed_at):
-        abort(409, message="Address of a moved or removed record; not reused.")
+    current(record)
     if not given["preview"]:
         editable(record)
     received = sent(body, address)
@@ -744,8 +755,8 @@ def replace(given, body, path):
 def remove(given, path):
     """Remove a record."""
     record = found_record(path)
-    if record.removed_at and not given["permanent"]:
-        abort(404, message="No record at this address.")
+    if not given["permanent"]:
+        current(record)
     whole(record)
     editable(record)
     who = writer(kind_of(record.iri, {}))
@@ -764,8 +775,7 @@ def remove(given, path):
 def move(body):
     """Move a record to a new address."""
     record = found_record(body["record"])
-    if record.removed_at:
-        abort(404, message="No record at this address.")
+    current(record)
     whole(record)
     editable(record)
     kind = kind_of(record.iri, {})

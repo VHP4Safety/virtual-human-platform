@@ -39,6 +39,9 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     const headers = { "X-Form-Token": editor.token };
     if (editor.version) {
       headers["If-Match"] = '"' + editor.version + '"';
+    } else if (method === "PUT") {
+      // A new record is saved only if no record was added at its address since it was opened, such as in another tab.
+      headers["If-None-Match"] = "*";
     }
     if (type) {
       headers["Content-Type"] = type;
