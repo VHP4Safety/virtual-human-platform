@@ -15,6 +15,7 @@ from rdflib.namespace import SDO, VOID
 from rdfsolve.iris import local_name
 from werkzeug.datastructures import MultiDict
 
+import database
 from database import records
 from database.tables import Record
 from linkeddata import documents, void
@@ -193,6 +194,25 @@ def agents_line() -> str:
     found = entry_points()
     return (f"Agents and scripts: search at <{found['search']}>, the API at <{found['index']}>, "
             f"OpenAPI at <{found['openapi']}>, all records at <{found['dump']}>, and where to start at <{found['llms']}>.")
+
+
+@lru_cache(maxsize=4)
+def chosen_examples(state: str, version: str) -> dict[str, str]:
+    """Return the example record of each class of a kind in the database at state, as it was at version (see examples)."""
+    candidates = {of_class: records.page(of_class, {}, "", 0, 50)[1] for of_class in settings()["kinds"].values()}
+    found = documents.public(records.graph(sorted({iri for iris in candidates.values() for iri in iris})))
+    chosen = {}
+    for of_class, iris in candidates.items():
+        if iris:
+            chosen[of_class] = max(iris, key=lambda iri: len(set(found.predicates(URIRef(iri)))))
+    return chosen
+
+
+def examples() -> dict[str, str]:
+    """Return the address of the example record of each class of a kind that has records: of its first 50 records by
+    name, the one with the most public fields, and of those the first. The schema of each kind in the description of
+    the API shows it, so that the example works on this platform, and it changes only when a record changes."""
+    return chosen_examples(str(database.STATE_DIR), records.latest_change())
 
 
 def readable_at(iri: str) -> bool:

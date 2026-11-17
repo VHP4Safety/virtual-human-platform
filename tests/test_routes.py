@@ -11,7 +11,9 @@ from bs4 import BeautifulSoup
 from PIL import Image as Picture
 
 from admin import tokens, writes
-from linkeddata.profile import settings
+from database.records import browsed
+from linkeddata import schemas
+from linkeddata.profile import fields, settings
 from routes import account
 
 ORCID = "0000-0002-1825-0097"
@@ -126,7 +128,7 @@ def test_pages(site):
     assert "<h1>Publications</h1>" in site.get("/publications").data.decode()
     assert site.get("/api/tools", query_string={"keywords": STEP}).json["@graph"][0]["name"] == "T"
     assert {"value": STEP, "count": 1} in [{"value": item["value"], "count": item["count"]} for item in site.get("/api/tools/facets").json["keywords"]]
-    assert "tools" in site.get("/api/docs/openapi.json").json["paths"]["/api/{kind}"]["parameters"][0]["schema"]["enum"]
+    assert "keywords" in [parameter["$ref"].rsplit(".", 1)[-1] for parameter in site.get("/api/docs/openapi.json").json["paths"]["/api/tools"]["get"]["parameters"] if "$ref" in parameter]
     writes.retire(BASE + "tools/t", "Test Editor", ORCID)
     assert site.get("/tools/t").status_code == 410
 
@@ -190,9 +192,12 @@ def test_operations_named(site):
 
 
 def described(schema: dict) -> bool:
-    """Return True if a JSON schema names its fields: properties, a reference, typed values of a map, or items that do."""
+    """Return True if a JSON schema names its fields: properties, a reference, typed values of a map, items that do, or
+    a choice of schemas that do."""
     if schema.get("type") == "array":
         return described(schema.get("items") or {})
+    if "anyOf" in schema:
+        return all(described(choice) for choice in schema["anyOf"])
     return bool(schema.get("properties") or schema.get("$ref") or isinstance(schema.get("additionalProperties"), dict))
 
 
@@ -207,8 +212,40 @@ def test_responses_described(site):
 
 def test_start_described(site):
     """The description of the API says where to start: search first, then read the record, with real addresses."""
+    add_records()
     text = site.get("/api/docs/openapi.json").json["info"]["description"]
-    assert text.index("GET /api/search?text=") < text.index("GET /api/tools/aopwikiapi") < text.index("GET /api/tools/facets")
+    assert text.index("GET /api/search?text=T") < text.index("GET /api/tools/t") < text.index("GET /api/tools?keywords=") < text.index("GET /api/tools/facets")
+
+
+def test_fields_described(site):
+    """Each kind has its operations, a schema with each field of its profile, and a filter for each field that filters."""
+    spec = site.get("/api/docs/openapi.json").json
+    for kind, of_class in settings()["kinds"].items():
+        schema = spec["components"]["schemas"][schemas.kind_name(of_class)]
+        assert {field["name"] for field in fields(of_class)} <= set(schema["properties"]), kind
+        listed = {spec["components"]["parameters"][parameter["$ref"].rsplit("/", 1)[-1]]["name"]
+                  for parameter in spec["paths"][f"/api/{kind}"]["get"]["parameters"] if "$ref" in parameter}
+        assert listed == {field["name"] for field in fields(of_class) if browsed(field)}, kind
+        assert set(spec["paths"][f"/api/{kind}/facets"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["propertyNames"]["enum"]) == listed
+        assert "$ref" in spec["paths"][f"/api/{kind}"]["post"]["requestBody"]["content"]["application/ld+json"]["schema"]
+
+
+def test_examples_work(site):
+    """The examples of the description are taken from the stored records, so that each one works on this platform."""
+    add_records()
+    spec = site.get("/api/docs/openapi.json").json
+    assert "aopwikiapi" not in json.dumps(spec)
+    assert spec["components"]["schemas"]["SoftwareApplication"]["examples"][0]["@id"] == BASE + "tools/t"
+    reading = spec["paths"]["/api/{path}"]
+    for example in reading["parameters"][0]["examples"].values():
+        assert site.get("/api/" + example["value"]).status_code == 200, example
+    assert "Does T." in reading["get"]["responses"]["200"]["content"]["text/turtle"]["example"]
+    search = spec["paths"]["/api/search"]["get"]
+    text = next(parameter["example"] for parameter in search["parameters"] if parameter["name"] == "text")
+    assert site.get("/api/search", query_string={"text": text}).json["@graph"] == search["responses"]["200"]["content"]["application/ld+json"]["example"]["@graph"]
+    for address in re.findall(r"`GET (/api/[^`]+)`", spec["info"]["description"]):
+        if "<" not in address:
+            assert site.get(address).status_code == 200, address
 
 
 @pytest.mark.parametrize("copy", [False, True])
