@@ -49,10 +49,10 @@ def current_editor() -> tokens.Editor | None:
     return tokens.editor(session.get("orcid"), session.get("name"), session.get("token_id"))
 
 
-def editor_of_request(kind: str) -> tokens.Editor | None:
-    """Return the editor of a request of an editor page, if kind may be written."""
+def editor_of_request(kind: str | None) -> tokens.Editor | None:
+    """Return the editor of a request of an editor page, if kind may be written, or if kind is None, any kind."""
     editor = current_editor()
-    if editor is None or kind not in editor.kinds or "form_token" not in session:
+    if editor is None or (kind is not None and kind not in editor.kinds) or "form_token" not in session:
         return None
     if not hmac.compare_digest(request.headers.get("X-Form-Token", ""), session["form_token"]):
         return None

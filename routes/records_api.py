@@ -214,10 +214,20 @@ def varied(response):
     return response
 
 
+def signed_in():
+    """Return the valid write token or the signed-in editor of the request, for any kind, or None."""
+    secret = tokens.bearer(request.headers.get("Authorization", ""))
+    return tokens.find(secret) if secret is not None else account.editor_of_request(None)
+
+
 def writer(kind: str | None):
+    """Return the token or the signed-in editor of the request, if records of kind may be written. Refuse a request
+    without a valid token or login with 401, and with a token or login for other kinds with 403."""
     found = identity(kind) if kind is not None else None
+    if found is None and signed_in() is None:
+        abort(401, message="Login or write token needed.", headers={"WWW-Authenticate": "Bearer"})
     if found is None:
-        abort(401, message="Login or write token for this kind needed.")
+        abort(403, message=f"The write token or the login is not for the kind {kind}." if kind else "No kind of records holds this record.")
     return found
 
 

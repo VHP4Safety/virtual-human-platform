@@ -353,3 +353,14 @@ def test_kind_and_address(site):
     for to in ("tools/a b", "https://example.org/x", "people/t", "tools/facets", "tools/t#x", "tools/../people/t", "tools/t"):
         assert site.post("/api/move", json={"record": "tools/t", "to": to}, headers=bearer).status_code in (409, 422), to
     assert site.get("/api/tools/t").status_code == 200
+
+
+def test_token_of_other_kind(site):
+    """A write without a valid token is refused with 401, and with a token for other kinds with 403, naming the kind."""
+    secret = tokens.create(ORCID, "Test Editor", ["tools"])
+    person = {"@type": "Person", "name": "P"}
+    refused = site.put("/api/people/p", json=person)
+    assert refused.status_code == 401 and refused.headers["WWW-Authenticate"] == "Bearer"
+    other = site.put("/api/people/p", json=person, headers={"Authorization": "Bearer " + secret})
+    assert other.status_code == 403 and "people" in other.json["message"]
+    assert site.put(NEW, json={"@type": "SoftwareApplication", **FITTING}, headers={"Authorization": "bearer " + secret}).status_code == 201
