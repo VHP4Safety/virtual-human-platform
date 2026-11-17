@@ -29,26 +29,34 @@ def logged_in(kind: str | None = None):
 
 @blueprint.get("/admin/")
 def admin():
-    if logged_in() is None:
+    found = logged_in()
+    if found is None:
         return redirect(url_for("account.login", next=request.path))
-    return render_template("admin/kinds.html", kinds=editor.counts(), failed=editor.failed(), page_title="VHP4Safety editor")
+    # The kinds that the editor may write are listed, such as tools only for a token of tools.
+    kinds = [counted for counted in editor.counts() if counted["kind"] in found.kinds]
+    return render_template("admin/kinds.html", kinds=kinds, failed=editor.failed(), page_title="VHP4Safety editor")
 
 
 @blueprint.get("/admin/<kind>/")
 def edit(kind: str):
-    if logged_in(kind) is None:
+    found = logged_in(kind)
+    if found is None:
         return redirect(url_for("account.login", next=request.path))
-    listed = editor.listing(kind)
     selected = request.args.get("record") or ""
     # The address of a new record is made from its name, as in the API.
     name = request.args.get("new", "").strip()
     if name:
         selected = writes.free(records.address(f"{kind}/{writes.slug(name)}"), set())
     record = records.get(selected) if selected else None
+    # A record is edited with the kind of its class, and with the rights of that kind.
+    of_kind = next((other for other, of_class in settings()["kinds"].items() if record is not None and record.type in records.within(of_class)), kind)
+    if of_kind != kind:
+        return redirect(url_for("admin.edit", kind=of_kind, record=selected))
+    listed = editor.listing(kind)
     response = Response(render_template(
         "admin/records.html",
         kind=kind,
-        kinds=list(settings()["kinds"]),
+        kinds=[other for other in settings()["kinds"] if other in found.kinds],
         records=listed,
         selected=selected,
         base=settings()["base"],

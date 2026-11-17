@@ -503,3 +503,23 @@ def test_write_states(site):
     assert site.put("/api/casestudies/c", json=study, headers=bearer).status_code == 201
     site.delete("/api/casestudies/c", headers=bearer)
     assert site.post("/api/restore", json={"record": "casestudies/c/q"}, headers=bearer).status_code == 409
+
+
+def signed_in(site, kinds: list[str]) -> str:
+    """Sign in to the test site with a new write token for kinds, and return the form token of the session."""
+    site.get("/login/")
+    with site.session_transaction() as session:
+        form_token = session["form_token"]
+    site.post("/login/token/", data={"token": tokens.create(ORCID, "Test Editor", kinds), "form_token": form_token})
+    return form_token
+
+
+def test_editor_kinds(site):
+    """The editor lists the kinds of the token only, and opens a record with the kind of its class."""
+    writes.save(writes.document(PERSON, BASE + "people/p", {"name": "P"}), PERSON, "Test Editor", ORCID)
+    signed_in(site, ["tools"])
+    listed = site.get("/admin/").data.decode()
+    assert "/admin/tools/" in listed and "/admin/people/" not in listed
+    opened = site.get("/admin/tools/", query_string={"record": BASE + "people/p"})
+    assert opened.status_code == 302 and opened.headers["Location"].startswith("/admin/people/")
+    assert site.get(opened.headers["Location"]).status_code == 404
