@@ -18,7 +18,7 @@ const question = step("q", "Question 1", { text: "What is asked?", step: [
   step("q/a", "Hazard", { position: 1, creativeWorkStatus: "Incomplete", step: [step("q/a/x", "Not opened", { tool: [use("T")] })] }),
   // A page with one page of the same name below it.
   step("q/b", "Kinetics", { position: 2, step: [step("q/b/k", "Modelling", { step: [step("q/b/k/k", "Modelling", {
-    tool: [use("PBK", "https://x.org/tools/pbk"), use("Assay", "https://x.org/methods/assay")], supply: [use("Data")] })] })] }),
+    tool: [use("PBK", "https://x.org/tools/pbk"), use("Assay", "https://x.org/methods/assay")], supply: [use("Data"), use("Set", "https://x.org/data/d1")] })] })] }),
   // A page with items and pages below it: a page at level 5, a page without content and a page given by its address.
   step("q/c", "Dynamics", { position: 3, tool: [use("Own")], step: [
     step("q/c/d", "Deep", { position: 1, step: [step("q/c/d/d", "Deeper", { step: [step("q/c/d/d/d", "Deepest", { supply: [use("Measured")] })] })] }),
@@ -80,12 +80,22 @@ assert.equal(find(site, "Hazard").items, null);
 assert.deepEqual(find(site, "Hazard").below, []);
 // The page of the same name is opened, and its tools, methods and data have a column each.
 assert.deepEqual(find(site, "Modelling").path, ["q", "q/b", "q/b/k", "q/b/k/k"]);
-assert.deepEqual(names(find(site, "Modelling")), [["PBK"], ["Assay"], ["Data"]]);
+assert.deepEqual(names(find(site, "Modelling")), [["PBK"], ["Assay"], ["Data", "Set"]]);
 assert.deepEqual(names(find(site, "Dynamics")), [["Own"], [], []]);
 assert.deepEqual(names(find(site, "Deepest")), [[], [], ["Measured"]]);
 assert.deepEqual(names(find(site, "Outcome")), [[], [], []]);
 assert.equal(find(site, "Kinetics").items, null);
 assert.equal(find(site, "Flat").faded, false);
+
+// The methods of a dataset that is read are in the row of the dataset, after the methods of the page, each once. A
+// dataset that is not read yet adds none.
+const methods = [{ name: "Assay", address: "https://x.org/methods/assay" }, { name: "Other assay", address: "https://x.org/methods/other" }];
+const read = caseStudy.layout({ options: {}, nodes: nodes, datasets: new Map([["https://x.org/data/d1", { address: "https://x.org/data/d1", methods: methods }]]) }, question);
+assert.deepEqual(names(find(read, "Modelling")), [["PBK"], ["Assay", "Other assay"], ["Data", "Set"]]);
+assert.deepEqual(find(read, "Modelling").items[1][1].from, ["https://x.org/data/d1"]);
+assert.deepEqual(cells(read), cells(site));
+const unread = caseStudy.layout({ options: {}, nodes: nodes, datasets: new Map([["https://x.org/data/d1", null]]) }, question);
+assert.deepEqual(names(find(unread, "Modelling")), [["PBK"], ["Assay"], ["Data", "Set"]]);
 
 // In the preview of the editor, the pages without content are shown, and a greyed-out page is still not opened.
 const preview = caseStudy.layout({ options: { openDisabled: true }, nodes: nodes }, question);

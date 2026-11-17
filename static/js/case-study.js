@@ -679,6 +679,19 @@ export function layout(state, question) {
       for (const item of own) {
         node.items[item.field === "supply" ? 2 : item.address.includes("/methods/") ? 1 : 0].push(item);
       }
+      // The methods of a dataset are the methods that the record of the dataset links (see readDataset). They are
+      // listed after the methods of the page, each once, with the datasets that link them.
+      for (const item of node.items[2]) {
+        const record = state.datasets ? state.datasets.get(item.address) : null;
+        for (const method of record ? record.methods : []) {
+          const listed = node.items[1].find(function (other) { return other.address === method.address; });
+          if (!listed) {
+            node.items[1].push({ name: method.name, description: "", address: method.address, field: "tool", from: [item.address] });
+          } else if (listed.from && !listed.from.includes(item.address)) {
+            listed.from.push(item.address);
+          }
+        }
+      }
     }
     for (const child of below) {
       const placed = place(child, level + 1, level, row + node.rows, path.concat([child["@id"]]));
@@ -702,6 +715,45 @@ export function layout(state, question) {
     }
   })(pages);
   return { pages: pages, columns: columns, rows: rows };
+}
+
+// Read the record of a dataset, and return its address and its name with the methods that it links. A dataset that is
+// linked by its DOI, as data/10.6019/S-VHPS16, has its record at the last part of that address. A dataset that is not
+// found has no methods.
+// ponytail: one request for each dataset of an overview. If that is slow, give the methods with the case study.
+async function readDataset(state, address) {
+  const linked = address.split("/data/");
+  const tried = linked.length === 2 && linked[1].includes("/") ? [address, linked[0] + "/data/" + linked[1].split("/").pop()] : [address];
+  for (const found of tried) {
+    try {
+      const response = await fetch(local(found, state.options), { headers: { Accept: "application/ld+json" } });
+      if (response.ok) {
+        const record = await response.json();
+        const nodes = index(record, new Map());
+        const methods = [];
+        for (const value of all(record, "measurementTechnique")) {
+          const method = value && typeof value === "object" ? String(value["@id"] || "") : "";
+          if (method.includes("/methods/")) {
+            methods.push({ name: first(nodes.get(method) || value, "name") || method.split("/").pop(), address: method });
+          }
+        }
+        return { address: found, name: first(record, "name"), methods: methods };
+      }
+    } catch (error) {
+      // A record that cannot be read is tried at its next address.
+    }
+  }
+  return { address: address, name: "", methods: [] };
+}
+
+// Return a name as a short name, with … at its end: cut after its last whole word within the length of a short name,
+// or within a word if that leaves too little of the name.
+function short(name) {
+  if (name.length <= 22) {
+    return name;
+  }
+  const cut = name.slice(0, 20);
+  return (cut.lastIndexOf(" ") > 10 ? cut.slice(0, cut.lastIndexOf(" ")) : cut) + "…";
 }
 
 // Show the details of a cell of the overview in a popover of Bootstrap, at the pointer and at the focus. A cell
@@ -729,6 +781,29 @@ function overview(container, state, question, bar, enters) {
   const found = layout(state, question);
   if (!found.pages.length) {
     return null;
+  }
+  // The methods of a dataset are in the record of the dataset. The records that are not read yet are read, and the
+  // case study is drawn again with their methods.
+  const unread = new Set();
+  (function gather(pages) {
+    for (const node of pages) {
+      for (const item of node.items ? node.items[2] : []) {
+        if (item.address && !state.datasets.has(item.address)) {
+          unread.add(item.address);
+        }
+      }
+      gather(node.below);
+    }
+  })(found.pages);
+  if (unread.size) {
+    Promise.all(Array.from(unread, function (address) {
+      state.datasets.set(address, null);
+      return readDataset(state, address).then(function (read) {
+        state.datasets.set(address, read);
+      });
+    })).then(function () {
+      draw(container, false);
+    });
   }
   const columns = found.columns + KINDS.length;
   const grid = make("div", "d-grid gap-2");
@@ -818,13 +893,17 @@ function overview(container, state, question, bar, enters) {
       }
       for (const [dataset, uses] of pills) {
         const item = uses[0];
-        // The pill of a dataset has its accession number, the last part of its address, and the names of its uses
-        // are in its popover.
-        const accession = typeof dataset === "string" ? dataset.split("/").pop() : "";
+        // The pill of a dataset has its accession number, the last part of its address. A number alone says little, so
+        // such a dataset has a short name, as has a method of a dataset. The whole names are in the popover.
+        const last = typeof dataset === "string" ? dataset.split("/").pop() : "";
+        const accession = /^\d+$/.test(last) ? "" : last;
+        // A dataset that is read has the address and the name of its record.
+        const record = last ? state.datasets.get(dataset) : null;
+        const text = accession || (last || item.from ? short(record && record.name || item.name || last) : item.name) || "(no name)";
         // A pill with a record is a link to the record, with the weight of the links of the page.
-        const pill = make(item.address ? "a" : "span", "badge rounded-pill text-truncate mw-100 " + (item.address ? "" : "fw-normal ") + KINDS[at][1], accession || item.name || "(no name)");
+        const pill = make(item.address ? "a" : "span", "badge rounded-pill text-truncate mw-100 " + (item.address ? "" : "fw-normal ") + KINDS[at][1], text);
         if (item.address) {
-          pill.href = local(item.address, state.options);
+          pill.href = local(record ? record.address : item.address, state.options);
           opens(pill, state.options);
         }
         // In the preview of the editor, a click opens the page that lists the item, as in the pages of a stage.
@@ -833,18 +912,21 @@ function overview(container, state, question, bar, enters) {
             navigate(container, node.path);
           });
         }
-        const lines = [];
+        const lines = record && record.name ? [make("b", "", record.name)] : [];
         for (const use of uses) {
-          if (accession && use.name) {
-            lines.push(make("b", "", use.name));
+          if (last && use.name) {
+            lines.push(use.name);
           }
           if (use.description) {
             lines.push(safeHtml(use.description, state.options));
           }
         }
+        if (item.from) {
+          lines.push(item.name, "Linked in " + item.from.map(function (address) { return address.split("/").pop(); }).join(", "));
+        }
         if (lines.length) {
           pill.tabIndex = 0;
-          explain(pill, accession || item.name || "(no name)", lines);
+          explain(pill, text, lines);
         } else {
           pill.title = item.name || "";
         }
@@ -1093,6 +1175,8 @@ function draw(container, sliding) {
   if (header !== flow) {
     flow.replaceWith(header);
   }
+  // The process flow is shown from the pages of the workflow steps on. The pages before them have an overview.
+  header.classList.toggle("d-none", level < 2);
   const strip = shown.lastElementChild;
   const panels = Array.from(strip.children);
   for (let at = 0; at <= level; at += 1) {
@@ -1133,7 +1217,7 @@ export function renderCaseStudy(container, caseStudy, options) {
   let state = states.get(container);
   if (!state) {
     containers += 1;
-    state = { id: "case-study-" + containers, path: [], open: new Map() };
+    state = { id: "case-study-" + containers, path: [], open: new Map(), datasets: new Map() };
     states.set(container, state);
     // onPick is called after the action of the buttons of the page, such as the opening of another page. A click on
     // the icon for a new tab is not picked.
