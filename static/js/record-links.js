@@ -60,7 +60,7 @@ async function api(method, address, body) {
   });
   const answer = await response.json().catch(function () { return {}; });
   if (!response.ok) {
-    throw new Error(answer.message || response.statusText);
+    throw new Error(answer.detail || answer.message || response.statusText);
   }
   return answer;
 }
@@ -286,7 +286,7 @@ function addRecord(of_class, label, name, store, added) {
       });
       const answer = await response.json().catch(function () { return {}; });
       if (!response.ok) {
-        throw new Error(answer.message || response.statusText);
+        throw new Error(answer.detail || answer.message || response.statusText);
       }
       const record = await api("GET", "/api" + local(answer["@id"]));
       shown.dialog.close();

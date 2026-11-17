@@ -31,7 +31,27 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
 
   function show(text, ok) {
     message.className = "alert " + (ok ? "alert-success" : "alert-danger");
-    message.textContent = text;
+    message.replaceChildren(text);
+  }
+
+  // Return the problems of each field of a refusal, such as "json > name: Missing", as the API names them by place.
+  function problemsOf(errors, trail) {
+    return Object.entries(errors || {}).flatMap(function (entry) {
+      return Array.isArray(entry[1]) ? [trail + entry[0] + ": " + entry[1].join(" ")] : problemsOf(entry[1], trail + entry[0] + " > ");
+    });
+  }
+
+  // Return a refusal to show. Without a valid login, such as after a sign-out in another tab, it links the sign-in, in a
+  // new tab, so that the edits are kept.
+  function refusal(answer, response) {
+    const shown = make("span", "", [answer.detail || answer.message || response.statusText].concat(problemsOf(answer.errors, "")).join(" "));
+    if (response.status === 401) {
+      const link = make("a", "ms-1", "Sign in again");
+      link.href = "/login/?next=" + encodeURIComponent(window.location.pathname + window.location.search);
+      link.target = "_blank";
+      shown.append(link, document.createTextNode(" in a new tab, then try again."));
+    }
+    return shown;
   }
 
   // Send a request to the API. Show a refusal with refuse, else above the form.
@@ -56,8 +76,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     }
     const answer = await response.json().catch(function () { return {}; });
     if (!response.ok) {
-      const fields = Object.entries(answer.errors || {}).map(function (entry) { return entry[0] + ": " + entry[1].join(" "); });
-      refused([answer.message || response.statusText].concat(fields).join(" "));
+      refused(refusal(answer, response));
       return null;
     }
     return answer;
@@ -370,7 +389,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     }
     const answer = await response.json().catch(function () { return {}; });
     if (!response.ok) {
-      say(answer.message || "Preview not made.");
+      say(answer.detail || answer.message || "Preview not made.");
       return;
     }
     if (view === "page") {
@@ -530,7 +549,9 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     const save = document.getElementById("save");
     const problems = document.getElementById("save-problems");
     function refuse(text) {
-      problems.replaceChildren(make("div", "", "Not saved: " + text));
+      const line = make("div", "", "Not saved: ");
+      line.append(text);
+      problems.replaceChildren(line);
       problems.classList.remove("d-none");
     }
 

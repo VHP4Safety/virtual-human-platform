@@ -523,3 +523,11 @@ def test_editor_kinds(site):
     opened = site.get("/admin/tools/", query_string={"record": BASE + "people/p"})
     assert opened.status_code == 302 and opened.headers["Location"].startswith("/admin/people/")
     assert site.get(opened.headers["Location"]).status_code == 404
+
+
+def test_form_token_kept(site):
+    """A sign-out and a new sign-in keep the form token of the session, so that an editor page opened before still saves."""
+    form_token = signed_in(site, ["tools"])
+    site.get("/logout/")
+    assert signed_in(site, ["tools"]) == form_token
+    assert site.put(NEW, json={"@type": "SoftwareApplication", **FITTING}, headers={"X-Form-Token": form_token}).status_code == 201
