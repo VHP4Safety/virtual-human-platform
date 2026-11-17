@@ -6,8 +6,8 @@ const HEADINGS = ["text-vhppink-distinct", "text-vhpdarkpurple", "text-vhpdarkte
 // Tools, methods and data are blue.
 const BUTTONS = ["btn-vhppink-distinct", "btn-vhpdarkpurple", "btn-vhpdarkteal", "btn-vhplightteal"];
 const ITEMS = "btn-vhpblue";
-// The tools, methods and data of a page have a column each in the overview of a question.
-const KINDS = ["Tools", "Methods", "Data"];
+// The tools, methods and data of a page have a column each in the overview of a question, with pills in these colours.
+const KINDS = [["Tools", "bg-vhplight-blue text-vhppurple"], ["Methods", "bg-white text-vhppurple border border-vhpblue"], ["Data", "bg-vhplight-green text-vhppurple border border-vhppurple"]];
 const PROCESS_FLOW = ["Regulatory Question", "Safety Assessment Workflow Step", "Case Study Step", "Case Study Substep", "Tools, Models and Data"];
 // The fields with content for a step.
 const CONTENT = ["tool", "supply", "bioschemas:input", "bioschemas:output", "hasPart", "text", "description"];
@@ -740,23 +740,17 @@ function overview(container, state, question, bar, enters) {
     grid.append(cell);
     return cell;
   }
-  // The question and the stages are above the rows of the pages. The last stage has a column for each kind of item.
+  // The question is above the rows of the pages, and the tools, methods and data have a title above their columns.
+  // The stages of the pages are named in the process flow above the page, not here again.
   const head = bar ? 2 : 1;
   if (bar) {
     const asked = put(make("div", "d-flex align-items-center rounded p-3 fs-5 fw-bold text-bg-vhppink-distinct"), 1, 1, 1, columns);
     asked.dataset.field = "text";
     asked.append(make("span", "badge rounded-circle me-2 bg-white text-vhppink-distinct", "1"), document.createTextNode(first(question, "text") || label(state, question)));
   }
-  const heads = [[2, PROCESS_FLOW[1], 1, 1], [3, PROCESS_FLOW[2], 2, 2], [4, PROCESS_FLOW[3], 3, found.columns]].concat(KINDS.map(function (kind, at) {
-    return [at ? 0 : 5, kind, found.columns + 1 + at, found.columns + 1 + at];
-  }));
-  for (const [stage, name, column, last] of heads) {
-    const title = put(make("div", "d-flex align-items-start small fw-semibold text-secondary"), head, 1, column, last);
-    if (stage) {
-      title.append(make("span", "badge rounded-circle me-2 " + (stage < 5 ? BUTTONS[stage - 1] : ITEMS).replace("btn-", "text-bg-"), String(stage)));
-    }
-    title.append(make("span", "", name));
-  }
+  KINDS.forEach(function (kind, at) {
+    put(make("div", "small fw-semibold text-secondary", kind[0]), head, 1, found.columns + 1 + at, found.columns + 1 + at);
+  });
   // A cell in the rows of the pages. Its rows are kept, for the fading of the other rows.
   function cellAt(cell, row, rows, column, last) {
     cell.dataset.row = row;
@@ -806,7 +800,7 @@ function overview(container, state, question, bar, enters) {
     const counted = node.below.length ? count(node) : [];
     explain(cell, node.name, [
       first(node.page, "disambiguatingDescription") || first(node.page, "description"),
-      KINDS.map(function (kind, at) { return counted[at] ? kind + ": " + counted[at] : ""; }).filter(Boolean).join(" · "),
+      KINDS.map(function (kind, at) { return counted[at] ? kind[0] + ": " + counted[at] : ""; }).filter(Boolean).join(" · "),
       note,
     ]);
     (node.items || []).forEach(function (listed, at) {
@@ -814,11 +808,21 @@ function overview(container, state, question, bar, enters) {
       const box = cellAt(make("div", "d-flex flex-wrap align-content-center gap-1 overflow-hidden"), node.row, 1, found.columns + 1 + at, found.columns + 1 + at);
       if (listed.length) {
         box.setAttribute("role", "group");
-        box.setAttribute("aria-label", KINDS[at] + " of " + node.name);
+        box.setAttribute("aria-label", KINDS[at][0] + " of " + node.name);
       }
+      // A dataset with a record is one pill for its uses in the row. The other items are a pill each.
+      const pills = new Map();
       for (const item of listed) {
+        const dataset = at === 2 && item.address ? item.address : pills.size;
+        pills.set(dataset, (pills.get(dataset) || []).concat([item]));
+      }
+      for (const [dataset, uses] of pills) {
+        const item = uses[0];
+        // The pill of a dataset has its accession number, the last part of its address, and the names of its uses
+        // are in its popover.
+        const accession = typeof dataset === "string" ? dataset.split("/").pop() : "";
         // A pill with a record is a link to the record, with the weight of the links of the page.
-        const pill = make(item.address ? "a" : "span", "badge rounded-pill text-bg-light border text-truncate mw-100 " + (item.address ? "" : "fw-normal"), item.name || "(no name)");
+        const pill = make(item.address ? "a" : "span", "badge rounded-pill text-truncate mw-100 " + (item.address ? "" : "fw-normal ") + KINDS[at][1], accession || item.name || "(no name)");
         if (item.address) {
           pill.href = local(item.address, state.options);
           opens(pill, state.options);
@@ -829,9 +833,18 @@ function overview(container, state, question, bar, enters) {
             navigate(container, node.path);
           });
         }
-        if (item.description) {
+        const lines = [];
+        for (const use of uses) {
+          if (accession && use.name) {
+            lines.push(make("b", "", use.name));
+          }
+          if (use.description) {
+            lines.push(safeHtml(use.description, state.options));
+          }
+        }
+        if (lines.length) {
           pill.tabIndex = 0;
-          explain(pill, item.name || "(no name)", [safeHtml(item.description, state.options)]);
+          explain(pill, accession || item.name || "(no name)", lines);
         } else {
           pill.title = item.name || "";
         }
