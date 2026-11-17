@@ -159,10 +159,9 @@ def test_llms(site):
     assert (answer.status_code, answer.mimetype) == (200, "text/markdown") and text.startswith("# ")
     assert "search first" in text and all(kind in text for kind in settings()["kinds"])
     links = re.findall(r"\]\(([^)]+)\)", text)
-    assert len(links) >= 8
-    # The example record is not in the test database.
+    assert len(links) >= 8 and BASE + "api/tools/t" in links
     for link in links:
-        if link.startswith(BASE) and not link.endswith("/aopwikiapi"):
+        if link.startswith(BASE):
             assert site.get(local(link)).status_code == 200, link
 
 
@@ -171,9 +170,9 @@ def test_agents_line(site):
     add_records()
     for path in ("/tools", "/tools/t"):
         text = BeautifulSoup(site.get(path).data, "html.parser").get_text(" ")
-        assert BASE + "llms.txt" in text and BASE + "api/search?text=aop" in text, path
+        assert BASE + "llms.txt" in text and BASE + "api/search?text=T" in text, path
     markdown = site.get("/tools/t.md").data.decode()
-    assert all(BASE + end in markdown for end in ("llms.txt", "api/search?text=aop", "api/docs/openapi.json", "api/dump")), markdown[-400:]
+    assert all(BASE + end in markdown for end in ("llms.txt", "api/search?text=T", "api/docs/openapi.json", "api/dump")), markdown[-400:]
 
 
 def operations(spec: dict) -> list[tuple[str, str, dict]]:
@@ -232,7 +231,7 @@ def test_docs_page(site):
     for script in page.find_all("script"):
         script.decompose()
     text = page.get_text(" ")
-    assert all(BASE + end in text for end in ("api/docs/openapi.json", "api/search?text=aop", "llms.txt")), text
+    assert all(BASE + end in text for end in ("api/docs/openapi.json", "api/search?text=", "llms.txt")), text
     assert page.find("link", rel="service-desc")["href"] == "/api/docs/openapi.json"
 
 

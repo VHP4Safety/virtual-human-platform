@@ -4,6 +4,7 @@ import re
 from functools import lru_cache
 from operator import itemgetter
 from pathlib import Path
+from urllib.parse import quote_plus
 
 from bs4 import BeautifulSoup
 from markdownify import markdownify
@@ -194,15 +195,33 @@ def agents_line() -> str:
             f"OpenAPI at <{found['openapi']}>, all records at <{found['dump']}>, and where to start at <{found['llms']}>.")
 
 
+def readable_at(iri: str) -> bool:
+    """Return True if the record at iri is read at an address of the API of this platform, api/<path>."""
+    return iri.startswith(settings()["base"]) and bool(records.path(iri))
+
+
+def first_record() -> Record | None:
+    """Return the first record by name of the first kind whose records are read at the API of this platform: the record
+    and the search of the entry points, of llms.txt and of the description of the API."""
+    for of_class in settings()["kinds"].values():
+        _, iris = records.page(of_class, {}, "", 0, 1)
+        if iris and readable_at(iris[0]):
+            return records.get(iris[0])
+    return None
+
+
 def entry_points() -> dict:
     """Return the addresses where agents and scripts start, at the address of this platform: the index of the API, which
-    llms.txt, the end of each page and the end of each Markdown page also name."""
-    return {
+    llms.txt, the end of each page and the end of each Markdown page also name. The search is for the first word of the
+    name of the first record (first_record), and the record is that record."""
+    shown = first_record()
+    named = quote_plus((shown.name or "").split(" ")[0]) if shown is not None else ""
+    found = {
         "title": settings()["title"],
         "start": "Search first, then read the record at its address.",
         "index": records.address("api"),
-        "search": records.address("api/search?text=aop"),
-        "record": records.address("api/tools/aopwikiapi"),
+        "search": records.address("api/search?text=" + named),
+        "record": records.address("api/" + records.path(shown.iri)) if shown is not None else None,
         "kinds": {kind: records.address("api/" + kind) for kind in settings()["kinds"]},
         "openapi": records.address("api/docs/openapi.json"),
         "documentation": records.address("api/docs") + "/",
@@ -213,6 +232,7 @@ def entry_points() -> dict:
         "catalog": records.address(".well-known/api-catalog"),
         "llms": records.address("llms.txt"),
     }
+    return {name: value for name, value in found.items() if value is not None}
 
 
 def llms() -> str:
@@ -227,7 +247,7 @@ def llms() -> str:
         free = " The records may be reused for any purpose, also by AI systems." if "CC0" in platform["license"] else ""
         about.append(f"Licence of the records: {platform['license']}.{free}")
     start = [f"- [Search all records]({index['search']}): the address (@id), class (@type) and name of each record with the text",
-             f"- [Read one record]({index['record']}): the record in JSON-LD; its page address with .md gives it in Markdown",
+             *([f"- [Read one record]({index['record']}): the record in JSON-LD; its page address with .md gives it in Markdown"] if "record" in index else []),
              f"- [Index of the API]({index['index']}): the listing of each kind, the downloads and these addresses",
              f"- [OpenAPI description]({index['openapi']}): every operation, with examples"]
     data = [f"- [All records]({index['dump']}): one file, in N-Triples or Turtle",
