@@ -30,8 +30,10 @@ FORMAT_NAMES = {".jsonld": "JSON-LD", ".ttl": "Turtle", ".nt": "N-Triples"}
 # A page in Markdown, for readers of plain text such as agents.
 MARKDOWN = ".md"
 SERIALIZATIONS = {"text/turtle": "turtle", "application/n-triples": "nt"}
-# The counts are kept in memory, as the platform is run with one worker.
-limiter = Limiter(get_remote_address, storage_uri="memory://")
+# The counts are kept in memory, as the platform is run with one worker. The headers tell a client its limit, and when
+# to ask again (Retry-After).
+limiter = Limiter(get_remote_address, storage_uri="memory://", headers_enabled=True)
+LIMIT = "300 per minute"
 
 
 def data(found: Graph, media: str, iri: str | None = None) -> Response:
@@ -57,7 +59,8 @@ def markdown_of(record: tables.Record) -> Response:
 
 
 # The examples are filled in from the first stored record (pages.first_record), so that each one works on this platform.
-DESCRIPTION = """The records of the platform: {kinds}. Reading needs no token.
+DESCRIPTION = """The records of the platform: {kinds}. Reading needs no token. Each client address may send {limit} to
+the API; over the limit, the answer is 429 Too Many Requests, with Retry-After.
 
 To answer a question, start here:
 
@@ -83,7 +86,7 @@ TAGS = [
     {"name": "editing", "description": "Add, change, move, remove and restore records. A write token for the kind is required."},
     {"name": "registries", "description": "Search vocabulary registries for terms. For editors only."},
 ]
-limiter.limit("300 per minute")(blueprint)
+limiter.limit(LIMIT)(blueprint)
 TOKEN = [{"token": []}]
 WRITE = {"security": TOKEN, "requestBody": {"content": {"text/turtle": {"schema": {"type": "string"}}}}}
 class Record(Schema.from_dict({"@type": fields.Raw(metadata={"description": "The class of the record, such as SoftwareApplication. Required for a new record."})})):
@@ -835,7 +838,7 @@ def start(shown) -> dict:
     kinds = settings()["kinds"]
     kind, of_class = next(((kind, of_class) for kind, of_class in kinds.items() if shown is not None and shown.iri.startswith(records.address(kind) + "/")),
                           next(iter(kinds.items())))
-    found = {"kinds": ", ".join(label.lower() for label in settings()["labels"].values()), "text": "<text>",
+    found = {"kinds": ", ".join(label.lower() for label in settings()["labels"].values()), "limit": LIMIT + " requests", "text": "<text>",
              "record": "<kind>/<name>", "kind": kind, "filter": "<field>=<value>"}
     if shown is not None:
         found.update(text=quote_plus((shown.name or "").split(" ")[0]), record=records.path(shown.iri))

@@ -272,6 +272,20 @@ def test_docs_page(site):
     assert page.find("link", rel="service-desc")["href"] == "/api/docs/openapi.json"
 
 
+def test_rate_limit(site):
+    """Over the limit of the API, the answer is 429 with Retry-After and a hint, and the limit is in the description."""
+    from routes import records_api
+
+    try:
+        answers = [site.get("/api/search", query_string={"text": "x"}) for _ in range(301)]
+        refused = answers[-1]
+        assert refused.status_code == 429 and refused.headers.get("Retry-After") and refused.mimetype == "application/problem+json"
+        assert answers[0].headers.get("X-RateLimit-Limit") == "300"
+    finally:
+        records_api.limiter.reset()
+    assert records_api.LIMIT in site.get("/api/docs/openapi.json").json["info"]["description"]
+
+
 def test_problem_details(site):
     """An error of the API is a problem detail (RFC 9457) that says what to try next, with the fields the editor reads."""
     missing = site.get("/api/tools/nothing-here")
