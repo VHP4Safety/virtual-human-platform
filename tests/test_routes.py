@@ -172,7 +172,7 @@ def test_agents_line(site):
     add_records()
     for path in ("/tools", "/tools/t"):
         text = BeautifulSoup(site.get(path).data, "html.parser").get_text(" ")
-        assert BASE + "llms.txt" in text and BASE + "api/search?text=T" in text, path
+        assert all(BASE + end in text for end in ("llms.txt", "api/search?text=T", "api/docs/openapi.json", "api/dump")), path
     markdown = site.get("/tools/t.md").data.decode()
     assert all(BASE + end in markdown for end in ("llms.txt", "api/search?text=T", "api/docs/openapi.json", "api/dump")), markdown[-400:]
 
