@@ -1,7 +1,7 @@
 // shacl-form plugins of the record editor.
 import { Plugin, registerPlugin, findLabel, loadRDF } from "https://cdn.jsdelivr.net/npm/@ulb-darmstadt/shacl-form@3.7.3/dist/bundle.js";
 import { busy } from "./busy.js";
-import { GLOSSARY, openRequest, tableChoice } from "./glossary.js";
+import { GLOSSARY, draftBody, openRequest, tableChoice } from "./glossary.js";
 
 const IRI = "http://www.w3.org/ns/shacl#IRI";
 const LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
@@ -44,6 +44,15 @@ textarea.shown { resize: vertical; }
 .record-link-busy::before { content: ""; display: inline-block; width: 0.8em; height: 0.8em; margin-right: 6px; vertical-align: -0.1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: record-link-turning 0.75s linear infinite; }
 @keyframes record-link-turning { to { transform: rotate(360deg); } }
 .record-link-vocabulary { margin-bottom: 4px; font: inherit; }
+.record-link-add { font-size: 0.75em; padding: 1px 8px; border: 1px solid #198754; border-radius: 4px; background: #fff; color: #146c43; white-space: nowrap; cursor: pointer; }
+.record-link-add:hover { background: #d1e7dd; }
+.record-link-add[hidden] { display: none; }
+.record-link-options .record-link-draft { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px solid #eee; }
+.record-link-options .record-link-draft button { border: 1px solid #ccc; border-radius: 4px; }
+.record-link-options .record-link-draft .record-link-problem, .record-link-options .record-link-draft .record-link-note { flex-basis: 100%; padding: 0; }
+.record-link-label { font-size: 0.85em; color: #495057; }
+.record-link-table { font: inherit; }
+.record-link-note { font-size: 0.85em; color: #6c757d; }
 shacl-node, rokit-collapsible { scroll-margin-top: 1rem; }
 .index-shown { outline: 3px solid var(--bs-vhppink, #e6007e); outline-offset: 4px; border-radius: 0.25rem; }
 /* An open group grows with its fields. The max-height set by rokit-collapsible at the time of opening is removed. */
@@ -458,22 +467,16 @@ function proposeTerm(text, vocabulary, added) {
       shown.refuse("A label is needed.");
       return;
     }
+    if (!table.value) {
+      shown.refuse("Choose the table of the glossary that the term goes to.");
+      return;
+    }
     if (asked) {
       openRequest(term, table.value);
     }
     const working = busy(button, "Storing…", shown.body);
     try {
-      const body = { name: term.name, inDefinedTermSet: { "@id": vocabulary["@id"] }, creativeWorkStatus: "Draft" };
-      if (term.abbreviation) {
-        body.alternateName = term.abbreviation;
-      }
-      if (term.definition) {
-        body.description = term.definition;
-      }
-      if (term.references.length) {
-        body[IS_DEFINED_BY] = term.references.map(function (given) { return { "@id": given }; });
-      }
-      const answer = await api("POST", "/api/terms", body);
+      const answer = await api("POST", "/api/terms", draftBody(term, vocabulary, table.value, editor.person));
       shown.dialog.close();
       added(answer["@id"], term.name);
     } catch (error) {
@@ -486,7 +489,7 @@ function proposeTerm(text, vocabulary, added) {
   const bar = make("div", "d-flex flex-wrap gap-2 mt-2");
   bar.append(draft, request);
   shown.body.append(
-    make("p", "small text-secondary", "The term is stored as a draft at a platform address, and can be used at once. Its glossary address is given when the request is accepted."),
+    make("p", "small text-secondary", "The term is stored as a draft at a platform address, and can be used at once. The glossary repository proposes it in the chosen table each day, with you as its contributor, and gives its glossary address when the proposal is accepted."),
     labelled("Label", label), labelled("Abbreviation", abbreviation), labelled("Definition", definition),
     labelled("References", references), labelled("Table of the glossary", table), bar);
 }
@@ -567,6 +570,10 @@ class RecordLink extends Plugin {
     open.target = "_blank";
     open.rel = "noopener";
     open.title = "Open page";
+    // A text in a term field is added to the chosen vocabulary with one button.
+    const adding = make("button", "record-link-add");
+    adding.type = "button";
+    adding.hidden = true;
     // The link, read by shacl-form as the value. A text in a link field is kept until a record is chosen.
     const chosen = document.createElement("input");
     chosen.type = "hidden";
@@ -588,16 +595,18 @@ class RecordLink extends Plugin {
     const row = make("div", "record-link-row");
     const box = make("div", "record-link-box");
     search.replaceWith(box);
-    row.append(kind, search, open);
+    row.append(kind, search, adding, open);
     box.append(row, options);
     field.append(chosen);
 
-    // Show the kind and the page of the linked record.
+    // Show the kind and the page of the linked record. A text in a term field has the button that adds it to the
+    // chosen vocabulary.
     function show() {
       kind.className = "record-link-kind";
       kind.textContent = "";
       kind.title = "";
       open.hidden = true;
+      adding.hidden = true;
       if (!chosen.value) {
         return;
       }
@@ -605,6 +614,11 @@ class RecordLink extends Plugin {
         kind.classList.add("text");
         kind.textContent = "Text";
         kind.title = "Name only: find or add its record";
+        if (classes[TERM] && vocabulary && search.value.trim()) {
+          adding.textContent = "＋ Add to " + vocabulary.name;
+          adding.title = "Add “" + search.value.trim() + "” as a term of " + vocabulary.name + ", and link it here";
+          adding.hidden = false;
+        }
         return;
       }
       let named = "";
@@ -720,9 +734,12 @@ class RecordLink extends Plugin {
         }
         vocabularies.disabled = Boolean(only && current);
         vocabulary = listed.find(function (found) { return found["@id"] === vocabularies.value; }) || null;
+        show();
       };
       vocabularies.addEventListener("change", function () {
         vocabulary = listed.find(function (found) { return found["@id"] === vocabularies.value; }) || null;
+        options.replaceChildren();
+        show();
         if (vocabularies.value) {
           return;
         }
@@ -732,6 +749,59 @@ class RecordLink extends Plugin {
       });
       attempt(function () { return fill(null); });
     }
+
+    // Add the text of the field to the chosen vocabulary, and link the new term in its place. A draft term of the
+    // glossary needs the table that it goes to. A term of another vocabulary is found in the registry of the
+    // vocabulary, or registered by hand.
+    function addDirectly() {
+      const text = search.value.trim();
+      if (!text || !vocabulary) {
+        return;
+      }
+      options.replaceChildren();
+      if (vocabulary[SPACE] === GLOSSARY) {
+        const panel = make("div", "record-link-draft");
+        const table = tableChoice();
+        table.className = "record-link-table";
+        table.setAttribute("aria-label", "Table of the glossary");
+        const store = make("button", "record-link-new", "Add “" + text + "” as a draft term");
+        store.type = "button";
+        const more = make("button", "", "More fields…");
+        more.type = "button";
+        store.addEventListener("click", function () {
+          if (!table.value) {
+            table.focus();
+            panel.querySelector(".record-link-problem") || panel.append(make("div", "record-link-problem", "Choose the table of the glossary that the term goes to."));
+            return;
+          }
+          attempt(async function () {
+            options.replaceChildren(make("div", "record-link-busy", "Adding “" + text + "” to " + vocabulary.name + "…"));
+            const added = await api("POST", "/api/terms", draftBody({ name: text }, vocabulary, table.value, editor.person));
+            await known(added["@id"], text, TERM);
+          });
+        });
+        more.addEventListener("click", function () {
+          options.replaceChildren();
+          proposeTerm(text, vocabulary, function (iri, name) {
+            attempt(function () { return known(iri, name, TERM); });
+          });
+        });
+        panel.append(make("span", "record-link-label", "Table of the glossary"), table, store, more);
+        if (!editor.person) {
+          panel.append(make("div", "record-link-note", "No person record has your ORCID iD, so the term is stored without a contributor."));
+        }
+        options.append(panel);
+      } else if (vocabulary[SPACE]) {
+        const asked = make("div");
+        options.append(asked);
+        attempt(function () { return registryTerms(text, vocabulary[SPACE], new Set(), asked); });
+      } else {
+        registerTerm(text, vocabulary, function (iri, name) {
+          attempt(function () { return known(iri, name, TERM); });
+        });
+      }
+    }
+    adding.addEventListener("click", addDirectly);
 
     // Search the records of the classes of the field with the text in their name, then offer a new record or term. An
     // emptied field has no link.

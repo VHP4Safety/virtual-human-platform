@@ -73,6 +73,8 @@ def edit(kind: str):
         crate=("zenodo" if crates.zenodo(record) is not None else "draft") if crates.of_models(record) else None,
         read_only=record is not None and kind in settings()["read only in the editor"],
         draft_vocabulary=editor.draft_vocabulary(record),
+        draft_table=editor.draft_table(record),
+        person=editor.person(found.orcid),
         context=documents.context(settings()),
         page_title=f"{pages.kind_names()[kind]} — VHP4Safety editor",
     ))

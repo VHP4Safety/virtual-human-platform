@@ -5,6 +5,7 @@
 # http://schema.org/name in a profile of crates, is read as that term.
 @prefix bioschemas: <https://bioschemas.org/terms/> .
 @prefix bioschemas_draft: <https://bioschemas.org/draft_terms/> .
+@prefix dct: <http://purl.org/dc/terms/> .
 @prefix form: <https://platform.vhp4safety.nl/model/v1/form#> .
 @prefix ns1: <http://datashapes.org/dash#> .
 @prefix pbpk: <https://platform.vhp4safety.nl/model/v1/pbpk#> .
@@ -12,6 +13,7 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix schema: <https://schema.org/> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix term: <https://platform.vhp4safety.nl/model/v1/term#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 pbpk:BiologicalSystem a rdfs:Class ;
@@ -768,6 +770,16 @@ pbpk:SUVAnalysis a rdfs:Class ;
     sh:node <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#WebPage> ;
     sh:property <https://platform.vhp4safety.nl/profiles/Page/0.1-DRAFT#AboutPage-mainEntity> ;
     sh:targetClass schema:AboutPage .
+
+<https://platform.vhp4safety.nl/profiles/Term/0.1-DRAFT#DefinedTerm> a sh:NodeShape ;
+    rdfs:label "Term" ;
+    sh:name "Term" ;
+    sh:property <https://platform.vhp4safety.nl/profiles/Term/0.1-DRAFT#DefinedTerm-alternateName>,
+        <https://platform.vhp4safety.nl/profiles/Term/0.1-DRAFT#DefinedTerm-contributor>,
+        <https://platform.vhp4safety.nl/profiles/Term/0.1-DRAFT#DefinedTerm-creativeWorkStatus>,
+        <https://platform.vhp4safety.nl/profiles/Term/0.1-DRAFT#DefinedTerm-glossaryTable>,
+        <https://platform.vhp4safety.nl/profiles/Term/0.1-DRAFT#DefinedTerm-isDefinedBy> ;
+    sh:targetClass schema:DefinedTerm .
 
 <https://bioschemas.org/profiles/ChemicalSubstance/0.4-RELEASE#alternateName> a sh:PropertyShape ;
     sh:description "An alias for the item." ;
@@ -10255,6 +10267,12 @@ pbpk:targetCompartment a rdf:Property ;
     schema:domainIncludes pbpk:Connection ;
     schema:rangeIncludes schema:Text .
 
+term:glossaryTable a rdf:Property ;
+    rdfs:label "Table of the glossary" ;
+    rdfs:comment "The table of the VHP4Safety glossary repository (templates/<table>.tsv) that a draft term goes to." ;
+    rdfs:domain schema:DefinedTerm ;
+    rdfs:range xsd:string .
+
 <https://platform.vhp4safety.nl/profiles/CaseStudy/0.1-DRAFT#FormalParameter-description> a sh:PropertyShape ;
     sh:datatype xsd:string ;
     sh:maxCount 1 ;
@@ -12261,6 +12279,46 @@ pbpk:targetCompartment a rdf:Property ;
     sh:nodeKind sh:BlankNodeOrIRI ;
     sh:order 5 ;
     sh:path schema:video .
+
+<https://platform.vhp4safety.nl/profiles/Term/0.1-DRAFT#DefinedTerm-alternateName> a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "Another name of the term, such as its abbreviation." ;
+    sh:name "Other names" ;
+    sh:order 22 ;
+    sh:path schema:alternateName .
+
+<https://platform.vhp4safety.nl/profiles/Term/0.1-DRAFT#DefinedTerm-contributor> a sh:PropertyShape ;
+    sh:class schema:Person ;
+    sh:description "The people who added or curated the term on the platform. The glossary repository names them as the authors of the term." ;
+    sh:name "Contributors" ;
+    sh:order 20 ;
+    sh:path dct:contributor .
+
+<https://platform.vhp4safety.nl/profiles/Term/0.1-DRAFT#DefinedTerm-creativeWorkStatus> a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "Draft: the term is proposed for its vocabulary, and is not yet in it." ;
+    sh:in ( "Draft" ) ;
+    sh:maxCount 1 ;
+    sh:name "Status" ;
+    sh:order 19 ;
+    sh:path schema:creativeWorkStatus .
+
+<https://platform.vhp4safety.nl/profiles/Term/0.1-DRAFT#DefinedTerm-glossaryTable> a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "The table of the VHP4Safety glossary that the draft term goes to. Required for a draft term of the glossary." ;
+    sh:in ( "toxicology" "risk_assessment" "adverse_outcome" "process_flow" "tools" "server" "projects" "organizations" ) ;
+    sh:maxCount 1 ;
+    sh:message "Choose one table of the glossary." ;
+    sh:name "Table of the glossary" ;
+    sh:order 21 ;
+    sh:path term:glossaryTable .
+
+<https://platform.vhp4safety.nl/profiles/Term/0.1-DRAFT#DefinedTerm-isDefinedBy> a sh:PropertyShape ;
+    sh:description "The web addresses of the sources of the definition." ;
+    sh:name "Sources of the definition" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 23 ;
+    sh:path rdfs:isDefinedBy .
 
 <https://bioschemas.org/profiles/ChemicalSubstance/0.4-RELEASE#group-recommended> a sh:PropertyGroup ;
     rdfs:label "Recommended" ;

@@ -543,3 +543,30 @@ def test_platform_record(site):
     assert read.status_code == 200 and "Platform" in read.data.decode()
     for query in ("?preview=true", ""):
         assert site.put("/api/" + BASE + query, data=read.data, content_type="text/turtle", headers=bearer).status_code == 200, query
+
+
+def test_draft_glossary_term(site):
+    # A draft term of the glossary is stored with its table and its contributor, the person of the editor.
+    vocabulary = BASE + "vocabularies/vhp4safety-glossary"
+    writes.save(writes.document("https://schema.org/DefinedTermSet", vocabulary, {"name": "VHP4Safety glossary"}),
+                "https://schema.org/DefinedTermSet", "Test Editor", ORCID)
+    writes.save(writes.document(PERSON, BASE + "people/test-editor", {"name": "Test Editor", "sameAs": {"@id": "https://orcid.org/" + ORCID}}), PERSON, "Test Editor", ORCID)
+    secret = tokens.create(ORCID, "Test Editor", ["terms", "casestudies"])
+    draft = {"name": "Life course exposure", "inDefinedTermSet": {"@id": vocabulary}, "creativeWorkStatus": "Draft",
+             "term:glossaryTable": "toxicology", "dct:contributor": [{"@id": BASE + "people/test-editor"}]}
+    added = site.post("/api/terms", json=draft, headers={"Authorization": "Bearer " + secret})
+    assert added.status_code == 201
+    assert not {"term:glossaryTable", "dct:contributor"} & set(added.json.get("warnings") or {})
+    stored = site.get(added.json["@id"].removeprefix(BASE[:-1]), headers={"Accept": "application/ld+json"}).json
+    assert stored["term:glossaryTable"] == "toxicology"
+    assert stored["dct:contributor"]["@id"] == BASE + "people/test-editor"
+    # The glossary repository finds the drafts of a table with the filter of the field.
+    found = site.get("/api/terms?term:glossaryTable=toxicology", headers={"Accept": "application/ld+json"}).json
+    assert [term["@id"] for term in found["@graph"]] == [added.json["@id"]]
+    site.get("/login/")
+    with site.session_transaction() as session:
+        form_token = session["form_token"]
+    assert site.post("/login/token/", data={"token": secret, "form_token": form_token, "next": "/admin/"}).status_code == 302
+    page = BeautifulSoup(site.get("/admin/terms/?record=" + added.json["@id"]).data.decode(), "html.parser")
+    shown = json.loads(page.find("script", id="editor").string)
+    assert shown["draftTable"] == "toxicology" and shown["person"] == BASE + "people/test-editor"

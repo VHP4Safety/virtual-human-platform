@@ -1,6 +1,6 @@
 // Record editor.
 import { busy } from "./busy.js";
-import { GLOSSARY, requestAddress, tableChoice } from "./glossary.js";
+import { GLOSSARY, TABLE_FIELD, requestAddress, tableChoice } from "./glossary.js";
 import { current, isPart, outline, reveal as showPart, select, whenSelected } from "./record-index.js";
 
 (function () {
@@ -578,6 +578,12 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
       if (!preview) {
         return false;
       }
+      // A draft term of the glossary is saved only with the table of the glossary that it goes to.
+      const term = preview.document || {};
+      if (editor.draftVocabulary === GLOSSARY && term.creativeWorkStatus === "Draft" && !term[TABLE_FIELD]) {
+        refuse("choose the Table of the glossary that the draft term goes to.");
+        return false;
+      }
       // Removals are confirmed first.
       if (editor.version) {
         const gone = removals(preview.edges, "", []);
@@ -630,6 +636,11 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
     // A draft term of the glossary is requested with the term request form of the glossary, filled in with its values.
     // The tab is opened at the click, as browsers block tabs opened after a wait.
     request: async function () {
+      const table = document.getElementById("term-table").value;
+      if (!table) {
+        window.alert("Choose the table of the glossary that the term goes to.");
+        return;
+      }
       const tab = window.open("", "_blank");
       tab.opener = null;
       try {
@@ -637,7 +648,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
         const references = [].concat(term["http://www.w3.org/2000/01/rdf-schema#isDefinedBy"] || []).map(function (given) { return given["@id"] || given; });
         const definition = term.description && term.description["@value"] !== undefined ? term.description["@value"] : term.description;
         tab.location = requestAddress({ name: term.name, abbreviation: [].concat(term.alternateName || [])[0], definition: definition, references: references,
-                                        address: editor.graph }, document.getElementById("term-table").value);
+                                        address: editor.graph }, table);
       } catch (error) {
         tab.close();
         throw error;
@@ -659,7 +670,7 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
   // The request of a draft term is offered for the glossary, with a choice of its table.
   const requesting = document.getElementById("term-request");
   if (requesting && editor.draftVocabulary === GLOSSARY) {
-    const table = tableChoice();
+    const table = tableChoice(editor.draftTable);
     table.id = "term-table";
     table.classList.add("w-auto");
     requesting.querySelector("label").after(table);

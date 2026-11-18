@@ -1332,6 +1332,10 @@ CREATE TABLE IF NOT EXISTS "schema_defined_term" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,
   "type" TEXT,
+  "term_glossary_table" TEXT,
+  "term_glossary_table__term" TEXT,
+  "schema_creative_work_status" TEXT,
+  "schema_creative_work_status__term" TEXT,
   "schema_description" TEXT,
   "schema_description__term" TEXT,
   "schema_identifier" TEXT,
@@ -1345,6 +1349,33 @@ CREATE TABLE IF NOT EXISTS "schema_defined_term" (
   PRIMARY KEY ("iri")
 );
 CREATE INDEX IF NOT EXISTS "schema_defined_term__record" ON "schema_defined_term" ("record");
+CREATE TABLE IF NOT EXISTS "schema_defined_term__dct_contributor" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_defined_term" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_defined_term__dct_contributor__record" ON "schema_defined_term__dct_contributor" ("record");
+CREATE TABLE IF NOT EXISTS "schema_defined_term__rdfs_is_defined_by" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_defined_term" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_defined_term__rdfs_is_defined_by__record" ON "schema_defined_term__rdfs_is_defined_by" ("record");
+CREATE TABLE IF NOT EXISTS "schema_defined_term__schema_alternate_name" (
+  "record" TEXT NOT NULL,
+  "iri" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "term" TEXT NOT NULL,
+  PRIMARY KEY ("iri", "value", "term"),
+  FOREIGN KEY ("iri") REFERENCES "schema_defined_term" ("iri")
+);
+CREATE INDEX IF NOT EXISTS "schema_defined_term__schema_alternate_name__record" ON "schema_defined_term__schema_alternate_name" ("record");
 CREATE TABLE IF NOT EXISTS "schema_defined_term__schema_same_as" (
   "record" TEXT NOT NULL,
   "iri" TEXT NOT NULL,

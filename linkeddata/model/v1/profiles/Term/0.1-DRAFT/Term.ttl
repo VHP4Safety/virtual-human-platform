@@ -1,0 +1,69 @@
+# The shapes of the profile https://platform.vhp4safety.nl/profiles/Term/0.1-DRAFT.
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix profile: <https://platform.vhp4safety.nl/profiles/Term/0.1-DRAFT#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <https://schema.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix term: <https://platform.vhp4safety.nl/model/v1/term#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+profile:DefinedTerm a sh:NodeShape ;
+    rdfs:label "Term" ;
+    sh:name "Term" ;
+    sh:property profile:DefinedTerm-alternateName,
+        profile:DefinedTerm-contributor,
+        profile:DefinedTerm-creativeWorkStatus,
+        profile:DefinedTerm-glossaryTable,
+        profile:DefinedTerm-isDefinedBy ;
+    sh:targetClass schema:DefinedTerm .
+
+profile:DefinedTerm-alternateName a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "Another name of the term, such as its abbreviation." ;
+    sh:name "Other names" ;
+    sh:order 22 ;
+    sh:path schema:alternateName .
+
+profile:DefinedTerm-contributor a sh:PropertyShape ;
+    sh:class schema:Person ;
+    sh:description "The people who added or curated the term on the platform. The glossary repository names them as the authors of the term." ;
+    sh:name "Contributors" ;
+    sh:order 20 ;
+    sh:path dct:contributor .
+
+# A draft term is proposed for its vocabulary and is not yet in it. It is merged into the term of the vocabulary at
+# the first import after the vocabulary has the term.
+profile:DefinedTerm-creativeWorkStatus a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "Draft: the term is proposed for its vocabulary, and is not yet in it." ;
+    sh:in ( "Draft" ) ;
+    sh:maxCount 1 ;
+    sh:name "Status" ;
+    sh:order 19 ;
+    sh:path schema:creativeWorkStatus .
+
+# The tables of the glossary repository (templates/<table>.tsv). Chemicals are left out, as they have Wikibase items
+# in place of glossary addresses. A draft term of the VHP4Safety glossary needs a table: the editor asks for it.
+profile:DefinedTerm-glossaryTable a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:description "The table of the VHP4Safety glossary that the draft term goes to. Required for a draft term of the glossary." ;
+    sh:in ( "toxicology" "risk_assessment" "adverse_outcome" "process_flow" "tools" "server" "projects" "organizations" ) ;
+    sh:maxCount 1 ;
+    sh:message "Choose one table of the glossary." ;
+    sh:name "Table of the glossary" ;
+    sh:order 21 ;
+    sh:path term:glossaryTable .
+
+profile:DefinedTerm-isDefinedBy a sh:PropertyShape ;
+    sh:description "The web addresses of the sources of the definition." ;
+    sh:name "Sources of the definition" ;
+    sh:nodeKind sh:IRI ;
+    sh:order 23 ;
+    sh:path rdfs:isDefinedBy .
+
+term:glossaryTable a rdf:Property ;
+    rdfs:label "Table of the glossary" ;
+    rdfs:comment "The table of the VHP4Safety glossary repository (templates/<table>.tsv) that a draft term goes to." ;
+    rdfs:domain schema:DefinedTerm ;
+    rdfs:range xsd:string .

@@ -284,6 +284,28 @@ def draft_vocabulary(record: Record | None) -> str | None:
     return str(space or "")
 
 
+# The field of the Term profile with the table of the glossary that a draft term goes to.
+GLOSSARY_TABLE = URIRef("https://platform.vhp4safety.nl/model/v1/term#glossaryTable")
+
+
+def draft_table(record: Record | None) -> str:
+    """Return the table of the glossary of a draft term, or an empty text."""
+    if draft_vocabulary(record) is None:
+        return ""
+    return str(records.graph([record.iri]).value(URIRef(record.iri), GLOSSARY_TABLE) or "")
+
+
+def person(orcid: str | None) -> str | None:
+    """Return the address of the person record with the ORCID iD orcid, or None. The person is the contributor of the
+    terms that the editor adds."""
+    if not orcid:
+        return None
+    with database.engine().connect() as connection:
+        found = sorted(connection.execute(records.nodes_with(str(SDO.Person), str(SDO.sameAs), [f"https://orcid.org/{orcid}"])).scalars())
+    kept = [record.iri for record in records.kept(found) if record.part_of is None]
+    return sorted(kept)[0] if kept else None
+
+
 def every_field() -> list[dict]:
     """Return the fields of the forms of all classes of records and of their parts."""
     with database.session() as db:

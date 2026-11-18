@@ -8,6 +8,7 @@
     "void": "http://rdfs.org/ns/void#",
     "spdx": "http://spdx.org/rdf/terms#",
     "pbpk": "https://platform.vhp4safety.nl/model/v1/pbpk#",
+    "term": "https://platform.vhp4safety.nl/model/v1/term#",
     "form": "https://platform.vhp4safety.nl/model/v1/form#",
     "Dataset": {
       "@id": "schema:Dataset",
