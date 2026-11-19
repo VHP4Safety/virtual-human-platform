@@ -1,6 +1,6 @@
 // Record editor.
 import { busy } from "./busy.js";
-import { GLOSSARY, TABLE_FIELD, requestAddress, tableChoice } from "./glossary.js";
+import { GLOSSARY, TABLE_FIELD, TABLE_PATH, requestAddress, tableChoice } from "./glossary.js";
 import { current, isPart, outline, reveal as showPart, select, whenSelected } from "./record-index.js";
 
 (function () {
@@ -667,12 +667,35 @@ import { current, isPart, outline, reveal as showPart, select, whenSelected } fr
       }
     },
   };
-  // The request of a draft term is offered for the glossary, with a choice of its table.
+  // The Table of the glossary of a draft term of the glossary is shown in red until it is chosen, as the term is saved
+  // only with it.
+  function markTable() {
+    if (!form.shadowRoot.getElementById("table-style")) {
+      const style = make("style");
+      style.id = "table-style";
+      style.textContent = ".table-missing > label { color: var(--bs-form-invalid-color, #dc3545); }" +
+        ".table-missing > .editor { outline: 2px solid var(--bs-form-invalid-border-color, #dc3545); outline-offset: 1px; border-radius: 4px; }";
+      form.shadowRoot.append(style);
+    }
+    for (const field of form.shadowRoot.querySelectorAll('.property-instance[data-path="' + TABLE_PATH + '"]')) {
+      const chosen = field.querySelector(":scope > .editor");
+      field.classList.toggle("table-missing", !chosen || !chosen.value);
+    }
+  }
+  if (form && editor.draftVocabulary === GLOSSARY) {
+    form.addEventListener("ready", markTable);
+    form.addEventListener("change", markTable);
+  }
+  // The request of a draft term is offered for the glossary, with a choice of its table, shown in red until it is chosen.
   const requesting = document.getElementById("term-request");
   if (requesting && editor.draftVocabulary === GLOSSARY) {
     const table = tableChoice(editor.draftTable);
     table.id = "term-table";
     table.classList.add("w-auto");
+    table.classList.toggle("is-invalid", !table.value);
+    table.addEventListener("change", function () {
+      table.classList.toggle("is-invalid", !table.value);
+    });
     requesting.querySelector("label").after(table);
     requesting.classList.replace("d-none", "d-inline-flex");
   }

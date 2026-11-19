@@ -476,7 +476,7 @@ function proposeTerm(text, vocabulary, added) {
     }
     const working = busy(button, "Storing…", shown.body);
     try {
-      const answer = await api("POST", "/api/terms", draftBody(term, vocabulary, table.value, editor.person));
+      const answer = await api("POST", "/api/terms", draftBody(term, vocabulary, table.value));
       shown.dialog.close();
       added(answer["@id"], term.name);
     } catch (error) {
@@ -776,7 +776,7 @@ class RecordLink extends Plugin {
           }
           attempt(async function () {
             options.replaceChildren(make("div", "record-link-busy", "Adding “" + text + "” to " + vocabulary.name + "…"));
-            const added = await api("POST", "/api/terms", draftBody({ name: text }, vocabulary, table.value, editor.person));
+            const added = await api("POST", "/api/terms", draftBody({ name: text }, vocabulary, table.value));
             await known(added["@id"], text, TERM);
           });
         });
@@ -788,7 +788,7 @@ class RecordLink extends Plugin {
         });
         panel.append(make("span", "record-link-label", "Table of the glossary"), table, store, more);
         if (!editor.person) {
-          panel.append(make("div", "record-link-note", "No person record has your ORCID iD, so the term is stored without a contributor."));
+          panel.append(make("div", "record-link-note", "No person record has your ORCID iD yet: one is added with the name and the ORCID iD of your sign-in, as the contributor of the term."));
         }
         options.append(panel);
       } else if (vocabulary[SPACE]) {

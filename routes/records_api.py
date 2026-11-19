@@ -19,7 +19,7 @@ from rdfsolve.ontology.service import PROVIDERS, Ontologies, serving
 from werkzeug.exceptions import HTTPException, RequestEntityTooLarge
 
 import database
-from admin import changes, tokens, writes
+from admin import changes, drafts, tokens, writes
 from database import images, records, tables
 from linkeddata import checks, documents, pages, schemas, void
 from linkeddata.profile import RELEASE, jsonld_name, settings, shapes
@@ -361,6 +361,7 @@ def store(address: str, body: dict, preview: bool = False, page: bool = False):
         abort(422, message=str(problem))
     writes.kept(found, address, kind)
     writes.classed(found, address)
+    drafts.drafted(found, address, who, not preview)
     # Only http and https addresses are accepted, so that no script (javascript:) or file address is stored as a link, nor
     # as a text in a field of links.
     for holder, predicate, value in found:

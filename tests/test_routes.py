@@ -10,9 +10,9 @@ from urllib.parse import parse_qs, urlparse
 from bs4 import BeautifulSoup
 from PIL import Image as Picture
 
-from admin import tokens, writes
+from admin import drafts, tokens, writes
 from database.records import browsed
-from linkeddata import schemas
+from linkeddata import documents, schemas
 from linkeddata.profile import fields, settings
 from routes import account
 
@@ -545,19 +545,32 @@ def test_platform_record(site):
         assert site.put("/api/" + BASE + query, data=read.data, content_type="text/turtle", headers=bearer).status_code == 200, query
 
 
+GLOSSARY_SET = BASE + "vocabularies/vhp4safety-glossary"
+
+
+def add_glossary(person: dict | None = None) -> None:
+    """Add the vocabulary record of the glossary, with its namespace, and a person record."""
+    vocabulary = {"@context": documents.context(settings()), "@id": GLOSSARY_SET, "@type": "DefinedTermSet", "name": "VHP4Safety glossary",
+                  "void:uriSpace": "https://vhp4safety.github.io/glossary#"}
+    writes.save(vocabulary, "https://schema.org/DefinedTermSet", "Test Editor", ORCID)
+    if person is not None:
+        writes.save(writes.document(PERSON, BASE + "people/test-editor", person), PERSON, "Test Editor", ORCID)
+
+
 def test_draft_glossary_term(site):
-    # A draft term of the glossary is stored with its table and its contributor, the person of the editor.
-    vocabulary = BASE + "vocabularies/vhp4safety-glossary"
-    writes.save(writes.document("https://schema.org/DefinedTermSet", vocabulary, {"name": "VHP4Safety glossary"}),
-                "https://schema.org/DefinedTermSet", "Test Editor", ORCID)
-    writes.save(writes.document(PERSON, BASE + "people/test-editor", {"name": "Test Editor", "sameAs": {"@id": "https://orcid.org/" + ORCID}}), PERSON, "Test Editor", ORCID)
+    # A draft term of the glossary is stored with its table and its contributor, the person with the ORCID iD of the
+    # write token. A contributor sent by the client is not kept.
+    add_glossary({"name": "Test Editor", "sameAs": {"@id": "https://orcid.org/" + ORCID}})
+    writes.save(writes.document(PERSON, BASE + "people/other", {"name": "Other"}), PERSON, "Test Editor", ORCID)
     secret = tokens.create(ORCID, "Test Editor", ["terms", "casestudies"])
-    draft = {"name": "Life course exposure", "inDefinedTermSet": {"@id": vocabulary}, "creativeWorkStatus": "Draft",
-             "term:glossaryTable": "toxicology", "dct:contributor": [{"@id": BASE + "people/test-editor"}]}
+    draft = {"name": "Life course exposure", "inDefinedTermSet": {"@id": GLOSSARY_SET}, "term:glossaryTable": "toxicology",
+             "dct:contributor": [{"@id": BASE + "people/other"}]}
     added = site.post("/api/terms", json=draft, headers={"Authorization": "Bearer " + secret})
     assert added.status_code == 201
     assert not {"term:glossaryTable", "dct:contributor"} & set(added.json.get("warnings") or {})
     stored = site.get(added.json["@id"].removeprefix(BASE[:-1]), headers={"Accept": "application/ld+json"}).json
+    # A term at a platform address in the glossary is not yet in the glossary, so it is a draft.
+    assert stored["creativeWorkStatus"] == "Draft"
     assert stored["term:glossaryTable"] == "toxicology"
     assert stored["dct:contributor"]["@id"] == BASE + "people/test-editor"
     # The glossary repository finds the drafts of a table with the filter of the field.
@@ -570,3 +583,67 @@ def test_draft_glossary_term(site):
     page = BeautifulSoup(site.get("/admin/terms/?record=" + added.json["@id"]).data.decode(), "html.parser")
     shown = json.loads(page.find("script", id="editor").string)
     assert shown["draftTable"] == "toxicology" and shown["person"] == BASE + "people/test-editor"
+
+
+def test_draft_contributor_added(site, monkeypatch):
+    # Without a person record with the ORCID iD of the writer, one is added, with the GitHub account of the public ORCID
+    # record. The person record of the same name without the ORCID iD is not used.
+    add_glossary({"name": "Test Editor"})
+    monkeypatch.setattr(drafts, "github", lambda orcid: "https://github.com/test-editor")
+    bearer = {"Authorization": "Bearer " + tokens.create(ORCID, "Test Editor", ["terms"])}
+    draft = {"name": "Internal dose", "inDefinedTermSet": {"@id": GLOSSARY_SET}, "term:glossaryTable": "toxicology"}
+    previewed = site.post("/api/terms?preview=true", json=draft, headers=bearer)
+    assert previewed.status_code == 200 and drafts.person(ORCID) is None
+    added = site.post("/api/terms", json=draft, headers=bearer)
+    assert added.status_code == 201
+    person = drafts.person(ORCID)
+    assert person == BASE + "people/test-editor-2"
+    stored = site.get(person.removeprefix(BASE[:-1]).replace("/people/", "/api/people/"), headers={"Accept": "application/ld+json"}).json
+    assert stored["name"] == "Test Editor"
+    assert sorted(one["@id"] for one in stored["sameAs"]) == ["https://github.com/test-editor", "https://orcid.org/" + ORCID]
+    term = site.get(added.json["@id"].removeprefix(BASE[:-1]).replace("/terms/", "/api/terms/"), headers={"Accept": "application/ld+json"}).json
+    assert term["dct:contributor"]["@id"] == person
+    same_name = site.get("/api/people/test-editor", headers={"Accept": "application/ld+json"}).json
+    assert "sameAs" not in same_name
+    # A term of the glossary at its own address, as the glossary repository writes it, is no draft and gets no contributor.
+    pushed = {"@id": "https://vhp4safety.github.io/glossary#VHP0000999", "@type": "DefinedTerm", "name": "Pushed",
+              "inDefinedTermSet": {"@id": GLOSSARY_SET}}
+    assert site.post("/api/terms", json=pushed, headers=bearer).status_code == 201
+    stored = site.get("/api/https:/vhp4safety.github.io/glossary%23VHP0000999", headers={"Accept": "application/ld+json"}).json
+    assert "creativeWorkStatus" not in stored and "dct:contributor" not in stored
+
+
+def test_draft_identified(site, monkeypatch):
+    # The glossary repository writes the term code and the glossary address of a draft with the write token of another
+    # editor. That editor is not a contributor of the draft, until the text of the draft is changed.
+    other = "0000-0001-5109-3700"
+    monkeypatch.setenv("PLATFORM_EDITORS", f"{ORCID},{other}")
+    monkeypatch.setattr(drafts, "github", lambda orcid: None)
+    add_glossary({"name": "Test Editor", "sameAs": {"@id": "https://orcid.org/" + ORCID}})
+    draft = {"name": "Internal dose", "inDefinedTermSet": {"@id": GLOSSARY_SET}, "term:glossaryTable": "toxicology"}
+    added = site.post("/api/terms", json=draft, headers={"Authorization": "Bearer " + tokens.create(ORCID, "Test Editor", ["terms"])})
+    address = "/api/" + added.json["@id"].removeprefix(BASE)
+    bearer = {"Authorization": "Bearer " + tokens.create(other, "Sync Editor", ["terms"])}
+    record = site.get(address, headers={"Accept": "application/ld+json"}).json
+    record.pop("@context")
+    record.update({"termCode": "VHP0000999", "sameAs": [{"@id": "https://vhp4safety.github.io/glossary#VHP0000999"}]})
+    assert site.put(address, json=record, headers=bearer).status_code == 200
+    stored = site.get(address, headers={"Accept": "application/ld+json"}).json
+    assert stored["termCode"] == "VHP0000999" and stored["sameAs"]["@id"] == "https://vhp4safety.github.io/glossary#VHP0000999"
+    assert stored["dct:contributor"]["@id"] == BASE + "people/test-editor"
+    stored.pop("@context")
+    stored["description"] = "The dose that reaches the body."
+    assert site.put(address, json=stored, headers=bearer).status_code == 200
+    contributors = site.get(address, headers={"Accept": "application/ld+json"}).json["dct:contributor"]
+    assert sorted(one["@id"] for one in contributors) == [BASE + "people/sync-editor", BASE + "people/test-editor"]
+
+
+def test_new_term_draft(site):
+    # A new term of the record editor is a draft term of the glossary, which asks for its table.
+    add_glossary()
+    signed_in(site, ["terms"])
+    page = BeautifulSoup(site.get("/admin/terms/?new=Internal dose").data.decode(), "html.parser")
+    values = page.find("shacl-form")["data-values"]
+    assert f"<{GLOSSARY_SET}>" in values and '"Draft"' in values
+    shown = json.loads(page.find("script", id="editor").string)
+    assert shown["draftVocabulary"] == "https://vhp4safety.github.io/glossary#"

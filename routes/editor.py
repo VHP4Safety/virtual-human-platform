@@ -3,8 +3,9 @@
 import json
 
 from flask import Blueprint, Response, abort, redirect, render_template, request, url_for
+from rdflib.namespace import SDO
 
-from admin import editor, writes
+from admin import drafts, editor, writes
 from database import records
 from linkeddata import crates, documents, pages
 from linkeddata.profile import settings, shape_of
@@ -53,6 +54,13 @@ def edit(kind: str):
     if of_kind != kind:
         return redirect(url_for("admin.edit", kind=of_kind, record=selected))
     listed = editor.listing(kind)
+    values = f"<{selected}> a <{settings()['kinds'][kind]}> ; <https://schema.org/name> {json.dumps(name)} ." if name and record is None else ""
+    draft_vocabulary = editor.draft_vocabulary(record)
+    # A new term is a draft term of the glossary, until another vocabulary is chosen.
+    glossary = drafts.vocabulary(drafts.GLOSSARY) if values and settings()["kinds"][kind] == str(SDO.DefinedTerm) else None
+    if glossary is not None:
+        values = values[:-1] + f'; <{SDO.inDefinedTermSet}> <{glossary}> ; <{SDO.creativeWorkStatus}> "Draft" .'
+        draft_vocabulary = drafts.GLOSSARY
     response = Response(render_template(
         "admin/records.html",
         kind=kind,
@@ -62,7 +70,7 @@ def edit(kind: str):
         base=settings()["base"],
         record=record,
         shape=str(shape_of(record.type)) if record is not None else editor.root_shape(kind),
-        values=f"<{selected}> a <{settings()['kinds'][kind]}> ; <https://schema.org/name> {json.dumps(name)} ." if name and record is None else "",
+        values=values,
         links=editor.links(),
         mixed=editor.mixed(),
         ordered=editor.ordered(),
@@ -72,9 +80,9 @@ def edit(kind: str):
         # A model has the RO-Crate in Zenodo while it is an imported record, and else a draft crate.
         crate=("zenodo" if crates.zenodo(record) is not None else "draft") if crates.of_models(record) else None,
         read_only=record is not None and kind in settings()["read only in the editor"],
-        draft_vocabulary=editor.draft_vocabulary(record),
+        draft_vocabulary=draft_vocabulary,
         draft_table=editor.draft_table(record),
-        person=editor.person(found.orcid),
+        person=drafts.person(found.orcid),
         context=documents.context(settings()),
         page_title=f"{pages.kind_names()[kind]} — VHP4Safety editor",
     ))

@@ -4,9 +4,9 @@ export const GLOSSARY = "https://vhp4safety.github.io/glossary#";
 // of the Term profile (term:glossaryTable). Chemicals are left out, as they have Wikibase items in place of glossary
 // addresses.
 export const TABLES = ["toxicology", "risk_assessment", "adverse_outcome", "process_flow", "tools", "server", "projects", "organizations"];
-// The field of the table and the field of the contributors of a term, by their JSON names.
+// The field of the table of a term, by its JSON name, and by its address in the form.
 export const TABLE_FIELD = "term:glossaryTable";
-export const CONTRIBUTOR_FIELD = "dct:contributor";
+export const TABLE_PATH = "https://platform.vhp4safety.nl/model/v1/term#glossaryTable";
 const FORM = "https://github.com/VHP4Safety/glossary/issues/new";
 
 // Return a choice of the table for a new term. A draft term of the glossary needs a table, so no table is chosen
@@ -22,13 +22,10 @@ export function tableChoice(selected) {
   return select;
 }
 
-// Return the body of a new draft term of the glossary, in table, with the signed-in editor as its contributor.
-export function draftBody(term, vocabulary, table, person) {
+// Return the body of a new draft term of the glossary, in table. The platform adds the signed-in editor as its contributor.
+export function draftBody(term, vocabulary, table) {
   const body = { name: term.name, inDefinedTermSet: { "@id": vocabulary["@id"] }, creativeWorkStatus: "Draft" };
   body[TABLE_FIELD] = table;
-  if (person) {
-    body[CONTRIBUTOR_FIELD] = [{ "@id": person }];
-  }
   if (term.abbreviation) {
     body.alternateName = term.abbreviation;
   }
