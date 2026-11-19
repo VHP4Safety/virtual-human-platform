@@ -6,6 +6,8 @@ const HEADINGS = ["text-vhppink-distinct", "text-vhpdarkpurple", "text-vhpdarkte
 // Tools, methods and data are blue.
 const BUTTONS = ["btn-vhppink-distinct", "btn-vhpdarkpurple", "btn-vhpdarkteal", "btn-vhplightteal"];
 const ITEMS = "btn-vhpblue";
+// The tools, methods and data of a page have a column each in the overview of a question, with pills in these colours.
+const KINDS = [["Tools", "bg-vhplight-blue text-vhppurple"], ["Methods", "bg-white text-vhppurple border border-vhpblue"], ["Data", "bg-vhplight-green text-vhppurple border border-vhppurple"]];
 const PROCESS_FLOW = ["Regulatory Question", "Safety Assessment Workflow Step", "Case Study Step", "Case Study Substep", "Tools, Models and Data"];
 // The fields with content for a step.
 const CONTENT = ["tool", "supply", "bioschemas:input", "bioschemas:output", "hasPart", "text", "description"];
@@ -117,15 +119,17 @@ function children(state, page, level) {
   return parts(state, page, level === 0 ? "hasPart" : "step").filter(function (node) { return level !== 0 || !isPart(String(node["@id"] || "_:")); });
 }
 
-// Return true if a step has no content and no steps with content.
-function empty(step) {
+// Return true if a step has no content and no steps with content. A step given by address only, as in flat JSON-LD,
+// is found by its address.
+function empty(step, nodes, level) {
+  const found = nodes && step && nodes.get(step["@id"]) || step;
   for (const name of CONTENT) {
-    if (all(step, name).length) {
+    if (all(found, name).length) {
       return false;
     }
   }
-  for (const child of all(step, "step")) {
-    if (!empty(child)) {
+  for (const child of (level || 0) < DEEPEST ? all(found, "step") : []) {
+    if (!empty(child, nodes, (level || 0) + 1)) {
       return false;
     }
   }
@@ -138,11 +142,11 @@ function isPart(id) {
 }
 
 // Return the stage of a page in the process flow, from 1 to 5.
-export function stageOf(page, level) {
+export function stageOf(page, level, nodes) {
   let steps = false;
   for (const child of all(page, level === 0 ? "hasPart" : "step")) {
     if (level !== 0 || (child && typeof child === "object" && !isPart(String(child["@id"] || "_:")))) {
-      steps = steps || !empty(child);
+      steps = steps || !empty(child, nodes);
     }
   }
   if (!steps && (all(page, "tool").length || all(page, "supply").length)) {
@@ -275,11 +279,11 @@ function breadcrumbs(container, state, found) {
 // Draw the process flow, with the stage of the page in view active.
 function processFlow(container, state, found, header) {
   const level = found.length - 1;
-  const active = stageOf(found[level], level);
+  const active = stageOf(found[level], level, state.nodes);
   // The level of the lowest page above the page in view at each stage.
   const above = [];
   for (let at = 0; at < level; at += 1) {
-    above[stageOf(found[at], at)] = at;
+    above[stageOf(found[at], at, state.nodes)] = at;
   }
   // The header is drawn once and then only marked, so that marks in it, such as the glossary marks, are kept.
   if (!header) {
@@ -346,12 +350,12 @@ function staged(state) {
   function walk(page, level, path, question) {
     for (const child of level < DEEPEST ? children(state, page, level) : []) {
       const greyed = first(child, "creativeWorkStatus") === "Incomplete";
-      if (!child["@id"] || (empty(child) && !greyed && !state.options.openDisabled)) {
+      if (!child["@id"] || (empty(child, state.nodes) && !greyed && !state.options.openDisabled)) {
         continue;
       }
       const asked = level === 0 ? label(state, child) || child["@id"] : question;
       const disabled = greyed && !state.options.openDisabled;
-      found.push({ stage: stageOf(page, level), path: path.concat([child["@id"]]), name: label(state, child) || child["@id"],
+      found.push({ stage: stageOf(page, level, state.nodes), path: path.concat([child["@id"]]), name: label(state, child) || child["@id"],
                    above: level ? label(state, page) : "", question: asked, disabled: disabled, page: true });
       if (!disabled) {
         walk(child, level + 1, path.concat([child["@id"]]), asked);
@@ -467,17 +471,33 @@ function column(button) {
   return cell;
 }
 
-// Draw the buttons of a page.
+// Return the question with its overview on the page of the case study: the question that is chosen there, else the
+// first question that can be opened.
+function chosen(state) {
+  const open = children(state, state.document, 0).filter(function (child) {
+    const greyed = first(child, "creativeWorkStatus") === "Incomplete";
+    return child["@id"] && (state.options.openDisabled || (!greyed && !empty(child, state.nodes)));
+  });
+  return open.find(function (child) { return child["@id"] === state.question; }) || open[0] || null;
+}
+
+// Draw the buttons of a page. The buttons of the questions choose the overview under them, and the button of the
+// chosen question is filled. The pages of a question have no buttons: they are in its overview.
 function buttons(container, state, page, level) {
   const row = make("div", "row py-3");
-  for (const child of children(state, page, level)) {
+  const asked = level === 0 ? chosen(state) : null;
+  for (const child of level === 1 ? [] : children(state, page, level)) {
     const disabled = first(child, "creativeWorkStatus") === "Incomplete";
-    const hidden = empty(child) && !disabled;
+    const hidden = empty(child, state.nodes) && !disabled;
     if (hidden && !state.options.openDisabled) {
       continue;
     }
-    const button = make("button", "btn w-100 text-white " + BUTTONS[Math.min(level, BUTTONS.length - 1)]);
+    const picked = Boolean(asked) && child["@id"] === asked["@id"];
+    const button = make("button", "btn w-100 " + (level === 0 && !picked ? BUTTONS[0].replace("btn-", "btn-outline-") : "text-white " + BUTTONS[Math.min(level, BUTTONS.length - 1)]));
     button.type = "button";
+    if (level === 0) {
+      button.setAttribute("aria-pressed", String(picked));
+    }
     button.append(make("b", "", label(state, child) || child["@id"] || "(no name)"));
     // The button of a question has the question under its title. Other buttons have their description.
     if (level === 0 && first(child, "text")) {
@@ -498,7 +518,12 @@ function buttons(container, state, page, level) {
         button.title = "Greyed out on the website, and not opened there";
       }
       button.addEventListener("click", function () {
-        navigate(container, state.path.concat([child["@id"]]));
+        if (level === 0) {
+          state.question = child["@id"];
+          draw(container, false);
+        } else {
+          navigate(container, state.path.concat([child["@id"]]));
+        }
       });
     }
     row.append(column(button));
@@ -627,8 +652,344 @@ function parameters(state, page) {
   return list.children.length ? list : null;
 }
 
-// Draw a page.
-function view(container, state, page, level) {
+// Return the pages of a question placed in the grid of its overview: each page with its columns and its rows, and with
+// its tools, methods and data if they have a row. The pages are those with a button on the website (see buttons). The
+// pages below a greyed-out page are left out.
+export function layout(state, question) {
+  // The stages between the question and the tools, models and data have a column each. A deeper page adds a column.
+  let columns = PROCESS_FLOW.length - 2;
+  const greyedOut = function (page) {
+    return first(page, "creativeWorkStatus") === "Incomplete";
+  };
+  const shown = function (page, level) {
+    return children(state, page, level).filter(function (child) {
+      return child["@id"] && (state.options.openDisabled || greyedOut(child) || !empty(child, state.nodes));
+    });
+  };
+  // The pages of level 2 are in column 1. A page is over the rows of its items and of the pages below it.
+  function place(page, level, column, row, path) {
+    const greyed = greyedOut(page);
+    const below = greyed || level >= DEEPEST ? [] : shown(page, level);
+    const own = greyed ? [] : items(state, page);
+    // A page with one page of the same name below it is drawn once, as that page, from the column of this page.
+    if (!own.length && below.length === 1 && label(state, below[0]) === label(state, page) && !greyedOut(below[0])) {
+      return place(below[0], level + 1, column, row, path.concat([below[0]["@id"]]));
+    }
+    columns = Math.max(columns, level - 1);
+    // The items of a page are in its first row, above the pages below it. A page without items and pages has a row too.
+    const node = { page: page, name: label(state, page) || page["@id"], path: path, column: column, last: below.length ? level - 1 : 0, row: row,
+                   rows: own.length || !below.length ? 1 : 0, greyed: greyed, faded: !greyed && empty(page, state.nodes), items: null, below: [] };
+    if (!greyed && node.rows) {
+      node.items = KINDS.map(function () { return []; });
+      for (const item of own) {
+        node.items[item.field === "supply" ? 2 : item.address.includes("/methods/") ? 1 : 0].push(item);
+      }
+      // The methods of a dataset are the methods that the record of the dataset links (see readDataset). They are
+      // listed after the methods of the page, each once, with the datasets that link them.
+      for (const item of node.items[2]) {
+        const record = state.datasets ? state.datasets.get(item.address) : null;
+        for (const method of record ? record.methods : []) {
+          const listed = node.items[1].find(function (other) { return other.address === method.address; });
+          if (!listed) {
+            node.items[1].push({ name: method.name, description: "", address: method.address, field: "tool", from: [item.address] });
+          } else if (listed.from && !listed.from.includes(item.address)) {
+            listed.from.push(item.address);
+          }
+        }
+      }
+    }
+    for (const child of below) {
+      const placed = place(child, level + 1, level, row + node.rows, path.concat([child["@id"]]));
+      node.below.push(placed);
+      node.rows += placed.rows;
+    }
+    return node;
+  }
+  const pages = [];
+  let rows = 0;
+  for (const child of shown(question, 1)) {
+    pages.push(place(child, 2, 1, rows, [question["@id"], child["@id"]]));
+    rows += pages[pages.length - 1].rows;
+  }
+  // A page without pages below it is as wide as the columns of the pages, known once the deepest page is placed. A
+  // greyed-out page is as wide as the grid.
+  (function widen(placed) {
+    for (const node of placed) {
+      node.last = node.last || (node.greyed ? columns + KINDS.length : columns);
+      widen(node.below);
+    }
+  })(pages);
+  return { pages: pages, columns: columns, rows: rows };
+}
+
+// Read the record of a dataset, and return its address and its name with the methods that it links. A dataset that is
+// linked by its DOI, as data/10.6019/S-VHPS16, has its record at the last part of that address. A dataset that is not
+// found has no methods.
+// ponytail: one request for each dataset of an overview. If that is slow, give the methods with the case study.
+async function readDataset(state, address) {
+  const linked = address.split("/data/");
+  const tried = linked.length === 2 && linked[1].includes("/") ? [address, linked[0] + "/data/" + linked[1].split("/").pop()] : [address];
+  for (const found of tried) {
+    try {
+      const response = await fetch(local(found, state.options), { headers: { Accept: "application/ld+json" } });
+      if (response.ok) {
+        const record = await response.json();
+        const nodes = index(record, new Map());
+        const methods = [];
+        for (const value of all(record, "measurementTechnique")) {
+          const method = value && typeof value === "object" ? String(value["@id"] || "") : "";
+          if (method.includes("/methods/")) {
+            methods.push({ name: first(nodes.get(method) || value, "name") || method.split("/").pop(), address: method });
+          }
+        }
+        return { address: found, name: first(record, "name"), methods: methods };
+      }
+    } catch (error) {
+      // A record that cannot be read is tried at its next address.
+    }
+  }
+  return { address: address, name: "", methods: [] };
+}
+
+// Return a name as a short name, with … at its end: cut after its last whole word within the length of a short name,
+// or within a word if that leaves too little of the name.
+function short(name) {
+  if (name.length <= 22) {
+    return name;
+  }
+  const cut = name.slice(0, 20);
+  return (cut.lastIndexOf(" ") > 10 ? cut.slice(0, cut.lastIndexOf(" ")) : cut) + "…";
+}
+
+// Show the details of a cell of the overview in a popover of Bootstrap, at the pointer and at the focus. A cell
+// without details has no popover.
+function explain(cell, title, lines) {
+  const content = make("div", "small");
+  for (const line of lines) {
+    if (line) {
+      const part = make("div", "");
+      part.append(line);
+      content.append(part);
+    }
+  }
+  if (content.children.length && window.bootstrap) {
+    cell.dataset.bsToggle = "popover";
+    new window.bootstrap.Popover(cell, { trigger: "hover focus", placement: "top", html: true, title: make("span", "", title), content: content });
+  }
+}
+
+// Draw the overview of a question: a grid with a column for each stage, with each page over the rows of the pages
+// below it, and with the tools, methods and data of each row. The cells have classes of Bootstrap only, and each cell
+// is placed by its rows and its columns. With bar, the question is above the grid. With enters, the rows come in one
+// after the other.
+function overview(container, state, question, bar, enters) {
+  const found = layout(state, question);
+  if (!found.pages.length) {
+    return null;
+  }
+  // The methods of a dataset are in the record of the dataset. The records that are not read yet are read, and the
+  // case study is drawn again with their methods.
+  const unread = new Set();
+  (function gather(pages) {
+    for (const node of pages) {
+      for (const item of node.items ? node.items[2] : []) {
+        if (item.address && !state.datasets.has(item.address)) {
+          unread.add(item.address);
+        }
+      }
+      gather(node.below);
+    }
+  })(found.pages);
+  if (unread.size) {
+    Promise.all(Array.from(unread, function (address) {
+      state.datasets.set(address, null);
+      return readDataset(state, address).then(function (read) {
+        state.datasets.set(address, read);
+      });
+    })).then(function () {
+      draw(container, false);
+    });
+  }
+  const columns = found.columns + KINDS.length;
+  const grid = make("div", "d-grid gap-2");
+  grid.style.gridAutoColumns = "1fr";
+  grid.style.minWidth = "54rem";
+  function put(cell, row, rows, column, last) {
+    cell.style.gridRow = row + " / span " + rows;
+    cell.style.gridColumn = column + " / " + (last + 1);
+    grid.append(cell);
+    return cell;
+  }
+  // The question is above the rows of the pages, and the tools, methods and data have a title above their columns.
+  // The stages of the pages are named in the process flow above the page, not here again.
+  const head = bar ? 2 : 1;
+  if (bar) {
+    const asked = put(make("div", "d-flex align-items-center rounded p-3 fs-5 fw-bold text-bg-vhppink-distinct"), 1, 1, 1, columns);
+    asked.dataset.field = "text";
+    asked.append(make("span", "badge rounded-circle me-2 bg-white text-vhppink-distinct", "1"), document.createTextNode(first(question, "text") || label(state, question)));
+  }
+  KINDS.forEach(function (kind, at) {
+    put(make("div", "small fw-semibold text-secondary", kind[0]), head, 1, found.columns + 1 + at, found.columns + 1 + at);
+  });
+  // A cell in the rows of the pages. Its rows are kept, for the fading of the other rows.
+  function cellAt(cell, row, rows, column, last) {
+    cell.dataset.row = row;
+    cell.dataset.rows = rows;
+    return put(cell, row + head + 1, rows, column, last);
+  }
+  // Return the numbers of tools, methods and data in the rows of a page.
+  function count(node) {
+    const counted = KINDS.map(function (kind, at) {
+      return node.items ? node.items[at].length : 0;
+    });
+    for (const below of node.below) {
+      count(below).forEach(function (number, at) { counted[at] += number; });
+    }
+    return counted;
+  }
+  function branch(node) {
+    const colour = BUTTONS[Math.min(node.column, BUTTONS.length - 1)];
+    const opened = !node.greyed || state.options.openDisabled;
+    const button = make(opened ? "a" : "span", "btn text-start d-flex align-items-center " + (node.greyed ? colour.replace("btn-", "btn-outline-") : "text-white " + colour));
+    button.append(make("b", "", node.name));
+    let cell = button;
+    let note = "";
+    if (opened) {
+      button.href = local(node.path[node.path.length - 1], state.options);
+      button.addEventListener("click", function (event) {
+        event.preventDefault();
+        navigate(container, node.path);
+      });
+      if (node.greyed) {
+        note = "Greyed out on the website, and not opened there";
+      }
+    } else {
+      // A disabled button takes no pointer, so the popover is on an element around it, which can have the focus.
+      button.classList.add("disabled");
+      cell = make("span", "d-grid");
+      cell.tabIndex = 0;
+      cell.append(button);
+      note = "Marked as incomplete: this page is not opened yet.";
+    }
+    if (node.faded) {
+      button.classList.add("opacity-25");
+      note = "Empty: hidden on the website";
+    }
+    cellAt(cell, node.row, node.rows, node.column, node.last);
+    // The numbers are given for a page with pages below it, as the items of a single row are beside the page.
+    const counted = node.below.length ? count(node) : [];
+    explain(cell, node.name, [
+      first(node.page, "disambiguatingDescription") || first(node.page, "description"),
+      KINDS.map(function (kind, at) { return counted[at] ? kind[0] + ": " + counted[at] : ""; }).filter(Boolean).join(" · "),
+      note,
+    ]);
+    (node.items || []).forEach(function (listed, at) {
+      // A column of items is as narrow as the grid needs: a long name is cut, and is whole in its popover or its title.
+      const box = cellAt(make("div", "d-flex flex-wrap align-content-center gap-1 overflow-hidden"), node.row, 1, found.columns + 1 + at, found.columns + 1 + at);
+      if (listed.length) {
+        box.setAttribute("role", "group");
+        box.setAttribute("aria-label", KINDS[at][0] + " of " + node.name);
+      }
+      // A dataset with a record is one pill for its uses in the row. The other items are a pill each.
+      const pills = new Map();
+      for (const item of listed) {
+        const dataset = at === 2 && item.address ? item.address : pills.size;
+        pills.set(dataset, (pills.get(dataset) || []).concat([item]));
+      }
+      for (const [dataset, uses] of pills) {
+        const item = uses[0];
+        // The pill of a dataset has its accession number, the last part of its address. A number alone says little, so
+        // such a dataset has a short name, as has a method of a dataset. The whole names are in the popover.
+        const last = typeof dataset === "string" ? dataset.split("/").pop() : "";
+        const accession = /^\d+$/.test(last) ? "" : last;
+        // A dataset that is read has the address and the name of its record.
+        const record = last ? state.datasets.get(dataset) : null;
+        const text = accession || (last || item.from ? short(record && record.name || item.name || last) : item.name) || "(no name)";
+        // A pill with a record is a link to the record, with the weight of the links of the page.
+        const pill = make(item.address ? "a" : "span", "badge rounded-pill text-truncate mw-100 " + (item.address ? "" : "fw-normal ") + KINDS[at][1], text);
+        if (item.address) {
+          pill.href = local(record ? record.address : item.address, state.options);
+          opens(pill, state.options);
+        }
+        // In the preview of the editor, a click opens the page that lists the item, as in the pages of a stage.
+        if (state.options.onPick) {
+          pill.addEventListener("click", function () {
+            navigate(container, node.path);
+          });
+        }
+        const lines = record && record.name ? [make("b", "", record.name)] : [];
+        for (const use of uses) {
+          if (last && use.name) {
+            lines.push(use.name);
+          }
+          if (use.description) {
+            lines.push(safeHtml(use.description, state.options));
+          }
+        }
+        if (item.from) {
+          lines.push(item.name, "Linked in " + item.from.map(function (address) { return address.split("/").pop(); }).join(", "));
+        }
+        if (lines.length) {
+          pill.tabIndex = 0;
+          explain(pill, text, lines);
+        } else {
+          pill.title = item.name || "";
+        }
+        box.append(pill);
+      }
+    });
+    for (const below of node.below) {
+      branch(below);
+    }
+  }
+  for (const node of found.pages) {
+    branch(node);
+  }
+  // The cells fade with the transition of Bootstrap, which is off for a reader who asks for less motion. The rows of an
+  // overview that comes into view come in one after the other.
+  const inTurn = enters && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  for (const cell of grid.querySelectorAll("[data-row]")) {
+    cell.classList.add("fade");
+    if (inTurn) {
+      window.setTimeout(function () {
+        cell.classList.add("show");
+      }, 80 + Number(cell.dataset.row) * 70);
+    } else {
+      cell.classList.add("show");
+    }
+  }
+  // The cells beside the rows of the cell at the pointer, or with the focus, are faded. A page without content in the
+  // preview stays as faded as it is.
+  function light(cell) {
+    const from = cell ? Number(cell.dataset.row) : 0;
+    const to = cell ? from + Number(cell.dataset.rows) : 0;
+    for (const other of grid.querySelectorAll("[data-row]:not(.opacity-25)")) {
+      const row = Number(other.dataset.row);
+      other.classList.toggle("opacity-50", Boolean(cell) && (row >= to || row + Number(other.dataset.rows) <= from));
+    }
+  }
+  for (const name of ["mouseover", "focusin"]) {
+    grid.addEventListener(name, function (event) {
+      const cell = event.target.closest("[data-row]");
+      if (cell) {
+        light(cell);
+      }
+    });
+  }
+  for (const name of ["mouseleave", "focusout"]) {
+    grid.addEventListener(name, function () {
+      light(null);
+    });
+  }
+  // The overview is scrolled sideways where it does not fit, as on a phone. The glossary is not marked in it.
+  const scroll = make("nav", "overflow-x-auto p-2 mb-3");
+  scroll.setAttribute("aria-label", "Overview of the question");
+  scroll.append(grid);
+  return scroll;
+}
+
+// Draw a page. The page in view has inView.
+function view(container, state, page, level, inView) {
   const shown = make("div", "case-study-page");
   const top = make("div", "container");
   // The heading is the headline of the page, else its name. The summary of the case study is its introduction.
@@ -644,12 +1005,40 @@ function view(container, state, page, level) {
   const introduction = make("p", "text-secondary fs-5", summary);
   introduction.dataset.field = level === 0 ? "abstract description" : "description";
   top.append(introduction);
+  // The pages of a question are in its overview, in place of their buttons. On the page of the case study, the
+  // overview of the chosen question is under the buttons of the questions, with a link to the page of that question.
   const row = buttons(container, state, page, level);
-  if (row.children.length) {
+  const asked = level === 0 ? chosen(state) : level === 1 ? page : null;
+  // An overview comes in when its page comes into view or another question is chosen, not when it is drawn again.
+  const drawn = (page["@id"] || "") + " " + (level === 0 && asked ? asked["@id"] : "");
+  const enters = Boolean(inView) && state.entered !== drawn;
+  if (inView) {
+    state.entered = drawn;
+  }
+  if (level === 0 && row.children.length) {
+    top.append(row);
+  }
+  if (level === 0 && asked) {
+    const open = make("a", "btn btn-sm " + BUTTONS[0].replace("btn-", "btn-outline-"), "Open " + (label(state, asked) || "the question") + " ");
+    open.append(make("i", "bi bi-arrow-right"));
+    open.href = local(asked["@id"], state.options);
+    open.addEventListener("click", function (event) {
+      event.preventDefault();
+      navigate(container, [asked["@id"]]);
+    });
+    const line = make("div", "d-flex justify-content-end px-2");
+    line.append(open);
+    top.append(line);
+  }
+  const grid = asked ? overview(container, state, asked, level === 1, enters) : null;
+  if (grid) {
+    top.append(grid);
+  }
+  if (level !== 0 && row.children.length) {
     top.append(row);
   }
   const bottom = make("div", "container");
-  // The question of a question page is on its button on the case study page, not again on its own page.
+  // The question of a question page is above its overview, and on its button on the case study page, not here again.
   if (level !== 1 && first(page, "text")) {
     const text = make("div", "case-study-text mb-4");
     text.dataset.field = "text";
@@ -758,9 +1147,20 @@ function slide(strip, target, done) {
 // Draw the breadcrumbs, the process flow and the panels of the pages.
 function draw(container, sliding) {
   const state = states.get(container);
+  // An open popover of an overview would stay on the page after its cell is drawn again.
+  for (const cell of container.querySelectorAll('.case-study-panel [data-bs-toggle="popover"]')) {
+    const popover = window.bootstrap ? window.bootstrap.Popover.getInstance(cell) : null;
+    if (popover) {
+      popover.dispose();
+    }
+  }
   rememberOpen(container, state);
   const found = pages(state);
   const level = found.length - 1;
+  // On the page of the case study, the chosen question is the question of the page that was in view.
+  if (level) {
+    state.question = found[1]["@id"];
+  }
   let shown = container.querySelector(":scope > .case-study");
   if (!shown) {
     shown = make("div", "case-study");
@@ -780,12 +1180,14 @@ function draw(container, sliding) {
   if (header !== flow) {
     flow.replaceWith(header);
   }
+  // The process flow is shown from the pages of the workflow steps on. The pages before them have an overview.
+  header.classList.toggle("d-none", level < 2);
   const strip = shown.lastElementChild;
   const panels = Array.from(strip.children);
   for (let at = 0; at <= level; at += 1) {
     const panel = make("div", "case-study-panel");
     panel.dataset.address = found[at]["@id"] || "";
-    panel.append(view(container, state, found[at], at));
+    panel.append(view(container, state, found[at], at, at === level));
     if (panels[at]) {
       panels[at].replaceWith(panel);
     } else {
@@ -820,7 +1222,7 @@ export function renderCaseStudy(container, caseStudy, options) {
   let state = states.get(container);
   if (!state) {
     containers += 1;
-    state = { id: "case-study-" + containers, path: [], open: new Map() };
+    state = { id: "case-study-" + containers, path: [], open: new Map(), datasets: new Map() };
     states.set(container, state);
     // onPick is called after the action of the buttons of the page, such as the opening of another page. A click on
     // the icon for a new tab is not picked.
